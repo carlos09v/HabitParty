@@ -250,7 +250,8 @@ export function CatalogItemVariantChips({
   return (
     <fieldset
       className={cn(
-        "grid grid-cols-2 gap-1.5 border-0 p-0 m-0 min-w-0 w-full",
+        "grid gap-1 border-0 p-0 m-0 min-w-0 w-full",
+        variants.length <= 4 ? "grid-flow-col auto-cols-fr" : "grid-cols-4",
         className,
       )}
       aria-label={t("packageVariantsAria")}
@@ -291,43 +292,36 @@ export function CatalogItemVariantChips({
             }}
             onDoubleClick={(e) => e.stopPropagation()}
             className={cn(
-              "inline-flex items-center justify-between gap-1 px-2 py-1 rounded-lg border text-[11px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none min-w-0 focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-1",
+              "inline-flex items-center justify-center gap-1 min-h-6 px-1.5 py-1 rounded-lg border text-[10.5px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none min-w-0 focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-1",
               isSelected ? chipStyle.selectedClass : chipStyle.unselectedClass,
               disabled && "opacity-60 cursor-not-allowed",
             )}
           >
-            <span className="inline-flex items-center gap-1 min-w-0">
-              {hasNamedTier && chipStyle.dotColor ? (
-                <>
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      chipStyle.dotColor,
-                    )}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">{tierLabel}</span>
-                </>
-              ) : durationText ? (
-                <>
-                  <Clock size={10} className="shrink-0" aria-hidden="true" />
-                  <span className="truncate tabular-nums">{durationText}</span>
-                </>
-              ) : (
-                <span className="truncate">{tierLabel}</span>
-              )}
-            </span>
+            {hasNamedTier && chipStyle.dotColor && (
+              <span
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full shrink-0",
+                  chipStyle.dotColor,
+                )}
+                aria-hidden="true"
+              />
+            )}
 
-            <span className="inline-flex items-center gap-0.5 shrink-0 tabular-nums opacity-95">
-              {hasNamedTier && durationText ? (
-                <span>{durationText}</span>
-              ) : (
-                <>
-                  <CoinIcon size={10} />
-                  <span>{formattedPrice}</span>
-                </>
-              )}
-            </span>
+            {durationText ? (
+              <span className="inline-flex items-center gap-0.5 min-w-0">
+                {!(hasNamedTier && chipStyle.dotColor) && (
+                  <Clock size={10} className="shrink-0" aria-hidden="true" />
+                )}
+                <span className="truncate tabular-nums">{durationText}</span>
+              </span>
+            ) : variants.length <= 2 ? (
+              <span className="truncate">{tierLabel}</span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 min-w-0 tabular-nums opacity-95">
+                <CoinIcon size={10} />
+                <span className="truncate">{formattedPrice}</span>
+              </span>
+            )}
           </button>
         );
       })}

@@ -137,7 +137,7 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs text-neutral-200">
-              <span className="text-magenta font-bold">
+              <span className="text-magenta dark:text-fuchsia-300 font-bold">
                 {user?.totalXp ?? 0}
               </span>
               <span>{isGamified ? t("xpLabel") : t("pointsLabel")}</span>

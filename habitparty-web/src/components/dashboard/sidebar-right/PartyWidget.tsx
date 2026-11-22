@@ -128,7 +128,7 @@ export async function PartyWidget({
                     </div>
 
                     {friend.currentStreak > 0 && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-[10px] font-bold text-orange-600 dark:text-orange-300 shrink-0 tabular-nums">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-[10px] font-bold text-orange-800 dark:text-orange-300 shrink-0 tabular-nums">
                         <Flame size={10} aria-hidden="true" />
                         <span>
                           {t("streakLabel", { streak: friend.currentStreak })}

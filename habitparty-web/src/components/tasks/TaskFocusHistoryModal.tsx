@@ -6,13 +6,19 @@ import {
   FileText,
   History,
   Loader2,
+  Pencil,
   Sparkles,
   Timer,
   Trash2,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
-import { getTaskFocusRecords } from "@/actions/focusActions";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  getFocusRecordsPage,
+  getTaskFocusRecords,
+  listFocusActivities,
+} from "@/actions/focusActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
@@ -24,7 +30,11 @@ import { dispatchTaskFocusRecorded } from "@/hooks/useFocusTaskSync";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
-import type { FocusRecord } from "@/types/focus";
+import type {
+  FocusActivity,
+  FocusableTaskItem,
+  FocusRecord,
+} from "@/types/focus";
 import type { Task } from "@/types/task";
 import { formatCoins, formatDateTime } from "@/utils";
 import {
@@ -33,6 +43,14 @@ import {
 } from "@/utils/focusFormatters";
 import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
 import { mapFocusRecords } from "@/utils/focusMapper";
+
+const FocusManualRecordModal = dynamic(
+  () =>
+    import("@/components/focus/modals/FocusManualRecordModal").then(
+      (mod) => mod.FocusManualRecordModal,
+    ),
+  { ssr: false },
+);
 
 export interface TaskFocusHistoryModalProps {
   isOpen: boolean;
@@ -60,6 +78,11 @@ export function TaskFocusHistoryModal({
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [activities, setActivities] = useState<FocusActivity[]>([]);
+  const activitiesRef = useRef<FocusActivity[]>([]);
+  const [dailyQuotaRecords, setDailyQuotaRecords] = useState<FocusRecord[]>([]);
+  const [editingRecord, setEditingRecord] = useState<FocusRecord | null>(null);
+
   const [localMinutes, setLocalMinutes] = useState(
     task?.totalFocusMinutes ?? 0,
   );
@@ -78,13 +101,19 @@ export function TaskFocusHistoryModal({
   }, [task]);
 
   const loadPage = useCallback(
-    async (pageToLoad: number) => {
+    async (pageToLoad: number, knownActivities?: FocusActivity[]) => {
       if (!task?.id) return;
       setIsLoading(true);
       try {
         const res = await getTaskFocusRecords(task.id, pageToLoad);
         if (res.success && res.data) {
-          setRecords(mapFocusRecords(res.data.records));
+          setRecords(
+            mapFocusRecords(
+              res.data.records,
+              knownActivities ?? activitiesRef.current,
+              userTimeZone,
+            ),
+          );
           setTotalPages(res.data.totalPages);
           setTotalElements(res.data.totalElements);
         }
@@ -92,20 +121,108 @@ export function TaskFocusHistoryModal({
         setIsLoading(false);
       }
     },
-    [task?.id],
+    [task?.id, userTimeZone],
   );
 
   useEffect(() => {
-    if (isOpen && task?.id) {
-      setPage(0);
-      void loadPage(0);
-    }
-  }, [isOpen, task?.id, loadPage]);
+    if (!isOpen || !task?.id) return;
+    let cancelled = false;
+    setPage(0);
+
+    void (async () => {
+      const [actRes, quotaRes] = await Promise.all([
+        listFocusActivities(),
+        getFocusRecordsPage(0, 100),
+      ]);
+      if (cancelled) return;
+      const loadedActivities = actRes.success && actRes.data ? actRes.data : [];
+      if (actRes.success && actRes.data) {
+        activitiesRef.current = actRes.data;
+        setActivities(actRes.data);
+      }
+      if (quotaRes.success && quotaRes.data) {
+        setDailyQuotaRecords(
+          mapFocusRecords(
+            quotaRes.data.records,
+            loadedActivities,
+            userTimeZone,
+          ),
+        );
+      }
+      await loadPage(0, loadedActivities);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, task?.id, loadPage, userTimeZone]);
+
+  const focusableTasksForModal = useMemo<FocusableTaskItem[]>(() => {
+    if (!task) return [];
+    return [
+      {
+        id: task.id,
+        title: task.title,
+        type: task.type === "daily" ? "daily" : "todo",
+        totalFocusMinutes: localMinutes,
+        focusCyclesCount: localCycles,
+        completed: task.completed,
+      },
+    ];
+  }, [task, localMinutes, localCycles]);
 
   const handlePageChange = (newPageOneBased: number) => {
     const nextZeroBased = Math.max(0, newPageOneBased - 1);
     setPage(nextZeroBased);
     void loadPage(nextZeroBased);
+  };
+
+  const handleRequestEdit = (record: FocusRecord) => {
+    setEditingRecord(record);
+  };
+
+  const handleRecordUpdated = (updatedRecord: FocusRecord) => {
+    if (!editingRecord || !task) return;
+    const oldMins = Math.max(1, editingRecord.durationMinutes);
+    const oldPomos = editingRecord.completedPomos ?? 0;
+
+    setDailyQuotaRecords((prev) =>
+      prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)),
+    );
+
+    if (updatedRecord.taskId !== task.id) {
+      const nextMins = Math.max(0, localMinutes - oldMins);
+      const nextCycles = Math.max(0, localCycles - oldPomos);
+      setLocalMinutes(nextMins);
+      setLocalCycles(nextCycles);
+      onTaskUpdate?.({
+        ...task,
+        totalFocusMinutes: nextMins,
+        focusCyclesCount: nextCycles,
+      });
+
+      if (records.length <= 1 && page > 0) {
+        const previousPage = page - 1;
+        setPage(previousPage);
+        void loadPage(previousPage);
+      } else {
+        void loadPage(page);
+      }
+      return;
+    }
+
+    const newMins = Math.max(1, updatedRecord.durationMinutes);
+    const newPomos = updatedRecord.completedPomos ?? 0;
+    const nextMins = Math.max(0, localMinutes - oldMins + newMins);
+    const nextCycles = Math.max(0, localCycles - oldPomos + newPomos);
+    setLocalMinutes(nextMins);
+    setLocalCycles(nextCycles);
+    onTaskUpdate?.({
+      ...task,
+      totalFocusMinutes: nextMins,
+      focusCyclesCount: nextCycles,
+    });
+    void loadPage(page);
   };
 
   const handleRequestDelete = (record: FocusRecord) => {
@@ -144,7 +261,6 @@ export function TaskFocusHistoryModal({
             focusCyclesCount: nextCycles,
           });
 
-          // Se era o único registro desta página e não é a primeira, recua
           if (records.length <= 1 && page > 0) {
             const previousPage = page - 1;
             setPage(previousPage);
@@ -322,15 +438,27 @@ export function TaskFocusHistoryModal({
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRequestDelete(rec)}
-                      title={t("deleteRecordAria")}
-                      aria-label={t("deleteRecordAria")}
-                      className="p-1.5 rounded-lg border border-transparent hover:border-red-500/40 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-colors cursor-pointer shrink-0"
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleRequestEdit(rec)}
+                        title={t("editRecordAria")}
+                        aria-label={t("editRecordAria")}
+                        className="p-1.5 rounded-lg border border-transparent hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-amber-500/10 dark:hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Pencil size={14} aria-hidden="true" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRequestDelete(rec)}
+                        title={t("deleteRecordAria")}
+                        aria-label={t("deleteRecordAria")}
+                        className="p-1.5 rounded-lg border border-transparent hover:border-red-500/40 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
                 );
               })
@@ -351,6 +479,20 @@ export function TaskFocusHistoryModal({
           )}
         </div>
       </BaseModal>
+
+      {/* Modal de Edição Completa de Registro */}
+      {editingRecord && (
+        <FocusManualRecordModal
+          isOpen={editingRecord !== null}
+          onClose={() => setEditingRecord(null)}
+          activities={activities}
+          backpackItems={[]}
+          focusableTasks={focusableTasksForModal}
+          records={dailyQuotaRecords}
+          editingRecord={editingRecord}
+          onRecordUpdated={handleRecordUpdated}
+        />
+      )}
 
       {/* Confirmação de Exclusão de Registro */}
       {pendingDeleteRecord && (

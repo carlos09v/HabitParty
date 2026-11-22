@@ -48,7 +48,7 @@ export function DashboardMobileDrawer({
         >
           <Calendar
             size={18}
-            className="text-amber-600 dark:text-gold group-hover:rotate-12 transition-transform"
+            className="text-amber-800 dark:text-gold group-hover:rotate-12 transition-transform"
           />
           <span className="font-bold text-neutral-100">{t("fabLabel")}</span>
           {currentBalance > 0 && (

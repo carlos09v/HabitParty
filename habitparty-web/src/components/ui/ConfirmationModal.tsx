@@ -59,8 +59,8 @@ export function ConfirmationModal({
         isDanger
           ? "text-red-600 dark:text-red-400"
           : isWarning
-            ? "text-amber-600 dark:text-amber-400"
-            : "text-amber-600 dark:text-gold"
+            ? "text-amber-800 dark:text-amber-400"
+            : "text-amber-800 dark:text-gold"
       }
     />
   );

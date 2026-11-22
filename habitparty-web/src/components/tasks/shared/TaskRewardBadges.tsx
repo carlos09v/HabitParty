@@ -161,7 +161,7 @@ export function TaskRewardBadges({
       {/* XP / Pontos */}
       {effectiveShowRewards && task.rewardXp !== undefined && (
         <span
-          className="flex items-center gap-0.5 text-magenta font-medium"
+          className="flex items-center gap-0.5 text-magenta dark:text-fuchsia-300 font-medium"
           title={
             isGamified
               ? t("badges.rewardXpTitle", { xp: task.rewardXp })

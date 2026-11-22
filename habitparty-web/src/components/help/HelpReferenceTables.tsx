@@ -56,7 +56,7 @@ export function HelpReferenceTables({
     {
       id: "difficulties",
       entry: helpTables.difficulties,
-      icon: <Coins className="text-amber-600 dark:text-gold" size={18} />,
+      icon: <Coins className="text-amber-700 dark:text-gold" size={18} />,
       highlightColumnIndex: 2,
       highlightColorClass: "text-amber-700 dark:text-gold",
     },
@@ -67,7 +67,7 @@ export function HelpReferenceTables({
             entry: helpTables.habitImportance,
             icon: (
               <Sparkles
-                className="text-emerald-600 dark:text-success-500"
+                className="text-emerald-700 dark:text-success-500"
                 size={18}
               />
             ),
@@ -88,7 +88,7 @@ export function HelpReferenceTables({
           {
             id: "rewardPricing",
             entry: helpTables.rewardPricing,
-            icon: <Scale className="text-amber-600 dark:text-gold" size={18} />,
+            icon: <Scale className="text-amber-700 dark:text-gold" size={18} />,
             highlightColumnIndex: 1,
             highlightColorClass: "text-amber-700 dark:text-gold",
             secondaryBoldColumnIndex: 0,
@@ -107,16 +107,18 @@ export function HelpReferenceTables({
     {
       id: "mysteryBoxes",
       entry: helpTables.mysteryBoxes,
-      icon: <Sparkles className="text-magenta" size={18} />,
+      icon: (
+        <Sparkles className="text-magenta dark:text-fuchsia-300" size={18} />
+      ),
       highlightColumnIndex: 1,
       highlightColorClass: "text-amber-700 dark:text-gold",
     },
     {
       id: "userLevels",
       entry: helpTables.userLevels,
-      icon: <Trophy className="text-amber-600 dark:text-gold" size={18} />,
+      icon: <Trophy className="text-amber-700 dark:text-gold" size={18} />,
       highlightColumnIndex: 2,
-      highlightColorClass: "text-magenta",
+      highlightColorClass: "text-magenta dark:text-fuchsia-300",
       secondaryBoldColumnIndex: 1,
     },
     ...(helpTables.achievementRarities
@@ -125,7 +127,7 @@ export function HelpReferenceTables({
             id: "achievementRarities",
             entry: helpTables.achievementRarities,
             icon: (
-              <Trophy className="text-amber-600 dark:text-gold" size={18} />
+              <Trophy className="text-amber-700 dark:text-gold" size={18} />
             ),
             highlightColumnIndex: 1,
             highlightColorClass: "text-amber-700 dark:text-gold",

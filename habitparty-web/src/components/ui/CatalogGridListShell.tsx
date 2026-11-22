@@ -73,7 +73,7 @@ export function CatalogGridListShell({
           <div className="@container w-full">
             <div
               className={cn(
-                "grid grid-cols-1 w-full pb-8",
+                "catalog-card-grid grid grid-cols-1 w-full pb-8",
                 gridClassName ??
                   "@min-[520px]:grid-cols-2 @min-[800px]:grid-cols-3 @min-[1080px]:grid-cols-4 @min-[1280px]:grid-cols-5 gap-3.5",
               )}

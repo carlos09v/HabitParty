@@ -7,7 +7,6 @@ import com.habitparty.application.usecases.task.DailyResetUseCase;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +32,6 @@ import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserLevel;
-import com.habitparty.core.domain.enums.task.TaskType;
-import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -95,12 +91,11 @@ public class CreateFocusRecordUseCase {
     String taskNameSnapshot = null;
 
     if (command.taskId() != null && taskPort != null) {
-      loadedTask = taskPort.findById(command.taskId())
-          .orElseThrow(() -> new ResourceNotFoundException("Tarefa vinculada ao foco não foi encontrada."));
-      loadedTask.validateOwnership(userIdLogado);
-      if (loadedTask.getTaskType() == TaskType.HABIT) {
-        throw new DomainValidationException("Apenas tarefas Diárias e Afazeres podem ser vinculadas a sessões de foco.");
-      }
+      loadedTask = FocusRecordSupport.loadAndValidateLinkedTask(
+          userIdLogado,
+          command.taskId(),
+          taskPort,
+          "Repositório de tarefas não disponível para vincular tarefa.");
       taskNameSnapshot = loadedTask.getName();
     }
 
@@ -133,21 +128,8 @@ public class CreateFocusRecordUseCase {
       loadedUser = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
-      if (!loadedUser.isPremium()) {
-        List<FocusActivity> userActivities = focusActivityPort.findAllByUserIdOrderByOrderIndex(userIdLogado);
-        int actIndex = -1;
-        for (int i = 0; i < userActivities.size(); i++) {
-          if (userActivities.get(i).getId().equals(command.focusActivityId())) {
-            actIndex = i;
-            break;
-          }
-        }
-        if (actIndex >= 4) {
-          throw new LimitExceededException(
-              "Esta atividade está pausada no plano Free (máximo de 4 atividades ativas). Assine o plano Premium para utilizá-la!"
-          );
-        }
-      }
+      FocusRecordSupport.validateFreePlanActivityAccess(
+          userIdLogado, command.focusActivityId(), loadedUser, focusActivityPort);
     }
 
     // 2. Se for o uso de uma recompensa (mochila), aplica a lógica de inventário (NUNCA gera XP ou Gold)
@@ -161,17 +143,9 @@ public class CreateFocusRecordUseCase {
       if (loadedUser == null && userPort != null) {
         loadedUser = userPort.findById(userIdLogado).orElse(null);
       }
-      ZoneId itemUserZone = loadedUser != null
-          ? loadedUser.resolveZoneId(ZoneId.of(User.DEFAULT_TIMEZONE))
-          : ZoneId.of(User.DEFAULT_TIMEZONE);
-      LocalDateTime serverStartTime = record.getStartTime()
-          .atZone(itemUserZone)
-          .withZoneSameInstant(ZoneId.systemDefault())
-          .toLocalDateTime();
-      LocalDateTime serverEndTime = record.getEndTime()
-          .atZone(itemUserZone)
-          .withZoneSameInstant(ZoneId.systemDefault())
-          .toLocalDateTime();
+      ZoneId itemUserZone = FocusRecordSupport.resolveUserZone(loadedUser);
+      LocalDateTime serverStartTime = FocusRecordSupport.toServerTime(record.getStartTime(), itemUserZone);
+      LocalDateTime serverEndTime = FocusRecordSupport.toServerTime(record.getEndTime(), itemUserZone);
 
       long secondsSpent = java.time.Duration.between(
           record.getStartTime().atZone(itemUserZone),
@@ -200,20 +174,14 @@ public class CreateFocusRecordUseCase {
       FocusRecord savedInventoryRecord = port.save(serverInventoryRecord);
 
       // Cupom de tempo esgotado nesta sessão (saldo cruzou para <= 1s): conta para a conquista "Alquimista do Tempo"
-      boolean isTimeBasedCoupon = item.getRemainingSeconds().isPresent();
-      if (isTimeBasedCoupon && secondsBefore > 1 && secondsAfter <= 1) {
-        User couponOwner = loadedUser != null
-            ? loadedUser
-            : userPort.findById(userIdLogado)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
-        if (couponOwner.getStats() != null) {
-          couponOwner.getStats().recordCouponDepleted();
-          userPort.save(couponOwner);
-          if (evaluateUserAchievementsUseCase != null) {
-            evaluateUserAchievementsUseCase.execute(couponOwner);
-          }
-        }
-      }
+      FocusRecordSupport.evaluateCouponDepletionAchievement(
+          userIdLogado,
+          item,
+          secondsBefore,
+          secondsAfter,
+          loadedUser,
+          userPort,
+          evaluateUserAchievementsUseCase);
 
       return savedInventoryRecord;
     }
@@ -222,9 +190,7 @@ public class CreateFocusRecordUseCase {
     if (loadedUser == null && userPort != null) {
       loadedUser = userPort.findById(userIdLogado).orElse(null);
     }
-    ZoneId userZone = loadedUser != null
-        ? loadedUser.resolveZoneId(ZoneId.of(User.DEFAULT_TIMEZONE))
-        : ZoneId.of(User.DEFAULT_TIMEZONE);
+    ZoneId userZone = FocusRecordSupport.resolveUserZone(loadedUser);
     LocalDateTime userStartTime = record.getStartTime();
     LocalDateTime userEndTime = record.getEndTime();
     LocalDate targetDate = userEndTime.toLocalDate();
@@ -236,14 +202,8 @@ public class CreateFocusRecordUseCase {
     int priorProductiveMinutesToday = isTodayFocus
         ? port.sumProductiveFocusMinutesOnDate(userIdLogado, userToday, userZone)
         : 0;
-    LocalDateTime serverStartTime = userStartTime
-        .atZone(userZone)
-        .withZoneSameInstant(ZoneId.systemDefault())
-        .toLocalDateTime();
-    LocalDateTime serverEndTime = userEndTime
-        .atZone(userZone)
-        .withZoneSameInstant(ZoneId.systemDefault())
-        .toLocalDateTime();
+    LocalDateTime serverStartTime = FocusRecordSupport.toServerTime(userStartTime, userZone);
+    LocalDateTime serverEndTime = FocusRecordSupport.toServerTime(userEndTime, userZone);
 
     // Cria o registro definitivo com os ganhos de XP e moedas persistidos em referência canônica do servidor
     FocusRecord recordWithRewards = new FocusRecord(
@@ -334,45 +294,15 @@ public class CreateFocusRecordUseCase {
     }
 
     // 5. Registra a transação no extrato financeiro (reutilizando loadedActivity e loadedTask sem query extra)
-    String activityName = "Sessão de Foco Livre";
-    String activityIcon = "timer";
-
-    if (savedRecord.getFocusActivityId().isPresent()) {
-      FocusActivity activity = loadedActivity != null
-          ? loadedActivity
-          : focusActivityPort.findById(savedRecord.getFocusActivityId().get())
-              .orElseThrow(() -> new ResourceNotFoundException("Atividade de foco não encontrada."));
-      activity.validateOwnership(userIdLogado);
-      activityName = activity.getName();
-      if (activity.getIcon() != null && !activity.getIcon().isBlank()) {
-        activityIcon = activity.getIcon();
-      }
-      if (loadedTask != null) {
-        String combined = activityName + " • " + loadedTask.getName();
-        activityName = combined.length() > 250 ? combined.substring(0, 250) : combined;
-      }
-    } else if (loadedTask != null) {
-      activityName = loadedTask.getName();
+    FocusActivity transactionActivity = loadedActivity;
+    if (transactionActivity == null && savedRecord.getFocusActivityId().isPresent()) {
+      transactionActivity = focusActivityPort.findById(savedRecord.getFocusActivityId().get())
+          .orElseThrow(() -> new ResourceNotFoundException("Atividade de foco não encontrada."));
+      transactionActivity.validateOwnership(userIdLogado);
     }
 
-    long totalSeconds = java.time.Duration.between(savedRecord.getStartTime(), savedRecord.getEndTime()).toSeconds();
-    String durationLabel;
-    if (totalSeconds < 60) {
-      durationLabel = Math.max(1, totalSeconds) + "s";
-    } else {
-      long mins = totalSeconds / 60;
-      long remainingSecs = totalSeconds % 60;
-      if (remainingSecs > 0) {
-        durationLabel = mins + "m " + remainingSecs + "s";
-      } else {
-        durationLabel = mins + " min";
-      }
-    }
-
-    String focusDescriptionSnapshot = savedRecord.getNotes()
-        .map(String::trim)
-        .filter(note -> !note.isEmpty())
-        .orElse(null);
+    FocusRecordTransactionSupport.FocusTransactionSnapshot snapshot =
+        FocusRecordTransactionSupport.buildSnapshot(savedRecord, transactionActivity, loadedTask);
 
     TransactionHistory transaction = new TransactionHistory(
         null,
@@ -382,13 +312,13 @@ public class CreateFocusRecordUseCase {
         reward.xp(),
         null,
         TransactionType.FOCUS_COMPLETED,
-        activityName,
-        activityIcon,
+        snapshot.nameSnapshot(),
+        snapshot.iconSnapshot(),
         null,
         null,
-        java.util.List.of(durationLabel),
+        java.util.List.of(snapshot.durationLabel()),
         null,
-        focusDescriptionSnapshot,
+        snapshot.descriptionSnapshot(),
         savedRecord.getEndTime());
 
     transactionHistoryPort.save(transaction);

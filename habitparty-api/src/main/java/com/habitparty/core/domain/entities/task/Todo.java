@@ -275,6 +275,10 @@ public class Todo extends Task {
     return this.completedAt != null;
   }
 
+  public void clearCompletion() {
+    this.completedAt = null;
+  }
+
   public void markPenaltyApplied() {
     this.isPenaltyApplied = true;
   }

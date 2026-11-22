@@ -30,6 +30,7 @@ interface FocusRecentRecordItemProps {
   record: FocusRecord;
   onRowClick: (e: React.MouseEvent, record: FocusRecord) => void;
   onContextMenu: (e: React.MouseEvent, record: FocusRecord) => void;
+  onRequestEdit?: (record: FocusRecord) => void;
   onRequestDelete?: (record: FocusRecord) => void;
 }
 
@@ -37,6 +38,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   record: rec,
   onRowClick,
   onContextMenu,
+  onRequestEdit,
   onRequestDelete,
 }: FocusRecentRecordItemProps) {
   const t = useTranslations("focus.records");
@@ -131,20 +133,39 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
           ) : null}
         </div>
 
-        {/* Botão de Excluir Registro direto */}
-        {onRequestDelete && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRequestDelete(rec);
-            }}
-            className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
-            title={t("deleteRecordAria")}
-            aria-label={t("deleteRecordAria")}
-          >
-            <Trash2 size={13} />
-          </button>
+        {/* Ações diretas: Editar (lápis) e Excluir (lixeira) */}
+        {(onRequestEdit || onRequestDelete) && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            {onRequestEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRequestEdit(rec);
+                }}
+                className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-amber-500/15 dark:hover:bg-gold/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
+                title={t("editRecordAria")}
+                aria-label={t("editRecordAria")}
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+
+            {onRequestDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRequestDelete(rec);
+                }}
+                className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
+                title={t("deleteRecordAria")}
+                aria-label={t("deleteRecordAria")}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
         )}
       </div>
     </article>
@@ -159,6 +180,7 @@ interface FocusRecentRecordsProps {
   onShowMore?: () => void;
   onAddRecord?: () => void;
   onOptionsClick?: () => void;
+  onEditRecord?: (record: FocusRecord) => void;
   /** Exclui o registro; `deleteHistory` remove também o registro correspondente no Histórico. */
   onDeleteRecord?: (
     recordId: string,
@@ -175,6 +197,7 @@ export function FocusRecentRecords({
   onShowMore,
   onAddRecord,
   onOptionsClick,
+  onEditRecord,
   onDeleteRecord,
   onRecordUpdated,
 }: FocusRecentRecordsProps) {
@@ -312,6 +335,7 @@ export function FocusRecentRecords({
                 record={rec}
                 onRowClick={handleRowClick}
                 onContextMenu={handleContextMenu}
+                onRequestEdit={onEditRecord}
                 onRequestDelete={
                   onDeleteRecord ? handleRequestDelete : undefined
                 }
@@ -341,7 +365,7 @@ export function FocusRecentRecords({
         )}
       </div>
 
-      {/* Popover Ancorado de Edição do Registro */}
+      {/* Popover Ancorado de Detalhes / Anotações do Registro */}
       <FocusRecordDetailsPopover
         isOpen={selectedRecordForEdit !== null}
         onClose={() => {
@@ -350,6 +374,7 @@ export function FocusRecentRecords({
         }}
         record={selectedRecordForEdit}
         anchorRect={editAnchorRect}
+        onRequestEdit={onEditRecord}
         onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
         onRecordUpdated={onRecordUpdated}
       />
@@ -403,9 +428,22 @@ export function FocusRecentRecords({
         position={contextMenu.position}
         onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
         items={[
+          ...(onEditRecord
+            ? [
+                {
+                  label: t("contextEditRecord"),
+                  icon: <Pencil size={14} />,
+                  onClick: () => {
+                    if (contextMenu.record) {
+                      onEditRecord(contextMenu.record);
+                    }
+                  },
+                },
+              ]
+            : []),
           {
             label: t("contextEditNotes"),
-            icon: <Pencil size={14} />,
+            icon: <MessageSquare size={14} />,
             onClick: () => {
               if (contextMenu.record) {
                 setEditAnchorRect(contextMenu.anchorRect);

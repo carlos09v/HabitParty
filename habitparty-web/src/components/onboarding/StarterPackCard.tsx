@@ -218,7 +218,7 @@ export function StarterPackCard({
             checked={selections.createTasks}
             onToggle={() => onToggleSelection("createTasks")}
             icon={CheckSquare}
-            iconClassName="text-emerald-600 dark:text-emerald-400"
+            iconClassName="text-emerald-800 dark:text-emerald-400"
             title={t("toggles.tasksTitle", { count: plan.tasks.length })}
           >
             <ul className="flex flex-col gap-1 pl-6 text-[11px] text-neutral-300">
@@ -267,7 +267,7 @@ export function StarterPackCard({
               checked={selections.createFocusActivity}
               onToggle={() => onToggleSelection("createFocusActivity")}
               icon={Timer}
-              iconClassName="text-sky-600 dark:text-sky-400"
+              iconClassName="text-sky-700 dark:text-sky-400"
               title={t("toggles.focusTitle")}
             >
               <div className="flex items-center gap-2 pl-6 text-[11px] text-neutral-300">

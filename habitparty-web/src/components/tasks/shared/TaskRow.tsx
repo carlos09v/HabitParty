@@ -87,7 +87,7 @@ function TaskRowScheduleLabel({
             ? "text-danger-400 dark:text-danger-300 font-semibold"
             : "text-danger-400 dark:text-danger-300 font-medium"
           : isActiveInProgress
-            ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+            ? "text-emerald-800 dark:text-emerald-400 font-semibold"
             : isToday
               ? "text-gold font-semibold"
               : hasDueDate
@@ -104,7 +104,7 @@ function TaskRowScheduleLabel({
         isTodoEvent && (
           <CalendarClock
             size={variant === "mobile" ? 11 : 12}
-            className="shrink-0 text-sky-600 dark:text-info"
+            className="shrink-0 text-sky-700 dark:text-info"
           />
         )
       )}

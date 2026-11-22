@@ -261,7 +261,7 @@ export function AchievementsGallery({
               variant="filter"
               className="w-full"
               icon={
-                <Sparkles size={14} className="text-amber-600 dark:text-gold" />
+                <Sparkles size={14} className="text-amber-800 dark:text-gold" />
               }
               options={rarityOptions}
               value={rarityFilter}

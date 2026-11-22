@@ -168,7 +168,7 @@ export function FilterBar({
               <div className="flex items-center gap-2">
                 <SlidersHorizontal
                   size={18}
-                  className="text-amber-600 dark:text-gold"
+                  className="text-amber-800 dark:text-gold"
                   aria-hidden="true"
                 />
                 <h3 className="font-bold text-neutral-50 text-base">

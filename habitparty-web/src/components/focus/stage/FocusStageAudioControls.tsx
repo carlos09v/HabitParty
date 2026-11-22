@@ -210,7 +210,7 @@ export function FocusStageAudioControls({
           {!isPremium && (
             <Crown
               size={11}
-              className="text-amber-600 dark:text-gold fill-amber-500/30 dark:fill-gold shrink-0 ml-0.5"
+              className="text-amber-800 dark:text-gold fill-amber-500/30 dark:fill-gold shrink-0 ml-0.5"
             />
           )}
         </button>
@@ -298,7 +298,7 @@ export function FocusStageAudioControls({
                       {isLocked ? (
                         <Lock
                           size={13}
-                          className="text-amber-600 dark:text-gold shrink-0 ml-2"
+                          className="text-amber-800 dark:text-gold shrink-0 ml-2"
                         />
                       ) : isSelected ? (
                         <div className="w-2 h-2 rounded-full bg-amber-600 dark:bg-gold shrink-0 ml-2" />
@@ -315,11 +315,11 @@ export function FocusStageAudioControls({
                     <span className="flex items-center gap-1">
                       <Sliders
                         size={12}
-                        className="text-amber-600 dark:text-gold"
+                        className="text-amber-800 dark:text-gold"
                       />
                       {t("ambientVolumeLabel")}
                     </span>
-                    <span className="font-mono font-bold text-amber-700 dark:text-gold">
+                    <span className="font-mono font-bold text-amber-800 dark:text-gold">
                       {Math.round(ambientVolume * 100)}%
                     </span>
                   </div>

@@ -358,7 +358,7 @@ export function SwitchFocusTargetModal({
             disabled={isSaving}
             className="w-full text-left p-3.5 rounded-xl border border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/15 hover:border-rose-500/45 transition-colors flex items-start gap-3 group cursor-pointer disabled:opacity-50"
           >
-            <div className="w-9 h-9 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-rose-500/15 text-rose-700 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
               <RotateCcw size={18} />
             </div>
             <div className="flex-1 min-w-0">

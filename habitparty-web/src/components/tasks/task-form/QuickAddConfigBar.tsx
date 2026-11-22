@@ -114,7 +114,7 @@ export function QuickAddConfigBar({
           <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny flex items-center gap-1 shrink-0">
             <CalendarClock
               size={11}
-              className="text-amber-600 dark:text-gold"
+              className="text-amber-800 dark:text-gold"
             />
             {t("dueLabel")}
           </span>
@@ -202,7 +202,7 @@ export function QuickAddConfigBar({
               className={cn(
                 "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "NEGATIVE"
-                  ? "bg-rose-500/15 text-rose-700 border border-rose-500/35 dark:bg-danger-500/20 dark:text-danger-500 dark:border-danger-500/40"
+                  ? "bg-rose-500/15 text-rose-700 border border-rose-500/35 dark:bg-danger-500/20 dark:text-danger-400 dark:border-danger-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
               )}
               title={t("negativeTitle")}

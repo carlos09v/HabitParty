@@ -4,11 +4,11 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { Crown, Pencil, Plus, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
 import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-import { ContextMenu } from "@/components/ui/ContextMenu";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
@@ -39,7 +39,6 @@ import {
   formatRewardVariantBadge,
   groupRewardsForShowcase,
   isDebtReward,
-  sortRewardsWithDebtsFirst,
 } from "@/utils/rewardGrouping";
 import {
   toCategoryMessageKey,
@@ -116,11 +115,6 @@ function RewardsContainerContent({
     setOnlyAffordable(false);
   }, [handleClearFilters]);
 
-  const orderedInitialRewards = useMemo(
-    () => sortRewardsWithDebtsFirst(initialRewards),
-    [initialRewards],
-  );
-
   const resolveGroupedRewardOrder = useCallback(
     (activeId: string, overId: string) => {
       const currentEntries = displayedEntriesRef.current;
@@ -151,7 +145,7 @@ function RewardsContainerContent({
     sensors,
     handleDragEnd,
   } = useReorderableList<Reward>({
-    initialItems: orderedInitialRewards,
+    initialItems: initialRewards,
     onReorderServerAction: reorderRewards,
     isFiltering: isFiltering || onlyAffordable,
     onlyChangedOrderIndex: true,
@@ -256,21 +250,18 @@ function RewardsContainerContent({
     [rewards],
   );
   // Dívidas descartáveis possuem cota implícita independente e não consomem o limite regular de cards
-  const activeDebtsCount = useMemo(
-    () =>
-      rewards.filter(
-        (reward) => toCategoryMessageKey(reward.category) === "DEBT",
-      ).length,
-    [rewards],
-  );
-  const totalShowcaseCards = useMemo(
-    () =>
-      allGroupedEntries.filter(
-        (entry) =>
-          toCategoryMessageKey(entry.primaryReward.category) !== "DEBT",
-      ).length,
-    [allGroupedEntries],
-  );
+  const { activeDebtsCount, totalShowcaseCards } = useMemo(() => {
+    let debts = 0;
+    let regular = 0;
+    for (const entry of allGroupedEntries) {
+      if (isDebtReward(entry.primaryReward)) {
+        debts += 1;
+      } else {
+        regular += 1;
+      }
+    }
+    return { activeDebtsCount: debts, totalShowcaseCards: regular };
+  }, [allGroupedEntries]);
   const maxRewardCards = isPremium
     ? PREMIUM_MAX_REWARD_CARDS
     : FREE_MAX_REWARD_CARDS;
@@ -334,7 +325,7 @@ function RewardsContainerContent({
       );
     }
 
-    return sortRewardsWithDebtsFirst(result);
+    return result;
   }, [rewards, isFiltering, filters, coinFilterLimit, locale]);
 
   const displayedEntries = useMemo(
@@ -344,7 +335,10 @@ function RewardsContainerContent({
         : allGroupedEntries,
     [isFiltering, onlyAffordable, filteredRewards, allGroupedEntries],
   );
-  displayedEntriesRef.current = displayedEntries;
+
+  useEffect(() => {
+    displayedEntriesRef.current = displayedEntries;
+  }, [displayedEntries]);
 
   const welcomeStats = useMemo(() => {
     const { stats } = calculateRewardWelcomeStats(
@@ -390,6 +384,79 @@ function RewardsContainerContent({
       (!contextGroup ||
         contextGroup.variants.length < MAX_REWARD_PACKAGES_PER_CARD),
   );
+
+  const contextMenuItems = useMemo<ContextMenuItem[]>(() => {
+    if (isContextGrouped && contextMenu.reward && contextGroup) {
+      return [
+        {
+          label: t("contextMenu.editGroup"),
+          icon: <Pencil size={14} />,
+          onClick: handleEditFromContextMenu,
+        },
+        ...(canAddPackageToContext
+          ? [
+              {
+                label: t("contextMenu.addPackage"),
+                icon: <Plus size={14} />,
+                onClick: handleAddPackageFromContextMenu,
+              },
+            ]
+          : []),
+        {
+          label: t("contextMenu.deleteSinglePackage", {
+            variant: formatRewardVariantBadge(contextMenu.reward, (pkgKey) =>
+              tOptions(`packages.${pkgKey}`),
+            ),
+          }),
+          icon: <Trash2 size={14} />,
+          variant: "warning",
+          onClick: handleDeleteFromContextMenu,
+        },
+        {
+          label: t("contextMenu.deleteWholeGroup", {
+            count: contextGroup.variants.length,
+          }),
+          icon: <Trash2 size={14} />,
+          variant: "destructive",
+          onClick: handleDeleteGroupFromContextMenu,
+        },
+      ];
+    }
+
+    return [
+      ...(canAddPackageToContext
+        ? [
+            {
+              label: t("contextMenu.addPackage"),
+              icon: <Plus size={14} />,
+              onClick: handleAddPackageFromContextMenu,
+            },
+          ]
+        : []),
+      {
+        label: t("contextMenu.edit"),
+        icon: <Pencil size={14} />,
+        onClick: handleEditFromContextMenu,
+      },
+      {
+        label: t("contextMenu.delete"),
+        icon: <Trash2 size={14} />,
+        variant: "destructive",
+        onClick: handleDeleteFromContextMenu,
+      },
+    ];
+  }, [
+    isContextGrouped,
+    contextMenu.reward,
+    contextGroup,
+    canAddPackageToContext,
+    t,
+    tOptions,
+    handleEditFromContextMenu,
+    handleAddPackageFromContextMenu,
+    handleDeleteFromContextMenu,
+    handleDeleteGroupFromContextMenu,
+  ]);
 
   return (
     <>
@@ -553,63 +620,7 @@ function RewardsContainerContent({
         isOpen={contextMenu.isOpen}
         position={contextMenu.position}
         onClose={closeContextMenu}
-        items={
-          isContextGrouped && contextMenu.reward && contextGroup
-            ? [
-                {
-                  label: t("contextMenu.editGroup"),
-                  icon: <Pencil size={14} />,
-                  onClick: handleEditFromContextMenu,
-                },
-                ...(canAddPackageToContext
-                  ? [
-                      {
-                        label: t("contextMenu.addPackage"),
-                        icon: <Plus size={14} />,
-                        onClick: handleAddPackageFromContextMenu,
-                      },
-                    ]
-                  : []),
-                {
-                  label: t("contextMenu.deleteSinglePackage", {
-                    variant: formatRewardVariantBadge(contextMenu.reward),
-                  }),
-                  icon: <Trash2 size={14} />,
-                  variant: "warning",
-                  onClick: handleDeleteFromContextMenu,
-                },
-                {
-                  label: t("contextMenu.deleteWholeGroup", {
-                    count: contextGroup.variants.length,
-                  }),
-                  icon: <Trash2 size={14} />,
-                  variant: "destructive",
-                  onClick: handleDeleteGroupFromContextMenu,
-                },
-              ]
-            : [
-                ...(canAddPackageToContext
-                  ? [
-                      {
-                        label: t("contextMenu.addPackage"),
-                        icon: <Plus size={14} />,
-                        onClick: handleAddPackageFromContextMenu,
-                      },
-                    ]
-                  : []),
-                {
-                  label: t("contextMenu.edit"),
-                  icon: <Pencil size={14} />,
-                  onClick: handleEditFromContextMenu,
-                },
-                {
-                  label: t("contextMenu.delete"),
-                  icon: <Trash2 size={14} />,
-                  variant: "destructive",
-                  onClick: handleDeleteFromContextMenu,
-                },
-              ]
-        }
+        items={contextMenuItems}
       />
 
       {/* Modal de Formulário (Criação / Edição / Edição em Grupo com Lazy Loading) */}

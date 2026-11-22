@@ -48,13 +48,13 @@ export function calculateProductiveMinutesForDate(
 
 /**
  * Soma estritamente os minutos elegíveis à recompensa (>= 10 min, teto de 90 min por sessão)
- * agrupados por startTime no fuso do usuário, espelhando a query do backend para o cap diário.
+ * agrupados por endTime no fuso do usuário, espelhando a query do backend para o cap diário.
  */
 export function calculateRewardableMinutesForDate(
   records: FocusRecord[],
   dateKey: string,
   timeZone?: string | null,
-  dateField: "endTime" | "startTime" = "startTime",
+  dateField: "endTime" | "startTime" = "endTime",
 ): number {
   return sumDateFocusMinutes(
     records,

@@ -22,6 +22,7 @@ export type { FocusRecordsPageResult };
 export interface FocusPageData {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  allInventoryItems: InventoryItemResponseDTO[];
   initialRecords: FocusRecord[];
   totalRecordsCount: number;
   hasMoreRecords: boolean;
@@ -222,6 +223,7 @@ export async function getFocusPageData(): Promise<FocusPageData> {
   return {
     activities,
     backpackItems,
+    allInventoryItems,
     initialRecords,
     totalRecordsCount: lastFetchedPage
       ? lastFetchedPage.totalElements

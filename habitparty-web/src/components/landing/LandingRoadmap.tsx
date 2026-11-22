@@ -119,7 +119,7 @@ export function LandingRoadmap() {
                         )}
                       >
                         {isCompleted && (
-                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-3" />
+                          <Check className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400 stroke-3" />
                         )}
                         <span>{t(`items.${item.id}.releaseLabel`)}</span>
                       </span>
@@ -135,7 +135,7 @@ export function LandingRoadmap() {
                       )}
                     >
                       {isCompleted && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400 shrink-0" />
                       )}
                       <span>{t(`items.${item.id}.statusLabel`)}</span>
                     </span>
@@ -219,7 +219,7 @@ export function LandingRoadmap() {
                                 className={cn(
                                   "w-3.5 h-3.5 shrink-0 mt-0.5",
                                   isCompleted
-                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    ? "text-emerald-800 dark:text-emerald-400"
                                     : "text-info",
                                 )}
                               />
@@ -239,14 +239,14 @@ export function LandingRoadmap() {
                   <span className="flex items-center gap-1.5 font-medium">
                     {isCompleted ? (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400 shrink-0" />
+                        <span className="text-emerald-800 dark:text-emerald-400 font-semibold">
                           {t("cardFooterCompleted")}
                         </span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-gold/80 shrink-0" />
+                        <Sparkles className="w-3.5 h-3.5 text-amber-800 dark:text-gold/80 shrink-0" />
                         <span>{t("cardFooter")}</span>
                       </>
                     )}
@@ -255,7 +255,7 @@ export function LandingRoadmap() {
                     className={cn(
                       "uppercase font-semibold tracking-wider text-[10px]",
                       isCompleted
-                        ? "text-emerald-700 dark:text-emerald-400/90 font-bold"
+                        ? "text-emerald-800 dark:text-emerald-400/90 font-bold"
                         : "text-neutral-400",
                     )}
                   >
@@ -279,7 +279,7 @@ export function LandingRoadmap() {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
             >
-              <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-gold shrink-0" />
+              <Bug className="w-3.5 h-3.5 text-amber-800 dark:text-gold shrink-0" />
               <span>{t("reportBugCta")}</span>
             </a>
             <a

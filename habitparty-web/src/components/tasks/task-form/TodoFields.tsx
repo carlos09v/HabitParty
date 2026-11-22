@@ -113,7 +113,7 @@ export function TodoFields({ form }: TodoFieldsProps) {
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/60 border border-primary/25">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 shrink-0">
+              <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-800 dark:text-amber-400 shrink-0">
                 <Mail size={16} />
               </div>
               <div className="flex flex-col">

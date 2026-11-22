@@ -270,7 +270,7 @@ export function TaskFilters({
                       "ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none tabular-nums",
                       isSelected
                         ? "bg-on-gold/20 text-on-gold"
-                        : "bg-danger-500/15 text-danger-600 dark:bg-danger-500/25 dark:text-danger-300",
+                        : "bg-danger-500/15 text-danger-500 dark:bg-danger-500/25 dark:text-danger-300",
                     )}
                   >
                     {overdueCount}
@@ -396,7 +396,7 @@ export function TaskFilters({
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg font-bold border transition-[color,background-color,border-color,box-shadow,transform] whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-gold px-3 py-1.5 text-xs",
                   canCreateTask
-                    ? "bg-gold hover:bg-gold-light text-on-gold border-gold cursor-pointer shadow-xs hover:shadow-glow-gold-xs active:scale-95"
+                    ? "bg-gold hover:bg-gold-hover text-on-gold border-gold cursor-pointer shadow-xs hover:shadow-glow-gold-xs active:scale-95"
                     : "bg-surface/60 border-neutral-700 text-neutral-400 cursor-not-allowed opacity-70",
                 )}
               >

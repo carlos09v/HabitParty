@@ -6,7 +6,8 @@
    ========================================================================== */
 
 :root,
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html.light .zen-dimmed-dark {
   color-scheme: dark;
   accent-color: var(--color-primary);
 
@@ -20,6 +21,13 @@ html[data-theme="dark"] {
   --theme-shadow-card-active: 0 12px 24px rgba(0, 0, 0, 0.45);
   --theme-shadow-popover-dark: 0 12px 28px rgba(0, 0, 0, 0.6);
 
+  /* Scrollbar (.custom-scrollbar) */
+  --scrollbar-thumb: rgba(123, 115, 141, 0.3);
+  --scrollbar-thumb-hover: rgba(237, 229, 57, 0.5);
+}
+
+:root,
+html[data-theme="dark"] {
   /* Ambient Mesh Orbs (.cosmic-ambient-*) */
   --ambient-glow-1: rgba(237, 43, 229, 0.08);
   --ambient-glow-2: rgba(64, 57, 237, 0.1);
@@ -41,10 +49,6 @@ html[data-theme="dark"] {
   --switcher-border-end: rgba(124, 58, 237, 0.25);
   --switcher-border-hover-start: rgba(168, 99, 255, 0.85);
   --switcher-border-hover-end: rgba(124, 58, 237, 0.45);
-
-  /* Scrollbar (.custom-scrollbar) */
-  --scrollbar-thumb: rgba(123, 115, 141, 0.3);
-  --scrollbar-thumb-hover: rgba(237, 229, 57, 0.5);
 }
 
 /* ==========================================================================
@@ -65,7 +69,7 @@ html.light {
   /* Tríade de Marca */
   --color-primary-dark: rgb(91 33 182);
   --color-primary: rgb(109 40 217);
-  --color-primary-light: rgb(124 58 237);
+  --color-primary-light: rgb(116 46 226);
 
   /* Gamificação */
   --color-gold: rgb(245 184 21);
@@ -73,7 +77,7 @@ html.light {
   --color-gold-pressed: rgb(200 138 4);
   --color-gold-ink: rgb(158 72 7);
   --color-on-gold: rgb(30 30 42);
-  --color-magenta: rgb(162 28 175);
+  --color-magenta: rgb(147 36 214);
   --color-blue: rgb(67 56 202);
 
   /* Funcionais WCAG AA (>= 4.6:1 inclusive em surface) */
@@ -83,20 +87,20 @@ html.light {
   --color-success-400: rgb(20 122 56);
   --color-success-500: rgb(22 163 74);
   --color-success-hover: rgb(21 128 61);
-  --color-warning-400: rgb(194 65 12);
+  --color-warning-400: rgb(176 56 8);
   --color-warning-500: rgb(234 88 12);
-  --color-warning-hover: rgb(194 65 12);
-  --color-danger-300: rgb(185 28 28);
-  --color-danger-400: rgb(200 30 30);
-  --color-danger-500: rgb(220 38 38);
-  --color-danger-hover: rgb(185 28 28);
+  --color-warning-hover: rgb(160 48 6);
+  --color-danger-300: rgb(175 24 24);
+  --color-danger-400: rgb(185 28 28);
+  --color-danger-500: rgb(196 30 30);
+  --color-danger-hover: rgb(165 24 24);
 
   /* Escala Neutra Invertida */
   --color-neutral-50: rgb(30 30 42);
   --color-neutral-100: rgb(42 42 56);
   --color-neutral-200: rgb(59 59 77);
   --color-neutral-300: rgb(78 78 99);
-  --color-neutral-400: rgb(100 100 122);
+  --color-neutral-400: rgb(88 88 110);
   --color-neutral-500: rgb(133 133 155);
   --color-neutral-600: rgb(198 198 214);
   --color-neutral-700: rgb(220 220 232);
@@ -110,7 +114,7 @@ html.light {
     0 2px 6px -1px rgba(180, 120, 0, 0.12), 0 1px 2px rgba(15, 15, 30, 0.04);
   --theme-shadow-glow-gold-sm: 0 1px 3px rgba(15, 15, 30, 0.05);
   --theme-shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.04);
-  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.12);
+  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(147, 36, 214, 0.12);
   --theme-shadow-card-deep:
     0 2px 8px -2px rgba(15, 15, 30, 0.06), 0 1px 2px -1px rgba(15, 15, 30, 0.04);
   --theme-shadow-card-active:
@@ -232,14 +236,14 @@ html[data-theme="solar-parchment"] {
 
   --color-primary-dark: rgb(17 94 89);
   --color-primary: rgb(13 107 99);
-  --color-primary-light: rgb(13 148 136);
+  --color-primary-light: rgb(14 112 104);
 
   --color-gold: rgb(245 184 21);
   --color-gold-hover: rgb(224 163 11);
   --color-gold-pressed: rgb(200 138 4);
   --color-gold-ink: rgb(146 64 14);
   --color-on-gold: rgb(30 25 18);
-  --color-magenta: rgb(157 23 77);
+  --color-magenta: rgb(126 34 206);
   --color-blue: rgb(29 78 216);
 
   /* Funcionais calibrados para pergaminho quente (>= 4.5:1 em surface) */
@@ -249,6 +253,13 @@ html[data-theme="solar-parchment"] {
   --color-success-400: rgb(20 108 52);
   --color-success-500: rgb(21 128 61);
   --color-success-hover: rgb(22 101 52);
+  --color-warning-400: rgb(154 52 18);
+  --color-warning-500: rgb(194 65 12);
+  --color-warning-hover: rgb(154 52 18);
+  --color-danger-300: rgb(153 27 27);
+  --color-danger-400: rgb(175 24 24);
+  --color-danger-500: rgb(175 24 24);
+  --color-danger-hover: rgb(153 27 27);
 
   /* Escala neutra quente (sépia/nogueira, >= 4.9:1 até neutral-400 em surface) */
   --color-neutral-50: rgb(36 30 24);
@@ -268,7 +279,7 @@ html[data-theme="solar-parchment"] {
     0 2px 6px -1px rgba(146, 64, 14, 0.11), 0 1px 2px rgba(36, 30, 24, 0.05);
   --theme-shadow-glow-gold-sm: 0 1px 3px rgba(36, 30, 24, 0.06);
   --theme-shadow-glow-gold-xs: 0 1px 2px rgba(36, 30, 24, 0.05);
-  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(157, 23, 77, 0.12);
+  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(126, 34, 206, 0.12);
   --theme-shadow-card-deep:
     0 2px 8px -2px rgba(36, 30, 24, 0.07), 0 1px 2px -1px rgba(36, 30, 24, 0.05);
   --theme-shadow-card-active:
@@ -447,16 +458,16 @@ html[data-theme="royal-gold"] {
   --color-card-hover: rgb(252 249 240);
   --color-popover: rgb(255 254 250);
 
-  --color-primary-dark: rgb(107 63 0);
-  --color-primary: rgb(138 84 0);
-  --color-primary-light: rgb(180 118 8);
+  --color-primary-dark: rgb(92 48 0);
+  --color-primary: rgb(114 62 0);
+  --color-primary-light: rgb(142 82 2);
 
   --color-gold: rgb(234 179 8);
   --color-gold-hover: rgb(212 156 4);
   --color-gold-pressed: rgb(186 132 0);
-  --color-gold-ink: rgb(138 84 0);
+  --color-gold-ink: rgb(156 66 10);
   --color-on-gold: rgb(28 20 8);
-  --color-magenta: rgb(136 19 55);
+  --color-magenta: rgb(126 34 206);
   --color-blue: rgb(30 64 175);
 
   /* Funcionais calibrados para marfim dourado (>= 4.6:1 em surface) */
@@ -466,6 +477,13 @@ html[data-theme="royal-gold"] {
   --color-success-400: rgb(20 108 52);
   --color-success-500: rgb(21 128 61);
   --color-success-hover: rgb(22 101 52);
+  --color-warning-400: rgb(154 52 18);
+  --color-warning-500: rgb(194 65 12);
+  --color-warning-hover: rgb(154 52 18);
+  --color-danger-300: rgb(153 27 27);
+  --color-danger-400: rgb(175 24 24);
+  --color-danger-500: rgb(175 24 24);
+  --color-danger-hover: rgb(153 27 27);
 
   /* Escala neutra bronze/espresso (>= 5.8:1 até neutral-400 em surface) */
   --color-neutral-50: rgb(34 25 14);
@@ -485,7 +503,7 @@ html[data-theme="royal-gold"] {
     0 2px 8px -1px rgba(138, 84, 0, 0.16), 0 1px 2px rgba(34, 25, 14, 0.05);
   --theme-shadow-glow-gold-sm: 0 1px 3px rgba(138, 84, 0, 0.09);
   --theme-shadow-glow-gold-xs: 0 1px 2px rgba(138, 84, 0, 0.08);
-  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(136, 19, 55, 0.14);
+  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(126, 34, 206, 0.14);
   --theme-shadow-card-deep:
     0 2px 10px -2px rgba(107, 63, 0, 0.1), 0 1px 2px -1px rgba(34, 25, 14, 0.05);
   --theme-shadow-card-active:

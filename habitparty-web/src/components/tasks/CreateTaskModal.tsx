@@ -118,10 +118,10 @@ export function CreateTaskModal({
   const typeMeta = TASK_TYPE_META[form.taskType] || TASK_TYPE_META.TODO;
   const headerIconClassName =
     form.taskType === "HABIT"
-      ? "bg-sky-500/10 border-sky-500/30 text-sky-600 shadow-none dark:bg-info/15 dark:border-info/30 dark:text-info"
+      ? "bg-sky-500/10 border-sky-500/30 text-sky-700 shadow-none dark:bg-info/15 dark:border-info/30 dark:text-info"
       : form.taskType === "DAILY"
-        ? "bg-magenta/10 border-magenta/35 text-magenta shadow-none dark:bg-magenta/15 dark:border-magenta/30 dark:text-magenta"
-        : "bg-amber-500/10 border-amber-500/30 text-amber-600 shadow-none dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:shadow-glow-gold-xs";
+        ? "bg-magenta/10 border-magenta/35 text-magenta shadow-none dark:bg-magenta/15 dark:border-magenta/30 dark:text-fuchsia-300"
+        : "bg-amber-500/10 border-amber-500/30 text-amber-800 shadow-none dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:shadow-glow-gold-xs";
 
   return (
     <BaseModal

@@ -73,7 +73,7 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
   {
     key: "inventory",
     icon: Backpack,
-    color: "text-magenta bg-magenta/15 border-magenta/30",
+    color: "text-magenta dark:text-fuchsia-300 bg-magenta/15 border-magenta/30",
   },
   {
     key: "focus",

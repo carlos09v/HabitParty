@@ -31,8 +31,8 @@ export function TaskWorkspaceBadge({
       className={cn(
         "inline-flex items-center gap-1 font-medium border truncate",
         isReadOnly
-          ? "bg-amber-500/10 border-amber-500/35 text-amber-800 dark:bg-gold/15 dark:border-gold/40 dark:text-gold"
-          : "bg-primary/10 dark:bg-primary/25 border-primary/25 dark:border-primary-light/35 text-primary dark:text-primary-light",
+          ? "bg-amber-500/10 border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:border-gold/45 dark:text-gold"
+          : "bg-primary/10 dark:bg-primary-dark/55 border-primary/30 dark:border-primary-light/45 text-primary dark:text-primary-light",
         isHeader
           ? "px-2 py-0.5 rounded-md text-tiny font-semibold max-w-[115px]"
           : isMini

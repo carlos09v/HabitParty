@@ -45,6 +45,51 @@ function applyStreakCompletionIfReady(
   };
 }
 
+function applyFocusMinutesDelta(
+  state: UserState,
+  deltaMinutes: number,
+  todayIso: string,
+): Partial<UserState> {
+  const delta = Math.round(deltaMinutes || 0);
+  const sameDay = state.todayMetricsDate === todayIso;
+  const currentTask = sameDay ? state.todayTaskCompleted : false;
+  const currentMinutes = sameDay ? state.todayFocusMinutes : 0;
+  const nextMinutes = Math.max(0, currentMinutes + delta);
+
+  if (delta >= 0) {
+    return applyStreakCompletionIfReady(
+      state,
+      todayIso,
+      currentTask,
+      nextMinutes,
+    );
+  }
+
+  const lostFocusStreak =
+    !currentTask &&
+    nextMinutes < MIN_STREAK_FOCUS_MINUTES &&
+    state.lastStreakSecuredDate === todayIso;
+  const nextStreak =
+    lostFocusStreak && state.user
+      ? Math.max(0, (state.user.currentStreak ?? 0) - 1)
+      : state.user?.currentStreak;
+
+  return {
+    todayMetricsDate: todayIso,
+    todayTaskCompleted: currentTask,
+    todayFocusMinutes: nextMinutes,
+    lastStreakSecuredDate: lostFocusStreak ? null : state.lastStreakSecuredDate,
+    ...(lostFocusStreak && state.user
+      ? {
+          user: {
+            ...state.user,
+            currentStreak: nextStreak,
+          },
+        }
+      : {}),
+  };
+}
+
 export interface UserState {
   user: UserResponseDTO | null;
   is_Premium: boolean;
@@ -63,7 +108,12 @@ export interface UserState {
     focusMinutes: number,
   ) => void;
   recordTaskCompletedToday: (todayIso: string) => void;
+  revertTaskCompletionToday: (
+    todayIso: string,
+    streakReverted: boolean,
+  ) => void;
   recordFocusMinutesToday: (durationMinutes: number, todayIso: string) => void;
+  adjustFocusMinutesToday: (deltaMinutes: number, todayIso: string) => void;
   setIsPremium: (isPremium: boolean) => void;
   togglePremium: () => void;
   triggerAchievementCheck: () => void;
@@ -137,20 +187,42 @@ export const useUserStore = create<UserState>((set) => ({
         currentMinutes,
       );
     }),
-  recordFocusMinutesToday: (durationMinutes, todayIso) =>
+  revertTaskCompletionToday: (todayIso, streakReverted) =>
     set((state) => {
-      const addedMinutes = Math.max(0, Math.round(durationMinutes || 0));
       const sameDay = state.todayMetricsDate === todayIso;
-      const currentTask = sameDay ? state.todayTaskCompleted : false;
-      const nextMinutes =
-        (sameDay ? state.todayFocusMinutes : 0) + addedMinutes;
-      return applyStreakCompletionIfReady(
-        state,
-        todayIso,
-        currentTask,
-        nextMinutes,
-      );
+      const shouldDecrementStreak = Boolean(streakReverted && state.user);
+      const nextStreak = shouldDecrementStreak
+        ? Math.max(0, (state.user?.currentStreak ?? 0) - 1)
+        : state.user?.currentStreak;
+      return {
+        todayMetricsDate: todayIso,
+        todayTaskCompleted: streakReverted
+          ? false
+          : sameDay
+            ? state.todayTaskCompleted
+            : false,
+        lastStreakSecuredDate: streakReverted
+          ? null
+          : state.lastStreakSecuredDate,
+        user:
+          shouldDecrementStreak && state.user
+            ? {
+                ...state.user,
+                currentStreak: nextStreak,
+              }
+            : state.user,
+      };
     }),
+  recordFocusMinutesToday: (durationMinutes, todayIso) =>
+    set((state) =>
+      applyFocusMinutesDelta(
+        state,
+        Math.max(0, Math.round(durationMinutes || 0)),
+        todayIso,
+      ),
+    ),
+  adjustFocusMinutesToday: (deltaMinutes, todayIso) =>
+    set((state) => applyFocusMinutesDelta(state, deltaMinutes, todayIso)),
   setIsPremium: (is_Premium) => set({ is_Premium }),
   togglePremium: () => set((state) => ({ is_Premium: !state.is_Premium })),
   triggerAchievementCheck: () =>

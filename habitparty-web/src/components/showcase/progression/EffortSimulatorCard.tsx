@@ -76,7 +76,7 @@ const EFFORT_TILES: readonly EffortTileConfig[] = [
     key: "normalHabits",
     labelKey: "normalHabits",
     icon: Flame,
-    iconClassName: "text-emerald-500 shrink-0",
+    iconClassName: "text-emerald-700 dark:text-emerald-400 shrink-0",
     xpPerAction: HABIT_IMPORTANCE_REWARDS.NORMAL.xp,
   },
   {
@@ -125,7 +125,7 @@ export function EffortSimulatorCard({
         <div className="flex items-center gap-2 min-w-0">
           <ShieldCheck
             size={16}
-            className="text-sky-600 dark:text-sky-300 shrink-0"
+            className="text-sky-700 dark:text-sky-300 shrink-0"
             aria-hidden="true"
           />
           <h3 className="text-sm font-black text-neutral-100 truncate">

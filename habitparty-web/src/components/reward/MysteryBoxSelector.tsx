@@ -126,10 +126,10 @@ function MysteryBoxTierCard({
               tier.id === "Lendário"
                 ? "bg-gold"
                 : tier.id === "Épico"
-                  ? "bg-magenta text-white"
+                  ? "bg-magenta text-white dark:text-neutral-950"
                   : tier.id === "Premium"
-                    ? "bg-info text-neutral-950"
-                    : "bg-success-500 text-neutral-950",
+                    ? "bg-info text-white dark:text-neutral-950"
+                    : "bg-success-400 text-white dark:bg-success-500 dark:text-neutral-950",
             )}
           >
             <Check size={11} strokeWidth={3.5} />

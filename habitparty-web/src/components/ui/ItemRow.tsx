@@ -1,22 +1,23 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  GripVertical,
-  HelpCircle,
-  Loader2,
-  MoreVertical,
-  Pin,
-  Receipt,
-} from "lucide-react";
+import { GripVertical, Loader2, Receipt } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { memo, type default as React, useCallback } from "react";
+import { memo, type default as React } from "react";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
   CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
+import {
+  CatalogPinnedBadge,
+  CatalogUtilityActions,
+} from "@/components/ui/CatalogItemShared";
+import {
+  type CatalogSortableBindings,
+  IDLE_SORTABLE_BINDINGS,
+  useCatalogItemInteraction,
+} from "@/hooks/useCatalogItemInteraction";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import {
   type MysteryPopoverBridge,
@@ -28,11 +29,7 @@ import type {
   MysteryBoxLootItem,
   MysteryBoxTier,
 } from "@/types/reward";
-import {
-  cn,
-  openContextMenuFromButton,
-  STOP_DRAG_PROPAGATION_PROPS,
-} from "@/utils";
+import { cn } from "@/utils";
 import {
   resolveCatalogActionTooltip,
   resolveCatalogItemVisuals,
@@ -71,11 +68,10 @@ export interface ItemRowProps {
 }
 
 type RowVisuals = ReturnType<typeof resolveCatalogItemVisuals>;
-type RowSortableState = ReturnType<typeof useSortable>;
 
 interface ItemRowContentProps extends ItemRowProps {
   visuals: RowVisuals;
-  sortable: RowSortableState;
+  sortable: CatalogSortableBindings;
   mysteryPopover?: MysteryPopoverBridge;
 }
 
@@ -122,30 +118,14 @@ function ItemRowContent({
     isFocusNavigate,
   } = visuals;
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = sortable;
-
-  const tierContainerRef = mysteryPopover?.tierContainerRef;
-  const setRowRefs = useCallback(
-    (node: HTMLLIElement | null) => {
-      setNodeRef(node);
-      if (tierContainerRef) {
-        tierContainerRef.current = node;
-      }
-    },
-    [setNodeRef, tierContainerRef],
-  );
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? undefined : transition,
-  };
+  const { setRootRef, dragStyle, isDragging, rootInteractionProps } =
+    useCatalogItemInteraction<HTMLLIElement>({
+      sortable,
+      mysteryPopover,
+      isDragDisabled,
+      onDoubleClick,
+      onContextMenu,
+    });
 
   const isPrimaryDisabled =
     disabled || (inUse && !isFocusNavigate) || isActionLoading;
@@ -153,59 +133,9 @@ function ItemRowContent({
 
   return (
     <li
-      ref={setRowRefs}
-      style={style}
-      {...(!isDragDisabled ? attributes : {})}
-      {...(!isDragDisabled ? listeners : {})}
-      onKeyDown={(e) => {
-        if (isDragDisabled || e.target !== e.currentTarget) return;
-        listeners?.onKeyDown?.(e);
-      }}
-      onDoubleClick={(e) => {
-        if (isDragging || !onDoubleClick) return;
-        e.stopPropagation();
-        onDoubleClick(e);
-      }}
-      onContextMenu={onContextMenu}
-      onPointerEnter={
-        mysteryPopover
-          ? (e) => {
-              if (e.pointerType === "mouse") {
-                mysteryPopover.open();
-              }
-            }
-          : undefined
-      }
-      onPointerLeave={
-        mysteryPopover
-          ? (e) => {
-              if (e.pointerType === "mouse") {
-                mysteryPopover.close();
-              }
-            }
-          : undefined
-      }
-      onFocus={
-        mysteryPopover
-          ? (e) => {
-              if (
-                e.target === e.currentTarget &&
-                e.currentTarget.matches(":focus-visible")
-              ) {
-                mysteryPopover.open();
-              }
-            }
-          : undefined
-      }
-      onBlur={
-        mysteryPopover
-          ? (e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                mysteryPopover.close();
-              }
-            }
-          : undefined
-      }
+      ref={setRootRef}
+      style={dragStyle}
+      {...rootInteractionProps}
       className={cn(
         "relative rounded-xl bg-card dark:bg-linear-to-r dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 select-none group overflow-hidden shadow-2xs dark:shadow-none",
         inUse
@@ -230,16 +160,7 @@ function ItemRowContent({
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div className="w-4 flex items-center justify-center shrink-0">
             {isDebtCategory || isDragDisabled ? (
-              <span
-                title={t("pinnedDebtTitle")}
-                className="inline-flex items-center justify-center"
-              >
-                <Pin
-                  size={13}
-                  className="text-rose-500/80 dark:text-rose-400/80"
-                  aria-hidden="true"
-                />
-              </span>
+              <CatalogPinnedBadge variant="row" />
             ) : (
               <GripVertical
                 size={14}
@@ -261,7 +182,7 @@ function ItemRowContent({
             <RewardIcon
               size={19}
               className={
-                isMystery ? "text-amber-600 dark:text-amber-400" : undefined
+                isMystery ? "text-amber-800 dark:text-amber-400" : undefined
               }
               aria-hidden="true"
             />
@@ -278,7 +199,7 @@ function ItemRowContent({
               className={cn(
                 "font-bold text-neutral-100 truncate transition-colors leading-tight text-body-s",
                 isDebtCategory
-                  ? "group-hover:text-rose-600 dark:group-hover:text-rose-300"
+                  ? "group-hover:text-rose-700 dark:group-hover:text-rose-300"
                   : "group-hover:text-primary dark:group-hover:text-gold",
               )}
             >
@@ -467,55 +388,13 @@ function ItemRowContent({
           <span>{actionLabel}</span>
         </button>
 
-        {mysteryPopover && (
-          <button
-            type="button"
-            {...STOP_DRAG_PROPAGATION_PROPS}
-            onClick={(e) => {
-              e.stopPropagation();
-              mysteryPopover.toggle();
-            }}
-            onDoubleClick={(e) => e.stopPropagation()}
-            aria-expanded={mysteryPopover.isOpen}
-            aria-label={
-              isGamified
-                ? t("tierDetailsAria")
-                : t("tierDetailsAriaProductivity")
-            }
-            title={
-              isGamified
-                ? t("tierDetailsAria")
-                : t("tierDetailsAriaProductivity")
-            }
-            className="inline-flex items-center justify-center rounded-md border border-transparent text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-          >
-            <HelpCircle size={15} aria-hidden="true" />
-          </button>
-        )}
-
-        {isDeleteChecking ? (
-          <output
-            className="inline-flex items-center justify-center text-gold shrink-0 w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-            title={t("checkingDeleteAria")}
-            aria-label={t("checkingDeleteAria")}
-          >
-            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-          </output>
-        ) : (
-          onContextMenu && (
-            <button
-              type="button"
-              {...STOP_DRAG_PROPAGATION_PROPS}
-              onClick={(e) => openContextMenuFromButton(e, onContextMenu)}
-              onDoubleClick={(e) => e.stopPropagation()}
-              aria-label={t("moreActionsAria")}
-              title={t("moreActionsAria")}
-              className="inline-flex items-center justify-center rounded-md border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-            >
-              <MoreVertical size={16} aria-hidden="true" />
-            </button>
-          )
-        )}
+        <CatalogUtilityActions
+          variant="row"
+          mysteryPopover={mysteryPopover}
+          isGamified={isGamified}
+          isDeleteChecking={isDeleteChecking}
+          onContextMenu={onContextMenu}
+        />
       </div>
 
       {mysteryPopover?.portalNode}
@@ -537,9 +416,39 @@ function MysteryBoxItemRow({
   return <ItemRowContent {...props} mysteryPopover={mysteryPopover} />;
 }
 
+function ItemRowVariantBranch(
+  props: ItemRowProps & {
+    isDragDisabled: boolean;
+    visuals: RowVisuals;
+    sortable: CatalogSortableBindings;
+  },
+) {
+  if (props.visuals.isMystery && props.visuals.mysteryTier) {
+    return (
+      <MysteryBoxItemRow {...props} mysteryTier={props.visuals.mysteryTier} />
+    );
+  }
+
+  return <ItemRowContent {...props} />;
+}
+
+function SortableItemRowBridge(
+  props: ItemRowProps & {
+    isDragDisabled: boolean;
+    visuals: RowVisuals;
+  },
+) {
+  const sortable = useSortable({
+    id: props.sortableId ?? props.id,
+    data: props.dragData || { id: props.id },
+  });
+
+  return <ItemRowVariantBranch {...props} sortable={sortable} />;
+}
+
 /**
  * Linha de lista reordenável e memoizada para Vitrine (Rewards) e Mochila (Inventory).
- * Isola hooks de popover flutuante exclusivamente para Caixas Misteriosas.
+ * Isola hooks de popover em Caixas Misteriosas e ignora `useSortable` em itens fixados/dívidas.
  * Utiliza uma única árvore DOM responsiva (Flex no mobile -> Grid de 5 colunas no desktop md+).
  */
 export const ItemRow = memo(function ItemRow(props: ItemRowProps) {
@@ -554,30 +463,22 @@ export const ItemRow = memo(function ItemRow(props: ItemRowProps) {
 
   const isDragDisabled = Boolean(props.isDragDisabled || visuals.isDebt);
 
-  const sortable = useSortable({
-    id: props.sortableId ?? props.id,
-    data: props.dragData || { id: props.id },
-    disabled: isDragDisabled,
-  });
-
-  if (visuals.isMystery && visuals.mysteryTier) {
+  if (isDragDisabled) {
     return (
-      <MysteryBoxItemRow
+      <ItemRowVariantBranch
         {...props}
-        isDragDisabled={isDragDisabled}
+        isDragDisabled={true}
         visuals={visuals}
-        sortable={sortable}
-        mysteryTier={visuals.mysteryTier}
+        sortable={IDLE_SORTABLE_BINDINGS}
       />
     );
   }
 
   return (
-    <ItemRowContent
+    <SortableItemRowBridge
       {...props}
-      isDragDisabled={isDragDisabled}
+      isDragDisabled={false}
       visuals={visuals}
-      sortable={sortable}
     />
   );
 });

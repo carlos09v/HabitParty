@@ -131,6 +131,30 @@ public class InventoryItem {
     }
   }
 
+  /**
+   * Ajusta o saldo de segundos ao editar um registro existente deste mesmo item,
+   * estornando os segundos anteriores e debitando os novos segundos sem permitir saldo negativo.
+   */
+  public void adjustFocusSeconds(int oldSeconds, int newSeconds) {
+    if (this.status == InventoryItemStatus.DISCARDED) {
+      throw new DomainValidationException("Não é possível alterar o tempo de um item descartado.");
+    }
+    if (this.remainingSeconds == null) {
+      return;
+    }
+    int safeOld = Math.max(0, oldSeconds);
+    int safeNew = Math.max(0, newSeconds);
+    int restored = this.remainingSeconds + safeOld;
+    if (safeNew > restored) {
+      throw new DomainValidationException(
+          "A duração da sessão excede o tempo disponível do item (" + (restored / 60) + "m).");
+    }
+    this.remainingSeconds = restored - safeNew;
+    if (this.status == InventoryItemStatus.CONSUMED && this.remainingSeconds > 0) {
+      this.status = InventoryItemStatus.AVAILABLE;
+    }
+  }
+
   // O usuário CLICA no botão "Concluir" na tela de foco ou no inventário
   public void consume() {
     if (this.status != InventoryItemStatus.IN_FOCUS && this.status != InventoryItemStatus.AVAILABLE) {

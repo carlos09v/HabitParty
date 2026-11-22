@@ -69,6 +69,11 @@ public interface FocusRecordRepository {
     return sumFocusMinutesToday(userId, userZone);
   }
 
+  default int sumFocusMinutesOnDateExcludingRecord(
+      UUID userId, LocalDate targetDate, ZoneId userZone, UUID excludedRecordId) {
+    return sumFocusMinutesOnDate(userId, targetDate, userZone);
+  }
+
   void deleteAllByUserId(UUID userId);
 
   // Verifica se há registros de foco avulsos (sem atividade de foco vinculada) para a tarefa
@@ -122,6 +127,11 @@ public interface FocusRecordRepository {
 
   default int sumProductiveFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
     return 0;
+  }
+
+  default int sumProductiveFocusMinutesOnDateExcludingRecord(
+      UUID userId, LocalDate targetDate, ZoneId userZone, UUID excludedRecordId) {
+    return sumProductiveFocusMinutesOnDate(userId, targetDate, userZone);
   }
 
   default List<FocusSessionSummary> findProductiveFocusSessionsByUserIdsSince(

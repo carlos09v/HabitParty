@@ -34,11 +34,13 @@ export function XpSourcesGuideTooltip({
             {t(isGamified ? "tasksDesc" : "tasksDescEssential")}
           </li>
           <li>
-            <strong className="text-magenta">{t("dailiesLabel")}</strong>{" "}
+            <strong className="text-magenta dark:text-fuchsia-300">
+              {t("dailiesLabel")}
+            </strong>{" "}
             {t(isGamified ? "dailiesDesc" : "dailiesDescEssential")}
           </li>
           <li>
-            <strong className="text-sky-600 dark:text-sky-300">
+            <strong className="text-sky-700 dark:text-sky-300">
               {t("habitsLabel")}
             </strong>{" "}
             {t(isGamified ? "habitsDesc" : "habitsDescEssential")}

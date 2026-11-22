@@ -52,7 +52,7 @@ export function EconomyWeeklyChart({
                 +{formatCoins(activeHoveredBar.gold, { locale })}
               </span>
               <span className="text-neutral-400">/</span>
-              <span className="text-rose-600 dark:text-rose-400">
+              <span className="text-rose-700 dark:text-rose-400">
                 -{formatCoins(activeHoveredBar.spent ?? 0, { locale })}
               </span>
             </span>
@@ -62,7 +62,7 @@ export function EconomyWeeklyChart({
                 +{formatCoins(weeklyEarnings, { locale })}
               </span>
               <span className="text-neutral-400">/</span>
-              <span className="text-rose-600 dark:text-rose-400">
+              <span className="text-rose-700 dark:text-rose-400">
                 -{formatCoins(weeklySpent, { locale })}
               </span>
             </span>

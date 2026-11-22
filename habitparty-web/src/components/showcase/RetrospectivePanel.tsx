@@ -360,7 +360,7 @@ export function RetrospectivePanel({
               </div>
 
               <div className="rounded-xl border border-neutral-700 dark:border-primary/20 bg-surface/50 p-4 flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/30 flex items-center justify-center text-fuchsia-700 dark:text-magenta shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/30 flex items-center justify-center text-magenta dark:text-fuchsia-300 shrink-0">
                   {rarestTitle ? (
                     <Trophy size={18} aria-hidden="true" />
                   ) : (

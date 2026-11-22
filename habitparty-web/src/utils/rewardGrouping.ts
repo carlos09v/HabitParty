@@ -87,14 +87,19 @@ export function buildRewardVariantTitle(
 /**
  * Rótulo curto para identificar um pacote específico em menus e confirmações.
  */
-export function formatRewardVariantBadge(reward: Reward): string {
+export function formatRewardVariantBadge(
+  reward: Reward,
+  formatPackageLabel?: (packageKey: PackageMessageKey) => string,
+): string {
   const typeKey = toRewardTypeMessageKey(reward.type);
   const pkgKey = toPackageMessageKey(reward.packageLevel);
   if (typeKey === "TimeBased" && reward.baseDurationMinutes) {
     return formatFocusMinutes(reward.baseDurationMinutes);
   }
   if (pkgKey !== "NONE") {
-    return String(reward.packageLevel);
+    return formatPackageLabel
+      ? formatPackageLabel(pkgKey)
+      : String(reward.packageLevel);
   }
   return reward.title;
 }
@@ -238,7 +243,6 @@ export function groupRewardsForShowcase(
           displayTitle: reward.title,
           primaryReward: reward,
           variants: [reward],
-          hasGroupDescription: Boolean(reward.description?.trim()),
         },
       });
       return;
@@ -276,7 +280,6 @@ export function groupRewardsForShowcase(
           displayTitle: solo.title,
           primaryReward: solo,
           variants: [solo],
-          hasGroupDescription: Boolean(solo.description?.trim()),
         },
       });
       continue;
@@ -284,9 +287,6 @@ export function groupRewardsForShowcase(
 
     const sortedVariants = [...bucket.items].sort(compareRewardVariants);
     const primaryReward = sortedVariants[0];
-    const hasGroupDescription = sortedVariants.some((v) =>
-      Boolean(v.description?.trim()),
-    );
 
     entries.push({
       firstIndex: bucket.firstIndex,
@@ -295,7 +295,6 @@ export function groupRewardsForShowcase(
         displayTitle: bucket.displayTitle,
         primaryReward,
         variants: sortedVariants,
-        hasGroupDescription,
       },
     });
   }

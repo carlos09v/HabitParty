@@ -47,12 +47,12 @@ export function HelpChangelogSection() {
           <div className="flex items-center gap-2 mb-1">
             {activeTab === "changelog" ? (
               <History
-                className="text-emerald-600 dark:text-emerald-400 shrink-0"
+                className="text-emerald-800 dark:text-emerald-400 shrink-0"
                 size={20}
               />
             ) : (
               <Compass
-                className="text-amber-600 dark:text-gold shrink-0"
+                className="text-amber-800 dark:text-gold shrink-0"
                 size={20}
               />
             )}
@@ -165,12 +165,12 @@ export function HelpChangelogSection() {
                     {item.isReleased ? (
                       <CheckCircle2
                         size={14}
-                        className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                        className="text-emerald-800 dark:text-emerald-400 shrink-0 mt-0.5"
                       />
                     ) : (
                       <Sparkles
                         size={14}
-                        className="text-amber-600 dark:text-gold shrink-0 mt-0.5"
+                        className="text-amber-800 dark:text-gold shrink-0 mt-0.5"
                       />
                     )}
                     <span>{point}</span>

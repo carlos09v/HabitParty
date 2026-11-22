@@ -63,7 +63,7 @@ export function ProfileContextStep({
         {goalsError && (
           <p
             role="alert"
-            className="text-xs font-medium text-rose-500 dark:text-rose-400"
+            className="text-xs font-medium text-rose-700 dark:text-rose-400"
           >
             {goalsError}
           </p>

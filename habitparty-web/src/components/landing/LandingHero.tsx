@@ -29,7 +29,7 @@ export function LandingHero() {
           <div className="lg:col-span-7 text-center lg:text-left">
             {/* Pill Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-2xl sm:rounded-full bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-              <Sparkles className="w-4 h-4 text-amber-600 dark:text-gold shrink-0" />
+              <Sparkles className="w-4 h-4 text-amber-800 dark:text-gold shrink-0" />
               <span className="text-xs sm:text-sm font-semibold text-neutral-200">
                 {t("badge")}
               </span>
@@ -61,7 +61,7 @@ export function LandingHero() {
                 href={`#${LANDING_ANCHORS.gamification}`}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-card hover:bg-surface text-neutral-100 hover:text-neutral-50 border border-neutral-700 shadow-sm dark:bg-surface/90 dark:hover:bg-surface-hover dark:text-neutral-200 dark:hover:text-white dark:border-white/10 dark:hover:border-primary-light/40 font-semibold text-base transition-colors duration-200 dark:shadow-card-deep"
               >
-                <Trophy className="w-5 h-5 text-amber-600 dark:text-gold" />
+                <Trophy className="w-5 h-5 text-amber-800 dark:text-gold" />
                 <span>{t("secondaryCta")}</span>
               </a>
             </div>

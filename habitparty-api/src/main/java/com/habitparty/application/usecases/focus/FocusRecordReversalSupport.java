@@ -2,7 +2,6 @@ package com.habitparty.application.usecases.focus;
 
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -87,7 +86,7 @@ public final class FocusRecordReversalSupport {
         continue;
       }
       UUID itemId = record.getInventoryItemId().get();
-      int secondsToRefund = resolveRefundSeconds(record);
+      int secondsToRefund = record.getDurationSeconds();
       if (secondsToRefund > 0) {
         secondsByItemId.merge(itemId, secondsToRefund, Integer::sum);
       }
@@ -98,14 +97,6 @@ public final class FocusRecordReversalSupport {
           item.refundSeconds(totalSeconds);
           inventoryItemPort.save(item);
         }));
-  }
-
-  private static int resolveRefundSeconds(FocusRecord record) {
-    long durationSeconds = Duration.between(record.getStartTime(), record.getEndTime()).toSeconds();
-    if (durationSeconds > 0) {
-      return (int) Math.min(Integer.MAX_VALUE, durationSeconds);
-    }
-    return Math.max(0, record.getDurationMinutes() * 60);
   }
 
   private static void revertProductiveUserStats(

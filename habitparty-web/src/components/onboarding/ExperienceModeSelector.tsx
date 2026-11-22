@@ -57,7 +57,7 @@ export function ExperienceModeSelector({
                         "shrink-0",
                         isSelected
                           ? "text-amber-700 dark:text-gold"
-                          : "text-emerald-600 dark:text-emerald-400",
+                          : "text-emerald-800 dark:text-emerald-400",
                       )}
                     />
                     <span>{item}</span>

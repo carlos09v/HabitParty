@@ -69,9 +69,28 @@ public class TaskController implements TaskApi {
   }
 
   private TaskResponseDTO toDto(Task task, UUID userId, Boolean rewardGranted) {
+    return toDto(task, userId, rewardGranted, null, null, null, null);
+  }
+
+  private TaskResponseDTO toDto(
+      Task task,
+      UUID userId,
+      Boolean rewardGranted,
+      Boolean rewardReverted,
+      Integer revertedXp,
+      java.math.BigDecimal revertedCoins,
+      Boolean streakReverted) {
     ZoneId userZone = userTimeResolver.resolveZone(userId);
     LocalDate userToday = LocalDate.now(userTimeResolver.clock().withZone(userZone));
-    return TaskResponseDTO.fromDomain(task, userToday, userZone, rewardGranted);
+    return TaskResponseDTO.fromDomain(
+        task,
+        userToday,
+        userZone,
+        rewardGranted,
+        rewardReverted,
+        revertedXp,
+        revertedCoins,
+        streakReverted);
   }
 
   @Override
@@ -234,7 +253,19 @@ public class TaskController implements TaskApi {
     UUID userId = userIdLogado.id();
     var result = changeTaskStatusUseCase.executeWithResult(taskId, userId, newStatus);
     Boolean rewardGranted = newStatus == TaskStatus.COMPLETED ? result.rewardGranted() : null;
-    return ResponseEntity.ok(toDto(result.task(), userId, rewardGranted));
+    Boolean rewardReverted = newStatus == TaskStatus.PENDING ? result.rewardReverted() : null;
+    Integer revertedXp = result.rewardReverted() ? result.revertedXp() : null;
+    java.math.BigDecimal revertedCoins = result.rewardReverted() ? result.revertedCoins() : null;
+    Boolean streakReverted = result.rewardReverted() ? result.streakReverted() : null;
+    return ResponseEntity.ok(
+        toDto(
+            result.task(),
+            userId,
+            rewardGranted,
+            rewardReverted,
+            revertedXp,
+            revertedCoins,
+            streakReverted));
   }
 
   @Override

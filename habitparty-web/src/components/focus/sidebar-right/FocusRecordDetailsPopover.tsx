@@ -34,6 +34,8 @@ interface FocusRecordDetailsPopoverProps {
   onClose: () => void;
   record: FocusRecord | null;
   anchorRect: DOMRect | null;
+  /** Solicita a edição completa do registro (modal completo). */
+  onRequestEdit?: (record: FocusRecord) => void;
   /** Solicita a exclusão do registro (confirmação exibida pelo pai). */
   onRequestDelete?: (record: FocusRecord) => void;
   /** Notifica o pai para atualizar imediatamente registros em cache local/extraRecords. */
@@ -52,6 +54,7 @@ export function FocusRecordDetailsPopover({
   onClose,
   record,
   anchorRect,
+  onRequestEdit,
   onRequestDelete,
   onRecordUpdated,
 }: FocusRecordDetailsPopoverProps) {
@@ -189,21 +192,38 @@ export function FocusRecordDetailsPopover({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-w-8 min-h-8 pointer-coarse:min-w-10 pointer-coarse:min-h-10 p-1.5 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-            aria-label={t("closeAria")}
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {onRequestEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  onRequestEdit(record);
+                  onClose();
+                }}
+                className="min-w-8 min-h-8 pointer-coarse:min-w-10 pointer-coarse:min-h-10 p-1.5 rounded-lg flex items-center justify-center text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                aria-label={t("editFullAria")}
+                title={t("editFullTitle")}
+              >
+                <Pencil size={15} />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-w-8 min-h-8 pointer-coarse:min-w-10 pointer-coarse:min-h-10 p-1.5 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              aria-label={t("closeAria")}
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Resumo da Sessão (Somente leitura) */}
         <div className="grid grid-cols-2 gap-2 bg-surface/60 dark:bg-surface/50 border border-neutral-700 dark:border-primary/20 rounded-xl p-2.5">
           <div className="flex flex-col gap-0.5">
             <span className="text-tiny text-neutral-400 uppercase tracking-wider font-semibold flex items-center gap-1">
-              <Clock size={10} className="text-amber-600 dark:text-gold" />{" "}
+              <Clock size={10} className="text-amber-800 dark:text-gold" />{" "}
               {t("durationLabel")}
             </span>
             <span className="text-body-s font-bold text-amber-700 dark:text-gold font-mono">
@@ -213,7 +233,7 @@ export function FocusRecordDetailsPopover({
 
           <div className="flex flex-col gap-0.5">
             <span className="text-tiny text-neutral-400 uppercase tracking-wider font-semibold flex items-center gap-1">
-              <Timer size={10} className="text-amber-600 dark:text-gold" />{" "}
+              <Timer size={10} className="text-amber-800 dark:text-gold" />{" "}
               {t("modeLabel")}
             </span>
             <span className="text-body-s font-semibold text-neutral-200">
@@ -233,7 +253,7 @@ export function FocusRecordDetailsPopover({
               {t("rewardsLabel")}
             </span>
             <div className="flex items-center gap-2.5 font-bold">
-              <span className="text-magenta flex items-center gap-1">
+              <span className="text-magenta dark:text-fuchsia-300 flex items-center gap-1">
                 <Award size={13} />+{record.xpEarned ?? 0}{" "}
                 {isGamified ? "XP" : "pts"}
               </span>
@@ -264,7 +284,7 @@ export function FocusRecordDetailsPopover({
               htmlFor="focus-record-notes-edit"
               className="text-xs font-semibold text-neutral-200 flex items-center gap-1.5"
             >
-              <Pencil size={12} className="text-amber-600 dark:text-gold" />
+              <Pencil size={12} className="text-amber-800 dark:text-gold" />
               {t("sessionNotesLabel")}
             </label>
             <span className="text-tiny text-neutral-400 font-mono">

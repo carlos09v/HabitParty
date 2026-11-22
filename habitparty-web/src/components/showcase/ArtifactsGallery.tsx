@@ -238,7 +238,7 @@ export function ArtifactsGallery({
               icon={
                 <Sparkles
                   size={14}
-                  className="text-amber-600 dark:text-gold"
+                  className="text-amber-800 dark:text-gold"
                   aria-hidden="true"
                 />
               }

@@ -398,6 +398,23 @@ public class Daily extends Task {
     this.currentStreak = 0;
   }
 
+  /**
+   * Reverte a conclusão atual da diária ao desmarcá-la para PENDING.
+   * Só restaura {@code lastCompletedAt} para {@code previousCompletedAt} quando o estorno
+   * econômico foi integral ({@code unlockRewardForCycle}), evitando ganho duplo no mesmo dia.
+   */
+  public void revertCompletion(LocalDateTime previousCompletedAt, boolean unlockRewardForCycle) {
+    if (this.currentStreak > 0) {
+      if (this.highestStreak == this.currentStreak) {
+        this.highestStreak = Math.max(0, this.currentStreak - 1);
+      }
+      this.currentStreak = Math.max(0, this.currentStreak - 1);
+    }
+    if (unlockRewardForCycle) {
+      this.lastCompletedAt = previousCompletedAt;
+    }
+  }
+
   // Apenas Getters (Sem Setters!)
   public int getCurrentStreak() {
     return currentStreak;

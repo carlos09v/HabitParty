@@ -114,7 +114,7 @@ export function RewardPreview({
               isExpanded
                 ? expandedAccentText
                 : hasWarning
-                  ? "text-amber-600 dark:text-amber-400"
+                  ? "text-amber-800 dark:text-amber-400"
                   : "text-neutral-400",
             )}
           />
@@ -204,7 +204,7 @@ export function RewardPreview({
               isExpanded
                 ? expandedAccentText
                 : hasWarning
-                  ? "text-amber-600 dark:text-amber-400"
+                  ? "text-amber-800 dark:text-amber-400"
                   : "text-neutral-400",
             )}
           />
@@ -312,17 +312,17 @@ export function RewardPreview({
                   {notice.tone === "warning" ? (
                     <AlertTriangle
                       size={14}
-                      className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5"
+                      className="shrink-0 text-amber-800 dark:text-amber-400 mt-0.5"
                     />
                   ) : notice.tone === "success" ? (
                     <TrendingUp
                       size={14}
-                      className="shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5"
+                      className="shrink-0 text-emerald-800 dark:text-emerald-400 mt-0.5"
                     />
                   ) : (
                     <Info
                       size={14}
-                      className="shrink-0 text-sky-600 dark:text-blue-400 mt-0.5"
+                      className="shrink-0 text-sky-700 dark:text-blue-400 mt-0.5"
                     />
                   )}
                   <div className="flex flex-col gap-0.5">

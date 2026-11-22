@@ -73,7 +73,7 @@ export default async function VerifyEmailPage({
         </div>
         <Link
           href="/dashboard"
-          className="w-full py-3 px-6 rounded-xl bg-gold text-neutral-950 font-bold hover:bg-gold-hover transition-colors text-center"
+          className="w-full py-3 px-6 rounded-xl bg-gold text-on-gold font-bold hover:bg-gold-hover transition-colors text-center"
         >
           {t("backToHabitParty")}
         </Link>
@@ -83,7 +83,7 @@ export default async function VerifyEmailPage({
 
   return (
     <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
-      <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
+      <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-800 dark:text-emerald-400">
         <CheckCircle2 size={28} />
       </div>
       <div className="flex flex-col gap-2">
@@ -95,7 +95,7 @@ export default async function VerifyEmailPage({
       <form action={redirectAfterEmailVerificationAction} className="w-full">
         <button
           type="submit"
-          className="w-full py-3 px-6 rounded-xl bg-gold text-neutral-950 font-bold hover:bg-gold-hover transition-colors text-center cursor-pointer"
+          className="w-full py-3 px-6 rounded-xl bg-gold text-on-gold font-bold hover:bg-gold-hover transition-colors text-center cursor-pointer"
         >
           {t("continueToApp")}
         </button>

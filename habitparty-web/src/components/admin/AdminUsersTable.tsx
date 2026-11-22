@@ -148,7 +148,7 @@ function UserEmailMetricsCell({
       <div className="flex items-center gap-1.5 font-mono">
         <Mail
           size={13}
-          className="text-amber-600 dark:text-amber-400 shrink-0"
+          className="text-amber-800 dark:text-amber-400 shrink-0"
         />
         <span className="font-bold text-neutral-100 dark:text-neutral-200">
           {user.emailsSentThisMonth}

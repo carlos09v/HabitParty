@@ -34,7 +34,7 @@ export async function ShowcaseStatsGrid({
       id: "highestStreak",
       iconKey: "flame",
       iconClass:
-        "bg-orange-500/15 border-orange-500/35 text-orange-600 dark:text-orange-400",
+        "bg-orange-500/15 border-orange-500/35 text-orange-800 dark:text-orange-400",
       gamifiedLabel: t("highestStreak.label"),
       essentialLabel: t("highestStreak.essentialLabel"),
       value: `${format.number(stats.highestStreak)}d`,

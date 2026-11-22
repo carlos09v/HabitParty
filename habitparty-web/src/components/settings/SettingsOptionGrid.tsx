@@ -184,7 +184,7 @@ export function SettingsOptionGrid<T extends string | boolean>({
         <div className="rounded-xl border flex items-center gap-3 w-full sm:w-fit max-w-full transition-colors p-4 bg-amber-500/10 dark:bg-gold/10 border-amber-500/30 dark:border-gold/30 text-amber-800 dark:text-gold">
           <Sparkles
             size={20}
-            className="shrink-0 text-amber-600 dark:text-gold"
+            className="shrink-0 text-amber-800 dark:text-gold"
           />
           <div className="text-body-s min-w-0 flex-1">{statusMessage}</div>
         </div>

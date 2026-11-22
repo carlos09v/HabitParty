@@ -92,7 +92,7 @@ export function RoutineFilterPopover({
         className={cn(
           "flex items-center gap-1.5 rounded-lg border font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 px-3 py-2 text-body-s",
           activeFiltersCount > 0
-            ? "bg-amber-500/15 border-amber-500/50 text-gold-ink shadow-glow-gold-xs dark:bg-gold/15 dark:border-gold/60 dark:text-gold-pressed"
+            ? "bg-amber-500/15 border-amber-500/50 text-gold-ink shadow-glow-gold-xs dark:bg-gold/15 dark:border-gold/60 dark:text-gold"
             : "bg-surface border-neutral-700 text-neutral-200 hover:text-neutral-50 hover:bg-surface-hover hover:border-neutral-600 dark:border-white/15 dark:hover:border-white/25",
         )}
       >

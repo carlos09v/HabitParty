@@ -54,8 +54,8 @@ export function CookieConsentBanner() {
         </button>
 
         <div className="flex items-start gap-3.5 pr-7">
-          <div className="p-2.5 rounded-xl bg-amber-500/15 dark:bg-gold/15 text-amber-600 dark:text-gold shrink-0 border border-amber-500/30 dark:border-gold/30 shadow-glow-gold-xs">
-            <Cookie size={22} className="text-amber-600 dark:text-gold" />
+          <div className="p-2.5 rounded-xl bg-amber-500/15 dark:bg-gold/15 text-amber-800 dark:text-gold shrink-0 border border-amber-500/30 dark:border-gold/30 shadow-glow-gold-xs">
+            <Cookie size={22} className="text-amber-800 dark:text-gold" />
           </div>
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center flex-wrap gap-1.5">

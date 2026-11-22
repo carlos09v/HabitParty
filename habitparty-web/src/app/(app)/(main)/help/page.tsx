@@ -59,7 +59,7 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
           >
             <History
               size={15}
-              className="text-emerald-600 dark:text-emerald-400 shrink-0"
+              className="text-emerald-800 dark:text-emerald-400 shrink-0"
             />
             <span>{t("changelogJump")}</span>
           </a>
@@ -77,7 +77,7 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
         {/* CARD DE SUPORTE, CONTATO E REPORT DE BUGS */}
         <section className="rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/60 shadow-xs dark:shadow-none p-4 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
           <div className="flex items-start gap-3.5 sm:gap-4 max-w-2xl min-w-0">
-            <div className="w-11 h-11 rounded-xl bg-amber-500/15 dark:bg-gold/15 border border-amber-500/30 dark:border-gold/30 flex items-center justify-center text-amber-600 dark:text-gold shrink-0 mt-0.5">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/15 dark:bg-gold/15 border border-amber-500/30 dark:border-gold/30 flex items-center justify-center text-amber-800 dark:text-gold shrink-0 mt-0.5">
               <MessageSquareHeart size={22} />
             </div>
             <div className="min-w-0">
@@ -110,7 +110,7 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
             >
               <Bug
                 size={15}
-                className="text-amber-600 dark:text-gold shrink-0"
+                className="text-amber-800 dark:text-gold shrink-0"
               />
               <span>{t("support.reportBug")}</span>
             </a>

@@ -46,8 +46,8 @@ export function TaskTypeTabs({
         className={cn(
           "flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 px-1.5 sm:px-3 rounded-lg font-bold text-xs sm:text-body-s min-w-0 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
           taskType === "DAILY"
-            ? "border-magenta/40 bg-magenta/10 text-magenta dark:border-magenta dark:bg-magenta/15 dark:text-magenta dark:shadow-glow-magenta border"
-            : "text-neutral-300 hover:text-magenta hover:bg-card/70 dark:hover:bg-white/5",
+            ? "border-magenta/40 bg-magenta/10 text-magenta dark:border-magenta dark:bg-magenta/15 dark:text-fuchsia-300 dark:shadow-glow-magenta border"
+            : "text-neutral-300 hover:text-magenta dark:hover:text-fuchsia-300 hover:bg-card/70 dark:hover:bg-white/5",
         )}
       >
         {isEditing && taskType !== "DAILY" ? (

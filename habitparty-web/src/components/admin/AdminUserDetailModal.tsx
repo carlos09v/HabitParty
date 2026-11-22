@@ -254,7 +254,7 @@ export function AdminUserDetailModal({
               className={cn(
                 "p-2 rounded-lg border shrink-0",
                 summary.isPremium
-                  ? "bg-gold/15 border-gold/30 text-amber-600 dark:text-gold"
+                  ? "bg-gold/15 border-gold/30 text-amber-800 dark:text-gold"
                   : "bg-surface border-neutral-700 text-neutral-400 dark:bg-neutral-800 dark:border-white/10",
               )}
             >
@@ -268,9 +268,9 @@ export function AdminUserDetailModal({
                 className={cn(
                   "text-xs font-bold truncate",
                   summary.subscriptionEndsAt
-                    ? "text-amber-600 dark:text-gold font-mono"
+                    ? "text-amber-800 dark:text-gold font-mono"
                     : summary.isPremium
-                      ? "text-emerald-700 dark:text-emerald-400"
+                      ? "text-emerald-800 dark:text-emerald-400"
                       : "text-neutral-400",
                 )}
               >
@@ -296,7 +296,7 @@ export function AdminUserDetailModal({
             <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
               <Database
                 size={16}
-                className="text-emerald-600 dark:text-success-500"
+                className="text-emerald-800 dark:text-success-500"
               />
               <span>{t("storage.title")}</span>
             </div>
@@ -356,7 +356,7 @@ export function AdminUserDetailModal({
             <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider min-w-0">
               <Mail
                 size={16}
-                className="text-amber-600 dark:text-amber-400 shrink-0"
+                className="text-amber-800 dark:text-amber-400 shrink-0"
               />
               <span>{t("emails.title")}</span>
             </div>

@@ -139,7 +139,7 @@ export function RhythmAndThemeStep({
                   <Volume2
                     size={15}
                     aria-hidden="true"
-                    className="text-emerald-600 dark:text-emerald-400"
+                    className="text-emerald-800 dark:text-emerald-400"
                   />
                 ) : (
                   <VolumeX size={15} aria-hidden="true" />

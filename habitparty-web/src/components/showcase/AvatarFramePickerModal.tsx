@@ -54,7 +54,7 @@ function CosmeticSelectionIndicator({
   isSelected,
   unlocked,
   lockedTitle,
-  lockedClassName = "border-gold/30 text-amber-600 dark:text-gold",
+  lockedClassName = "border-gold/30 text-amber-800 dark:text-gold",
 }: {
   isSelected: boolean;
   unlocked: boolean;

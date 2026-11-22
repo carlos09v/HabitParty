@@ -15,7 +15,7 @@ export function LandingCtaBanner() {
 
           <div className="relative z-10 max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:bg-gold/10 dark:border-gold/30 dark:text-gold text-xs font-bold uppercase tracking-wider mb-6">
-              <Sparkles className="w-4 h-4 fill-amber-500 text-amber-600 dark:fill-gold dark:text-gold" />
+              <Sparkles className="w-4 h-4 fill-amber-500 text-amber-800 dark:fill-gold dark:text-gold" />
               {t("badge")}
             </div>
 

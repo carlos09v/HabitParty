@@ -77,7 +77,7 @@ export function RewardSingleUseSection({
                   icon={
                     <Info
                       size={13}
-                      className="text-rose-500 dark:text-rose-300 shrink-0"
+                      className="text-rose-700 dark:text-rose-300 shrink-0"
                     />
                   }
                   size={13}
@@ -90,7 +90,7 @@ export function RewardSingleUseSection({
                   </p>
                 </InfoTooltip>
               </div>
-              <span className="text-label-m text-rose-600 dark:text-rose-300">
+              <span className="text-label-m text-rose-700 dark:text-rose-300">
                 {t("debtUnitPricingHint")}
               </span>
             </div>
@@ -265,7 +265,7 @@ export function RewardSingleUseSection({
               icon={
                 <Info
                   size={14}
-                  className="text-rose-600 dark:text-rose-300 shrink-0"
+                  className="text-rose-700 dark:text-rose-300 shrink-0"
                 />
               }
               size={14}

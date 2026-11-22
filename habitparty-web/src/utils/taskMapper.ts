@@ -493,7 +493,12 @@ export function mergeTaskWithResponseDTO(
       dto.currentStreak !== undefined ? dto.currentStreak : task.currentStreak,
     highestStreak:
       dto.highestStreak !== undefined ? dto.highestStreak : task.highestStreak,
-    lastCompletedAt: dto.lastCompletedAt ?? task.lastCompletedAt,
+    lastCompletedAt:
+      dto.lastCompletedAt !== undefined
+        ? dto.lastCompletedAt
+        : isCompleted || dto.isRewardClaimed
+          ? task.lastCompletedAt
+          : undefined,
     isPenaltyApplied: dto.isPenaltyApplied ?? task.isPenaltyApplied,
   };
 }

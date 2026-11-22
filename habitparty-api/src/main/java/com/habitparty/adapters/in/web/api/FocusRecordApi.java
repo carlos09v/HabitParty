@@ -52,7 +52,7 @@ public interface FocusRecordApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
-    @Operation(summary = "Atualizar Registro de Foco", description = "Atualiza notas ou dados de uma sessão de foco.")
+    @Operation(summary = "Atualizar Registro de Foco", description = "Atualiza anotações ou os dados completos de uma sessão de foco, recalculando recompensas, limites, tarefas vinculadas, itens e histórico.")
     @PutMapping("/{recordId}")
     ResponseEntity<FocusRecordResponseDTO> update(
         @PathVariable UUID recordId,

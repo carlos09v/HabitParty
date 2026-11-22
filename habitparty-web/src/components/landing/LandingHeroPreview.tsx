@@ -90,7 +90,7 @@ export function LandingHeroPreview() {
           {/* Card 1: Tarefa Diária / Rotina (estático) */}
           <div className="p-3.5 rounded-2xl bg-background/70 dark:bg-background/60 border border-neutral-700/80 dark:border-white/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0 text-left">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -100,7 +100,7 @@ export function LandingHeroPreview() {
                       "text-[10px] font-bold uppercase tracking-wider",
                       isEssential
                         ? "text-primary dark:text-cyan-400"
-                        : "text-magenta",
+                        : "text-magenta dark:text-fuchsia-300",
                     )}
                   >
                     {isEssential
@@ -154,7 +154,7 @@ export function LandingHeroPreview() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Flame className="w-4 h-4 text-amber-600 dark:text-gold animate-pulse" />
+              <Flame className="w-4 h-4 text-amber-800 dark:text-gold animate-pulse" />
               <span className="text-base sm:text-lg font-black font-mono text-neutral-50 tracking-wider">
                 24:59
               </span>

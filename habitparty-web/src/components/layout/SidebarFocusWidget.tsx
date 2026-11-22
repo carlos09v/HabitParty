@@ -426,7 +426,7 @@ export function SidebarFocusWidget() {
               }
             }}
             title={t("linkActivityTitle")}
-            className="inline-flex items-center gap-1 self-start max-w-full px-1.5 py-0.5 rounded-md border border-primary/35 bg-primary/15 hover:bg-primary/25 text-primary-light dark:border-gold/40 dark:bg-gold/12 dark:hover:bg-gold/22 dark:text-gold text-label-s font-semibold transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 self-start max-w-full px-1.5 py-0.5 rounded-md border border-primary/35 bg-primary/15 hover:bg-primary/25 text-primary dark:border-gold/40 dark:bg-gold/12 dark:hover:bg-gold/22 dark:text-gold text-label-s font-semibold transition-colors cursor-pointer"
           >
             <Link2 size={10} className="shrink-0" />
             <span className="truncate">{t("linkActivityBadge")}</span>

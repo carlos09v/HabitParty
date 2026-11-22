@@ -126,7 +126,7 @@ export function TimezoneSettings({
         <div className="flex items-center gap-2.5 flex-wrap">
           <Sparkles
             size={18}
-            className="shrink-0 text-amber-600 dark:text-gold"
+            className="shrink-0 text-amber-800 dark:text-gold"
           />
           <div className="text-body-s">
             <span className="font-bold">{t("activeLabel")}</span>

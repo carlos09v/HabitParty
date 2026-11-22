@@ -58,6 +58,12 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
     // Busca geral paginada
     Page<TransactionHistoryJpaEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
+    List<TransactionHistoryJpaEntity> findTop2ByUser_IdAndReferenceIdAndTransactionTypeOrderByCreatedAtDesc(
+        UUID userId, UUID referenceId, TransactionType transactionType);
+
+    List<TransactionHistoryJpaEntity> findAllByUser_IdAndReferenceIdAndTransactionType(
+        UUID userId, UUID referenceId, TransactionType transactionType);
+
     // Busca filtrada por tipos (Para as abas) paginada
     Page<TransactionHistoryJpaEntity> findAllByUserIdAndTransactionTypeInOrderByCreatedAtDesc(
             UUID userId, List<TransactionType> types, Pageable pageable);
@@ -158,6 +164,19 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
         @Param("referenceId") UUID referenceId,
         @Param("userId") UUID userId,
         @Param("descriptionSnapshot") String descriptionSnapshot);
+
+    @Modifying
+    @Query("""
+        UPDATE TransactionHistoryJpaEntity th
+        SET th.createdAt = :createdAt
+        WHERE th.referenceId = :referenceId
+          AND th.user.id = :userId
+          AND th.transactionType = com.habitparty.core.domain.enums.TransactionType.FOCUS_COMPLETED
+    """)
+    int updateFocusCreatedAt(
+        @Param("referenceId") UUID referenceId,
+        @Param("userId") UUID userId,
+        @Param("createdAt") LocalDateTime createdAt);
 
     interface TaskCompletionProjection {
         UUID getUserId();

@@ -76,7 +76,7 @@ export function LandingProductivityLoop() {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-300">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-gold" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-800 dark:text-gold" />
                   <span>{t(`steps.${step.id}.footer`)}</span>
                 </div>
               </div>

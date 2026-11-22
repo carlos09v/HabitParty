@@ -110,9 +110,16 @@ export function applyThemeToDocument(
 
   if (typeof document !== "undefined") {
     const root = document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(polarity);
-    root.setAttribute("data-theme", effectiveTheme);
+    const oppositePolarity = polarity === "light" ? "dark" : "light";
+    if (root.classList.contains(oppositePolarity)) {
+      root.classList.remove(oppositePolarity);
+    }
+    if (!root.classList.contains(polarity)) {
+      root.classList.add(polarity);
+    }
+    if (root.getAttribute("data-theme") !== effectiveTheme) {
+      root.setAttribute("data-theme", effectiveTheme);
+    }
   }
 
   if (!allowCustomThemes) {

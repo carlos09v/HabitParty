@@ -476,7 +476,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl bg-gold hover:bg-gold-light text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform] active:scale-[0.98] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform] active:scale-[0.98] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <span>{t("actions.next")}</span>
                   <ArrowRight size={16} aria-hidden="true" />
@@ -486,7 +486,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                   type="submit"
                   disabled={isSubmitting}
                   aria-busy={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 px-6 min-h-[48px] rounded-xl bg-gold hover:bg-gold-light text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform,opacity] active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center justify-center gap-2 px-6 min-h-[48px] rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform,opacity] active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <Rocket size={16} aria-hidden="true" />
                   <span>

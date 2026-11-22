@@ -175,13 +175,13 @@ export function FocusMetricsGrid({
             <div className="flex items-center gap-1.5 text-neutral-400 mb-0.5">
               <Timer
                 size={13}
-                className="text-amber-600 dark:text-gold shrink-0"
+                className="text-amber-800 dark:text-gold shrink-0"
               />
               <span className="text-tiny font-bold uppercase tracking-wider text-neutral-300">
                 {isToday ? t("focusedTodayLabel") : t("totalFocusTimeLabel")}
               </span>
             </div>
-            <span className="font-extrabold text-amber-700 dark:text-gold tracking-tight text-2xl">
+            <span className="font-extrabold text-amber-800 dark:text-gold tracking-tight text-2xl">
               {formatFocusMinutes(focusTime)}
             </span>
             <span className="text-label-g text-neutral-400 font-medium">
@@ -194,7 +194,7 @@ export function FocusMetricsGrid({
                   })}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 border border-amber-500/25 dark:bg-gold/15 dark:border-gold/30 dark:text-gold flex items-center justify-center shrink-0 dark:shadow-glow-gold-xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-800 border border-amber-500/25 dark:bg-gold/15 dark:border-gold/30 dark:text-gold flex items-center justify-center shrink-0 dark:shadow-glow-gold-xs">
             <Timer size={20} />
           </div>
         </div>
@@ -484,8 +484,8 @@ export function FocusMetricsGrid({
               className={cn(
                 "text-body-m font-bold",
                 isGamified
-                  ? "text-amber-600 dark:text-gold"
-                  : "text-sky-600 dark:text-sky-400",
+                  ? "text-amber-800 dark:text-gold"
+                  : "text-sky-700 dark:text-sky-400",
               )}
             >
               +{formatCoins(goldCount, { locale })}

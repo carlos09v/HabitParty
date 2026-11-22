@@ -100,7 +100,7 @@ export function MysteryBoxRouletteModal({
       <div className="w-full flex flex-col items-center relative my-2">
         {/* Indicador Central Dourado Superior */}
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
-          <span className="text-amber-600 dark:text-gold text-xs leading-none dark:drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
+          <span className="text-amber-800 dark:text-gold text-xs leading-none dark:drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
             ▼
           </span>
         </div>
@@ -185,7 +185,7 @@ export function MysteryBoxRouletteModal({
 
         {/* Indicador Central Dourado Inferior */}
         <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
-          <span className="text-amber-600 dark:text-gold text-xs leading-none dark:drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
+          <span className="text-amber-800 dark:text-gold text-xs leading-none dark:drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
             ▲
           </span>
         </div>
@@ -243,7 +243,7 @@ export function MysteryBoxRouletteModal({
           <div className="flex flex-wrap items-center justify-center gap-2 text-amber-700 dark:text-gold font-bold text-body-m text-center">
             <Sparkles
               size={18}
-              className="animate-spin motion-reduce:animate-none text-amber-600 dark:text-gold shrink-0"
+              className="animate-spin motion-reduce:animate-none text-amber-800 dark:text-gold shrink-0"
               aria-hidden="true"
             />
             <span>

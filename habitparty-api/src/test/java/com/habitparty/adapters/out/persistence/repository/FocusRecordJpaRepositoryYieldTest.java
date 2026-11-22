@@ -73,6 +73,21 @@ class FocusRecordJpaRepositoryYieldTest {
 
     int sum = focusRecordJpaRepository.sumTodayFocusMinutesByUserId(userId, dayStart, dayEnd);
     assertEquals(135, sum);
+
+    UUID session99Id = focusRecordJpaRepository.findAllByUserIdOrderByStartTimeDesc(userId)
+        .stream()
+        .filter(r -> r.getDurationMinutes() == 99)
+        .findFirst()
+        .orElseThrow()
+        .getId();
+
+    int sumExcluding99 = focusRecordJpaRepository.sumTodayFocusMinutesByUserIdExcludingRecord(
+        userId, dayStart, dayEnd, session99Id);
+    assertEquals(45, sumExcluding99);
+
+    int productiveExcluding99 = focusRecordJpaRepository.sumProductiveFocusMinutesByUserIdExcludingRecord(
+        userId, dayStart, dayEnd, session99Id);
+    assertEquals(54, productiveExcluding99);
   }
 
   private User createAndSaveUser(String prefix) {

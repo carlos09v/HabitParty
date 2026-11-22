@@ -159,7 +159,7 @@ export function BaseModal({
               <div className="flex items-center gap-2 mb-4 pr-9">
                 {headerExtra}
                 {title && (
-                  <h2 className="text-label-g uppercase tracking-wider text-gold-pressed font-bold flex items-center gap-2 flex-wrap">
+                  <h2 className="text-label-g uppercase tracking-wider text-gold-ink dark:text-gold font-bold flex items-center gap-2 flex-wrap">
                     <span>{title}</span>
                     {headerBadge}
                   </h2>

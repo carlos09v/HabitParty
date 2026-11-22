@@ -2,8 +2,8 @@
 @import "./styles/themes.css";
 
 @custom-variant dark (&:where(
-    .dark:not(.light),
-    .dark:not(.light) *,
+    .dark,
+    .dark *,
     .zen-dimmed-dark,
     .zen-dimmed-dark *
   ));
@@ -17,7 +17,7 @@
   /* Marca (Roxo) */
   --color-primary: rgb(124 58 237);
   --color-primary-dark: rgb(73 22 166);
-  --color-primary-light: rgb(168 99 255);
+  --color-primary-light: rgb(202 166 255);
 
   /* Fundo Principal do App */
   --color-background: rgb(33 4 89); /* Seu decorativa-roxo-fundo */
@@ -51,7 +51,7 @@
   --color-warning-hover: rgb(255 175 46);
   --color-danger-300: rgb(252 165 165);
   --color-danger-400: rgb(248 113 113);
-  --color-danger-500: rgb(251 44 54);
+  --color-danger-500: rgb(225 32 42);
   --color-danger-hover: rgb(255 77 85);
   --color-success-300: rgb(110 231 183);
   --color-success-400: rgb(52 211 153);
@@ -113,9 +113,6 @@
     background-color: var(--color-background);
     color: var(--color-neutral-50);
     font-weight: var(--font-weight-normal);
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease;
   }
 
   ::selection {
@@ -142,34 +139,19 @@ html.light .timer-display-shadow {
   background-color: rgba(27, 24, 36, 0.96);
   color: rgb(249 248 252);
 }
-html.light .tooltip-dark .text-neutral-50,
-html.light .tooltip-dark .text-neutral-100,
-html.light .tooltip-dark .text-neutral-200 {
-  color: rgb(249 248 252);
-}
-html.light .tooltip-dark .text-neutral-300,
-html.light .tooltip-dark .text-neutral-400 {
-  color: rgb(212 207 223);
-}
-html.light .tooltip-dark.text-gold,
-html.light .tooltip-dark .text-gold {
-  color: rgb(237 229 57);
-}
-html.light .tooltip-dark .text-emerald-400 {
-  color: rgb(52 211 153);
-}
-html.light .tooltip-dark .text-rose-400 {
-  color: rgb(251 113 133);
-}
-html.light .tooltip-dark .border-white\/10,
-html.light .tooltip-dark .border-white\/15 {
-  border-color: rgba(255, 255, 255, 0.15);
+html.light .tooltip-dark {
+  --color-gold: rgb(237 229 57);
+  --color-gold-ink: rgb(237 229 57);
+  --color-neutral-50: rgb(249 248 252);
+  --color-neutral-100: rgb(244 242 248);
+  --color-neutral-200: rgb(228 224 237);
+  --color-neutral-300: rgb(212 207 223);
+  --color-neutral-400: rgb(212 207 223);
 }
 
-/* Dimmer local "Apagar Luzes" do Modo Zen quando o app está no Modo Claro */
+/* Dimmer local "Apagar Luzes" do Modo Zen quando o app está no Modo Claro
+   Sombras e scrollbars são herdados via regra compartilhada em styles/themes.css */
 html.light .zen-dimmed-dark {
-  color-scheme: dark;
-  accent-color: var(--color-primary);
   color: var(--color-neutral-50);
   --color-background: rgb(33 4 89);
   --color-surface: rgb(51 24 102);
@@ -179,7 +161,7 @@ html.light .zen-dimmed-dark {
   --color-popover: rgb(37 18 75);
   --color-primary: rgb(124 58 237);
   --color-primary-dark: rgb(73 22 166);
-  --color-primary-light: rgb(168 99 255);
+  --color-primary-light: rgb(202 166 255);
   --color-gold: rgb(237 229 57);
   --color-gold-hover: rgb(213 206 51);
   --color-gold-pressed: rgb(190 183 46);
@@ -195,7 +177,7 @@ html.light .zen-dimmed-dark {
   --color-warning-hover: rgb(255 175 46);
   --color-danger-300: rgb(252 165 165);
   --color-danger-400: rgb(248 113 113);
-  --color-danger-500: rgb(251 44 54);
+  --color-danger-500: rgb(225 32 42);
   --color-danger-hover: rgb(255 77 85);
   --color-success-300: rgb(110 231 183);
   --color-success-400: rgb(52 211 153);
@@ -213,16 +195,6 @@ html.light .zen-dimmed-dark {
   --color-neutral-700: rgb(60 55 74);
   --color-neutral-800: rgb(44 39 55);
   --color-neutral-900: rgb(27 24 36);
-  --theme-shadow-glow-gold: 0 0 15px rgba(237, 229, 57, 0.3);
-  --theme-shadow-glow-gold-md: 0 0 12px rgba(237, 229, 57, 0.25);
-  --theme-shadow-glow-gold-sm: 0 0 10px rgba(237, 229, 57, 0.15);
-  --theme-shadow-glow-gold-xs: 0 0 6px rgba(237, 229, 57, 0.4);
-  --theme-shadow-glow-magenta: 0 0 10px rgba(237, 43, 229, 0.45);
-  --theme-shadow-card-deep: 0 15px 30px rgba(0, 0, 0, 0.5);
-  --theme-shadow-card-active: 0 12px 24px rgba(0, 0, 0, 0.45);
-  --theme-shadow-popover-dark: 0 12px 28px rgba(0, 0, 0, 0.6);
-  --scrollbar-thumb: rgba(123, 115, 141, 0.3);
-  --scrollbar-thumb-hover: rgba(237, 229, 57, 0.5);
 }
 html.light .zen-dimmed-dark .timer-display-shadow {
   text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
@@ -336,154 +308,871 @@ html.light select option {
 @layer utilities {
   /* ========================================================
      ADAPTAÇÃO DE UTILITÁRIOS PARA TEMA CLARO
-     Usa `:where(html.light)` dentro de `@layer utilities` para manter
-     especificidade (0,1,0) idêntica aos utilitários base do Tailwind,
-     permitindo que estados `:hover` / `:focus` nativos (0,2,0) funcionem
-     sem precisar redeclarar regras redundantes.
+     Usa `:where(html.light)` e `:not(:where(.tooltip-dark, .zen-dimmed-dark))`
+     para manter especificidade (0,1,0) idêntica aos utilitários do Tailwind
+     sem vazar para containers escuros locais (tooltips e dimmer Zen).
      ======================================================== */
 
   /* 1. Tipografia Semântica e Cores de Destaque */
-  :where(html.light) .text-gold,
-  :where(html.light) .text-amber-500,
-  :where(html.light) .text-amber-400,
-  :where(html.light) .text-amber-300,
-  :where(html.light) .text-amber-200 {
+  :where(html.light)
+    .text-gold:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-amber-500:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-amber-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-amber-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-amber-200:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-gold-ink);
   }
-  :where(html.light) .text-emerald-400,
-  :where(html.light) .text-emerald-300,
-  :where(html.light) .text-success-500 {
+  :where(html.light)
+    .text-emerald-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-emerald-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-success-500:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-success-300);
   }
-  :where(html.light) .text-red-400,
-  :where(html.light) .text-red-300 {
+  :where(html.light)
+    .text-red-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-red-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-danger-500:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-danger-400);
   }
-  :where(html.light) .text-rose-400 {
+  :where(html.dark, .zen-dimmed-dark)
+    .text-danger-500:not(:where([class*="dark:text-"])) {
+    color: var(--color-danger-400);
+  }
+  :where(html.light)
+    .hover\:text-danger-500:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:text-red-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover {
+    color: var(--color-danger-hover);
+  }
+  :where(html.dark, .zen-dimmed-dark) .hover\:text-danger-500:hover {
+    color: var(--color-danger-hover);
+  }
+  :where(html.light)
+    .text-rose-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: rgb(
       190 18 60
     ); /* Rose-700 #BE123C — >= 4.89:1 inclusive em surface */
   }
-  :where(html.light) .text-orange-400,
-  :where(html.light) .text-orange-300,
-  :where(html.light) .text-warning-500 {
-    color: var(--color-warning-400); /* Orange-700 #C2410C — 5.18:1 vs #FFF */
+  :where(html.light)
+    .text-orange-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-orange-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-warning-500:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
+    color: var(
+      --color-warning-400
+    ); /* calibrado >= 5.1:1 inclusive em pergaminho */
   }
-  :where(html.light) .text-cyan-400,
-  :where(html.light) .text-cyan-300,
-  :where(html.light) .text-cyan-200,
-  :where(html.light) .text-sky-400,
-  :where(html.light) .text-sky-300 {
+  :where(html.light)
+    .text-cyan-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-cyan-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-cyan-200:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-sky-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-sky-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-info);
   }
-  :where(html.light) .text-blue-400,
-  :where(html.light) .text-blue-200,
-  :where(html.light) .text-indigo-300 {
+  :where(html.light)
+    .text-blue-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-blue-200:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .text-indigo-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-blue);
   }
   :where(html.light)
-    .text-purple-400:not(:where(.zen-dimmed-dark, .zen-dimmed-dark *)),
+    .text-purple-400:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
   :where(html.light)
-    .text-purple-300:not(:where(.zen-dimmed-dark, .zen-dimmed-dark *)) {
+    .text-purple-300:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: rgb(126 34 206);
   }
 
-  :where(html.light) .hover\:text-gold:hover,
-  :where(html.light) .group:hover .group-hover\:text-gold {
+  :where(html.light)
+    .hover\:text-gold:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .group:hover
+    .group-hover\:text-gold:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-gold-ink);
   }
   :where(html.light)
-    .hover\:text-white:hover:not(.hover\:bg-primary):not(
-      .hover\:bg-danger-500
-    ):not(.hover\:bg-red-600),
-  :where(html.light) .group:hover .group-hover\:text-white {
+    .hover\:text-white:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *,
+          .hover\:bg-primary,
+          .hover\:bg-danger-500,
+          .hover\:bg-red-600
+        )
+    ):hover,
+  :where(html.light)
+    .group:hover
+    .group-hover\:text-white:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     color: var(--color-neutral-50);
   }
 
   /* 2. Superfícies Translúcidas e Elevação de Cards */
-  :where(html.light) .bg-white\/4,
-  :where(html.light) .bg-white\/5,
-  :where(html.light) .bg-white\/8 {
+  :where(html.light)
+    .bg-white\/\[0\.03\]:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/4:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/5:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/6:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/\[0\.06\]:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/8:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/\[0\.08\]:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     background-color: color-mix(
       in srgb,
       var(--color-neutral-50) 4%,
       transparent
     );
   }
-  :where(html.light) .bg-white\/10,
-  :where(html.light) .bg-white\/15 {
+  :where(html.light)
+    .bg-white\/10:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/12:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-white\/15:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     background-color: color-mix(
       in srgb,
       var(--color-neutral-50) 7%,
       transparent
     );
   }
+  /* Fundos sutis de listas/estados vazios */
+  :where(html.light)
+    .bg-primary-dark\/5:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
+    background-color: color-mix(in srgb, var(--color-primary) 4%, transparent);
+  }
+  :where(html.light)
+    .bg-primary-dark\/10:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
+    background-color: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  }
   /* Containers de cards externos (ListCard, TaskRow, HistoryRow, etc.) */
-  :where(html.light) .bg-primary-dark\/15,
-  :where(html.light) .bg-primary-dark\/20,
-  :where(html.light) .bg-primary-dark\/25 {
+  :where(html.light)
+    .bg-primary-dark\/15:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-primary-dark\/20:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-primary-dark\/25:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     background-color: var(--color-card);
     box-shadow: var(--theme-shadow-glow-gold-sm);
   }
   /* Caixas de ícones internas, badges, cabeçalhos de tabela e controles */
-  :where(html.light) .bg-primary-dark\/30,
-  :where(html.light) .bg-primary-dark\/35,
-  :where(html.light) .bg-primary-dark\/40,
-  :where(html.light) .bg-primary-dark\/50,
-  :where(html.light) .bg-primary-dark\/60 {
+  :where(html.light)
+    .bg-primary-dark\/30:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-primary-dark\/35:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-primary-dark\/40:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-primary-dark\/50:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .bg-primary-dark\/60:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
   }
 
-  :where(html.light) .hover\:bg-white\/4:hover,
-  :where(html.light) .hover\:bg-white\/5:hover,
-  :where(html.light) .hover\:bg-white\/8:hover,
-  :where(html.light) .hover\:bg-white\/10:hover,
-  :where(html.light) .hover\:bg-white\/15:hover {
+  :where(html.light)
+    .hover\:bg-white\/4:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-white\/5:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-white\/8:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-white\/10:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-white\/15:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover {
     background-color: color-mix(
       in srgb,
       var(--color-neutral-50) 6%,
       transparent
     );
   }
-  :where(html.light) .hover\:bg-primary-dark\/30:hover,
-  :where(html.light) .hover\:bg-primary-dark\/35:hover,
-  :where(html.light) .hover\:bg-primary-dark\/40:hover {
+  :where(html.light)
+    .hover\:bg-primary-dark\/30:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-primary-dark\/35:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-primary-dark\/40:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-primary-dark\/50:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:bg-primary-dark\/70:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover {
     background-color: var(--color-card-hover);
   }
 
   /* 3. Bordas Sutis e Primárias */
-  :where(html.light) .border-white\/5,
-  :where(html.light) .border-white\/6,
-  :where(html.light) .border-white\/8,
-  :where(html.light) .border-white\/10,
-  :where(html.light) .border-white\/15,
-  :where(html.light) .border-white\/20,
-  :where(html.light) .border-white\/25,
-  :where(html.light) .border-white\/30 {
+  :where(html.light)
+    .border-white\/5:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/6:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/8:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/10:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/12:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/15:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/20:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/25:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-white\/30:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     border-color: color-mix(in srgb, var(--color-neutral-50) 10%, transparent);
   }
-  :where(html.light) .border-primary\/15,
-  :where(html.light) .border-primary\/20,
-  :where(html.light) .border-primary\/25,
-  :where(html.light) .border-primary\/30,
-  :where(html.light) .border-primary\/35,
-  :where(html.light) .border-primary\/40,
-  :where(html.light) .border-primary\/50 {
+  :where(html.light)
+    .border-primary\/15:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary\/20:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary\/25:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary\/30:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary\/35:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary\/40:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary\/50:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
   }
-  :where(html.light) .border-primary-light\/30,
-  :where(html.light) .border-primary-light\/40,
-  :where(html.light) .border-primary-light\/50 {
+  :where(html.light)
+    .border-primary-light\/30:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary-light\/40:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ),
+  :where(html.light)
+    .border-primary-light\/50:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ) {
     border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
   }
 
-  :where(html.light) .hover\:border-white\/10:hover,
-  :where(html.light) .hover\:border-white\/20:hover,
-  :where(html.light) .hover\:border-white\/25:hover,
-  :where(html.light) .hover\:border-white\/30:hover {
+  :where(html.light)
+    .hover\:border-white\/10:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:border-white\/15:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:border-white\/20:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:border-white\/25:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover,
+  :where(html.light)
+    .hover\:border-white\/30:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover {
     border-color: color-mix(in srgb, var(--color-neutral-50) 18%, transparent);
   }
-  :where(html.light) .hover\:border-primary-light:hover {
+  :where(html.light)
+    .hover\:border-primary-light:not(
+      :where(
+          .tooltip-dark,
+          .tooltip-dark *,
+          .zen-dimmed-dark,
+          .zen-dimmed-dark *
+        )
+    ):hover {
     border-color: color-mix(in srgb, var(--color-primary) 34%, transparent);
   }
 
@@ -529,11 +1218,28 @@ html.light select option {
   :where(html.light) .border-l-magenta:hover {
     border-left-color: var(--color-magenta);
   }
-  :where(html.light) .border-l-purple-500,
-  :where(html.light) .border-l-purple-500:hover {
+  :where(html.light)
+    .border-l-purple-500:not(:where(.zen-dimmed-dark, .zen-dimmed-dark *)),
+  :where(html.light)
+    .border-l-purple-500:not(
+      :where(.zen-dimmed-dark, .zen-dimmed-dark *)
+    ):hover,
+  :where(html.light)
+    .border-l-purple-400:not(:where(.zen-dimmed-dark, .zen-dimmed-dark *)),
+  :where(html.light)
+    .border-l-purple-400:not(
+      :where(.zen-dimmed-dark, .zen-dimmed-dark *)
+    ):hover {
     border-left-color: rgb(147 51 234);
   }
-  :where(html.light) .hover\:border-l-purple-400:hover {
+  :where(html.light)
+    .hover\:border-l-purple-400:not(
+      :where(.zen-dimmed-dark, .zen-dimmed-dark *)
+    ):hover,
+  :where(html.light)
+    .hover\:border-l-purple-300:not(
+      :where(.zen-dimmed-dark, .zen-dimmed-dark *)
+    ):hover {
     border-left-color: rgb(126 34 206);
   }
   :where(html.light) .border-l-primary,
@@ -1095,4 +1801,43 @@ html:not(.light)
   background-color: var(--color-surface);
   border-color: var(--color-neutral-600);
   color: var(--color-primary);
+}
+
+/* ========================================================
+   ALINHAMENTO DE CARDS EM GRID VIA SUBGRID (COM FALLBACK)
+   ======================================================== */
+.catalog-card-grid {
+  grid-auto-rows: auto;
+}
+
+.catalog-subgrid-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  row-gap: 0.625rem;
+  height: 100%;
+}
+
+.catalog-subgrid-card > header {
+  grid-row: 1;
+  align-self: start;
+}
+
+.catalog-subgrid-card > .catalog-card-content {
+  grid-row: 2;
+  align-self: start;
+  min-width: 0;
+}
+
+.catalog-subgrid-card > footer {
+  grid-row: 3;
+  align-self: end;
+}
+
+@supports (grid-template-rows: subgrid) {
+  .catalog-subgrid-card {
+    grid-row: span 3;
+    /* Fallback em cascata seguido de subgrid para alinhar regiões entre irmãos na mesma linha */
+    grid-template-rows: auto 1fr auto;
+    grid-template-rows: subgrid;
+  }
 }

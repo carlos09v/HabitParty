@@ -284,12 +284,12 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
                   ) : isTodoEvent ? (
                     <CalendarClock
                       size={isCompact ? 10 : 12}
-                      className="shrink-0 text-sky-600 dark:text-info"
+                      className="shrink-0 text-sky-700 dark:text-info"
                     />
                   ) : dueDateInfo.isToday && task.dueTime ? (
                     <Clock
                       size={isCompact ? 10 : 12}
-                      className="shrink-0 text-amber-600 dark:text-gold"
+                      className="shrink-0 text-amber-800 dark:text-gold"
                     />
                   ) : (
                     <Calendar
@@ -297,9 +297,9 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
                       className={cn(
                         "shrink-0",
                         dueDateInfo.isToday
-                          ? "text-amber-600 dark:text-gold"
+                          ? "text-amber-800 dark:text-gold"
                           : dueDateInfo.isTomorrow
-                            ? "text-sky-600 dark:text-info"
+                            ? "text-sky-700 dark:text-info"
                             : "text-primary dark:text-gold",
                       )}
                     />

@@ -216,7 +216,7 @@ export function TransactionDetailPopover({
                     {copiedId ? (
                       <Check
                         size={10}
-                        className="text-emerald-600 dark:text-emerald-400"
+                        className="text-emerald-800 dark:text-emerald-400"
                       />
                     ) : (
                       <Copy size={10} />

@@ -149,7 +149,7 @@ export const PACKAGE_LEVEL_COLOR: Record<PackageMessageKey, string> = {
     "text-emerald-700 bg-emerald-500/10 border-emerald-500/25 dark:text-success-500 dark:bg-success-500/15 dark:border-success-500/30",
   PREMIUM:
     "text-sky-700 bg-sky-500/10 border-sky-500/25 dark:text-info dark:bg-info/15 dark:border-info/30",
-  EPIC: "text-magenta bg-magenta/10 border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
+  EPIC: "text-magenta dark:text-fuchsia-300 bg-magenta/10 border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
   LEGENDARY:
     "text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
 };
@@ -171,7 +171,7 @@ export const PACKAGE_LEVEL_ICON_THEME: Partial<
     "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-success-500/15 dark:border-success-500/30 dark:text-success-400 dark:group-hover:border-success-500/50",
   PREMIUM:
     "bg-sky-500/10 text-sky-700 border-sky-500/20 group-hover:border-sky-500/40 dark:bg-info/15 dark:border-info/30 dark:text-info dark:group-hover:border-info/50",
-  EPIC: "bg-magenta/10 text-magenta border-magenta/20 group-hover:border-magenta/40 dark:bg-magenta/15 dark:border-magenta/30 dark:group-hover:border-magenta/50",
+  EPIC: "bg-magenta/10 text-magenta dark:text-fuchsia-300 border-magenta/20 group-hover:border-magenta/40 dark:bg-magenta/15 dark:border-magenta/30 dark:group-hover:border-magenta/50",
   LEGENDARY:
     "bg-amber-500/10 text-amber-700 border-amber-500/25 group-hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:group-hover:border-gold/60 dark:shadow-glow-gold-xs",
 };
@@ -207,9 +207,9 @@ export const TIER_CHIP_STYLES: Record<
   EPIC: {
     dotColor: "bg-magenta",
     unselectedClass:
-      "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
+      "bg-magenta/10 border-magenta/30 text-magenta dark:text-fuchsia-300 hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
     selectedClass:
-      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-magenta dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
+      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-fuchsia-300 dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
   },
   LEGENDARY: {
     dotColor: "bg-amber-500 dark:bg-gold",

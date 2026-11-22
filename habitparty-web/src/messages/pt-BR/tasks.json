@@ -564,6 +564,7 @@
       "emptyDescription": "Você ainda não cronometrou foco nesta tarefa. Comece clicando em 'Focar agora' ou diretamente no Palco de Foco.",
       "loading": "Carregando histórico de foco...",
       "directTaskFocus": "Foco direto na tarefa",
+      "editRecordAria": "Editar este registro de foco",
       "deleteRecordAria": "Excluir este registro de foco",
       "deleteConfirmTitle": "Excluir Registro de Foco",
       "deleteConfirmDescription": "Tem certeza que deseja excluir permanentemente esta sessão de {duration}? O tempo, ciclos, XP e moedas desta sessão serão estornados com segurança.",

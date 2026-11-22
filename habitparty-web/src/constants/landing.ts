@@ -66,7 +66,7 @@ export const LANDING_HERO_HIGHLIGHT_CONFIGS: readonly LandingHeroHighlightConfig
     {
       id: "shop",
       icon: Trophy,
-      colorClass: "text-magenta",
+      colorClass: "text-magenta dark:text-fuchsia-300",
     },
   ] as const;
 
@@ -127,9 +127,9 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
     id: "hardcoreMode",
     icon: Flame,
     badgeColor:
-      "bg-rose-500/10 text-rose-700 dark:bg-danger-500/15 dark:text-danger-500",
+      "bg-rose-500/10 text-rose-700 dark:bg-danger-500/15 dark:text-danger-400",
     iconBoxColor:
-      "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-card dark:text-danger-500 dark:border-white/10",
+      "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-card dark:text-danger-400 dark:border-white/10",
   },
   {
     id: "workspaces",
@@ -141,9 +141,10 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
   {
     id: "analytics",
     icon: LineChart,
-    badgeColor: "bg-magenta/10 text-magenta dark:bg-magenta/15",
+    badgeColor:
+      "bg-magenta/10 text-magenta dark:text-fuchsia-300 dark:bg-magenta/15",
     iconBoxColor:
-      "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/20 dark:bg-card dark:text-magenta dark:border-white/10",
+      "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/20 dark:bg-card dark:text-fuchsia-300 dark:border-white/10",
   },
   {
     id: "soundEffects",
@@ -172,7 +173,7 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     icon: Languages,
     iconBoxColor:
       "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-600 dark:text-emerald-400",
+    checkColor: "text-emerald-800 dark:text-emerald-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
     borderGlowColor: "",
     hasExtras: true,
@@ -186,7 +187,7 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     icon: Trophy,
     iconBoxColor:
       "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-600 dark:text-emerald-400",
+    checkColor: "text-emerald-800 dark:text-emerald-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
     borderGlowColor: "",
   },
@@ -199,7 +200,7 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     icon: Timer,
     iconBoxColor:
       "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-600 dark:text-emerald-400",
+    checkColor: "text-emerald-800 dark:text-emerald-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
     borderGlowColor: "",
     hasExtras: true,
@@ -213,7 +214,7 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     icon: Palette,
     iconBoxColor:
       "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-600 dark:text-emerald-400",
+    checkColor: "text-emerald-800 dark:text-emerald-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
     borderGlowColor: "",
     hasExtras: true,
@@ -227,7 +228,7 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     icon: Users2,
     iconBoxColor:
       "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
-    checkColor: "text-amber-600 dark:text-gold",
+    checkColor: "text-amber-800 dark:text-gold",
     accentColor: "from-gold to-warning-500",
     borderGlowColor: "",
   },
@@ -240,7 +241,7 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     icon: MessageSquare,
     iconBoxColor:
       "bg-sky-500/10 border-sky-500/25 text-sky-700 dark:bg-card dark:border-white/15 dark:text-info",
-    checkColor: "text-sky-600 dark:text-info",
+    checkColor: "text-sky-700 dark:text-info",
     accentColor: "from-blue to-info",
     borderGlowColor: "",
   },
@@ -249,11 +250,11 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     release: "Release 2.0+",
     status: "epic",
     statusBadgeColor:
-      "bg-danger-500/12 text-danger-600 dark:bg-danger-500/15 dark:text-danger-500",
+      "bg-danger-500/12 text-danger-500 dark:bg-danger-500/15 dark:text-danger-400",
     icon: Swords,
     iconBoxColor:
-      "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:bg-card dark:border-white/15 dark:text-danger-500",
-    checkColor: "text-rose-600 dark:text-danger-500",
+      "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:bg-card dark:border-white/15 dark:text-danger-400",
+    checkColor: "text-rose-700 dark:text-danger-400",
     accentColor: "from-danger-500 to-warning-500",
     borderGlowColor: "",
   },

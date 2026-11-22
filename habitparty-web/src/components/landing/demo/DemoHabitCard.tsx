@@ -51,7 +51,7 @@ export function DemoHabitCard({
           <button
             type="button"
             onClick={onPlus}
-            className="px-3 h-8 rounded-lg bg-primary hover:bg-primary-light text-white font-bold text-xs flex items-center gap-1 shadow-xs dark:shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] active:scale-95 transition-[transform,background-color] hover:scale-105 cursor-pointer"
+            className="px-3 h-8 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold text-xs flex items-center gap-1 shadow-xs dark:shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] active:scale-95 transition-[transform,background-color] hover:scale-105 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             +10 XP

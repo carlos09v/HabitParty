@@ -123,7 +123,7 @@ export function SidebarUserProfile({
               </span>
               {achievementPoints > 0 && (
                 <span
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-gold/15 border border-gold/35 text-[10px] font-bold text-amber-600 dark:text-gold shrink-0 ml-auto"
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-gold/15 border border-gold/35 text-[10px] font-bold text-amber-800 dark:text-gold shrink-0 ml-auto"
                   title={t("achievementPointsTitle", {
                     points: achievementPoints,
                   })}
@@ -143,8 +143,8 @@ export function SidebarUserProfile({
                   className={cn(
                     "inline-flex items-center gap-1 px-1.5 py-0.2 rounded border text-[10px] font-bold leading-tight shrink-0",
                     isGamified
-                      ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-gold/10 dark:border-gold/30 dark:text-gold"
-                      : "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:bg-cyan-500/10 dark:border-cyan-500/30 dark:text-cyan-400",
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:bg-gold/10 dark:border-gold/30 dark:text-gold"
+                      : "bg-sky-500/10 border-sky-500/30 text-sky-700 dark:bg-cyan-500/10 dark:border-cyan-500/30 dark:text-cyan-400",
                   )}
                   title={
                     isGamified

@@ -244,7 +244,7 @@ function HighlightCatalogGrid({
               {isEquipped && (
                 <Check
                   size={16}
-                  className="text-amber-600 dark:text-gold shrink-0"
+                  className="text-amber-800 dark:text-gold shrink-0"
                   aria-hidden="true"
                 />
               )}
@@ -815,7 +815,7 @@ export function ShowcaseHighlightPickerModal({
                     ) : isEquipped ? (
                       <Check
                         size={16}
-                        className="text-amber-600 dark:text-gold shrink-0"
+                        className="text-amber-800 dark:text-gold shrink-0"
                       />
                     ) : null}
                   </button>
@@ -931,7 +931,7 @@ export function ShowcaseHighlightPickerModal({
                         {isEquipped && (
                           <Check
                             size={16}
-                            className="text-amber-600 dark:text-gold shrink-0"
+                            className="text-amber-800 dark:text-gold shrink-0"
                             aria-hidden="true"
                           />
                         )}
@@ -1049,7 +1049,7 @@ export function ShowcaseHighlightPickerModal({
                           {isEquipped && (
                             <Check
                               size={16}
-                              className="text-amber-600 dark:text-gold shrink-0"
+                              className="text-amber-800 dark:text-gold shrink-0"
                               aria-hidden="true"
                             />
                           )}

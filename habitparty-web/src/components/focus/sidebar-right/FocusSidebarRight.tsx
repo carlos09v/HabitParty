@@ -30,6 +30,7 @@ interface FocusSidebarRightProps {
   onResetWeek?: () => void;
   onAddRecord?: () => void;
   onOptionsClick?: () => void;
+  onEditRecord?: (record: FocusRecord) => void;
   onDeleteRecord?: (
     recordId: string,
     deleteHistory: boolean,
@@ -60,6 +61,7 @@ export function FocusSidebarRight({
   onResetWeek,
   onAddRecord,
   onOptionsClick,
+  onEditRecord,
   onDeleteRecord,
   onRecordUpdated,
   selectedActivityName,
@@ -135,6 +137,7 @@ export function FocusSidebarRight({
         onShowMore={onShowMoreRecords}
         onAddRecord={onAddRecord}
         onOptionsClick={onOptionsClick}
+        onEditRecord={onEditRecord}
         onDeleteRecord={onDeleteRecord}
         onRecordUpdated={onRecordUpdated}
       />

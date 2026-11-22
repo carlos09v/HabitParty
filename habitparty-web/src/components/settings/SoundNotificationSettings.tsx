@@ -55,7 +55,7 @@ export function SoundNotificationSettings() {
         {/* BLOCO 1: NOTIFICAÇÕES DO NAVEGADOR */}
         <SettingToggleRow
           icon={<Bell size={18} />}
-          iconWrapperClassName="bg-magenta/15 text-magenta border-magenta/30"
+          iconWrapperClassName="bg-magenta/15 text-magenta dark:text-fuchsia-300 border-magenta/30"
           title={t("browserTitle")}
           description={t("browserDesc")}
           statusBadge={{

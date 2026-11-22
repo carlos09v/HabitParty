@@ -43,7 +43,7 @@ export const APP_THEMES: readonly ThemeDefinition[] = [
       card: "#FFFFFF",
       primary: "#6D28D9",
       gold: "#F5B815",
-      accent: "#A21CAF",
+      accent: "#9324D6",
     },
   },
   {

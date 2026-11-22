@@ -276,7 +276,7 @@ export const HistoryRow = memo(function HistoryRow({
         <div
           className={cn("md:flex md:items-center", xp === 0 && "max-md:hidden")}
         >
-          <XpAmount amount={xp} size="sm" showSign={false} showZeroAsDash />
+          <XpAmount amount={xp} size="sm" showZeroAsDash />
         </div>
       </div>
 

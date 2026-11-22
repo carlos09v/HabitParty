@@ -146,7 +146,7 @@ export function TaskDetailsHeader({
                   {streakUnit}
                 </span>
                 {highestStreak > streak && (
-                  <span className="text-[10px] font-semibold text-amber-600/90 dark:text-gold/85">
+                  <span className="text-[10px] font-semibold text-amber-800/95 dark:text-gold/85">
                     (
                     {t("recordShort", {
                       count: highestStreak,
@@ -171,7 +171,7 @@ export function TaskDetailsHeader({
           />
         ) : isDaily ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
+            <span className="text-tiny font-medium text-magenta dark:text-fuchsia-300 bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
               {t("dailyBadge")}
             </span>
             {(streak > 0 || highestStreak > 0) && (
@@ -204,7 +204,7 @@ export function TaskDetailsHeader({
                   {streakUnit}
                 </span>
                 {highestStreak > streak && (
-                  <span className="text-[10px] font-semibold text-amber-600/90 dark:text-gold/85">
+                  <span className="text-[10px] font-semibold text-amber-800/95 dark:text-gold/85">
                     (
                     {t("recordShort", {
                       count: highestStreak,

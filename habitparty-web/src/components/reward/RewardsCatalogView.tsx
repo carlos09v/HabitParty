@@ -5,7 +5,7 @@ import type {
   SensorDescriptor,
   SensorOptions,
 } from "@dnd-kit/core";
-import { Plus, SearchX, Store } from "lucide-react";
+import { Plus, Receipt, SearchX, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type MouseEvent, useMemo } from "react";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
@@ -18,6 +18,7 @@ import type {
   RewardGroupContext,
 } from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
+import { cn } from "@/utils";
 import { isDebtReward } from "@/utils/rewardGrouping";
 import { RewardCard, RewardItemRow } from "./RewardCard";
 
@@ -63,13 +64,26 @@ export function RewardsCatalogView({
   const t = useTranslations("rewards.container");
   const { isGamified } = useExperienceMode();
 
-  const sortableItemIds = useMemo(
-    () =>
-      entries
-        .filter((entry) => !isDebtReward(entry.primaryReward))
-        .map((entry) => entry.groupId),
-    [entries],
-  );
+  const { debtEntries, regularEntries, sortableItemIds } = useMemo(() => {
+    const debts: RewardDisplayEntry[] = [];
+    const regular: RewardDisplayEntry[] = [];
+    const ids: string[] = [];
+
+    for (const entry of entries) {
+      if (isDebtReward(entry.primaryReward)) {
+        debts.push(entry);
+      } else {
+        regular.push(entry);
+        ids.push(entry.groupId);
+      }
+    }
+
+    return {
+      debtEntries: debts,
+      regularEntries: regular,
+      sortableItemIds: ids,
+    };
+  }, [entries]);
 
   if (entries.length === 0) {
     const isStoreEmpty = totalVisibleRewardsCount === 0;
@@ -115,73 +129,148 @@ export function RewardsCatalogView({
     );
   }
 
+  const renderRewardEntry = (entry: RewardDisplayEntry, isDebt: boolean) => {
+    const hasVariants = entry.variants.length > 1;
+    const selectedVariantId = selectedVariantByGroup?.[entry.groupId];
+    const reward =
+      hasVariants && selectedVariantId
+        ? (entry.variants.find((v) => v.id === selectedVariantId) ??
+          entry.primaryReward)
+        : entry.primaryReward;
+    const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
+    const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
+
+    if (viewMode === "card") {
+      return (
+        <RewardCard
+          key={entry.groupId}
+          groupId={entry.groupId}
+          reward={reward}
+          displayTitle={entry.displayTitle}
+          variants={hasVariants ? entry.variants : undefined}
+          activeVariantId={reward.id}
+          onSelectVariant={hasVariants ? onSelectVariant : undefined}
+          onBuy={onBuy}
+          onEdit={onEdit}
+          onContextMenu={onContextMenu}
+          currentCoins={currentCoins}
+          isDeleteChecking={isDeleteChecking}
+          isRedeeming={isRedeeming}
+          isReorderDisabled={isDebt}
+        />
+      );
+    }
+
+    const canAfford =
+      typeof currentCoins === "number" ? currentCoins >= reward.price : true;
+
+    return (
+      <RewardItemRow
+        key={entry.groupId}
+        groupId={entry.groupId}
+        reward={reward}
+        displayTitle={entry.displayTitle}
+        variants={hasVariants ? entry.variants : undefined}
+        activeVariantId={reward.id}
+        onSelectVariant={hasVariants ? onSelectVariant : undefined}
+        onBuy={onBuy}
+        onEdit={onEdit}
+        onContextMenu={onContextMenu}
+        canAfford={canAfford}
+        isDeleteChecking={isDeleteChecking}
+        isRedeeming={isRedeeming}
+        isReorderDisabled={isDebt}
+      />
+    );
+  };
+
   return (
-    <CatalogGridListShell
-      dndContextId="rewards-dnd-context"
-      itemIds={sortableItemIds}
-      viewMode={viewMode}
-      headerMode="reward"
-      sensors={sensors}
-      onDragEnd={onDragEnd}
-    >
-      {entries.map((entry) => {
-        const hasVariants = entry.variants.length > 1;
-        const selectedVariantId = selectedVariantByGroup?.[entry.groupId];
-        const reward =
-          hasVariants && selectedVariantId
-            ? (entry.variants.find((v) => v.id === selectedVariantId) ??
-              entry.primaryReward)
-            : entry.primaryReward;
-        const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
-        const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
-        const isDebt = isDebtReward(reward);
+    <div className="flex flex-col gap-5 w-full">
+      {debtEntries.length > 0 && (
+        <section
+          aria-labelledby="rewards-debts-heading"
+          className={cn(
+            "flex flex-col gap-2.5 w-full",
+            regularEntries.length === 0 && "pb-8",
+          )}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-rose-500/12 border border-rose-500/25 text-rose-700 dark:text-rose-400 shrink-0"
+                aria-hidden="true"
+              >
+                <Receipt size={13} />
+              </span>
+              <h2
+                id="rewards-debts-heading"
+                className="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300"
+              >
+                {t("sections.debtsTitle")}
+              </h2>
+              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums bg-rose-500/12 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                {debtEntries.length}
+              </span>
+            </div>
+            <p className="text-[11px] font-medium text-neutral-400">
+              {t("sections.debtsHint")}
+            </p>
+          </div>
 
-        if (viewMode === "card") {
-          return (
-            <RewardCard
-              key={entry.groupId}
-              groupId={entry.groupId}
-              reward={reward}
-              displayTitle={entry.displayTitle}
-              hasGroupDescription={entry.hasGroupDescription}
-              variants={hasVariants ? entry.variants : undefined}
-              activeVariantId={reward.id}
-              onSelectVariant={hasVariants ? onSelectVariant : undefined}
-              onBuy={onBuy}
-              onEdit={onEdit}
-              onContextMenu={onContextMenu}
-              currentCoins={currentCoins}
-              isDeleteChecking={isDeleteChecking}
-              isRedeeming={isRedeeming}
-              isReorderDisabled={isDebt}
-            />
-          );
-        }
+          {viewMode === "card" ? (
+            <div className="@container w-full">
+              <div className="catalog-card-grid grid grid-cols-1 w-full @min-[520px]:grid-cols-2 @min-[800px]:grid-cols-3 @min-[1080px]:grid-cols-4 @min-[1280px]:grid-cols-5 gap-3.5">
+                {debtEntries.map((entry) => renderRewardEntry(entry, true))}
+              </div>
+            </div>
+          ) : (
+            <div className="@container flex flex-col gap-2.5 w-full">
+              {regularEntries.length === 0 && <ItemRowHeader mode="reward" />}
+              <ul
+                className="flex flex-col gap-2 w-full"
+                aria-label={t("sections.debtsListAria")}
+              >
+                {debtEntries.map((entry) => renderRewardEntry(entry, true))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
-        const canAfford =
-          typeof currentCoins === "number"
-            ? currentCoins >= reward.price
-            : true;
+      {regularEntries.length > 0 && (
+        <section
+          aria-labelledby={
+            debtEntries.length > 0 ? "rewards-showcase-heading" : undefined
+          }
+          className="flex flex-col gap-2.5 w-full"
+        >
+          {debtEntries.length > 0 && (
+            <div className="flex items-center gap-2 px-0.5">
+              <h2
+                id="rewards-showcase-heading"
+                className="text-xs font-bold uppercase tracking-wider text-neutral-400"
+              >
+                {t("sections.showcaseTitle")}
+              </h2>
+              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums bg-surface/80 dark:bg-white/8 text-neutral-300 border border-neutral-700/80 dark:border-white/10">
+                {regularEntries.length}
+              </span>
+            </div>
+          )}
 
-        return (
-          <RewardItemRow
-            key={entry.groupId}
-            groupId={entry.groupId}
-            reward={reward}
-            displayTitle={entry.displayTitle}
-            variants={hasVariants ? entry.variants : undefined}
-            activeVariantId={reward.id}
-            onSelectVariant={hasVariants ? onSelectVariant : undefined}
-            onBuy={onBuy}
-            onEdit={onEdit}
-            onContextMenu={onContextMenu}
-            canAfford={canAfford}
-            isDeleteChecking={isDeleteChecking}
-            isRedeeming={isRedeeming}
-            isReorderDisabled={isDebt}
-          />
-        );
-      })}
-    </CatalogGridListShell>
+          <CatalogGridListShell
+            dndContextId="rewards-dnd-context"
+            itemIds={sortableItemIds}
+            viewMode={viewMode}
+            headerMode="reward"
+            listAriaLabel={t("sections.showcaseListAria")}
+            sensors={sensors}
+            onDragEnd={onDragEnd}
+          >
+            {regularEntries.map((entry) => renderRewardEntry(entry, false))}
+          </CatalogGridListShell>
+        </section>
+      )}
+    </div>
   );
 }

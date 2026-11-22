@@ -35,7 +35,7 @@ export function DangerZoneCard() {
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer shrink-0 flex items-center gap-2 shadow-xs px-4 py-2.5 text-sm"
+            className="w-full sm:w-auto justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer shrink-0 flex items-center gap-2 shadow-xs px-4 py-2.5 text-sm"
           >
             <Trash2 size={16} />
             {t("deleteButton")}

@@ -152,7 +152,7 @@ export function MysteryBoxLootEditor({
               ) : (
                 <Dices
                   size={14}
-                  className="text-sky-600 dark:text-sky-400 shrink-0"
+                  className="text-sky-700 dark:text-sky-400 shrink-0"
                   aria-hidden="true"
                 />
               )}

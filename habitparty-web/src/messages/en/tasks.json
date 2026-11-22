@@ -564,6 +564,7 @@
       "emptyDescription": "You haven't tracked focus on this task yet. Start by clicking 'Focus now' or directly on the Focus Stage.",
       "loading": "Loading focus history...",
       "directTaskFocus": "Direct task focus",
+      "editRecordAria": "Edit this focus record",
       "deleteRecordAria": "Delete this focus record",
       "deleteConfirmTitle": "Delete Focus Record",
       "deleteConfirmDescription": "Are you sure you want to permanently delete this {duration} session? Time, cycles, XP, and coins from this session will be safely reverted.",

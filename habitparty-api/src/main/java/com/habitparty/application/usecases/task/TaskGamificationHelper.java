@@ -2,6 +2,7 @@ package com.habitparty.application.usecases.task;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
@@ -130,7 +131,7 @@ public final class TaskGamificationHelper {
         task.getDifficulty(),
         task.getTags(),
         columnName,
-        null
+        LocalDateTime.ofInstant(effectiveClock.instant(), ZoneId.systemDefault())
     );
     transactionPort.save(transaction);
   }

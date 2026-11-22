@@ -132,6 +132,11 @@ public interface TransactionHistoryRepository {
     return Optional.empty();
   }
 
+  default List<TransactionHistory> findTop2ByUserIdAndReferenceIdAndType(
+      UUID userId, UUID referenceId, TransactionType transactionType) {
+    return List.of();
+  }
+
   default int updateFocusRewardSnapshot(
       UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
     return 0;
@@ -139,6 +144,19 @@ public interface TransactionHistoryRepository {
 
   default int updateFocusDescriptionSnapshot(
       UUID referenceId, UUID userId, String descriptionSnapshot) {
+    return 0;
+  }
+
+  default int updateFocusCompletedSnapshot(
+      UUID referenceId,
+      UUID userId,
+      String nameSnapshot,
+      String iconSnapshot,
+      BigDecimal goldAmount,
+      int xpAmount,
+      List<String> tagsSnapshot,
+      String descriptionSnapshot,
+      LocalDateTime createdAt) {
     return 0;
   }
 

@@ -573,6 +573,46 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         updateDocumentTitle(get());
       },
 
+      handleExternalTaskRemovedOrCompleted: (taskId: string) => {
+        if (!taskId) return;
+        let shouldResetDirectTaskSession = false;
+        set((prev) => {
+          if (!prev.target) return prev;
+          const currentTaskId =
+            prev.target.taskId ||
+            (prev.target.type === "task" ? prev.target.id : undefined);
+          if (currentTaskId !== taskId) return prev;
+
+          if (prev.target.type === "activity") {
+            return {
+              ...prev,
+              target: {
+                ...prev.target,
+                taskId: undefined,
+                taskName: undefined,
+              },
+            };
+          }
+
+          if (prev.target.type === "task") {
+            shouldResetDirectTaskSession = true;
+            return {
+              ...prev,
+              ...buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
+                mode: "POMO",
+                target: null,
+              }),
+            };
+          }
+
+          return prev;
+        });
+        if (shouldResetDirectTaskSession) {
+          stopGlobalTicker();
+        }
+        updateDocumentTitle(get());
+      },
+
       completeLinkedTask: (taskId: string, taskName?: string) =>
         executeCompleteLinkedTask(set, get, taskId, taskName),
 
@@ -712,6 +752,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           metadata.name !== undefined && metadata.name !== currentTarget.name;
         const hasIconChange =
           metadata.icon !== undefined && metadata.icon !== currentTarget.icon;
+        const hasRemainingSecondsChange =
+          currentTarget.type === "inventory" &&
+          metadata.remainingSeconds !== undefined &&
+          metadata.remainingSeconds !== currentTarget.remainingSeconds;
         const hasMinutesChange =
           metadata.targetMinutes !== undefined &&
           metadata.targetMinutes !== currentTarget.targetMinutes;
@@ -726,6 +770,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         if (
           !hasNameChange &&
           !hasIconChange &&
+          !hasRemainingSecondsChange &&
           !hasMinutesChange &&
           !hasRecordTypeChange &&
           !hasTaskNameChange
@@ -733,11 +778,18 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
 
-        const nextTargetMinutes =
-          metadata.targetMinutes ?? currentTarget.targetMinutes;
+        const nextRemainingSeconds = hasRemainingSecondsChange
+          ? metadata.remainingSeconds
+          : currentTarget.remainingSeconds;
+        const nextTargetMinutes = hasRemainingSecondsChange
+          ? Math.max(1, Math.ceil((metadata.remainingSeconds ?? 0) / 60))
+          : (metadata.targetMinutes ?? currentTarget.targetMinutes);
         const isIdleAtStart = !state.isActive && state.elapsedSeconds === 0;
         const nextDurationSeconds =
-          (nextTargetMinutes || DEFAULT_POMO_MINUTES) * 60;
+          currentTarget.type === "inventory" &&
+          nextRemainingSeconds !== undefined
+            ? nextRemainingSeconds
+            : (nextTargetMinutes || DEFAULT_POMO_MINUTES) * 60;
 
         set({
           target: {
@@ -745,12 +797,17 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             name: metadata.name ?? currentTarget.name,
             icon: metadata.icon ?? currentTarget.icon,
             targetMinutes: nextTargetMinutes,
+            remainingSeconds: nextRemainingSeconds,
             taskId: metadata.taskId ?? currentTarget.taskId,
             taskName: metadata.taskName ?? currentTarget.taskName,
           },
-          ...(isIdleAtStart && (hasMinutesChange || hasRecordTypeChange)
+          ...(isIdleAtStart &&
+          (hasMinutesChange || hasRecordTypeChange || hasRemainingSecondsChange)
             ? {
-                mode: metadata.recordType ?? state.mode,
+                mode:
+                  currentTarget.type === "inventory"
+                    ? state.mode
+                    : (metadata.recordType ?? state.mode),
                 totalDurationSeconds: nextDurationSeconds,
                 secondsRemaining: nextDurationSeconds,
               }

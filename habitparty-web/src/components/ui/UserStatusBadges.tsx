@@ -27,7 +27,7 @@ export function UserRoleBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold whitespace-nowrap shrink-0 bg-magenta/15 text-magenta border border-magenta/35",
+          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold whitespace-nowrap shrink-0 bg-magenta/15 text-magenta dark:text-fuchsia-300 border border-magenta/35",
           className,
         )}
       >

@@ -18,6 +18,7 @@ import com.habitparty.application.usecases.focus.DeleteFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByActivityUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByTaskUseCase;
 import com.habitparty.application.usecases.focus.GetUserFocusRecordsUseCase;
+import com.habitparty.application.usecases.focus.UpdateFocusRecordCommand;
 import com.habitparty.application.usecases.focus.UpdateFocusRecordUseCase;
 import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -98,7 +99,17 @@ public class FocusRecordController implements FocusRecordApi {
       UpdateFocusRecordDTO request,
       AuthenticatedUser usuarioLogado) {
 
-    var record = updateUseCase.execute(usuarioLogado.id(), recordId, request.notes());
+    var command = new UpdateFocusRecordCommand(
+        request.focusActivityId(),
+        request.inventoryItemId(),
+        request.taskId(),
+        request.notes(),
+        request.startTime(),
+        request.endTime(),
+        request.recordType(),
+        request.completedPomos(),
+        request.pomoTargetMinutes());
+    var record = updateUseCase.execute(usuarioLogado.id(), recordId, command);
     ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());
     return ResponseEntity.ok(FocusRecordResponseDTO.fromDomain(record, userZone));
   }

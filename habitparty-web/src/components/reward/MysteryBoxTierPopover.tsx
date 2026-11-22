@@ -132,7 +132,7 @@ export function MysteryBoxTierPopover({
                       {CustomSlotIcon && (
                         <CustomSlotIcon
                           size={11}
-                          className="text-amber-600 dark:text-gold shrink-0"
+                          className="text-amber-800 dark:text-gold shrink-0"
                           aria-hidden="true"
                         />
                       )}

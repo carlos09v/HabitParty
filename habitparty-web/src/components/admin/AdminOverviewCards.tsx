@@ -52,7 +52,7 @@ export async function AdminOverviewCards({
                 </span>
               )}
             </div>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-400 shrink-0">
               <Mail size={18} />
             </div>
           </div>

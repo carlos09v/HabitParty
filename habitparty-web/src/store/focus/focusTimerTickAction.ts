@@ -21,7 +21,7 @@ import { soundEffects } from "@/utils/soundEffects";
  */
 export function executeFocusTick(set: FocusStoreSetter, get: FocusStoreGetter) {
   const state = get();
-  if (!state.isActive || state.isPaused) {
+  if (!state.isActive || state.isPaused || state.isSavingSession) {
     stopGlobalTicker();
     return;
   }

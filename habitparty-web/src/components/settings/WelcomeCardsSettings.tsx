@@ -124,7 +124,7 @@ export function WelcomeCardsSettings() {
                       "w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-colors",
                       isHidden
                         ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
-                        : "bg-surface border-neutral-700 dark:border-white/10 text-amber-600 dark:text-gold",
+                        : "bg-surface border-neutral-700 dark:border-white/10 text-amber-800 dark:text-gold",
                     )}
                   >
                     <Icon size={18} />

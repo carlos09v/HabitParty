@@ -197,7 +197,7 @@ export async function LandingPricing() {
                               ? "bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold"
                               : plan.id === "guardian"
                                 ? "bg-primary/15 text-primary dark:bg-primary-light/20 dark:text-primary-light"
-                                : "bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
+                                : "bg-emerald-500/15 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400",
                           )}
                         >
                           <Check className="w-3.5 h-3.5 stroke-[2.5]" />

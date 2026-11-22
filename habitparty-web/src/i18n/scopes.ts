@@ -115,6 +115,7 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     ...MAIN_PAGE_SHARED_PATHS,
     "dashboard",
     "focus.activityModal",
+    "focus.manualRecord",
     "focus.switchTargetModal",
     "tasks.columnModal",
     "tasks.detailsPopover",
@@ -135,6 +136,7 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
   tasks: [
     ...MAIN_PAGE_SHARED_PATHS,
     "tasks",
+    "focus.manualRecord",
     "focus.switchTargetModal",
     "dashboard.taskShared",
     "ui.datePicker",

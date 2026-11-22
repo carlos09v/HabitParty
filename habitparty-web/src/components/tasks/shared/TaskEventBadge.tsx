@@ -52,7 +52,7 @@ export function TaskEventBadge({
         ) : (
           <CalendarClock
             size={size}
-            className="shrink-0 text-sky-600 dark:text-info stroke-[2.5]"
+            className="shrink-0 text-sky-700 dark:text-info stroke-[2.5]"
           />
         ))}
       <span className="truncate">

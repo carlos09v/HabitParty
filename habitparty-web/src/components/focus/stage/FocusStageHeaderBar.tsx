@@ -196,7 +196,7 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
           >
             <PictureInPicture2
               size={14}
-              className="group-hover:scale-110 transition-transform text-amber-600 dark:text-gold"
+              className="group-hover:scale-110 transition-transform text-amber-800 dark:text-gold"
             />
             <span className="hidden md:inline">{t("pipButton")}</span>
           </button>
@@ -211,7 +211,7 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
         >
           <Maximize2
             size={14}
-            className="group-hover:scale-110 transition-transform text-amber-600 dark:text-gold"
+            className="group-hover:scale-110 transition-transform text-amber-800 dark:text-gold"
           />
           <span className="hidden sm:inline">{t("zenModeButton")}</span>
         </button>

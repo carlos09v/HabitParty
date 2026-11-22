@@ -82,6 +82,10 @@ let activeStream: MediaStream | null = null;
 let activeVideoTrack: MediaStreamTrack | null = null;
 let cachedVideoPipPalette: VideoPipPalette | null = null;
 let programmaticVideoSyncUntil = 0;
+let desiredVideoPlaying = false;
+let isVideoPipReady = false;
+let deferredPauseTimeoutId: number | null = null;
+let deferredPauseRvfcHandle: number | null = null;
 let clientSupportDetected: boolean | null = null;
 let openGeneration = 0;
 let pendingOpenPromise: Promise<boolean> | null = null;
@@ -352,13 +356,69 @@ function cleanupVideoResources(
   }
 }
 
+type VideoWithFrameCallback = HTMLVideoElement & {
+  requestVideoFrameCallback?: (cb: () => void) => number;
+  cancelVideoFrameCallback?: (handle: number) => void;
+};
+
+function cancelDeferredVideoPause(
+  video: HTMLVideoElement | null = activeVideoEl,
+): void {
+  if (deferredPauseTimeoutId !== null && typeof window !== "undefined") {
+    window.clearTimeout(deferredPauseTimeoutId);
+    deferredPauseTimeoutId = null;
+  }
+  if (deferredPauseRvfcHandle !== null && video) {
+    const rvfcVideo = video as VideoWithFrameCallback;
+    rvfcVideo.cancelVideoFrameCallback?.(deferredPauseRvfcHandle);
+    deferredPauseRvfcHandle = null;
+  }
+}
+
+function pauseVideoProgrammatically(video: HTMLVideoElement): void {
+  if (activeVideoEl !== video || desiredVideoPlaying) return;
+  programmaticVideoSyncUntil = Date.now() + 450;
+  if (!video.paused) {
+    video.pause();
+  }
+}
+
+function scheduleDeferredVideoPause(video: HTMLVideoElement): void {
+  cancelDeferredVideoPause(video);
+  if (desiredVideoPlaying || activeVideoEl !== video || video.paused) {
+    return;
+  }
+
+  programmaticVideoSyncUntil = Date.now() + 450;
+  const finishPause = () => {
+    cancelDeferredVideoPause(video);
+    pauseVideoProgrammatically(video);
+  };
+
+  if (typeof window !== "undefined") {
+    deferredPauseTimeoutId = window.setTimeout(finishPause, 150);
+  }
+
+  const rvfcVideo = video as VideoWithFrameCallback;
+  if (typeof rvfcVideo.requestVideoFrameCallback === "function") {
+    deferredPauseRvfcHandle = rvfcVideo.requestVideoFrameCallback(() => {
+      deferredPauseRvfcHandle = null;
+      finishPause();
+    });
+  }
+}
+
 function teardownVideoPip() {
+  cancelDeferredVideoPause(activeVideoEl);
   cleanupVideoResources(activeVideoEl, activeStream);
   activeVideoTrack = null;
   activeStream = null;
   activeVideoEl = null;
   activeCanvasEl = null;
   activeCanvasCtx = null;
+  desiredVideoPlaying = false;
+  isVideoPipReady = false;
+  programmaticVideoSyncUntil = 0;
   invalidateVideoPipThemeCache();
 }
 
@@ -371,15 +431,17 @@ export function isProgrammaticVideoPipSync(): boolean {
 }
 
 export function syncVideoPipPlayback(isRunning: boolean): void {
+  desiredVideoPlaying = isRunning;
   const video = activeVideoEl;
-  if (!video) return;
-  programmaticVideoSyncUntil = Date.now() + 250;
+  if (!video || !isVideoPipReady) return;
+  programmaticVideoSyncUntil = Date.now() + 450;
   if (isRunning) {
+    cancelDeferredVideoPause(video);
     if (video.paused) {
       void video.play().catch(() => {});
     }
   } else if (!video.paused) {
-    video.pause();
+    scheduleDeferredVideoPause(video);
   }
 }
 
@@ -593,6 +655,27 @@ export function renderVideoPipFrame(frame: VideoPipFrameData) {
     | (MediaStreamTrack & { requestFrame?: () => void })
     | null;
   track?.requestFrame?.();
+
+  // Em navegadores com Video PiP (<video>.captureStream), um <video> já pausado congela o último quadro.
+  // Reproduzimos brevemente um frame para apresentar o reset/estado novo antes de pausar novamente.
+  const video = activeVideoEl;
+  if (
+    video &&
+    isVideoPipReady &&
+    !frame.isRunning &&
+    !desiredVideoPlaying &&
+    video.paused
+  ) {
+    programmaticVideoSyncUntil = Date.now() + 450;
+    void video
+      .play()
+      .then(() => {
+        if (activeVideoEl === video && !desiredVideoPlaying) {
+          scheduleDeferredVideoPause(video);
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 async function executeOpenFocusPip(
@@ -722,6 +805,8 @@ async function executeOpenFocusPip(
 
       activeCanvasEl = canvas;
       activeCanvasCtx = canvas.getContext("2d", { alpha: false });
+      desiredVideoPlaying = Boolean(options?.isInitiallyRunning);
+      isVideoPipReady = false;
       renderVideoPipFrame(
         options?.initialVideoFrame ?? {
           timeText: "25:00",
@@ -734,7 +819,7 @@ async function executeOpenFocusPip(
         },
       );
 
-      const stream = canvas.captureStream(2);
+      const stream = canvas.captureStream(15);
       localStream = stream;
       activeStream = stream;
       activeVideoTrack = stream.getVideoTracks()[0] ?? null;
@@ -756,14 +841,13 @@ async function executeOpenFocusPip(
       }
 
       await video.requestPictureInPicture();
-      if (myGeneration !== openGeneration) {
+      if (myGeneration !== openGeneration || activeVideoEl !== video) {
         cleanupVideoResources(localVideo, localStream);
         return false;
       }
 
-      if (!options?.isInitiallyRunning) {
-        syncVideoPipPlayback(false);
-      }
+      isVideoPipReady = true;
+      syncVideoPipPlayback(desiredVideoPlaying);
       rebuildSnapshot();
       return true;
     } catch {

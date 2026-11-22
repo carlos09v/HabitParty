@@ -251,7 +251,21 @@ export async function updateFocusRecord(
       };
     }
 
-    invalidateFocusDomainTags({ records: true, tasks: true });
+    const hasFullPayload =
+      dto.startTime !== undefined ||
+      dto.endTime !== undefined ||
+      dto.focusActivityId !== undefined ||
+      dto.inventoryItemId !== undefined ||
+      dto.taskId !== undefined ||
+      dto.recordType !== undefined ||
+      dto.completedPomos !== undefined ||
+      dto.pomoTargetMinutes !== undefined;
+
+    invalidateFocusDomainTags({
+      records: true,
+      rewardsAndInventory: hasFullPayload,
+      tasks: true,
+    });
     return { success: true, data: data as FocusRecordResponseDTO };
   } catch (err) {
     console.error("[FocusAction:UpdateRecord]", err);

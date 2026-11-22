@@ -36,6 +36,7 @@ export default async function FocusPage({ searchParams }: PageProps) {
   const {
     activities,
     backpackItems,
+    allInventoryItems,
     initialRecords,
     totalRecordsCount,
     hasMoreRecords,
@@ -48,6 +49,7 @@ export default async function FocusPage({ searchParams }: PageProps) {
       <FocusContainer
         initialActivities={activities}
         initialBackpackItems={backpackItems}
+        initialAllInventoryItems={allInventoryItems}
         initialRecords={initialRecords}
         initialTotalRecordsCount={totalRecordsCount}
         initialHasMoreRecords={hasMoreRecords}

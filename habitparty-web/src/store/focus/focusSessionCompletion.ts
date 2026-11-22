@@ -262,7 +262,9 @@ export async function executeCompleteSession(
       stopGlobalTicker();
       set((prev) =>
         buildIdleTimerPatch(
-          prev.totalDurationSeconds || DEFAULT_POMO_MINUTES * 60,
+          isInventory
+            ? DEFAULT_POMO_MINUTES * 60
+            : prev.totalDurationSeconds || DEFAULT_POMO_MINUTES * 60,
           {
             sessionNotes: "",
             target: isInventory ? null : prev.target,

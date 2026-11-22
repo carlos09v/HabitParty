@@ -73,6 +73,10 @@ public record TaskResponseDTO(
         Boolean emailReminderSent,
         Boolean isRewardClaimed,
         @JsonInclude(JsonInclude.Include.NON_NULL) Boolean rewardGranted,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean rewardReverted,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Integer revertedXp,
+        @JsonInclude(JsonInclude.Include.NON_NULL) java.math.BigDecimal revertedCoins,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean streakReverted,
         OffsetDateTime lastCompletedAt,
 
         // --- Métricas de Foco Vinculado ---
@@ -98,6 +102,18 @@ public record TaskResponseDTO(
             LocalDate referenceDate,
             ZoneId zoneId,
             Boolean rewardGranted) {
+        return fromDomain(task, referenceDate, zoneId, rewardGranted, null, null, null, null);
+    }
+
+    public static TaskResponseDTO fromDomain(
+            Task task,
+            LocalDate referenceDate,
+            ZoneId zoneId,
+            Boolean rewardGranted,
+            Boolean rewardReverted,
+            Integer revertedXp,
+            java.math.BigDecimal revertedCoins,
+            Boolean streakReverted) {
         LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
         ZoneId effectiveZone = zoneId != null ? zoneId : ZoneId.systemDefault();
         // Converte o checklist para DTO (se existir)
@@ -172,6 +188,10 @@ public record TaskResponseDTO(
                 task instanceof Todo t ? t.isEmailReminderSent() : null,
                 task.isRewardAlreadyClaimed(effectiveDate),
                 rewardGranted,
+                rewardReverted,
+                revertedXp,
+                revertedCoins,
+                streakReverted,
                 lastCompletedAt,
 
                 // Métricas de Foco

@@ -71,6 +71,27 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
       @Param("startOfDay") LocalDateTime startOfDay,
       @Param("endOfDay") LocalDateTime endOfDay);
 
+  @Query("""
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN f.durationMinutes < 10 THEN 0
+          WHEN f.durationMinutes > 90 THEN 90
+          ELSE f.durationMinutes
+        END
+      ), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.endTime >= :startOfDay
+        AND f.endTime <= :endOfDay
+        AND f.id <> :excludedRecordId
+  """)
+  int sumTodayFocusMinutesByUserIdExcludingRecord(
+      @Param("userId") UUID userId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay,
+      @Param("excludedRecordId") UUID excludedRecordId);
+
   @Modifying
   @Query("DELETE FROM FocusRecordJpaEntity f WHERE f.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
@@ -164,6 +185,21 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
       @Param("userId") UUID userId,
       @Param("startOfDay") LocalDateTime startOfDay,
       @Param("endOfDay") LocalDateTime endOfDay);
+
+  @Query("""
+      SELECT COALESCE(SUM(f.durationMinutes), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.endTime >= :startOfDay
+        AND f.endTime <= :endOfDay
+        AND f.id <> :excludedRecordId
+  """)
+  int sumProductiveFocusMinutesByUserIdExcludingRecord(
+      @Param("userId") UUID userId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay,
+      @Param("excludedRecordId") UUID excludedRecordId);
 
   interface ProductiveFocusSessionProjection {
     UUID getUserId();

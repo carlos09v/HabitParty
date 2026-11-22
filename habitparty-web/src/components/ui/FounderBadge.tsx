@@ -34,7 +34,7 @@ export function FounderBadge({
         />
         <Sparkles
           className={cn(
-            "absolute -top-1 -right-1 text-amber-600 dark:text-white animate-pulse",
+            "absolute -top-1 -right-1 text-amber-800 dark:text-white animate-pulse",
             size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2",
           )}
         />

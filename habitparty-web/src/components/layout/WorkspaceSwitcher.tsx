@@ -278,7 +278,7 @@ export function WorkspaceSwitcher({
               {(activeWorkspace?.name || "W").charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col items-start min-w-0">
-              <span className="text-[10px] uppercase tracking-wider text-primary dark:text-gold-pressed font-bold leading-tight">
+              <span className="text-[10px] uppercase tracking-wider text-primary dark:text-gold font-bold leading-tight">
                 {t("label")}
               </span>
               <span className="text-body-s text-neutral-50 font-bold truncate max-w-[130px]">
@@ -399,7 +399,7 @@ export function WorkspaceSwitcher({
                     <div className="flex items-center gap-2 min-w-0">
                       <Lock
                         size={13}
-                        className="text-amber-600 dark:text-gold/70 group-hover:text-amber-700 dark:group-hover:text-gold shrink-0"
+                        className="text-amber-700 dark:text-gold/70 group-hover:text-amber-800 dark:group-hover:text-gold shrink-0"
                       />
                       <span className="truncate">
                         {t("lockedCount", {

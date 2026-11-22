@@ -124,7 +124,7 @@ export function WorkspaceSearchHintBanner({
         {hasRemoteHits ? (
           <Sparkles
             size={14}
-            className="shrink-0 text-amber-600 dark:text-gold"
+            className="shrink-0 text-amber-800 dark:text-gold"
           />
         ) : (
           <ArrowRightLeft

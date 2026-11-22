@@ -94,7 +94,7 @@ export function ProgressionSummaryCards({
 
       <SummaryStatCard
         icon={Sparkles}
-        iconBoxClassName="bg-magenta/15 border-magenta/35 text-magenta"
+        iconBoxClassName="bg-magenta/15 border-magenta/35 text-magenta dark:text-fuchsia-300"
         label={t(isGamified ? "totalXpLabel" : "totalXpLabelEssential")}
       >
         <XpAmount

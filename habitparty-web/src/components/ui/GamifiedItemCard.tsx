@@ -1,22 +1,20 @@
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  Check,
-  HelpCircle,
-  Loader2,
-  MoreVertical,
-  Pin,
-  Receipt,
-} from "lucide-react";
+import { Check, Loader2, Receipt } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { memo, type default as React, useCallback } from "react";
+import { memo, type default as React } from "react";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
   CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
+import { CatalogUtilityActions } from "@/components/ui/CatalogItemShared";
+import {
+  type CatalogSortableBindings,
+  IDLE_SORTABLE_BINDINGS,
+  useCatalogItemInteraction,
+} from "@/hooks/useCatalogItemInteraction";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import {
   type MysteryPopoverBridge,
@@ -28,12 +26,7 @@ import type {
   MysteryBoxLootItem,
   MysteryBoxTier,
 } from "@/types/reward";
-import {
-  cn,
-  formatCoins,
-  openContextMenuFromButton,
-  STOP_DRAG_PROPAGATION_PROPS,
-} from "@/utils";
+import { cn, formatCoins } from "@/utils";
 import {
   resolveCatalogActionTooltip,
   resolveCatalogItemVisuals,
@@ -46,7 +39,6 @@ export interface GamifiedItemCardProps {
   sortableId?: string;
   title: string;
   description?: string;
-  hasGroupDescription?: boolean;
   iconName?: string;
   type: string;
   packageLevel?: string | null;
@@ -74,11 +66,10 @@ export interface GamifiedItemCardProps {
 }
 
 type CardVisuals = ReturnType<typeof resolveCatalogItemVisuals>;
-type CardSortableState = ReturnType<typeof useSortable>;
 
 interface GamifiedItemCardContentProps extends GamifiedItemCardProps {
   visuals: CardVisuals;
-  sortable: CardSortableState;
+  sortable: CatalogSortableBindings;
   mysteryPopover?: MysteryPopoverBridge;
 }
 
@@ -86,7 +77,6 @@ function GamifiedItemCardContent({
   id,
   title,
   description,
-  hasGroupDescription = false,
   baseDurationMinutes,
   remainingSeconds,
   quantity,
@@ -127,37 +117,23 @@ function GamifiedItemCardContent({
     isFocusNavigate,
   } = visuals;
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = sortable;
-
-  const tierContainerRef = mysteryPopover?.tierContainerRef;
-  const setCardRefs = useCallback(
-    (node: HTMLElement | null) => {
-      setNodeRef(node);
-      if (tierContainerRef) {
-        tierContainerRef.current = node;
-      }
-    },
-    [setNodeRef, tierContainerRef],
-  );
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? undefined : transition,
-  };
+  const { setRootRef, dragStyle, isDragging, rootInteractionProps } =
+    useCatalogItemInteraction<HTMLElement>({
+      sortable,
+      mysteryPopover,
+      isDragDisabled,
+      onDoubleClick,
+      onContextMenu,
+    });
 
   const isPrimaryDisabled =
     !canAfford || (inUse && !isFocusNavigate) || isActionLoading;
   const trimmedDescription = description?.trim() ?? "";
+  const selectableVariants =
+    variants && variants.length > 1 && onSelectVariant
+      ? { variants, onSelect: onSelectVariant }
+      : null;
   const hasMultipleVariants = Boolean(variants && variants.length > 1);
-  const reserveDescriptionSpace =
-    hasMultipleVariants && Boolean(hasGroupDescription);
 
   const showStoreProgress =
     typeof price === "number" && price > 0 && typeof currentCoins === "number";
@@ -187,7 +163,7 @@ function GamifiedItemCardContent({
   const showSubtleCategory = hasValidCategory && !isDebtCategory;
 
   const fallbackDescription =
-    !trimmedDescription && !hasMultipleVariants && !reserveDescriptionSpace
+    !trimmedDescription && !hasMultipleVariants
       ? isDebtCategory
         ? t("fallbackDescriptions.debt")
         : isMystery
@@ -201,63 +177,15 @@ function GamifiedItemCardContent({
             : t("fallbackDescriptions.singleUse")
       : "";
 
+  const displayDescription = trimmedDescription || fallbackDescription;
+
   return (
     <article
-      ref={setCardRefs}
-      style={style}
-      {...(!isDragDisabled ? attributes : {})}
-      {...(!isDragDisabled ? listeners : {})}
-      onKeyDown={(e) => {
-        if (isDragDisabled || e.target !== e.currentTarget) return;
-        listeners?.onKeyDown?.(e);
-      }}
-      onDoubleClick={(e) => {
-        if (isDragging || !onDoubleClick) return;
-        e.stopPropagation();
-        onDoubleClick(e);
-      }}
-      onContextMenu={onContextMenu}
-      onPointerEnter={
-        mysteryPopover
-          ? (e) => {
-              if (e.pointerType === "mouse") {
-                mysteryPopover.open();
-              }
-            }
-          : undefined
-      }
-      onPointerLeave={
-        mysteryPopover
-          ? (e) => {
-              if (e.pointerType === "mouse") {
-                mysteryPopover.close();
-              }
-            }
-          : undefined
-      }
-      onFocus={
-        mysteryPopover
-          ? (e) => {
-              if (
-                e.target === e.currentTarget &&
-                e.currentTarget.matches(":focus-visible")
-              ) {
-                mysteryPopover.open();
-              }
-            }
-          : undefined
-      }
-      onBlur={
-        mysteryPopover
-          ? (e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                mysteryPopover.close();
-              }
-            }
-          : undefined
-      }
+      ref={setRootRef}
+      style={dragStyle}
+      {...rootInteractionProps}
       className={cn(
-        "relative flex flex-col h-full rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden p-3 gap-2.5",
+        "catalog-subgrid-card relative rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden p-3",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
           : isDebtCategory
@@ -269,22 +197,21 @@ function GamifiedItemCardContent({
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
-      {/* Detalhe de Raridade / Dívida / Status no Topo do Card */}
-      {(inUse || isDebtCategory || topBarClass) && (
-        <div
-          className={cn(
-            "absolute top-0 inset-x-0 h-1 bg-linear-to-r pointer-events-none",
-            inUse
-              ? "from-amber-500 to-yellow-500 opacity-95"
-              : isDebtCategory
-                ? "from-rose-500/45 via-rose-500 to-rose-400/45 opacity-95"
-                : cn("from-transparent to-transparent", topBarClass),
-          )}
-        />
-      )}
-
-      {/* ZONA 1: Cabeçalho limpo (Ícone + Título + Ações secundárias + Metadados enxutos) */}
+      {/* ZONA 1: Cabeçalho limpo (Faixa de status no topo + Ícone + Título + Ações secundárias + Metadados enxutos) */}
       <header className="flex items-start gap-2.5 w-full min-w-0">
+        {(inUse || isDebtCategory || topBarClass) && (
+          <div
+            aria-hidden="true"
+            className={cn(
+              "absolute top-0 inset-x-0 h-1 bg-linear-to-r pointer-events-none",
+              inUse
+                ? "from-amber-500 to-yellow-500 opacity-95"
+                : isDebtCategory
+                  ? "from-rose-500/45 via-rose-500 to-rose-400/45 opacity-95"
+                  : cn("from-transparent to-transparent", topBarClass),
+            )}
+          />
+        )}
         <div className="relative shrink-0">
           <div
             className={cn(
@@ -317,7 +244,7 @@ function GamifiedItemCardContent({
               className={cn(
                 "font-bold text-neutral-100 truncate min-w-0 flex-1 transition-colors leading-snug pt-0.5 text-body-s",
                 isDebtCategory
-                  ? "group-hover:text-rose-600 dark:group-hover:text-rose-300"
+                  ? "group-hover:text-rose-700 dark:group-hover:text-rose-300"
                   : "group-hover:text-primary dark:group-hover:text-gold",
               )}
               title={title}
@@ -331,70 +258,14 @@ function GamifiedItemCardContent({
               onContextMenu ||
               isDeleteChecking) && (
               <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
-                {(isDebtCategory || isDragDisabled) && (
-                  <span
-                    className="inline-flex items-center justify-center min-w-5 min-h-7 text-rose-500/80 dark:text-rose-400/80"
-                    title={t("pinnedDebtTitle")}
-                  >
-                    <Pin size={13} aria-hidden="true" />
-                  </span>
-                )}
-
-                {mysteryPopover && (
-                  <button
-                    type="button"
-                    {...STOP_DRAG_PROPAGATION_PROPS}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      mysteryPopover.toggle();
-                    }}
-                    onDoubleClick={(e) => e.stopPropagation()}
-                    aria-expanded={mysteryPopover.isOpen}
-                    aria-label={
-                      isGamified
-                        ? t("tierDetailsAria")
-                        : t("tierDetailsAriaProductivity")
-                    }
-                    title={
-                      isGamified
-                        ? t("tierDetailsAria")
-                        : t("tierDetailsAriaProductivity")
-                    }
-                    className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                  >
-                    <HelpCircle size={14} aria-hidden="true" />
-                  </button>
-                )}
-
-                {isDeleteChecking ? (
-                  <output
-                    className="inline-flex items-center justify-center text-gold min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8"
-                    title={t("checkingDeleteAria")}
-                    aria-label={t("checkingDeleteAria")}
-                  >
-                    <Loader2
-                      size={15}
-                      className="animate-spin"
-                      aria-hidden="true"
-                    />
-                  </output>
-                ) : (
-                  onContextMenu && (
-                    <button
-                      type="button"
-                      {...STOP_DRAG_PROPAGATION_PROPS}
-                      onClick={(e) =>
-                        openContextMenuFromButton(e, onContextMenu)
-                      }
-                      onDoubleClick={(e) => e.stopPropagation()}
-                      aria-label={t("moreActionsAria")}
-                      title={t("moreActionsAria")}
-                      className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                    >
-                      <MoreVertical size={15} aria-hidden="true" />
-                    </button>
-                  )
-                )}
+                <CatalogUtilityActions
+                  variant="card"
+                  showPin={isDebtCategory || isDragDisabled}
+                  mysteryPopover={mysteryPopover}
+                  isGamified={isGamified}
+                  isDeleteChecking={isDeleteChecking}
+                  onContextMenu={onContextMenu}
+                />
               </div>
             )}
           </div>
@@ -471,39 +342,49 @@ function GamifiedItemCardContent({
         </div>
       </header>
 
-      {/* ZONA 2: Descrição do usuário (ou resumo contextual em cards simples) + Seletor embutido de Pacotes */}
-      {(trimmedDescription !== "" ||
-        fallbackDescription !== "" ||
-        reserveDescriptionSpace) && (
+      {/* ZONA 2: Descrição do usuário (ou resumo contextual) + Seletor compacto de Pacotes em uma única região */}
+      {displayDescription && selectableVariants ? (
+        <div className="catalog-card-content flex flex-col gap-1.5 min-w-0">
+          <p
+            className={cn(
+              "leading-snug line-clamp-2 text-xs",
+              trimmedDescription !== ""
+                ? "text-neutral-300"
+                : "text-neutral-400",
+            )}
+          >
+            {displayDescription}
+          </p>
+          <CatalogItemVariantChips
+            variants={selectableVariants.variants}
+            activeVariantId={activeVariantId ?? id}
+            onSelectVariant={selectableVariants.onSelect}
+            disabled={isActionLoading}
+          />
+        </div>
+      ) : displayDescription ? (
         <p
           className={cn(
-            "leading-snug line-clamp-2 text-xs",
+            "catalog-card-content leading-snug line-clamp-2 text-xs",
             trimmedDescription !== "" ? "text-neutral-300" : "text-neutral-400",
-            reserveDescriptionSpace && "min-h-[2.125rem]",
           )}
-          aria-hidden={
-            trimmedDescription === "" && fallbackDescription === ""
-              ? true
-              : undefined
-          }
         >
-          {trimmedDescription || fallbackDescription || "\u00A0"}
+          {displayDescription}
         </p>
-      )}
-
-      {variants && variants.length > 1 && onSelectVariant && (
+      ) : selectableVariants ? (
         <CatalogItemVariantChips
-          variants={variants}
+          variants={selectableVariants.variants}
           activeVariantId={activeVariantId ?? id}
-          onSelectVariant={onSelectVariant}
+          onSelectVariant={selectableVariants.onSelect}
           disabled={isActionLoading}
+          className="catalog-card-content"
         />
-      )}
+      ) : null}
 
       {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço + Ação única) */}
       <footer
         className={cn(
-          "mt-auto flex flex-col gap-1.5 pt-2 border-t w-full",
+          "flex flex-col gap-1.5 pt-2 border-t w-full",
           isDebtCategory
             ? "border-rose-500/20 dark:border-rose-400/15"
             : "border-neutral-700/80 dark:border-white/10",
@@ -641,9 +522,42 @@ function MysteryBoxGamifiedCard({
   return <GamifiedItemCardContent {...props} mysteryPopover={mysteryPopover} />;
 }
 
+function GamifiedItemCardVariantBranch(
+  props: GamifiedItemCardProps & {
+    isDragDisabled: boolean;
+    visuals: CardVisuals;
+    sortable: CatalogSortableBindings;
+  },
+) {
+  if (props.visuals.isMystery && props.visuals.mysteryTier) {
+    return (
+      <MysteryBoxGamifiedCard
+        {...props}
+        mysteryTier={props.visuals.mysteryTier}
+      />
+    );
+  }
+
+  return <GamifiedItemCardContent {...props} />;
+}
+
+function SortableGamifiedItemCardBridge(
+  props: GamifiedItemCardProps & {
+    isDragDisabled: boolean;
+    visuals: CardVisuals;
+  },
+) {
+  const sortable = useSortable({
+    id: props.sortableId ?? props.id,
+    data: props.dragData || { id: props.id },
+  });
+
+  return <GamifiedItemCardVariantBranch {...props} sortable={sortable} />;
+}
+
 /**
  * Card unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
- * Isola hooks de popover flutuante exclusivamente para Caixas Misteriosas.
+ * Isola hooks de popover flutuante em Caixas Misteriosas e ignora `useSortable` em itens fixados/dívidas.
  */
 export const GamifiedItemCard = memo(function GamifiedItemCard(
   props: GamifiedItemCardProps,
@@ -659,30 +573,22 @@ export const GamifiedItemCard = memo(function GamifiedItemCard(
 
   const isDragDisabled = Boolean(props.isDragDisabled || visuals.isDebt);
 
-  const sortable = useSortable({
-    id: props.sortableId ?? props.id,
-    data: props.dragData || { id: props.id },
-    disabled: isDragDisabled,
-  });
-
-  if (visuals.isMystery && visuals.mysteryTier) {
+  if (isDragDisabled) {
     return (
-      <MysteryBoxGamifiedCard
+      <GamifiedItemCardVariantBranch
         {...props}
-        isDragDisabled={isDragDisabled}
+        isDragDisabled={true}
         visuals={visuals}
-        sortable={sortable}
-        mysteryTier={visuals.mysteryTier}
+        sortable={IDLE_SORTABLE_BINDINGS}
       />
     );
   }
 
   return (
-    <GamifiedItemCardContent
+    <SortableGamifiedItemCardBridge
       {...props}
-      isDragDisabled={isDragDisabled}
+      isDragDisabled={false}
       visuals={visuals}
-      sortable={sortable}
     />
   );
 });

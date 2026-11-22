@@ -20,50 +20,58 @@ import type {
 } from "@/types/task";
 import type { FormatSyntax } from "@/types/task-ui";
 
-/** Borda esquerda dos Hábitos baseada na Importância. */
-export const HABIT_IMPORTANCE_BORDER: Record<string, string> = {
+const HABIT_IMPORTANCE_BORDER_STYLES = {
   LOW: "border-l-info hover:border-l-info-hover", // Azul claro
   NORMAL: "border-l-success-500 hover:border-l-success-hover", // Verde
-  HIGH: "border-l-purple-500 hover:border-l-purple-400", // Roxo Épico (diferenciado de atraso)
+  HIGH: "border-l-purple-600 hover:border-l-purple-700 dark:border-l-purple-400 dark:hover:border-l-purple-300", // Roxo Épico (diferenciado de atraso)
+} as const;
+
+/** Borda esquerda dos Hábitos baseada na Importância. */
+export const HABIT_IMPORTANCE_BORDER: Record<string, string> = {
+  ...HABIT_IMPORTANCE_BORDER_STYLES,
   // Aliases minúsculos para compatibilidade
-  low: "border-l-info hover:border-l-info-hover",
-  normal: "border-l-success-500 hover:border-l-success-hover",
-  high: "border-l-purple-500 hover:border-l-purple-400",
+  low: HABIT_IMPORTANCE_BORDER_STYLES.LOW,
+  normal: HABIT_IMPORTANCE_BORDER_STYLES.NORMAL,
+  high: HABIT_IMPORTANCE_BORDER_STYLES.HIGH,
 };
 
-/** Borda esquerda de Diárias e Afazeres baseada na Dificuldade. */
-export const DIFFICULTY_BORDER: Record<string, string> = {
+const DIFFICULTY_BORDER_STYLES = {
   TRIVIAL: "border-l-info hover:border-l-info-hover", // Azul claro
   EASY: "border-l-success-500 hover:border-l-success-hover", // Verde
   MEDIUM: "border-l-warning-500 hover:border-l-warning-hover", // Laranja / Amarelo
-  HARD: "border-l-purple-500 hover:border-l-purple-400", // Roxo Épico (diferenciado de atraso)
+  HARD: "border-l-purple-600 hover:border-l-purple-700 dark:border-l-purple-400 dark:hover:border-l-purple-300", // Roxo Épico (diferenciado de atraso)
+} as const;
+
+/** Borda esquerda de Diárias e Afazeres baseada na Dificuldade. */
+export const DIFFICULTY_BORDER: Record<string, string> = {
+  ...DIFFICULTY_BORDER_STYLES,
   // Aliases minúsculos e antigos para compatibilidade com Dashboard e forms
-  trivial: "border-l-info hover:border-l-info-hover",
-  low: "border-l-success-500 hover:border-l-success-hover",
-  easy: "border-l-success-500 hover:border-l-success-hover",
-  normal: "border-l-warning-500 hover:border-l-warning-hover",
-  medium: "border-l-warning-500 hover:border-l-warning-hover",
-  high: "border-l-purple-500 hover:border-l-purple-400",
-  hard: "border-l-purple-500 hover:border-l-purple-400",
+  trivial: DIFFICULTY_BORDER_STYLES.TRIVIAL,
+  low: DIFFICULTY_BORDER_STYLES.EASY,
+  easy: DIFFICULTY_BORDER_STYLES.EASY,
+  normal: DIFFICULTY_BORDER_STYLES.MEDIUM,
+  medium: DIFFICULTY_BORDER_STYLES.MEDIUM,
+  high: DIFFICULTY_BORDER_STYLES.HARD,
+  hard: DIFFICULTY_BORDER_STYLES.HARD,
 };
+
+const TASK_TYPE_META_ENTRIES = {
+  HABIT: { label: "Hábito", color: "text-info bg-info/15 border-info/40" },
+  DAILY: {
+    label: "Diária",
+    color:
+      "text-magenta dark:text-fuchsia-300 bg-magenta/12 dark:bg-magenta/15 border-magenta/35 dark:border-magenta/40",
+  },
+  TODO: { label: "Afazer", color: "text-gold bg-gold/15 border-gold/40" },
+} as const;
 
 /** Rótulo e cor (alto contraste no fundo roxo) de cada tipo de tarefa. */
 export const TASK_TYPE_META: Record<string, { label: string; color: string }> =
   {
-    HABIT: { label: "Hábito", color: "text-info bg-info/15 border-info/40" },
-    DAILY: {
-      label: "Diária",
-      color:
-        "text-magenta dark:text-fuchsia-300 bg-magenta/12 dark:bg-magenta/15 border-magenta/35 dark:border-magenta/40",
-    },
-    TODO: { label: "Afazer", color: "text-gold bg-gold/15 border-gold/40" },
-    habit: { label: "Hábito", color: "text-info bg-info/15 border-info/40" },
-    daily: {
-      label: "Diária",
-      color:
-        "text-magenta dark:text-fuchsia-300 bg-magenta/12 dark:bg-magenta/15 border-magenta/35 dark:border-magenta/40",
-    },
-    todo: { label: "Afazer", color: "text-gold bg-gold/15 border-gold/40" },
+    ...TASK_TYPE_META_ENTRIES,
+    habit: TASK_TYPE_META_ENTRIES.HABIT,
+    daily: TASK_TYPE_META_ENTRIES.DAILY,
+    todo: TASK_TYPE_META_ENTRIES.TODO,
   };
 
 /** Opções de filtro por Tipo de Tarefa (compatíveis com id e value para Select e botões). */
@@ -238,42 +246,21 @@ export function toPriorityMessageKey(
   return key === "LOW" || key === "MEDIUM" || key === "HIGH" ? key : "NONE";
 }
 
-/** Metadados e cores de dificuldade de tarefas (Diárias e Afazeres). */
-export const TASK_DIFFICULTY_META: Record<
-  string,
-  { label: string; color: string; badgeColor: string }
-> = {
+const TASK_DIFFICULTY_META_ENTRIES = {
   TRIVIAL: {
-    label: "Trivial",
-    color: "text-info",
-    badgeColor: "text-info bg-info/15 border-info/40",
-  },
-  trivial: {
     label: "Trivial",
     color: "text-info",
     badgeColor: "text-info bg-info/15 border-info/40",
   },
   EASY: {
     label: "Fácil",
-    color: "text-success-500",
-    badgeColor:
-      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40",
-  },
-  easy: {
-    label: "Fácil",
-    color: "text-success-500",
+    color: "text-success-300 dark:text-success-500",
     badgeColor:
       "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40",
   },
   MEDIUM: {
     label: "Médio",
-    color: "text-warning-500",
-    badgeColor:
-      "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40",
-  },
-  medium: {
-    label: "Médio",
-    color: "text-warning-500",
+    color: "text-warning-400 dark:text-warning-500",
     badgeColor:
       "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40",
   },
@@ -283,12 +270,18 @@ export const TASK_DIFFICULTY_META: Record<
     badgeColor:
       "text-purple-700 dark:text-purple-300 bg-purple-500/15 dark:bg-purple-500/20 border-purple-500/35 dark:border-purple-500/40",
   },
-  hard: {
-    label: "Difícil",
-    color: "text-purple-700 dark:text-purple-400",
-    badgeColor:
-      "text-purple-700 dark:text-purple-300 bg-purple-500/15 dark:bg-purple-500/20 border-purple-500/35 dark:border-purple-500/40",
-  },
+} as const;
+
+/** Metadados e cores de dificuldade de tarefas (Diárias e Afazeres). */
+export const TASK_DIFFICULTY_META: Record<
+  string,
+  { label: string; color: string; badgeColor: string }
+> = {
+  ...TASK_DIFFICULTY_META_ENTRIES,
+  trivial: TASK_DIFFICULTY_META_ENTRIES.TRIVIAL,
+  easy: TASK_DIFFICULTY_META_ENTRIES.EASY,
+  medium: TASK_DIFFICULTY_META_ENTRIES.MEDIUM,
+  hard: TASK_DIFFICULTY_META_ENTRIES.HARD,
 };
 
 /** Cores de indicador em ponto (dot) por dificuldade (Modo Produtividade). */
@@ -302,24 +295,13 @@ export const DIFFICULTY_DOT_COLORS: Record<TaskDifficultyOption, string> = {
 /** Cores de ícone de espada por dificuldade (Modo Gamificado). */
 export const DIFFICULTY_SWORD_COLORS: Record<TaskDifficultyOption, string> = {
   TRIVIAL: "text-info",
-  EASY: "text-success-500",
-  MEDIUM: "text-warning-500",
+  EASY: "text-success-300 dark:text-success-500",
+  MEDIUM: "text-warning-400 dark:text-warning-500",
   HARD: "text-purple-700 dark:text-purple-400",
 };
 
-/** Metadados e cores de prioridade de tarefas. */
-export const TASK_PRIORITY_META: Record<
-  string,
-  { label: string; color: string; badgeColor: string }
-> = {
+const TASK_PRIORITY_META_ENTRIES = {
   HIGH: {
-    label: "Alta",
-    color:
-      "text-danger-400 dark:text-danger-300 fill-danger-400 dark:fill-danger-300",
-    badgeColor:
-      "text-danger-300 bg-danger-500/15 dark:bg-danger-500/20 border-danger-500/35 dark:border-danger-400/40 fill-danger-300",
-  },
-  high: {
     label: "Alta",
     color:
       "text-danger-400 dark:text-danger-300 fill-danger-400 dark:fill-danger-300",
@@ -328,31 +310,15 @@ export const TASK_PRIORITY_META: Record<
   },
   MEDIUM: {
     label: "Média",
-    color: "text-warning-500 fill-warning-500",
+    color:
+      "text-warning-400 dark:text-warning-500 fill-warning-400 dark:fill-warning-500",
     badgeColor:
       "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40 fill-orange-800 dark:fill-warning-500",
-  },
-  medium: {
-    label: "Média",
-    color: "text-warning-500 fill-warning-500",
-    badgeColor:
-      "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40 fill-orange-800 dark:fill-warning-500",
-  },
-  Low: {
-    label: "Baixa",
-    color: "text-success-500 fill-success-500",
-    badgeColor:
-      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40 fill-emerald-800 dark:fill-success-500",
   },
   LOW: {
     label: "Baixa",
-    color: "text-success-500 fill-success-500",
-    badgeColor:
-      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40 fill-emerald-800 dark:fill-success-500",
-  },
-  low: {
-    label: "Baixa",
-    color: "text-success-500 fill-success-500",
+    color:
+      "text-success-300 dark:text-success-500 fill-success-300 dark:fill-success-500",
     badgeColor:
       "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40 fill-emerald-800 dark:fill-success-500",
   },
@@ -361,11 +327,19 @@ export const TASK_PRIORITY_META: Record<
     color: "text-neutral-400 fill-transparent",
     badgeColor: "text-neutral-400 bg-white/5 border-white/10",
   },
-  none: {
-    label: "Nenhuma",
-    color: "text-neutral-400 fill-transparent",
-    badgeColor: "text-neutral-400 bg-white/5 border-white/10",
-  },
+} as const;
+
+/** Metadados e cores de prioridade de tarefas. */
+export const TASK_PRIORITY_META: Record<
+  string,
+  { label: string; color: string; badgeColor: string }
+> = {
+  ...TASK_PRIORITY_META_ENTRIES,
+  high: TASK_PRIORITY_META_ENTRIES.HIGH,
+  medium: TASK_PRIORITY_META_ENTRIES.MEDIUM,
+  Low: TASK_PRIORITY_META_ENTRIES.LOW,
+  low: TASK_PRIORITY_META_ENTRIES.LOW,
+  none: TASK_PRIORITY_META_ENTRIES.NONE,
 };
 
 /** Normaliza de forma segura valores de dificuldade de tarefas para o enum padrão. */
@@ -607,7 +581,7 @@ export const MARKDOWN_FORMAT_OPTIONS: ReadonlyArray<{
     label: "Código",
     hint: "`code`",
     icon: Code,
-    iconColorClass: "text-magenta",
+    iconColorClass: "text-magenta dark:text-fuchsia-300",
     labelClass: "font-mono text-label-g",
   },
 ] as const;

@@ -97,6 +97,7 @@ export function StoreInitializer({
 }: StoreInitializerProps) {
   const initializedUI = useRef(false);
   const initializedWorkspaces = useRef(false);
+  const prevServerFocusMinutesRef = useRef<number | null>(null);
 
   const resolvedExperienceMode: ExperienceMode =
     user?.experienceMode === "PRODUCTIVITY" ||
@@ -176,10 +177,31 @@ export function StoreInitializer({
       user.timezone,
     );
     const normalizedFocusMinutes = Math.max(0, Math.round(todayFocusMinutes));
-    const isStreakSecuredToday =
-      taskCompletedToday ||
-      normalizedFocusMinutes >=
-        FOCUS_REWARD_RULES.MIN_DAILY_STREAK_FOCUS_MINUTES;
+    const hasServerFocusUpdate =
+      prevServerFocusMinutesRef.current === null ||
+      prevServerFocusMinutesRef.current !== normalizedFocusMinutes;
+    prevServerFocusMinutesRef.current = normalizedFocusMinutes;
+
+    const mergedFocusMinutes =
+      isDifferentUser ||
+      currentState.todayMetricsDate !== todayStr ||
+      hasServerFocusUpdate
+        ? normalizedFocusMinutes
+        : Math.max(currentState.todayFocusMinutes, normalizedFocusMinutes);
+    const mergedTaskCompleted =
+      !isDifferentUser && currentState.todayMetricsDate === todayStr
+        ? currentState.todayTaskCompleted || taskCompletedToday
+        : taskCompletedToday;
+    const isEffectiveStreakSecuredToday =
+      mergedTaskCompleted ||
+      mergedFocusMinutes >= FOCUS_REWARD_RULES.MIN_DAILY_STREAK_FOCUS_MINUTES;
+    const nextSecuredDate = isEffectiveStreakSecuredToday
+      ? todayStr
+      : isDifferentUser ||
+          (user.currentStreak ?? 0) === 0 ||
+          currentState.lastStreakSecuredDate === todayStr
+        ? null
+        : currentState.lastStreakSecuredDate;
 
     const shouldSyncUser =
       isDifferentUser ||
@@ -235,7 +257,9 @@ export function StoreInitializer({
         updateLastPolarityCookie: true,
         allowCustomThemes: true,
       });
-    } else {
+    } else if (
+      document.documentElement.getAttribute("data-theme") !== allowedTheme
+    ) {
       applyThemeToDocument(allowedTheme, {
         persistCookie: false,
         updateLastPolarityCookie: false,
@@ -278,19 +302,6 @@ export function StoreInitializer({
       );
     }
 
-    const nextSecuredDate = isStreakSecuredToday
-      ? todayStr
-      : isDifferentUser || (user.currentStreak ?? 0) === 0
-        ? null
-        : currentState.lastStreakSecuredDate;
-    const mergedFocusMinutes =
-      !isDifferentUser && currentState.todayMetricsDate === todayStr
-        ? Math.max(currentState.todayFocusMinutes, normalizedFocusMinutes)
-        : normalizedFocusMinutes;
-    const mergedTaskCompleted =
-      !isDifferentUser && currentState.todayMetricsDate === todayStr
-        ? currentState.todayTaskCompleted || taskCompletedToday
-        : taskCompletedToday;
     const shouldSyncMetrics =
       currentState.todayMetricsDate !== todayStr ||
       currentState.todayTaskCompleted !== mergedTaskCompleted ||

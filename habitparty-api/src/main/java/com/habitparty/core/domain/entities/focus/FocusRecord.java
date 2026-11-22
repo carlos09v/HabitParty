@@ -174,6 +174,14 @@ public class FocusRecord {
     return durationMinutes;
   }
 
+  public int getDurationSeconds() {
+    long durationSeconds = Duration.between(startTime, endTime).toSeconds();
+    if (durationSeconds > 0) {
+      return (int) Math.min(Integer.MAX_VALUE, durationSeconds);
+    }
+    return Math.max(0, durationMinutes * 60);
+  }
+
   public Optional<FocusRecordType> getRecordType() {
     return Optional.ofNullable(recordType);
   }

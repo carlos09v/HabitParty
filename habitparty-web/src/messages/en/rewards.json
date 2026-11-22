@@ -88,6 +88,13 @@
       "createFirstReward": "Create First Reward",
       "clearFilters": "Clear Filters"
     },
+    "sections": {
+      "debtsTitle": "Pending debts",
+      "debtsHint": "Pinned at the top until paid off",
+      "debtsListAria": "Pending debts list",
+      "showcaseTitle": "Showcase rewards",
+      "showcaseListAria": "Rewards list"
+    },
     "contextMenu": {
       "addPackage": "Add package",
       "edit": "Edit",

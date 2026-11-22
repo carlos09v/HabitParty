@@ -9,8 +9,10 @@ import {
   History,
   Hourglass,
   ListTodo,
+  Lock,
   Minus,
   Package,
+  Pencil,
   Plus,
   Sparkles,
   Target,
@@ -43,35 +45,48 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
-import {
-  formatFocusMinutes,
-  getItemRemainingMinutes,
-} from "@/utils/focusFormatters";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 interface FocusManualRecordModalProps {
   isOpen: boolean;
   onClose: () => void;
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  allInventoryItems?: InventoryItemResponseDTO[];
   focusableTasks?: FocusableTaskItem[];
   records?: FocusRecord[];
+  editingRecord?: FocusRecord | null;
   initialActivityId?: string;
   initialItemId?: string;
   initialTaskId?: string;
   onSuccess?: () => void;
+  onRecordUpdated?: (updatedRecord: FocusRecord) => void;
 }
 
-export function FocusManualRecordModal({
+export function FocusManualRecordModal(props: FocusManualRecordModalProps) {
+  if (!props.isOpen) return null;
+
+  const formKey = props.editingRecord
+    ? `edit-${props.editingRecord.id}`
+    : `new-${props.initialActivityId ?? ""}-${props.initialItemId ?? ""}-${props.initialTaskId ?? ""}`;
+
+  return <FocusManualRecordModalContent key={formKey} {...props} />;
+}
+
+function FocusManualRecordModalContent({
   isOpen,
   onClose,
   activities,
   backpackItems,
+  allInventoryItems = [],
   focusableTasks = [],
   records = [],
+  editingRecord = null,
   initialActivityId,
   initialItemId,
   initialTaskId,
   onSuccess,
+  onRecordUpdated,
 }: FocusManualRecordModalProps) {
   const t = useTranslations("focus.manualRecord");
   const { isGamified } = useExperienceMode();
@@ -80,12 +95,15 @@ export function FocusManualRecordModal({
     isOpen,
     activities,
     backpackItems,
+    allInventoryItems,
     focusableTasks,
     records,
+    editingRecord,
     initialActivityId,
     initialItemId,
     initialTaskId,
     onSuccess,
+    onRecordUpdated,
     onClose,
   });
 
@@ -98,8 +116,48 @@ export function FocusManualRecordModal({
       ? Math.floor(form.durationMinutes / form.completedPomos)
       : form.durationMinutes;
 
+  const effectiveFocusableTasks = useMemo(() => {
+    if (
+      editingRecord?.taskId &&
+      !focusableTasks.some((task) => task.id === editingRecord.taskId)
+    ) {
+      return [
+        {
+          id: editingRecord.taskId,
+          title: editingRecord.taskNameSnapshot || t("taskTypeTodoLabel"),
+          type: "todo" as const,
+          completed: true,
+        },
+        ...focusableTasks,
+      ];
+    }
+    return focusableTasks;
+  }, [
+    focusableTasks,
+    editingRecord?.taskId,
+    editingRecord?.taskNameSnapshot,
+    t,
+  ]);
+
+  const activitySelectOptions = useMemo(() => {
+    const mapped = form.selectableActivities.map((act) => ({
+      value: act.id,
+      label: act.name,
+    }));
+    if (form.isEditMode && (form.selectedTaskId || !form.selectedActivityId)) {
+      return [{ value: "", label: t("noActivityLinkedOption") }, ...mapped];
+    }
+    return mapped;
+  }, [
+    form.selectableActivities,
+    form.isEditMode,
+    form.selectedTaskId,
+    form.selectedActivityId,
+    t,
+  ]);
+
   const taskSelectOptions = useMemo(() => {
-    const sortedTasks = [...focusableTasks].sort((a, b) => {
+    const sortedTasks = [...effectiveFocusableTasks].sort((a, b) => {
       const completedDiff =
         Number(Boolean(a.completed)) - Number(Boolean(b.completed));
       if (completedDiff !== 0) return completedDiff;
@@ -130,7 +188,7 @@ export function FocusManualRecordModal({
         };
       }),
     ];
-  }, [focusableTasks, t]);
+  }, [effectiveFocusableTasks, t]);
 
   const taskFilterTabs = useMemo(
     () => [
@@ -141,20 +199,49 @@ export function FocusManualRecordModal({
     [t],
   );
 
+  const itemSelectOptions = useMemo(
+    () =>
+      form.availableBackpackItems.map((item) => {
+        const itemId = item.inventoryItemId || "";
+        const mins = form.resolveItemEffectiveMinutes(itemId);
+        return {
+          value: itemId,
+          label: `${item.rewardName || t("defaultFocusItemName")}${mins > 0 ? ` (${mins}m)` : ""}`,
+        };
+      }),
+    [form.availableBackpackItems, form.resolveItemEffectiveMinutes, t],
+  );
+
+  const minPomos = form.isEditMode ? 0 : 1;
+  const isItemMode = form.targetType === "ITEM";
+  const maxDurationMinutes = isItemMode
+    ? form.selectedItemMinutes > 0
+      ? form.selectedItemMinutes
+      : undefined
+    : MAX_MANUAL_FOCUS_MINUTES;
+  const durationPresets = isItemMode
+    ? FOCUS_MANUAL_PRESETS.filter(
+        (mins) =>
+          form.selectedItemMinutes <= 0 || mins <= form.selectedItemMinutes,
+      )
+    : FOCUS_MANUAL_PRESETS;
+
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
       maxWidth="max-w-3xl"
       preventClose={form.isSubmitting}
-      headerIcon={<History size={20} />}
-      title={t("title")}
+      headerIcon={
+        form.isEditMode ? <Pencil size={20} /> : <History size={20} />
+      }
+      title={form.isEditMode ? t("editTitle") : t("title")}
       headerBadge={
         <span className="text-tiny uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30">
-          {t("manualBadge")}
+          {form.isEditMode ? t("editBadge") : t("manualBadge")}
         </span>
       }
-      description={t("description")}
+      description={form.isEditMode ? t("editDescription") : t("description")}
     >
       <form onSubmit={form.handleSubmit} className="flex flex-col gap-4 mt-1">
         {/* FORMULÁRIO EM 2 COLUNAS EQUILIBRADAS: ESQUERDA (VÍNCULO/NOTAS) E DIREITA (TEMPO/DATA/HORA) */}
@@ -164,11 +251,20 @@ export function FocusManualRecordModal({
               ======================================================== */}
           <div className="flex flex-col gap-3.5 justify-between">
             <div className="flex flex-col gap-3.5">
-              {/* Seletor de Vínculo (Atividade vs Mochila) */}
+              {/* Seletor de Vínculo (Atividade vs Mochila) — Travado no modo edição */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-body-s text-neutral-100 font-medium">
-                  {t("linkSessionLabel")}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-body-s text-neutral-100 font-medium">
+                    {t("linkSessionLabel")}
+                  </span>
+                  {form.isEditMode && (
+                    <Lock
+                      size={12}
+                      className="text-neutral-400 shrink-0"
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
                 <SegmentedControl
                   value={form.targetType}
                   onChange={form.handleTargetTypeChange}
@@ -178,6 +274,8 @@ export function FocusManualRecordModal({
                       label: t("activityOption"),
                       icon: Sparkles,
                       badge: form.selectableActivities.length,
+                      disabled:
+                        form.isEditMode && form.targetType !== "ACTIVITY",
                     },
                     {
                       value: "ITEM",
@@ -186,9 +284,17 @@ export function FocusManualRecordModal({
                         : t("inventoryOption"),
                       icon: isGamified ? Backpack : Package,
                       badge: form.availableBackpackItems.length,
+                      disabled: form.isEditMode && form.targetType !== "ITEM",
                     },
                   ]}
                 />
+                {form.isEditMode && (
+                  <span className="text-tiny text-neutral-400 px-0.5">
+                    {isGamified
+                      ? t("linkSessionLockedHint")
+                      : t("linkSessionLockedHintProductivity")}
+                  </span>
+                )}
               </div>
 
               {/* Atividade ou Item (Com meta/saldo integrado no próprio cabeçalho, sem card duplicado) */}
@@ -218,10 +324,7 @@ export function FocusManualRecordModal({
                     emptyMessage={t("noActivitiesAvailable")}
                     value={form.selectedActivityId}
                     onChange={form.handleSelectActivity}
-                    options={form.selectableActivities.map((act) => ({
-                      value: act.id,
-                      label: act.name,
-                    }))}
+                    options={activitySelectOptions}
                   />
 
                   {!form.isPremium &&
@@ -237,7 +340,7 @@ export function FocusManualRecordModal({
                       </span>
                     )}
 
-                  {focusableTasks.length > 0 && (
+                  {effectiveFocusableTasks.length > 0 && (
                     <Select
                       id="select-task"
                       compact
@@ -273,7 +376,7 @@ export function FocusManualRecordModal({
                             ? t("backpackItemSelectLabel")
                             : t("inventoryItemSelectLabel")}
                         </span>
-                        {form.selectedItem && (
+                        {form.selectedItem && form.selectedItemMinutes > 0 && (
                           <span className="text-tiny font-semibold text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 dark:text-gold dark:bg-gold/10 dark:border-gold/25">
                             {t("balanceBadge", {
                               minutes: form.selectedItemMinutes,
@@ -292,15 +395,7 @@ export function FocusManualRecordModal({
                     emptyMessage={t("noItemsAvailable")}
                     value={form.selectedItemId}
                     onChange={form.handleSelectBackpackItem}
-                    options={form.availableBackpackItems.map((item) => {
-                      const mins = getItemRemainingMinutes(
-                        item.remainingSeconds,
-                      );
-                      return {
-                        value: item.inventoryItemId || "",
-                        label: `${item.rewardName || t("defaultFocusItemName")}${mins > 0 ? ` (${mins}m)` : ""}`,
-                      };
-                    })}
+                    options={itemSelectOptions}
                   />
                 </div>
               )}
@@ -340,7 +435,7 @@ export function FocusManualRecordModal({
               value={form.notes}
               onChange={(e) => form.setNotes(e.target.value)}
               placeholder={t("notesPlaceholder")}
-              maxLength={250}
+              maxLength={500}
             />
           </div>
 
@@ -349,229 +444,145 @@ export function FocusManualRecordModal({
               ======================================================== */}
           <div className="p-3.5 rounded-xl border border-neutral-700 bg-background dark:border-primary/25 dark:bg-primary-dark/15 flex flex-col justify-between gap-3">
             <div className="flex flex-col gap-3">
-              {form.targetType === "ITEM" ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-body-s text-neutral-100 font-semibold flex items-center gap-1.5">
-                      <Clock
-                        size={14}
-                        className="text-primary dark:text-gold"
-                      />
-                      {t("focusTimeLabel")}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {FOCUS_MANUAL_PRESETS.filter(
-                        (mins) =>
-                          form.selectedItemMinutes <= 0 ||
-                          mins <= form.selectedItemMinutes,
-                      ).map((mins) => (
-                        <button
-                          key={mins}
-                          type="button"
-                          onClick={() => form.handlePresetSelect(mins)}
-                          className={cn(
-                            "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-colors cursor-pointer",
-                            form.durationMinutes === mins
-                              ? "bg-amber-500/20 border-amber-500 text-amber-800 dark:bg-gold/25 dark:border-gold dark:text-gold font-bold shadow-glow-gold-xs"
-                              : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40",
-                          )}
-                        >
-                          {mins}m
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <NumberStepperInput
-                      id="duration-minutes"
-                      label={t("durationToDeductLabel", {
-                        minutes: form.selectedItemMinutes,
-                      })}
-                      compact
-                      min={0}
-                      max={
-                        form.selectedItemMinutes > 0
-                          ? form.selectedItemMinutes
-                          : undefined
-                      }
-                      value={form.durationInput}
-                      onChange={(e) =>
-                        form.handleDurationInputChange(e.target.value)
-                      }
-                      onStep={(delta) =>
-                        form.setDurationMinutes(
-                          form.selectedItemMinutes > 0
-                            ? Math.min(
-                                form.selectedItemMinutes,
-                                Math.max(1, form.durationMinutes + delta),
-                              )
-                            : Math.max(1, form.durationMinutes + delta),
-                        )
-                      }
-                      decrementDisabled={form.durationMinutes <= 1}
-                      incrementDisabled={
-                        form.selectedItemMinutes > 0 &&
-                        form.durationMinutes >= form.selectedItemMinutes
-                      }
-                      icon={<Clock size={16} />}
-                      iconSize={13}
-                      aria-describedby={
-                        form.durationMinutes >= 60
-                          ? durationHoursHintId
-                          : undefined
-                      }
-                      className="font-bold"
-                    />
-                    <DurationHoursBadge
-                      id={durationHoursHintId}
-                      minutes={form.durationMinutes}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-caption text-neutral-300">
-                    <span>{t("remainingBalanceAfterLog")}</span>
-                    <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
-                      {Math.max(
-                        0,
-                        form.selectedItemMinutes - form.durationMinutes,
+              {/* Cabeçalho de Duração + Presets rápidos */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-body-s text-neutral-100 font-semibold flex items-center gap-1.5">
+                  <Clock size={14} className="text-primary dark:text-gold" />
+                  {t("focusTimeLabel")}
+                </span>
+                <div className="flex items-center gap-1">
+                  {durationPresets.map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => form.handlePresetSelect(mins)}
+                      className={cn(
+                        "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-colors cursor-pointer",
+                        form.durationMinutes === mins
+                          ? "bg-amber-500/20 border-amber-500 text-amber-800 dark:bg-gold/25 dark:border-gold dark:text-gold font-bold shadow-glow-gold-xs"
+                          : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40",
                       )}
-                      m
-                    </strong>
-                  </div>
+                    >
+                      {mins}m
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  {/* Cabeçalho de Duração + Presets rápidos */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-body-s text-neutral-100 font-semibold flex items-center gap-1.5">
-                      <Clock
-                        size={14}
-                        className="text-primary dark:text-gold"
-                      />
-                      {t("focusTimeLabel")}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {FOCUS_MANUAL_PRESETS.map((mins) => (
-                        <button
-                          key={mins}
-                          type="button"
-                          onClick={() => form.handlePresetSelect(mins)}
-                          className={cn(
-                            "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-colors cursor-pointer",
-                            form.durationMinutes === mins
-                              ? "bg-amber-500/20 border-amber-500 text-amber-800 dark:bg-gold/25 dark:border-gold dark:text-gold font-bold shadow-glow-gold-xs"
-                              : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40",
-                          )}
-                        >
-                          {mins}m
-                        </button>
-                      ))}
+              </div>
+
+              {/* Linha com Minutos Totais / A Deduzir e Stepper de Ciclos */}
+              <div
+                className={cn(
+                  "grid gap-2.5 items-start",
+                  !isItemMode && form.recordType === "POMO"
+                    ? "grid-cols-1 sm:grid-cols-2"
+                    : "grid-cols-1",
+                )}
+              >
+                <div className="flex flex-col gap-1.5">
+                  <NumberStepperInput
+                    id="duration-minutes"
+                    label={
+                      isItemMode
+                        ? t("durationToDeductLabel", {
+                            minutes: form.selectedItemMinutes,
+                          })
+                        : t("totalMinutesLabel")
+                    }
+                    compact
+                    min={0}
+                    max={maxDurationMinutes}
+                    value={form.durationInput}
+                    onChange={(e) =>
+                      form.handleDurationInputChange(e.target.value)
+                    }
+                    onStep={form.handleDurationStep}
+                    decrementDisabled={form.durationMinutes <= 1}
+                    incrementDisabled={
+                      maxDurationMinutes !== undefined &&
+                      form.durationMinutes >= maxDurationMinutes
+                    }
+                    icon={<Clock size={16} />}
+                    iconSize={13}
+                    aria-describedby={
+                      form.durationMinutes >= 60
+                        ? durationHoursHintId
+                        : undefined
+                    }
+                    className="font-bold"
+                  />
+                  <DurationHoursBadge
+                    id={durationHoursHintId}
+                    minutes={form.durationMinutes}
+                  />
+                </div>
+
+                {!isItemMode && form.recordType === "POMO" && (
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="pomo-stepper"
+                      className="font-medium text-neutral-100 select-none text-body-s flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-1">
+                        <Flame
+                          size={13}
+                          className="text-orange-800 dark:text-gold"
+                        />
+                        {t("cyclesLabel")}
+                      </span>
+                      <span className="text-tiny text-neutral-400 font-normal">
+                        {t("avgMinutesPerCycle", {
+                          minutes: averageMinutesPerPomo,
+                        })}
+                      </span>
+                    </label>
+
+                    <div
+                      id="pomo-stepper"
+                      className="flex items-center justify-between py-1 px-1.5 rounded-lg border border-neutral-600 bg-card shadow-xs dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => form.handleCompletedPomosStep(-1)}
+                        disabled={form.completedPomos <= minPomos}
+                        className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        aria-label={t("decreaseCyclesAria")}
+                      >
+                        <Minus size={14} />
+                      </button>
+
+                      <span className="text-body-s font-bold text-neutral-100 tabular-nums">
+                        {t("cyclesCount", { count: form.completedPomos })}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => form.handleCompletedPomosStep(1)}
+                        disabled={form.completedPomos >= 50}
+                        className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        aria-label={t("increaseCyclesAria")}
+                      >
+                        <Plus size={14} />
+                      </button>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Linha com Minutos Totais e Stepper de Ciclos */}
-                  <div
-                    className={cn(
-                      "grid gap-2.5 items-start",
-                      form.recordType === "POMO"
-                        ? "grid-cols-1 sm:grid-cols-2"
-                        : "grid-cols-1",
+              {isItemMode && (
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-caption text-neutral-300">
+                  <span>{t("remainingBalanceAfterLog")}</span>
+                  <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
+                    {Math.max(
+                      0,
+                      form.selectedItemMinutes - form.durationMinutes,
                     )}
-                  >
-                    <div className="flex flex-col gap-1.5">
-                      <NumberStepperInput
-                        id="duration-minutes"
-                        label={t("totalMinutesLabel")}
-                        compact
-                        min={0}
-                        max={MAX_MANUAL_FOCUS_MINUTES}
-                        value={form.durationInput}
-                        onChange={(e) =>
-                          form.handleDurationInputChange(e.target.value)
-                        }
-                        onStep={(delta) =>
-                          form.setDurationMinutes(
-                            Math.min(
-                              MAX_MANUAL_FOCUS_MINUTES,
-                              Math.max(1, form.durationMinutes + delta),
-                            ),
-                          )
-                        }
-                        decrementDisabled={form.durationMinutes <= 1}
-                        incrementDisabled={
-                          form.durationMinutes >= MAX_MANUAL_FOCUS_MINUTES
-                        }
-                        icon={<Clock size={16} />}
-                        iconSize={13}
-                        aria-describedby={
-                          form.durationMinutes >= 60
-                            ? durationHoursHintId
-                            : undefined
-                        }
-                        className="font-bold"
-                      />
-                      <DurationHoursBadge
-                        id={durationHoursHintId}
-                        minutes={form.durationMinutes}
-                      />
-                    </div>
-
-                    {form.recordType === "POMO" && (
-                      <div className="flex flex-col gap-1.5">
-                        <label
-                          htmlFor="pomo-stepper"
-                          className="font-medium text-neutral-100 select-none text-body-s flex items-center justify-between"
-                        >
-                          <span className="flex items-center gap-1">
-                            <Flame
-                              size={13}
-                              className="text-orange-500 dark:text-gold"
-                            />
-                            {t("cyclesLabel")}
-                          </span>
-                          <span className="text-tiny text-neutral-400 font-normal">
-                            {t("avgMinutesPerCycle", {
-                              minutes: averageMinutesPerPomo,
-                            })}
-                          </span>
-                        </label>
-
-                        <div
-                          id="pomo-stepper"
-                          className="flex items-center justify-between py-1 px-1.5 rounded-lg border border-neutral-600 bg-card shadow-xs dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => form.handleCompletedPomosStep(-1)}
-                            disabled={form.completedPomos <= 1}
-                            className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                            aria-label={t("decreaseCyclesAria")}
-                          >
-                            <Minus size={14} />
-                          </button>
-
-                          <span className="text-body-s font-bold text-neutral-100 tabular-nums">
-                            {t("cyclesCount", { count: form.completedPomos })}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => form.handleCompletedPomosStep(1)}
-                            disabled={form.completedPomos >= 50}
-                            className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                            aria-label={t("increaseCyclesAria")}
-                          >
-                            <Plus size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
+                    m
+                  </strong>
+                </div>
               )}
 
               {/* Divisor sutil integrando Data e Janela de Horário apenas para Atividades */}
-              {form.targetType !== "ITEM" && (
+              {!isItemMode && (
                 <div className="border-t border-neutral-700 dark:border-white/10 pt-3 flex flex-col gap-2.5">
                   <DatePicker
                     id="session-date"
@@ -649,6 +660,7 @@ export function FocusManualRecordModal({
               form.isSubmitting ||
               form.durationMinutes <= 0 ||
               (form.targetType === "ACTIVITY" &&
+                !form.isOrphanedFreeSession &&
                 !form.selectedActivityId &&
                 !form.selectedTaskId) ||
               (form.targetType === "ITEM" && !form.selectedItemId)
@@ -658,12 +670,20 @@ export function FocusManualRecordModal({
             {form.isSubmitting ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-on-gold border-t-transparent rounded-full animate-spin" />
-                <span>{t("submittingButton")}</span>
+                <span>
+                  {form.isEditMode
+                    ? t("updatingButton")
+                    : t("submittingButton")}
+                </span>
               </>
             ) : (
               <>
                 <Check size={15} />
-                <span>{t("submitButton")}</span>
+                <span>
+                  {form.isEditMode
+                    ? t("updateSubmitButton")
+                    : t("submitButton")}
+                </span>
               </>
             )}
           </button>

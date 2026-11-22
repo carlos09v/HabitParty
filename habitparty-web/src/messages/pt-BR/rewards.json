@@ -88,6 +88,13 @@
       "createFirstReward": "Criar Primeira Recompensa",
       "clearFilters": "Limpar Filtros"
     },
+    "sections": {
+      "debtsTitle": "Dívidas pendentes",
+      "debtsHint": "Fixadas no topo até a quitação",
+      "debtsListAria": "Lista de dívidas pendentes",
+      "showcaseTitle": "Recompensas da vitrine",
+      "showcaseListAria": "Lista de recompensas"
+    },
     "contextMenu": {
       "addPackage": "Adicionar pacote",
       "edit": "Editar",

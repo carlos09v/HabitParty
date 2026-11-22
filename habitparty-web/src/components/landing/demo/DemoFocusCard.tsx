@@ -70,7 +70,7 @@ export function DemoFocusCard({
             "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-[transform,background-color,border-color,color] active:scale-95 cursor-pointer",
             isRunning
               ? "bg-warning-500/20 text-warning-500 border border-warning-500/40"
-              : "bg-primary hover:bg-primary-light text-white shadow-xs dark:shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_40%,transparent)]",
+              : "bg-primary hover:bg-primary-dark text-white shadow-xs dark:shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_40%,transparent)]",
           )}
         >
           {isRunning ? (

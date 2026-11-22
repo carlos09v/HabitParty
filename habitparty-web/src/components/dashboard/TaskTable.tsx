@@ -168,7 +168,7 @@ export function TaskTable({
             <button
               type="button"
               onClick={onEmptyAction}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-semibold px-4 py-2 text-xs shadow-sm transition-colors cursor-pointer"
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold px-4 py-2 text-xs shadow-sm transition-colors cursor-pointer"
             >
               <Plus size={15} aria-hidden="true" />
               <span>{emptyMeta.actionLabel}</span>

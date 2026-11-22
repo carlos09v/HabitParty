@@ -168,7 +168,7 @@ export function RewardPriceGuidance({
         icon={
           <AlertTriangle
             size={14}
-            className="text-amber-600 dark:text-amber-400 shrink-0"
+            className="text-amber-800 dark:text-amber-400 shrink-0"
           />
         }
         triggerIcon={<AlertTriangle size={11} className="shrink-0" />}
@@ -193,7 +193,7 @@ export function RewardPriceGuidance({
     analysis.categoryProfile === "discounted" ? (
       <span
         title={t("categoryDiscountHint")}
-        className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/12 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold leading-none shrink-0"
+        className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/12 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-[10px] font-semibold leading-none shrink-0"
       >
         {t("categoryDiscountBadge")}
       </span>
@@ -215,7 +215,7 @@ export function RewardPriceGuidance({
           ) : (
             <Clock
               size={12}
-              className="text-sky-600 dark:text-sky-400 shrink-0"
+              className="text-sky-700 dark:text-sky-400 shrink-0"
             />
           )}
           <span className="truncate">
@@ -250,7 +250,7 @@ export function RewardPriceGuidance({
           ) : (
             <Clock
               size={12}
-              className="text-sky-600 dark:text-sky-400 shrink-0"
+              className="text-sky-700 dark:text-sky-400 shrink-0"
             />
           )}
           <span className="truncate">

@@ -281,6 +281,68 @@ public class UserStats {
     this.updatedAt = LocalDateTime.now();
   }
 
+  public record TaskReversalOutcome(
+      int xpReverted,
+      BigDecimal coinsReverted,
+      boolean fullyReverted) {
+  }
+
+  /**
+   * Estorna os ganhos e contadores de uma tarefa desmarcada (COMPLETED -> PENDING).
+   * Respeita o piso do nível atual para XP e saldo não negativo para moedas.
+   * {@code fullyReverted} só é verdadeiro quando 100% do XP e das moedas puderam ser estornados.
+   */
+  public TaskReversalOutcome revertTaskCompletion(
+      int xpToRevert,
+      BigDecimal coinsToRevert,
+      boolean isHard,
+      boolean isHardcore,
+      boolean hasCompletedChecklist,
+      boolean wasOnTimeTodo) {
+    int xpReverted = 0;
+    boolean xpFullyReverted = true;
+    if (xpToRevert > 0) {
+      int minXpForCurrentLevel = this.getCurrentLevel().getMinXpRequired();
+      int targetXp = this.totalXp - xpToRevert;
+      int nextXp = Math.max(minXpForCurrentLevel, targetXp);
+      xpReverted = Math.max(0, this.totalXp - nextXp);
+      xpFullyReverted = targetXp >= minXpForCurrentLevel;
+      this.totalXp = nextXp;
+    }
+
+    BigDecimal coinsReverted = BigDecimal.ZERO;
+    boolean coinsFullyReverted = true;
+    if (coinsToRevert != null && coinsToRevert.compareTo(BigDecimal.ZERO) > 0) {
+      coinsFullyReverted = this.currentCoins.compareTo(coinsToRevert) >= 0;
+      coinsReverted = this.currentCoins.min(coinsToRevert);
+      this.currentCoins = this.currentCoins.subtract(coinsToRevert);
+      if (this.currentCoins.compareTo(BigDecimal.ZERO) < 0) {
+        this.currentCoins = BigDecimal.ZERO;
+      }
+      this.totalGoldEarned = this.totalGoldEarned.subtract(coinsToRevert);
+      if (this.totalGoldEarned.compareTo(BigDecimal.ZERO) < 0) {
+        this.totalGoldEarned = BigDecimal.ZERO;
+      }
+    }
+
+    this.totalTasksCompleted = Math.max(0, this.totalTasksCompleted - 1);
+    if (isHard) {
+      this.totalHardTasksCompleted = Math.max(0, this.totalHardTasksCompleted - 1);
+    }
+    if (isHardcore) {
+      this.totalHardcoreTasksCompleted = Math.max(0, this.totalHardcoreTasksCompleted - 1);
+    }
+    if (hasCompletedChecklist) {
+      this.totalChecklistTasksCompleted = Math.max(0, this.totalChecklistTasksCompleted - 1);
+    }
+    if (wasOnTimeTodo) {
+      this.totalOnTimeTodosCompleted = Math.max(0, this.totalOnTimeTodosCompleted - 1);
+    }
+
+    this.updatedAt = LocalDateTime.now();
+    return new TaskReversalOutcome(xpReverted, coinsReverted, xpFullyReverted && coinsFullyReverted);
+  }
+
   public void recordFocusCompleted(int durationMinutes, int completedPomos) {
     if (durationMinutes >= 10) {
       this.totalFocusMinutes += durationMinutes;
@@ -296,19 +358,20 @@ public class UserStats {
   }
 
   /**
-   * Estorna os ganhos e contadores de uma sessão de foco excluída.
-   * Garante que o XP nunca caia abaixo do mínimo do nível atual e que o saldo de moedas nunca fique negativo.
+   * Estorna apenas XP ganho em sessão de foco, respeitando o piso do nível atual.
    */
-  public void revertFocusSession(
-      int xpToRevert,
-      BigDecimal coinsToRevert,
-      int durationMinutes,
-      int completedPomos) {
+  public void revertFocusXpOnly(int xpToRevert) {
     if (xpToRevert > 0) {
       int minXpForCurrentLevel = this.getCurrentLevel().getMinXpRequired();
       this.totalXp = Math.max(minXpForCurrentLevel, this.totalXp - xpToRevert);
+      this.updatedAt = LocalDateTime.now();
     }
+  }
 
+  /**
+   * Estorna apenas moedas ganhas em sessão de foco, garantindo saldo e total não negativos.
+   */
+  public void revertFocusCoinsOnly(BigDecimal coinsToRevert) {
     if (coinsToRevert != null && coinsToRevert.compareTo(BigDecimal.ZERO) > 0) {
       this.currentCoins = this.currentCoins.subtract(coinsToRevert);
       if (this.currentCoins.compareTo(BigDecimal.ZERO) < 0) {
@@ -318,8 +381,14 @@ public class UserStats {
       if (this.totalGoldEarned.compareTo(BigDecimal.ZERO) < 0) {
         this.totalGoldEarned = BigDecimal.ZERO;
       }
+      this.updatedAt = LocalDateTime.now();
     }
+  }
 
+  /**
+   * Estorna apenas contadores de tempo, sessões e pomodoros de foco.
+   */
+  public void revertFocusActivityCounters(int durationMinutes, int completedPomos) {
     if (durationMinutes >= MIN_FOCUS_MINUTES_FOR_STATS) {
       this.totalFocusMinutes = Math.max(0, this.totalFocusMinutes - durationMinutes);
       this.totalFocusSessions = Math.max(0, this.totalFocusSessions - 1);
@@ -329,6 +398,21 @@ public class UserStats {
       this.totalPomodorosCompleted = Math.max(0, this.totalPomodorosCompleted - completedPomos);
     }
 
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
+   * Estorna os ganhos e contadores de uma sessão de foco excluída.
+   * Garante que o XP nunca caia abaixo do mínimo do nível atual e que o saldo de moedas nunca fique negativo.
+   */
+  public void revertFocusSession(
+      int xpToRevert,
+      BigDecimal coinsToRevert,
+      int durationMinutes,
+      int completedPomos) {
+    revertFocusXpOnly(xpToRevert);
+    revertFocusCoinsOnly(coinsToRevert);
+    revertFocusActivityCounters(durationMinutes, completedPomos);
     this.updatedAt = LocalDateTime.now();
   }
 
@@ -391,6 +475,13 @@ public class UserStats {
   public void recordActivityGoalMet() {
     this.totalActivityGoalsMet += 1;
     this.updatedAt = LocalDateTime.now();
+  }
+
+  public void revertActivityGoalMet() {
+    if (this.totalActivityGoalsMet > 0) {
+      this.totalActivityGoalsMet -= 1;
+      this.updatedAt = LocalDateTime.now();
+    }
   }
 
   public void recordRewardRedeemed() {

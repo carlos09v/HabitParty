@@ -61,7 +61,7 @@ export function XpAmount({
       className={cn(
         "inline-flex items-center gap-1 select-none font-bold whitespace-nowrap",
         TEXT_SIZE_MAP[size],
-        isPositive && "text-magenta",
+        isPositive && "text-magenta dark:text-fuchsia-300",
         isNegative && "text-danger-500",
         isZero && "text-neutral-500 font-normal",
         className,
@@ -70,7 +70,7 @@ export function XpAmount({
       {withIcon && isPositive && (
         <Sparkles
           size={ICON_SIZE_MAP[size]}
-          className="shrink-0 text-magenta"
+          className="shrink-0 text-magenta dark:text-fuchsia-300"
         />
       )}
       <span>

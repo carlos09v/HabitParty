@@ -108,7 +108,7 @@ export function resolveCatalogItemVisuals({
       "text-neutral-300 bg-white/10 border-white/15",
     packageGlow: isDebt ? undefined : PACKAGE_LEVEL_GLOW[packageMessageKey],
     packageIconTheme: isDebt
-      ? "bg-rose-500/15 text-rose-600 border-rose-500/35 group-hover:border-rose-500/60 dark:bg-rose-500/15 dark:border-rose-400/35 dark:text-rose-300 dark:group-hover:border-rose-400/60"
+      ? "bg-rose-500/15 text-rose-700 border-rose-500/35 group-hover:border-rose-500/60 dark:bg-rose-500/15 dark:border-rose-400/35 dark:text-rose-300 dark:group-hover:border-rose-400/60"
       : PACKAGE_LEVEL_ICON_THEME[packageMessageKey],
     topBarClass: isDebt
       ? "via-rose-500 opacity-95"

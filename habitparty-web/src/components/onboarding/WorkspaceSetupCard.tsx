@@ -74,7 +74,7 @@ export function WorkspaceSetupCard({
           <p
             id={errorId}
             role="alert"
-            className="text-xs font-medium text-rose-500 dark:text-rose-400 mt-0.5"
+            className="text-xs font-medium text-rose-700 dark:text-rose-400 mt-0.5"
           >
             {errorMessage}
           </p>

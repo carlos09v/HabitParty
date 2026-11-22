@@ -152,7 +152,6 @@ export interface RewardDisplayEntry {
   displayTitle: string;
   primaryReward: Reward;
   variants: Reward[];
-  hasGroupDescription?: boolean;
 }
 
 export interface RewardGroupContext {
@@ -184,7 +183,6 @@ export interface RewardCardProps {
   reward: Reward;
   groupId?: string;
   displayTitle?: string;
-  hasGroupDescription?: boolean;
   variants?: Reward[];
   activeVariantId?: string;
   onSelectVariant?: (groupId: string, variantId: string) => void;

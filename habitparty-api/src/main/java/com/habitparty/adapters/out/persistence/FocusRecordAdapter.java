@@ -169,12 +169,37 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   }
 
   @Override
+  public int sumFocusMinutesOnDateExcludingRecord(
+      UUID userId, LocalDate targetDate, ZoneId userZone, UUID excludedRecordId) {
+    if (excludedRecordId == null) {
+      return sumFocusMinutesOnDate(userId, targetDate, userZone);
+    }
+    LocalDateTime[] range = resolveServerDayRange(targetDate, userZone);
+    return repository.sumTodayFocusMinutesByUserIdExcludingRecord(
+        userId, range[0], range[1], excludedRecordId);
+  }
+
+  @Override
   public int sumProductiveFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
     if (userId == null) {
       return 0;
     }
     LocalDateTime[] range = resolveServerDayRange(targetDate, userZone);
     return repository.sumProductiveFocusMinutesByUserId(userId, range[0], range[1]);
+  }
+
+  @Override
+  public int sumProductiveFocusMinutesOnDateExcludingRecord(
+      UUID userId, LocalDate targetDate, ZoneId userZone, UUID excludedRecordId) {
+    if (userId == null) {
+      return 0;
+    }
+    if (excludedRecordId == null) {
+      return sumProductiveFocusMinutesOnDate(userId, targetDate, userZone);
+    }
+    LocalDateTime[] range = resolveServerDayRange(targetDate, userZone);
+    return repository.sumProductiveFocusMinutesByUserIdExcludingRecord(
+        userId, range[0], range[1], excludedRecordId);
   }
 
   @Override

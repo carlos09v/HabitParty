@@ -77,7 +77,7 @@ export function TaskAdvancedFilterPopover({
           <button
             type="button"
             onClick={onReset}
-            className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-600 dark:hover:text-danger-300 font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 dark:hover:text-danger-300 font-semibold transition-colors cursor-pointer"
           >
             <FilterX size={12} />
             <span>{t("clearButton")}</span>

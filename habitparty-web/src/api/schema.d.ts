@@ -1459,6 +1459,11 @@ export interface components {
       emailReminderSent?: boolean;
       isRewardClaimed?: boolean;
       rewardGranted?: boolean;
+      rewardReverted?: boolean;
+      /** Format: int32 */
+      revertedXp?: number;
+      revertedCoins?: number;
+      streakReverted?: boolean;
       /** Format: date-time */
       lastCompletedAt?: string;
       /** Format: int32 */
@@ -1702,7 +1707,23 @@ export interface components {
       newIndex: number;
     };
     UpdateFocusRecordDTO: {
+      /** Format: uuid */
+      focusActivityId?: string;
+      /** Format: uuid */
+      inventoryItemId?: string;
+      /** Format: uuid */
+      taskId?: string;
       notes?: string;
+      /** Format: date-time */
+      startTime?: string;
+      /** Format: date-time */
+      endTime?: string;
+      /** @enum {string} */
+      recordType?: "POMO" | "STOPWATCH";
+      /** Format: int32 */
+      completedPomos?: number;
+      /** Format: int32 */
+      pomoTargetMinutes?: number;
     };
     FocusRecordResponseDTO: {
       /** Format: uuid */

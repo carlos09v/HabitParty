@@ -6,36 +6,28 @@ import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
 import { ItemRow } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardCardProps, RewardGroupContext } from "@/types/reward";
-import { toCategoryMessageKey } from "@/utils/rewardMapper";
+import { isDebtReward } from "@/utils/rewardGrouping";
 
 function useRewardItemPresentation({
   reward,
   groupId,
   displayTitle,
   variants,
+  activeVariantId,
   canAfford = true,
   currentCoins,
+  isDeleteChecking = false,
+  isRedeeming = false,
+  isReorderDisabled,
   onSelectVariant,
   onBuy,
   onEdit,
   onContextMenu,
-}: Pick<
-  RewardCardProps,
-  | "reward"
-  | "groupId"
-  | "displayTitle"
-  | "variants"
-  | "canAfford"
-  | "currentCoins"
-  | "onSelectVariant"
-  | "onBuy"
-  | "onEdit"
-  | "onContextMenu"
->) {
+}: RewardCardProps) {
   const t = useTranslations("rewards.container");
   const { isGamified } = useExperienceMode();
 
-  const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
+  const isDebt = isDebtReward(reward);
   const effectivePrice = reward.price;
   const effectiveCanAfford =
     typeof currentCoins === "number"
@@ -88,157 +80,62 @@ function useRewardItemPresentation({
     ? t("insufficientCoinsShort")
     : t("insufficientCreditsShort");
 
-  return {
-    isDebt,
-    effectivePrice,
-    effectiveCanAfford,
-    handleBuy,
-    handleDoubleClick: onEdit ? handleDoubleClick : undefined,
-    handleContextMenu,
-    handleSelectVariant: onSelectVariant ? handleSelectVariant : undefined,
-    dragData,
+  const sharedItemProps = {
+    id: reward.id,
+    sortableId: groupId ?? reward.id,
+    title: displayTitle || reward.title,
+    description: reward.description,
+    type: reward.type,
+    packageLevel: reward.packageLevel,
+    category: reward.category,
+    iconName: reward.icon,
+    baseDurationMinutes: reward.baseDurationMinutes,
+    price: effectivePrice,
+    variants,
+    activeVariantId,
+    onSelectVariant: onSelectVariant ? handleSelectVariant : undefined,
     actionLabel,
+    onAction: handleBuy,
+    onDoubleClick: onEdit ? handleDoubleClick : undefined,
+    onContextMenu: handleContextMenu,
+    isDeleteChecking,
+    isActionLoading: isRedeeming,
+    isDragDisabled: isReorderDisabled ?? isDebt,
+    dragData,
+    lootItems: reward.lootItems,
+  };
+
+  return {
+    sharedItemProps,
+    effectiveCanAfford,
     insufficientBalanceTitle,
   };
 }
 
-export const RewardCard = memo(function RewardCard({
-  reward,
-  groupId,
-  displayTitle,
-  hasGroupDescription,
-  variants,
-  activeVariantId,
-  onSelectVariant,
-  onBuy,
-  onEdit,
-  onContextMenu,
-  canAfford = true,
-  currentCoins,
-  isDeleteChecking = false,
-  isRedeeming = false,
-  isReorderDisabled,
-}: RewardCardProps) {
-  const {
-    isDebt,
-    effectivePrice,
-    effectiveCanAfford,
-    handleBuy,
-    handleDoubleClick,
-    handleContextMenu,
-    handleSelectVariant,
-    dragData,
-    actionLabel,
-  } = useRewardItemPresentation({
-    reward,
-    groupId,
-    displayTitle,
-    variants,
-    canAfford,
-    currentCoins,
-    onSelectVariant,
-    onBuy,
-    onEdit,
-    onContextMenu,
-  });
+export const RewardCard = memo(function RewardCard(props: RewardCardProps) {
+  const { sharedItemProps, effectiveCanAfford } =
+    useRewardItemPresentation(props);
 
   return (
     <GamifiedItemCard
-      id={reward.id}
-      sortableId={groupId ?? reward.id}
-      title={displayTitle || reward.title}
-      description={reward.description}
-      hasGroupDescription={hasGroupDescription}
-      iconName={reward.icon}
-      type={reward.type}
-      packageLevel={reward.packageLevel}
-      category={reward.category}
-      baseDurationMinutes={reward.baseDurationMinutes}
-      price={effectivePrice}
-      variants={variants}
-      activeVariantId={activeVariantId}
-      onSelectVariant={handleSelectVariant}
-      currentCoins={currentCoins}
+      {...sharedItemProps}
+      currentCoins={props.currentCoins}
       canAfford={effectiveCanAfford}
-      isDeleteChecking={isDeleteChecking}
-      isActionLoading={isRedeeming}
-      isDragDisabled={isReorderDisabled ?? isDebt}
-      actionLabel={actionLabel}
-      onAction={handleBuy}
-      onDoubleClick={handleDoubleClick}
-      onContextMenu={handleContextMenu}
-      dragData={dragData}
-      lootItems={reward.lootItems}
     />
   );
 });
 
-export const RewardItemRow = memo(function RewardItemRow({
-  reward,
-  groupId,
-  displayTitle,
-  variants,
-  activeVariantId,
-  onSelectVariant,
-  onBuy,
-  onEdit,
-  onContextMenu,
-  canAfford = true,
-  currentCoins,
-  isDeleteChecking = false,
-  isRedeeming = false,
-  isReorderDisabled,
-}: RewardCardProps) {
-  const {
-    isDebt,
-    effectivePrice,
-    effectiveCanAfford,
-    handleBuy,
-    handleDoubleClick,
-    handleContextMenu,
-    handleSelectVariant,
-    dragData,
-    actionLabel,
-    insufficientBalanceTitle,
-  } = useRewardItemPresentation({
-    reward,
-    groupId,
-    displayTitle,
-    variants,
-    canAfford,
-    currentCoins,
-    onSelectVariant,
-    onBuy,
-    onEdit,
-    onContextMenu,
-  });
+export const RewardItemRow = memo(function RewardItemRow(
+  props: RewardCardProps,
+) {
+  const { sharedItemProps, effectiveCanAfford, insufficientBalanceTitle } =
+    useRewardItemPresentation(props);
 
   return (
     <ItemRow
-      id={reward.id}
-      sortableId={groupId ?? reward.id}
-      title={displayTitle || reward.title}
-      description={reward.description}
-      type={reward.type}
-      packageLevel={reward.packageLevel}
-      category={reward.category}
-      iconName={reward.icon}
-      baseDurationMinutes={reward.baseDurationMinutes}
-      price={effectivePrice}
-      variants={variants}
-      activeVariantId={activeVariantId}
-      onSelectVariant={handleSelectVariant}
+      {...sharedItemProps}
       disabled={!effectiveCanAfford}
       disabledTitle={!effectiveCanAfford ? insufficientBalanceTitle : undefined}
-      actionLabel={actionLabel}
-      onAction={handleBuy}
-      onDoubleClick={handleDoubleClick}
-      onContextMenu={handleContextMenu}
-      isDeleteChecking={isDeleteChecking}
-      isActionLoading={isRedeeming}
-      isDragDisabled={isReorderDisabled ?? isDebt}
-      dragData={dragData}
-      lootItems={reward.lootItems}
     />
   );
 });

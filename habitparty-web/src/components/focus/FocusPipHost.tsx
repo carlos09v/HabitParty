@@ -93,7 +93,7 @@ export function FocusPipHost() {
 
     const intervalId = pipWindow.setInterval(() => {
       const st = useFocusTimerStore.getState();
-      if (!st.isActive || st.isPaused) return;
+      if (!st.isActive || st.isPaused || st.isSavingSession) return;
       if (!st.lastTickTimestamp || Date.now() - st.lastTickTimestamp >= 980) {
         st.tick();
       }

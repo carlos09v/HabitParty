@@ -332,6 +332,20 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  public List<TransactionHistory> findTop2ByUserIdAndReferenceIdAndType(
+      UUID userId, UUID referenceId, TransactionType transactionType) {
+    if (userId == null || referenceId == null || transactionType == null) {
+      return List.of();
+    }
+    return repository
+        .findTop2ByUser_IdAndReferenceIdAndTransactionTypeOrderByCreatedAtDesc(
+            userId, referenceId, transactionType)
+        .stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
   public int updateFocusRewardSnapshot(
       UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
     if (referenceId == null || userId == null) {
@@ -354,6 +368,49 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
         ? descriptionSnapshot.trim()
         : null;
     return repository.updateFocusDescriptionSnapshot(referenceId, userId, cleanDescription);
+  }
+
+  @Override
+  public int updateFocusCompletedSnapshot(
+      UUID referenceId,
+      UUID userId,
+      String nameSnapshot,
+      String iconSnapshot,
+      BigDecimal goldAmount,
+      int xpAmount,
+      List<String> tagsSnapshot,
+      String descriptionSnapshot,
+      LocalDateTime createdAt) {
+    if (referenceId == null || userId == null) {
+      return 0;
+    }
+    if (createdAt != null) {
+      repository.updateFocusCreatedAt(referenceId, userId, createdAt);
+    }
+    List<TransactionHistoryJpaEntity> entities = repository
+        .findAllByUser_IdAndReferenceIdAndTransactionType(
+            userId, referenceId, TransactionType.FOCUS_COMPLETED);
+    if (entities.isEmpty()) {
+      return 0;
+    }
+    String cleanDescription = (descriptionSnapshot != null && !descriptionSnapshot.trim().isEmpty())
+        ? descriptionSnapshot.trim()
+        : null;
+    BigDecimal safeGold = goldAmount != null ? goldAmount : BigDecimal.ZERO;
+    int safeXp = Math.max(0, xpAmount);
+    List<String> safeTags = tagsSnapshot != null ? new ArrayList<>(tagsSnapshot) : new ArrayList<>();
+    for (TransactionHistoryJpaEntity entity : entities) {
+      if (nameSnapshot != null && !nameSnapshot.isBlank()) {
+        entity.setNameSnapshot(nameSnapshot);
+      }
+      entity.setIconSnapshot(iconSnapshot);
+      entity.setGoldAmount(safeGold);
+      entity.setXpAmount(safeXp);
+      entity.setTagsSnapshot(new ArrayList<>(safeTags));
+      entity.setDescriptionSnapshot(cleanDescription);
+    }
+    repository.saveAll(entities);
+    return entities.size();
   }
 
   @Override

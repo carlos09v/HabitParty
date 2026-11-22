@@ -49,7 +49,7 @@ export const MYSTERY_BADGE_TEXT_CLASSES: Record<
   emerald: "text-emerald-700 dark:text-success-400",
   amber: "text-amber-700 dark:text-amber-400",
   gold: "text-amber-700 dark:text-gold",
-  purple: "text-magenta",
+  purple: "text-magenta dark:text-fuchsia-300",
 };
 
 /**
@@ -160,13 +160,13 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
     colorName: "Magenta Radiante",
     icon: Sparkles,
     badgeClass:
-      "text-magenta bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30",
+      "text-magenta dark:text-fuchsia-300 bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30",
     borderClass: "border-magenta/30 hover:border-magenta/60",
     borderSelectedClass:
       "border-magenta ring-2 ring-magenta/30 shadow-sm dark:ring-magenta/50 dark:shadow-[0_0_20px_rgba(237,43,229,0.35)]",
     bgClass: "bg-magenta/5 hover:bg-magenta/10",
     bgSelectedClass: "bg-magenta/15",
-    textClass: "text-magenta",
+    textClass: "text-magenta dark:text-fuchsia-300",
     glowClass: "shadow-[0_0_15px_rgba(237,43,229,0.25)]",
     ringClass: "ring-magenta",
     accentGlow: "rgba(237, 43, 229, 0.45)",

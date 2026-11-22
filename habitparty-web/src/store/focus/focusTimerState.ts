@@ -50,12 +50,14 @@ export interface FocusTimerStoreState extends FocusTimerState {
   selectItemTarget: (item: InventoryItemResponseDTO | null) => void;
   selectTaskTarget: (task: { id: string; title: string } | null) => void;
   unlinkTaskFromTarget: () => void;
+  handleExternalTaskRemovedOrCompleted: (taskId: string) => void;
   completeLinkedTask: (taskId: string, taskName?: string) => Promise<boolean>;
   syncTargetMetadata: (metadata: {
     id?: string;
     name?: string;
     icon?: string;
     targetMinutes?: number;
+    remainingSeconds?: number;
     recordType?: FocusRecordType;
     taskId?: string;
     taskName?: string;

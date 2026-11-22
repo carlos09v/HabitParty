@@ -18,9 +18,11 @@ import {
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useInFlightSet } from "@/hooks/useInFlightSet";
 import type { AppLocale } from "@/i18n/config";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type { Task } from "@/types/task";
+import { getTodayDateString } from "@/utils/date";
 import {
   calculateTaskPenalty,
   formatCoins,
@@ -235,6 +237,11 @@ export function useTaskMutations({
           notifyTasksChanged({ completedToday: completed });
 
           if (completed) {
+            if (targetTask.type?.toLowerCase() !== "habit") {
+              useFocusTimerStore
+                .getState()
+                .handleExternalTaskRemovedOrCompleted(taskId);
+            }
             const completionLabel =
               targetTask.type?.toLowerCase() === "habit"
                 ? t("habitCompleted")
@@ -367,6 +374,42 @@ export function useTaskMutations({
               } else {
                 toast.success(completionLabel);
               }
+            }
+          } else {
+            if (!reconciledTask?.hasClaimedReward) {
+              rewardedTaskIdsRef.current.delete(taskId);
+            }
+
+            if (res.data?.rewardReverted) {
+              const revertedXp = Math.max(0, res.data.revertedXp ?? 0);
+              const revertedCoins = Math.max(
+                0,
+                Number(res.data.revertedCoins ?? 0),
+              );
+              if (revertedXp > 0 || revertedCoins > 0) {
+                deductUserPenalty(revertedXp, revertedCoins);
+              }
+              const userTimeZone = useUserStore.getState().user?.timezone;
+              useUserStore
+                .getState()
+                .revertTaskCompletionToday(
+                  getTodayDateString(new Date(), userTimeZone),
+                  Boolean(res.data.streakReverted),
+                );
+
+              const params = {
+                xp: revertedXp,
+                xpLabel,
+                coins: formatCoins(revertedCoins, { locale }),
+                goldLabel,
+              };
+              if (res.data.isRewardClaimed) {
+                toast.info(t("taskUncheckedPartialReward", params));
+              } else {
+                toast.success(t("taskUncheckedReverted", params));
+              }
+            } else {
+              toast.success(t("taskUnchecked"));
             }
           }
         } finally {
@@ -575,6 +618,10 @@ export function useTaskMutations({
         toast.error(res.error || t("deleteError"));
         return;
       }
+
+      useFocusTimerStore
+        .getState()
+        .handleExternalTaskRemovedOrCompleted(task.id);
 
       if (deleteHistory) {
         optimisticStore.clear();

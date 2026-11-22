@@ -24,7 +24,7 @@ export const HELP_PRODUCTIVITY_STEPS: readonly HelpProductivityStep[] = [
   {
     step: 3,
     badgeClassName:
-      "bg-magenta/15 dark:bg-magenta/20 border-magenta/35 dark:border-magenta/40 text-magenta",
+      "bg-magenta/15 dark:bg-magenta/20 border-magenta/35 dark:border-magenta/40 text-magenta dark:text-fuchsia-300",
   },
   {
     step: 4,

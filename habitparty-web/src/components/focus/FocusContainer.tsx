@@ -71,6 +71,7 @@ function preloadFocusContainerModalChunks() {
 interface FocusContainerProps {
   initialActivities: FocusActivity[];
   initialBackpackItems: InventoryItemResponseDTO[];
+  initialAllInventoryItems?: InventoryItemResponseDTO[];
   initialRecords: FocusRecord[];
   initialTotalRecordsCount?: number;
   initialHasMoreRecords?: boolean;
@@ -86,6 +87,7 @@ interface FocusContainerProps {
 export function FocusContainer({
   initialActivities,
   initialBackpackItems,
+  initialAllInventoryItems = [],
   initialRecords,
   initialTotalRecordsCount,
   initialHasMoreRecords = false,
@@ -163,8 +165,10 @@ export function FocusContainer({
   // Aba mobile ativa (< xl): "timer" para Timer & Sessão, "metrics" para Métricas & Histórico
   const [mobileTab, setMobileTab] = useState<"timer" | "metrics">("timer");
 
-  // Modal centralizado de registro manual compartilhado entre Main e Sidebar
+  // Modal centralizado de registro manual e edição compartilhado entre Main e Sidebar
   const [manualRecordModalOpen, setManualRecordModalOpen] = useState(false);
+  const [editingFocusRecord, setEditingFocusRecord] =
+    useState<FocusRecord | null>(null);
   const [manualInitialActivityId, setManualInitialActivityId] = useState<
     string | undefined
   >();
@@ -205,6 +209,7 @@ export function FocusContainer({
     selectActivityTarget,
     selectItemTarget,
     selectTaskTarget,
+    unlinkTaskFromTarget,
     resetTarget,
     transferTarget,
     syncTargetMetadata,
@@ -295,10 +300,12 @@ export function FocusContainer({
         if (transformed) merged.push(transformed);
       }
     }
-    merged.sort(
-      (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime(),
-    );
-    return merged;
+    const withEndMs = merged.map((rec) => ({
+      rec,
+      endMs: Date.parse(rec.endTime) || 0,
+    }));
+    withEndMs.sort((a, b) => b.endMs - a.endMs);
+    return withEndMs.map((item) => item.rec);
   }, [
     initialRecords,
     extraRecords,
@@ -307,6 +314,11 @@ export function FocusContainer({
     deletedActivityIds,
     preservedActivityIds,
   ]);
+
+  const allRecordsRef = useRef(allRecords);
+  useEffect(() => {
+    allRecordsRef.current = allRecords;
+  }, [allRecords]);
 
   const {
     weekOffset,
@@ -342,7 +354,7 @@ export function FocusContainer({
         allRecords,
         todayStr,
         userTimeZone,
-        "startTime",
+        "endTime",
       ),
     };
   }, [allRecords, userTimeZone]);
@@ -531,6 +543,7 @@ export function FocusContainer({
           id: currentItem.inventoryItemId,
           name: currentItem.rewardName,
           icon: currentItem.rewardIcon,
+          remainingSeconds: currentItem.remainingSeconds ?? undefined,
         });
       }
     } else if (target.type === "activity") {
@@ -554,6 +567,20 @@ export function FocusContainer({
           icon: currentAct.icon,
           targetMinutes: currentAct.targetTimeMinutes,
         });
+        if (target.taskId) {
+          const linkedTask = focusableTasks.find(
+            (tItem) => tItem.id === target.taskId,
+          );
+          if (!linkedTask) {
+            unlinkTaskFromTarget();
+          } else if (linkedTask.title !== target.taskName) {
+            syncTargetMetadata({
+              id: currentAct.id,
+              taskId: linkedTask.id,
+              taskName: linkedTask.title,
+            });
+          }
+        }
       }
     } else if (target.type === "task") {
       const currentTask = focusableTasks.find(
@@ -566,6 +593,12 @@ export function FocusContainer({
           taskId: currentTask.id,
           taskName: currentTask.title,
         });
+      } else {
+        resetTarget();
+        if (defaultActivity) {
+          selectActivityTarget(defaultActivity);
+          setSelectedActivityId(defaultActivity.id);
+        }
       }
     }
   }, [
@@ -580,6 +613,7 @@ export function FocusContainer({
     resetTarget,
     selectActivityTarget,
     syncTargetMetadata,
+    unlinkTaskFromTarget,
   ]);
 
   const handleSelectActivity = useCallback(
@@ -882,10 +916,44 @@ export function FocusContainer({
   );
 
   const handleRecordUpdated = useCallback((updatedRecord: FocusRecord) => {
+    const previousRecord = allRecordsRef.current.find(
+      (r) => r.id === updatedRecord.id,
+    );
+
     setEditedRecordsById((prev) => ({
       ...prev,
       [updatedRecord.id]: updatedRecord,
     }));
+
+    setExtraRecords((prev) =>
+      prev.some((r) => r.id === updatedRecord.id)
+        ? prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r))
+        : prev,
+    );
+
+    const oldActivityId = previousRecord?.focusActivityId;
+    const newActivityId = updatedRecord.focusActivityId;
+    if (previousRecord && oldActivityId !== newActivityId) {
+      setActivityPagination((prev) => {
+        const hasOld = Boolean(oldActivityId && prev[oldActivityId]);
+        const hasNew = Boolean(newActivityId && prev[newActivityId]);
+        if (!hasOld && !hasNew) return prev;
+        const next = { ...prev };
+        if (oldActivityId && next[oldActivityId]) {
+          next[oldActivityId] = {
+            ...next[oldActivityId],
+            totalElements: Math.max(0, next[oldActivityId].totalElements - 1),
+          };
+        }
+        if (newActivityId && next[newActivityId]) {
+          next[newActivityId] = {
+            ...next[newActivityId],
+            totalElements: next[newActivityId].totalElements + 1,
+          };
+        }
+        return next;
+      });
+    }
   }, []);
 
   const handleActivityDeleted = useCallback(
@@ -938,6 +1006,7 @@ export function FocusContainer({
 
   const handleOpenManualRecordModal = useCallback(
     (params?: { activityId?: string; itemId?: string }) => {
+      setEditingFocusRecord(null);
       setManualInitialActivityId(
         params?.activityId ?? selectedActivityId ?? undefined,
       );
@@ -946,6 +1015,13 @@ export function FocusContainer({
     },
     [selectedActivityId],
   );
+
+  const handleOpenEditRecordModal = useCallback((record: FocusRecord) => {
+    setManualInitialActivityId(undefined);
+    setManualInitialItemId(undefined);
+    setEditingFocusRecord(record);
+    setManualRecordModalOpen(true);
+  }, []);
 
   const handleAddRecordSidebar = useCallback(() => {
     handleOpenManualRecordModal();
@@ -1057,6 +1133,7 @@ export function FocusContainer({
         onResetWeek={handleResetWeek}
         onAddRecord={handleAddRecordSidebar}
         onOptionsClick={handleOpenHistoryOptions}
+        onEditRecord={handleOpenEditRecordModal}
         onDeleteRecord={handleDeleteRecord}
         onRecordUpdated={handleRecordUpdated}
         selectedActivityName={selectedActivity?.name}
@@ -1066,21 +1143,25 @@ export function FocusContainer({
         )}
       />
 
-      {/* Modal Centralizado de Inserção de Registro Manual (Carregado sob demanda) */}
+      {/* Modal Centralizado de Inserção / Edição de Registro Manual (Carregado sob demanda) */}
       {manualRecordModalOpen && (
         <FocusManualRecordModal
           isOpen={manualRecordModalOpen}
           onClose={() => {
             setManualRecordModalOpen(false);
+            setEditingFocusRecord(null);
             setManualInitialActivityId(undefined);
             setManualInitialItemId(undefined);
           }}
           activities={initialActivities}
           backpackItems={initialBackpackItems}
+          allInventoryItems={initialAllInventoryItems}
           focusableTasks={focusableTasks}
           records={allRecords}
+          editingRecord={editingFocusRecord}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
+          onRecordUpdated={handleRecordUpdated}
         />
       )}
 

@@ -25,7 +25,7 @@ export function SubmitButton({
         // Tema Claro: Botão Roxo Primário vibrante com texto branco de alto contraste e sombra suave
         "bg-primary hover:bg-primary-dark text-white border border-primary-dark/30 shadow-sm active:scale-[0.99]",
         // Tema Escuro: Preenchimento primário de alto impacto visual com brilho sutil
-        "dark:bg-primary dark:hover:bg-primary-light dark:border dark:border-primary-light/40 dark:hover:border-gold/60 dark:shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_35%,transparent)] dark:hover:shadow-glow-gold-md dark:text-white",
+        "dark:bg-primary dark:hover:bg-primary-dark dark:border dark:border-primary-light/40 dark:hover:border-gold/60 dark:shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_35%,transparent)] dark:hover:shadow-glow-gold-md dark:text-white",
         "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         className,
