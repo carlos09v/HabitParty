@@ -591,3 +591,47 @@ export const MAX_DAILY_REWARDED_HABIT_SCORES = 8;
 
 /** Cooldown mínimo no cliente para evitar cliques duplos / rajadas acidentais nos botões +/- de hábitos. */
 export const HABIT_SCORE_COOLDOWN_MS = 450;
+
+/** Limite máximo de etapas recompensadas em checklists de tarefas HARD (espelha ChecklistItem.MAX_REWARDED_ITEMS_PER_TASK). */
+export const MAX_REWARDED_SUBTASKS = 4;
+
+/** Verifica se a tarefa (Daily ou To-Do na dificuldade HARD) suporta etapas recompensadas no checklist. */
+export function supportsRewardedChecklistSteps(
+  taskOrType?:
+    | string
+    | {
+        type?: string;
+        taskType?: string;
+        habitType?: string;
+        resetCounter?: string;
+        repeatType?: string;
+        daysOfWeek?: unknown[];
+        difficulty?: string | null;
+      }
+    | null,
+  difficulty?: string | null,
+): boolean {
+  const resolvedType = normalizeTaskType(taskOrType);
+  const resolvedDifficulty = normalizeTaskDifficulty(
+    typeof taskOrType === "object" && taskOrType !== null
+      ? (difficulty ?? taskOrType.difficulty)
+      : difficulty,
+  );
+  return resolvedType !== "habit" && resolvedDifficulty === "HARD";
+}
+
+/** Conta etapas recompensadas no checklist limitadas ao teto máximo por tarefa. */
+export function countRewardedChecklistItems(
+  checklist?: ReadonlyArray<{ isRewarded?: boolean }>,
+  max = MAX_REWARDED_SUBTASKS,
+): number {
+  if (!Array.isArray(checklist) || checklist.length === 0) return 0;
+  let count = 0;
+  for (const item of checklist) {
+    if (item?.isRewarded) {
+      count++;
+      if (count >= max) return max;
+    }
+  }
+  return count;
+}

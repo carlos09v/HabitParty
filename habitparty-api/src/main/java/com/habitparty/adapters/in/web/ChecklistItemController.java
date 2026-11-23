@@ -11,6 +11,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateChecklistItemDTO;
 import com.habitparty.adapters.in.web.dtos.response.ChecklistItemResponseDTO;
 import com.habitparty.application.usecases.task.checklistItem.AddChecklistItemUseCase;
 import com.habitparty.application.usecases.task.checklistItem.DeleteChecklistItemUseCase;
+import com.habitparty.application.usecases.task.checklistItem.ToggleChecklistItemRewardUseCase;
 import com.habitparty.application.usecases.task.checklistItem.ToggleChecklistItemUseCase;
 import com.habitparty.application.usecases.task.checklistItem.UpdateChecklistItemUseCase;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -24,6 +25,7 @@ public class ChecklistItemController implements ChecklistItemApi {
   private final UpdateChecklistItemUseCase updateChecklistItemUseCase;
   private final DeleteChecklistItemUseCase deleteChecklistItemUseCase;
   private final ToggleChecklistItemUseCase toggleChecklistItemUseCase;
+  private final ToggleChecklistItemRewardUseCase toggleChecklistItemRewardUseCase;
 
   @Override
   public ResponseEntity<ChecklistItemResponseDTO> addItem(
@@ -31,7 +33,7 @@ public class ChecklistItemController implements ChecklistItemApi {
       AuthenticatedUser userIdLogado,
       CreateChecklistItemDTO dto) {
     UUID userId = userIdLogado.id();
-    var item = addChecklistItemUseCase.execute(taskId, userId, dto.name());
+    var item = addChecklistItemUseCase.execute(taskId, userId, dto.name(), Boolean.TRUE.equals(dto.isRewarded()));
     return ResponseEntity.status(HttpStatus.CREATED).body(ChecklistItemResponseDTO.fromDomain(item));
   }
 
@@ -41,7 +43,7 @@ public class ChecklistItemController implements ChecklistItemApi {
       AuthenticatedUser userIdLogado,
       CreateChecklistItemDTO dto) {
     UUID userId = userIdLogado.id();
-    var item = updateChecklistItemUseCase.execute(itemId, userId, dto.name());
+    var item = updateChecklistItemUseCase.execute(itemId, userId, dto.name(), dto.isRewarded());
     return ResponseEntity.ok(ChecklistItemResponseDTO.fromDomain(item));
   }
 
@@ -51,6 +53,15 @@ public class ChecklistItemController implements ChecklistItemApi {
       AuthenticatedUser userIdLogado) {
     UUID userId = userIdLogado.id();
     var item = toggleChecklistItemUseCase.execute(itemId, userId);
+    return ResponseEntity.ok(ChecklistItemResponseDTO.fromDomain(item));
+  }
+
+  @Override
+  public ResponseEntity<ChecklistItemResponseDTO> toggleItemReward(
+      UUID itemId,
+      AuthenticatedUser userIdLogado) {
+    UUID userId = userIdLogado.id();
+    var item = toggleChecklistItemRewardUseCase.execute(itemId, userId);
     return ResponseEntity.ok(ChecklistItemResponseDTO.fromDomain(item));
   }
 

@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -115,7 +116,10 @@ public abstract class Task {
   public TaskReward calculatePenalty(LocalDate referenceDate) {
     // 1. Descobre quanto essa tarefa pagaria hoje (O filho responde isso!)
     TaskReward fullReward = this.calculateReward(referenceDate);
+    return calculateHalfPenalty(fullReward);
+  }
 
+  protected TaskReward calculateHalfPenalty(TaskReward fullReward) {
     // 2. Aplica a taxa de penalidade (Ex: 50% de multa)
     int penaltyXp = (int) (fullReward.xp() * 0.5);
     BigDecimal penaltyCoins = fullReward.coins()
@@ -129,6 +133,157 @@ public abstract class Task {
     }
 
     return new TaskReward(penaltyXp, penaltyCoins);
+  }
+
+  protected TaskReward calculateDifficultyBaseReward(int effortUnits) {
+    int safeUnits = Math.max(1, effortUnits);
+    int unitXp = switch (this.difficulty) {
+      case TRIVIAL -> 2;
+      case EASY -> 5;
+      case MEDIUM -> 15;
+      case HARD -> 30;
+    };
+
+    BigDecimal unitCoins = switch (this.difficulty) {
+      case TRIVIAL -> new BigDecimal("0.25");
+      case EASY -> new BigDecimal("0.75");
+      case MEDIUM -> new BigDecimal("2.50");
+      case HARD -> new BigDecimal("5.00");
+    };
+
+    return new TaskReward(unitXp * safeUnits, unitCoins.multiply(BigDecimal.valueOf(safeUnits)));
+  }
+
+  public boolean supportsRewardedChecklistSteps() {
+    return this.taskType != TaskType.HABIT && this.difficulty == TaskDifficulty.HARD;
+  }
+
+  public void validateCanRewardChecklistItem(UUID excludedItemId) {
+    if (!supportsRewardedChecklistSteps()) {
+      throw new DomainValidationException(
+          "Etapas recompensadas estão disponíveis apenas para tarefas diárias e to-dos na dificuldade difícil.");
+    }
+    if (countRewardedChecklistItemsExcluding(excludedItemId) >= ChecklistItem.MAX_REWARDED_ITEMS_PER_TASK) {
+      throw new DomainValidationException(
+          "Uma tarefa pode ter no máximo " + ChecklistItem.MAX_REWARDED_ITEMS_PER_TASK + " etapas recompensadas.");
+    }
+  }
+
+  public int countRewardedChecklistItems() {
+    return countRewardedChecklistItemsExcluding(null);
+  }
+
+  public int countRewardedChecklistItemsExcluding(UUID excludedItemId) {
+    if (!supportsRewardedChecklistSteps() || this.checklist == null || this.checklist.isEmpty()) {
+      return 0;
+    }
+    int count = 0;
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && item.isRewarded() && !Objects.equals(item.getId(), excludedItemId)) {
+        count++;
+        if (count >= ChecklistItem.MAX_REWARDED_ITEMS_PER_TASK) {
+          return ChecklistItem.MAX_REWARDED_ITEMS_PER_TASK;
+        }
+      }
+    }
+    return count;
+  }
+
+  public int countPendingRewardedChecklistItems() {
+    if (!supportsRewardedChecklistSteps() || this.checklist == null || this.checklist.isEmpty()) {
+      return 0;
+    }
+    int rewardedSeen = 0;
+    int pendingCount = 0;
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && item.isRewarded()) {
+        rewardedSeen++;
+        if (!item.isCompleted()) {
+          pendingCount++;
+        }
+        if (rewardedSeen >= ChecklistItem.MAX_REWARDED_ITEMS_PER_TASK) {
+          break;
+        }
+      }
+    }
+    return pendingCount;
+  }
+
+  public int getRewardMultiplierUnits() {
+    return 1 + countRewardedChecklistItems();
+  }
+
+  public int getPendingRewardPenaltyUnits() {
+    return 1 + countPendingRewardedChecklistItems();
+  }
+
+  public int nextChecklistOrderIndex() {
+    if (this.checklist == null || this.checklist.isEmpty()) {
+      return 0;
+    }
+    int max = -1;
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && item.getOrderIndex() > max) {
+        max = item.getOrderIndex();
+      }
+    }
+    return max + 1;
+  }
+
+  public List<ChecklistItem> markAllChecklistItemsCompleted() {
+    if (this.checklist == null || this.checklist.isEmpty()) {
+      return List.of();
+    }
+    List<ChecklistItem> updated = new ArrayList<>();
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && !item.isCompleted()) {
+        item.markAutoCompleted();
+        updated.add(item);
+      }
+    }
+    return updated;
+  }
+
+  public List<ChecklistItem> revertAutoCompletedChecklistItems() {
+    if (this.checklist == null || this.checklist.isEmpty()) {
+      return List.of();
+    }
+    List<ChecklistItem> updated = new ArrayList<>();
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && item.isAutoCompleted()) {
+        item.revertAutoCompleted();
+        updated.add(item);
+      }
+    }
+    return updated;
+  }
+
+  public List<ChecklistItem> resetAllChecklistItems() {
+    if (this.checklist == null || this.checklist.isEmpty()) {
+      return List.of();
+    }
+    List<ChecklistItem> updated = new ArrayList<>();
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && item.isCompleted()) {
+        item.setCompleted(false);
+        updated.add(item);
+      }
+    }
+    return updated;
+  }
+
+  public List<ChecklistItem> clearRewardedChecklistItemsIfNotHard() {
+    if (supportsRewardedChecklistSteps() || this.checklist == null || this.checklist.isEmpty()) {
+      return List.of();
+    }
+    List<ChecklistItem> updated = new ArrayList<>();
+    for (ChecklistItem item : this.checklist) {
+      if (item != null && item.isRewarded()) {
+        item.setRewarded(false);
+        updated.add(item);
+      }
+    }
+    return updated;
   }
 
   public boolean isOverdue() {

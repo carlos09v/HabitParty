@@ -36,6 +36,8 @@ public class TransactionHistoryMapper {
         entity.setTagsSnapshot(domain.getTagsSnapshot().orElse(null));
         entity.setColumnNameSnapshot(domain.getColumnNameSnapshot().orElse(null));
         entity.setDescriptionSnapshot(domain.getDescriptionSnapshot().orElse(null));
+        entity.setChecklistCompletedSnapshot(domain.getChecklistCompletedSnapshot().orElse(null));
+        entity.setEffortUnitsSnapshot(domain.getEffortUnitsSnapshot().orElse(null));
 
         return entity;
     }
@@ -59,6 +61,8 @@ public class TransactionHistoryMapper {
             domainTags,
             entity.getColumnNameSnapshot(),
             entity.getDescriptionSnapshot(),
+            entity.getChecklistCompletedSnapshot(),
+            entity.getEffortUnitsSnapshot(),
             entity.getCreatedAt()
         );
     }

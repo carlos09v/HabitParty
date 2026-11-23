@@ -36,7 +36,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED) // Heran;ca
-public class TaskJpaEntity {
+public abstract class TaskJpaEntity {
   @Id
   @Column(name = "task_id")
   private UUID id;

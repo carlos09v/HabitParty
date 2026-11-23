@@ -30,6 +30,22 @@ const SYNCED_EXTERNAL_STRING_FIELDS = [
   "dueEndTime",
 ] as const;
 
+function areChecklistsEqual(a?: ChecklistItem[], b?: ChecklistItem[]): boolean {
+  const listA = a ?? [];
+  const listB = b ?? [];
+  if (listA.length !== listB.length) return false;
+  return listA.every((item, index) => {
+    const other = listB[index];
+    return (
+      Boolean(other) &&
+      item.id === other.id &&
+      item.name === other.name &&
+      Boolean(item.isCompleted) === Boolean(other.isCompleted) &&
+      Boolean(item.isRewarded) === Boolean(other.isRewarded)
+    );
+  });
+}
+
 /**
  * Gerencia a fila serializada de auto-save por microtask com reconciliação otimista,
  * rollback automático em caso de erro de rede/validação e sincronização bidirecional
@@ -82,6 +98,15 @@ export function useTaskOptimisticAutoSave({
         externalFields.completed = Boolean(task.completed);
       }
 
+      if (
+        task.checklist &&
+        !areChecklistsEqual(prevConfirmed?.checklist, task.checklist) &&
+        !areChecklistsEqual(checklistRef.current, task.checklist)
+      ) {
+        externalFields.checklist = task.checklist;
+        checklistRef.current = task.checklist;
+      }
+
       for (const fieldKey of SYNCED_EXTERNAL_STRING_FIELDS) {
         if (
           !(fieldKey in pending) &&
@@ -132,10 +157,26 @@ export function useTaskOptimisticAutoSave({
       checklistRef.current = nextList;
       const baseTask = latestTaskRef.current;
       if (!baseTask) return;
-      const updatedTask = { ...baseTask, checklist: nextList };
+      const userTimeZone = useUserStore.getState().user?.timezone;
+      const reward = calculateTaskReward({
+        ...baseTask,
+        checklist: nextList,
+        timeZone: userTimeZone,
+      });
+      const updatedTask = {
+        ...baseTask,
+        checklist: nextList,
+        rewardXp: reward.xp,
+        rewardGold: reward.gold,
+      };
       latestTaskRef.current = updatedTask;
       confirmedTaskRef.current = confirmedTaskRef.current
-        ? { ...confirmedTaskRef.current, checklist: nextList }
+        ? {
+            ...confirmedTaskRef.current,
+            checklist: nextList,
+            rewardXp: reward.xp,
+            rewardGold: reward.gold,
+          }
         : updatedTask;
       onTaskUpdate?.(updatedTask);
     },
@@ -147,6 +188,7 @@ export function useTaskOptimisticAutoSave({
       const baseTask = latestTaskRef.current ?? task ?? undefined;
       if (!baseTask) return;
 
+      const userTimeZone = useUserStore.getState().user?.timezone;
       const currentChecklist =
         checklistRef.current.length > 0
           ? checklistRef.current
@@ -159,9 +201,7 @@ export function useTaskOptimisticAutoSave({
       };
       const reward = calculateTaskReward({
         ...mergedDraft,
-        isHardcoreModeEnabled: mergedDraft.isHardcoreModeEnabled,
-        dueDate: mergedDraft.dueDate,
-        isPenaltyApplied: mergedDraft.isPenaltyApplied,
+        timeZone: userTimeZone,
       });
       const updated: Task = {
         ...mergedDraft,
@@ -188,10 +228,11 @@ export function useTaskOptimisticAutoSave({
         if (!snapshotTask) return;
 
         const batchSeq = saveSequenceRef.current;
+        const requestTimeZone = useUserStore.getState().user?.timezone;
         const payload = buildUpdateTaskPayload(
           snapshotTask,
           undefined,
-          useUserStore.getState().user?.timezone,
+          requestTimeZone,
         );
 
         saveChainRef.current = saveChainRef.current.then(async () => {
@@ -207,18 +248,27 @@ export function useTaskOptimisticAutoSave({
               }
             }
           } else if (res.data) {
+            const responseTimeZone = useUserStore.getState().user?.timezone;
             const mappedServer = mapTaskResponseToTask(
               res.data,
               snapshotTask.columnId || "",
+              responseTimeZone,
             );
             const finalChecklist =
-              res.data.checklist && res.data.checklist.length > 0
-                ? res.data.checklist
-                : snapshotTask.checklist;
+              syncedTaskIdRef.current === snapshotTask.id
+                ? checklistRef.current
+                : (res.data.checklist ?? snapshotTask.checklist);
+            const finalReward = calculateTaskReward({
+              ...mappedServer,
+              checklist: finalChecklist,
+              timeZone: responseTimeZone,
+            });
             const syncedTask: Task = {
               ...mappedServer,
               title: res.data.name || snapshotTask.title,
               checklist: finalChecklist,
+              rewardXp: finalReward.xp,
+              rewardGold: finalReward.gold,
               totalFocusMinutes:
                 res.data.totalFocusMinutes ?? snapshotTask.totalFocusMinutes,
               focusCyclesCount:

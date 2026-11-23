@@ -8,6 +8,7 @@ import {
   DIFFICULTY_DOT_COLORS,
   DIFFICULTY_REWARDS,
   DIFFICULTY_SWORD_COLORS,
+  MAX_REWARDED_SUBTASKS,
   TASK_DIFFICULTY_META,
   TASK_DIFFICULTY_OPTIONS,
 } from "@/constants/task";
@@ -166,7 +167,17 @@ export function TaskDifficultySelector({
       />
       {value === "HARD" && (
         <p className="text-tiny text-amber-800 dark:text-amber-300/90 bg-amber-500/8 border border-amber-500/25 rounded-lg px-2.5 py-1.5 leading-snug">
-          {isGamified ? t("hardSplitHint") : t("hardSplitHintProductivity")}
+          {isGamified
+            ? t("hardSplitHint", {
+                max: MAX_REWARDED_SUBTASKS,
+                xp: DIFFICULTY_REWARDS.HARD.xp,
+                gold: formatCoins(DIFFICULTY_REWARDS.HARD.gold, { locale }),
+              })
+            : t("hardSplitHintProductivity", {
+                max: MAX_REWARDED_SUBTASKS,
+                xp: DIFFICULTY_REWARDS.HARD.xp,
+                gold: formatCoins(DIFFICULTY_REWARDS.HARD.gold, { locale }),
+              })}
         </p>
       )}
     </div>

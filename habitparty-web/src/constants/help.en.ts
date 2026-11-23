@@ -68,8 +68,9 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "HabitParty divides your routine into three complementary models and lets you organize everything with Hierarchical Tags (e.g., 'Study > English' using '>') to filter from broad areas to specifics:",
     bullets: [
       "Habits: Ongoing actions that can be positive (+), negative (-), or mixed. They have no fixed date, use Importance (Low, Normal, High), and include a Quick Focus button right on each row.",
-      "Dailies: Recurring routines scheduled for specific weekdays (e.g., Mondays and Wednesdays). They automatically reset at midnight in your local timezone, pay 100% base reward with no decay, and unlock a +10% consistency bonus after 14 consecutive scheduled completions.",
+      "Dailies: Recurring routines scheduled for specific weekdays (e.g., Mondays and Wednesdays). They automatically reset at midnight in your local timezone (along with their checklists), pay 100% base reward with no decay, and unlock a +10% consistency bonus after 14 consecutive scheduled completions.",
       "To-Dos: One-off tasks with a due date and optional deadline time (free), scheduled reminders, subtask checklists, and Rich-Text descriptions (lists, bold, links) up to 2,000 characters. Premium subscribers can also schedule To-Dos as Events (with start & end times or all-day duration) featuring a live pulsing 'In progress' badge.",
+      "Rewarded Checklist Steps (Hard Dailies & To-Dos): For longer 2h+ blocks, instead of creating 'Part 1' and 'Part 2' cards, mark up to 4 checklist subtasks as Rewarded Steps (or Effort Steps in Essential Mode). Each step adds +100% of the base reward (+30 XP/pts and +5 🪙/Credits) and counts as +1 delivery unit in stats and achievements — all paid together when the parent card is completed.",
     ],
     tags: [
       "tasks",
@@ -79,6 +80,9 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "routine",
       "tags",
       "rich-text",
+      "rewarded steps",
+      "subtasks",
+      "checklist",
     ],
     highlightBadge: "Structure",
     actionLink: { label: "View My Tasks", href: "/tasks" },
@@ -92,7 +96,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "It is a high-accountability commitment available for Habits, Dailies, and To-Dos. Its name adapts to your active Experience Mode and task type: it is called 'Strict Deadline' (on To-Dos) or 'Daily Commitment' (on Habits/Dailies) in Essential Mode (Productivity), and 'Hardcore Mode' in Adventure Mode (RPG). When enabled:",
     bullets: [
       "To-Dos: The due date becomes mandatory and cannot be postponed once overdue. Completing an overdue task yields only 50% of the normal reward.",
-      "Midnight Penalty: If the activity is not finished by 11:59 PM of the due date, the system deducts 50% of Coins/XP (in Adventure Mode) or Credits/Points (in Essential Mode) from your balance.",
+      "Midnight Penalty & Completed-Step Protection: If the activity is not finished by 11:59 PM of the due date, the system deducts 50% of Coins/XP (Adventure Mode) or Credits/Points (Essential Mode) from your balance. For Hard tasks with Rewarded Steps, the penalty applies only to the base task plus pending rewarded steps — steps already checked before the deadline are protected.",
       "Habits & Dailies: Missing a non-negotiable routine resets your streak to Day 1 and incurs the disciplinary deduction.",
       "When to use: Reserve strictly for 1 or 2 critical, non-negotiable commitments to prevent procrastination and self-sabotage.",
     ],
@@ -378,7 +382,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     bullets: [
       "Real-Time Automatic Unlocking: Whenever you complete a task, log a habit check-in, finish a focus session, redeem a reward, open a Mystery Box, or create a new Workspace, the server evaluates your progress and unlocks new medals automatically with a crystalline trophy sound effect.",
       "Achievement Points (Trophy Score): Each medal grants from +10 pts (Common) to +250 pts (Legendary), building your prestige score displayed in the Sidebar and Showcase (without inflating the shop coin economy). Reaching 1,000 pts also unlocks the 'Glory Collector' medal.",
-      "Behavioral Achievements: Beyond volume, some medals reward how you work — completing 20 To-Dos before their due date (Royal Punctuality), finishing 7 cycles of Negative/Mixed Habits with zero relapses (Impulse Mastery), hitting 10 Focus Activity time goals (Bullseye Focus), completing tasks with 100% of their checklist done, burning Backpack time coupons on the Focus Stage, keeping 500 coins saved in your wallet, filling all 4 Showcase slots, or organizing your life into 2 Workspaces.",
+      "Behavioral Achievements & Rewarded Steps: Beyond volume, some medals reward how you work — completing 20 To-Dos before their due date (Royal Punctuality), finishing 7 cycles of Negative/Mixed Habits with zero relapses (Impulse Mastery), hitting 10 Focus Activity time goals (Bullseye Focus), completing 50 tasks with 100% of their checklist done (Flawless Checklist), burning Backpack time coupons on the Focus Stage, keeping 500 coins saved in your wallet, filling all 4 Showcase slots, or organizing your life into 2 Workspaces. On Hard tasks, each Rewarded Checklist Step also counts proportionally (+1 delivery unit) toward task, hard-task, Hardcore, and Retrospective totals.",
       "Secret Achievements (???): 8 special medals (Hardcore, Mystery Boxes, Midnight Owl, and Early Bird) remain masked with '???' until you discover and fulfill their secret condition. Focus session times use your device's local clock.",
     ],
     tags: [

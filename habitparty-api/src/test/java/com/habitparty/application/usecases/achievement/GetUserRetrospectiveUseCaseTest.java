@@ -248,4 +248,61 @@ class GetUserRetrospectiveUseCaseTest {
     UserRetrospective allowed = useCaseFriend.executeForUsername(viewerId, "privateowner", 2025);
     assertEquals(2025, allowed.year());
   }
+
+  @Test
+  void shouldScaleRetrospectiveTaskMetricsAndChallengeSeekerByEffortUnitsSnapshot() {
+    UUID userId = UUID.randomUUID();
+    User user = buildUser(userId, "rewardedsteps", LocalDateTime.of(2025, 1, 10, 10, 0));
+
+    UserRepository userRepo = mock(UserRepository.class);
+    FriendshipRepository friendshipRepo = mock(FriendshipRepository.class);
+    TransactionHistoryRepository txRepo = mock(TransactionHistoryRepository.class);
+    FocusRecordRepository focusRepo = mock(FocusRecordRepository.class);
+    UserAchievementRepository uaRepo = mock(UserAchievementRepository.class);
+    AchievementRepository achRepo = mock(AchievementRepository.class);
+
+    when(userRepo.findById(userId)).thenReturn(Optional.of(user));
+    when(txRepo.findEarliestCreatedAtByUserId(userId))
+        .thenReturn(Optional.of(LocalDateTime.of(2025, 2, 1, 10, 0)));
+    when(focusRepo.findEarliestStartTimeByUserId(userId)).thenReturn(Optional.empty());
+
+    List<TransactionHistory> txs = new ArrayList<>();
+    // 10 hábitos simples (10 unidades de entrega em 5 dias de março)
+    for (int i = 0; i < 10; i++) {
+      txs.add(new TransactionHistory(
+          UUID.randomUUID(), userId, UUID.randomUUID(),
+          new BigDecimal("1.75"), 10, null,
+          TransactionType.HABIT_COMPLETED, "Habit " + i, null, null,
+          null, null, null, null, null, 1,
+          LocalDateTime.of(2025, 3, 1 + (i % 5), 9, 0)));
+    }
+    // 3 cards Difíceis com 3 etapas recompensadas cada (4 unidades cada = 12 unidades difíceis em junho)
+    // Total = 22 unidades, sendo 12 difíceis (>= 1/3) -> CHALLENGE_SEEKER preservado!
+    for (int i = 0; i < 3; i++) {
+      txs.add(new TransactionHistory(
+          UUID.randomUUID(), userId, UUID.randomUUID(),
+          new BigDecimal("20.00"), 120, null,
+          TransactionType.TODO_COMPLETED, "Projeto " + i, null, null,
+          TaskDifficulty.HARD, null, null, null, Boolean.TRUE, 4,
+          LocalDateTime.of(2025, 6, 10 + i, 15, 0)));
+    }
+
+    when(txRepo.findAllByUserIdAndPeriod(eq(userId), any(), any())).thenReturn(txs);
+    when(focusRepo.findAllByUserIdAndPeriod(eq(userId), any(), any())).thenReturn(List.of());
+    when(achRepo.findAllOrdered()).thenReturn(List.of());
+    when(uaRepo.findAllByUserId(userId)).thenReturn(List.of());
+
+    Clock mid2026Clock = Clock.fixed(Instant.parse("2026-11-14T15:00:00Z"), ZoneId.of("UTC"));
+    GetUserRetrospectiveUseCase useCase = buildUseCase(
+        mid2026Clock, userRepo, friendshipRepo, txRepo, focusRepo, uaRepo, achRepo);
+
+    UserRetrospective result = useCase.executeForSelf(userId, 2025);
+
+    assertTrue(result.eligible());
+    assertEquals(22, result.tasksCompleted());
+    assertEquals(12, result.hardTasksCompleted());
+    assertEquals(6, result.bestMonth());
+    assertEquals(12, result.bestMonthTasksCount());
+    assertEquals(RetrospectiveArchetype.CHALLENGE_SEEKER, result.archetype());
+  }
 }

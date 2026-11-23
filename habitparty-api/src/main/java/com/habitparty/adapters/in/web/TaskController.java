@@ -69,7 +69,7 @@ public class TaskController implements TaskApi {
   }
 
   private TaskResponseDTO toDto(Task task, UUID userId, Boolean rewardGranted) {
-    return toDto(task, userId, rewardGranted, null, null, null, null);
+    return toDto(task, userId, rewardGranted, null, null, null, null, null, null);
   }
 
   private TaskResponseDTO toDto(
@@ -79,7 +79,9 @@ public class TaskController implements TaskApi {
       Boolean rewardReverted,
       Integer revertedXp,
       java.math.BigDecimal revertedCoins,
-      Boolean streakReverted) {
+      Boolean streakReverted,
+      Integer penaltyAppliedXp,
+      java.math.BigDecimal penaltyAppliedCoins) {
     ZoneId userZone = userTimeResolver.resolveZone(userId);
     LocalDate userToday = LocalDate.now(userTimeResolver.clock().withZone(userZone));
     return TaskResponseDTO.fromDomain(
@@ -90,7 +92,9 @@ public class TaskController implements TaskApi {
         rewardReverted,
         revertedXp,
         revertedCoins,
-        streakReverted);
+        streakReverted,
+        penaltyAppliedXp,
+        penaltyAppliedCoins);
   }
 
   @Override
@@ -265,7 +269,9 @@ public class TaskController implements TaskApi {
             rewardReverted,
             revertedXp,
             revertedCoins,
-            streakReverted));
+            streakReverted,
+            result.penaltyAppliedXp(),
+            result.penaltyAppliedCoins()));
   }
 
   @Override

@@ -17,7 +17,7 @@ import {
   updateDocumentTitle,
 } from "@/utils/focusTimerBrowser";
 import { tStoreMsg } from "@/utils/focusTimerMessages";
-import { awardUserRewards } from "@/utils/gamification";
+import { awardUserRewards, deductUserPenalty } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
 let isCompletingLinkedTaskGuard = false;
@@ -85,6 +85,23 @@ export async function executeCompleteLinkedTask(
             ? Math.max(0, taskData.currentStreak - 1)
             : taskData?.currentStreak;
         const isGamified = useUIStore.getState().experienceMode === "GAMIFIED";
+        const optimisticStore = useOptimisticDashboardStore.getState();
+
+        if (
+          taskData?.penaltyAppliedXp !== undefined ||
+          taskData?.penaltyAppliedCoins !== undefined
+        ) {
+          const penaltyResult = deductUserPenalty(
+            taskData.penaltyAppliedXp ?? 0,
+            Number(taskData.penaltyAppliedCoins ?? 0),
+          );
+          optimisticStore.addTransaction({
+            xpAmount: -penaltyResult.xpDeducted,
+            goldAmount: -penaltyResult.coinsDeducted,
+            transactionType: "TASK_FAILED",
+          });
+        }
+
         const breakdown = getTaskRewardBreakdown({
           taskType: taskData?.taskType,
           difficulty: taskData?.difficulty,
@@ -95,6 +112,7 @@ export async function executeCompleteLinkedTask(
           isHardcoreModeEnabled: taskData?.isHardcoreModeEnabled,
           dueDate: taskData?.dueDate,
           isPenaltyApplied: taskData?.isPenaltyApplied,
+          checklist: taskData?.checklist,
           locale,
           timeZone: userTimeZone,
           isGamified,
@@ -105,7 +123,7 @@ export async function executeCompleteLinkedTask(
           locale,
           isTaskCompletion: true,
         });
-        useOptimisticDashboardStore.getState().addTransaction({
+        optimisticStore.addTransaction({
           xpAmount: xp,
           goldAmount: gold,
           transactionType: "TASK_COMPLETED",

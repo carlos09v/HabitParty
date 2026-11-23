@@ -68,4 +68,28 @@ class UserStatsAchievementCountersTest {
     assertEquals(1, stats.getTotalCleanHabitCycles());
     assertEquals(1, stats.getTotalActivityGoalsMet());
   }
+
+  @Test
+  void deveEscalarEEstornarContadoresDeTarefasPorUnidadesDeEntrega() {
+    stats.addXp(500);
+    stats.addCoins(new java.math.BigDecimal("50.00"));
+
+    stats.recordTaskCompleted(true, true, 4);
+    stats.recordChecklistTaskCompleted();
+    stats.recordOnTimeTodoCompleted();
+
+    assertEquals(4, stats.getTotalTasksCompleted());
+    assertEquals(4, stats.getTotalHardTasksCompleted());
+    assertEquals(4, stats.getTotalHardcoreTasksCompleted());
+    assertEquals(1, stats.getTotalChecklistTasksCompleted());
+    assertEquals(1, stats.getTotalOnTimeTodosCompleted());
+
+    stats.revertTaskCompletion(120, new java.math.BigDecimal("20.00"), true, true, true, true, 4);
+
+    assertEquals(0, stats.getTotalTasksCompleted());
+    assertEquals(0, stats.getTotalHardTasksCompleted());
+    assertEquals(0, stats.getTotalHardcoreTasksCompleted());
+    assertEquals(0, stats.getTotalChecklistTasksCompleted());
+    assertEquals(0, stats.getTotalOnTimeTodosCompleted());
+  }
 }

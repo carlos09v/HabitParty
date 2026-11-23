@@ -5,5 +5,10 @@ import jakarta.validation.constraints.Size;
 
 public record CreateChecklistItemDTO(
     @NotBlank(message = "O nome do item não pode estar vazio")
-    @Size(max = 30, message = "O nome deve ter até 30 caracteres") String name) {
+    @Size(max = 30, message = "O nome deve ter até 30 caracteres") String name,
+    Boolean isRewarded) {
+
+  public CreateChecklistItemDTO(String name) {
+    this(name, null);
+  }
 }

@@ -368,11 +368,12 @@ public class GetUserRetrospectiveUseCase {
       LocalDate txDate = toUserDate(tx.getCreatedAt(), userZone);
       TransactionType type = tx.getTransactionType();
       if (COMPLETED_TASK_TYPES.contains(type)) {
-        tasksCompleted++;
+        int effortUnits = Math.max(1, tx.getEffortUnitsSnapshot().orElse(1));
+        tasksCompleted += effortUnits;
         activeDates.add(txDate);
-        monthTasks[txDate.getMonthValue()]++;
+        monthTasks[txDate.getMonthValue()] += effortUnits;
         if (tx.getDifficultySnapshot().orElse(null) == TaskDifficulty.HARD) {
-          hardTasksCompleted++;
+          hardTasksCompleted += effortUnits;
         }
       }
       if (POSITIVE_REWARD_TYPES.contains(type)) {

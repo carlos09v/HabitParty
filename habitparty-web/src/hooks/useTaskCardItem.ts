@@ -5,8 +5,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { useLocale } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
+  countRewardedChecklistItems,
   getTaskBorderClass,
   normalizeTaskType,
+  supportsRewardedChecklistSteps,
   TASK_PRIORITY_META,
 } from "@/constants/task";
 import { useMinuteTicker } from "@/hooks/useMinuteTicker";
@@ -114,6 +116,9 @@ export function useTaskItemMeta({
   const checklistTotal = task.checklist?.length || 0;
   const checklistCompleted =
     task.checklist?.filter((item) => Boolean(item.isCompleted)).length || 0;
+  const checklistRewarded = supportsRewardedChecklistSteps(task)
+    ? countRewardedChecklistItems(task.checklist)
+    : 0;
   const hasChecklist = checklistTotal > 0;
   const isChecklistAllDone =
     hasChecklist && checklistCompleted === checklistTotal;
@@ -144,6 +149,7 @@ export function useTaskItemMeta({
     hasChecklist,
     checklistTotal,
     checklistCompleted,
+    checklistRewarded,
     isChecklistAllDone,
     isHardcoreOverdue,
   };

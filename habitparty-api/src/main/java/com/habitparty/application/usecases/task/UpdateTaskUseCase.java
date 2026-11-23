@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
@@ -92,6 +94,7 @@ public class UpdateTaskUseCase {
         command.difficulty(), command.tags(), command.isHardcoreModeEnabled(),
         today
     );
+    List<ChecklistItem> downgradedChecklistItems = task.clearRewardedChecklistItemsIfNotHard();
 
     // 3. Atualiza os campos específicos usando Pattern Matching
     if (task instanceof Habit h) {
@@ -162,6 +165,10 @@ public class UpdateTaskUseCase {
       }
     }
 
-    return port.save(task);
+    Task savedTask = port.save(task);
+    if (!downgradedChecklistItems.isEmpty()) {
+      port.saveChecklistItems(downgradedChecklistItems);
+    }
+    return savedTask;
   }
 }

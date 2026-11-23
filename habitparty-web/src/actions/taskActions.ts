@@ -31,7 +31,7 @@ type TaskStatus =
 export async function createTask(
   boardColumnId: string,
   payload: CreateTaskDTO,
-  checklistItems?: { name?: string }[],
+  checklistItems?: { name?: string; isRewarded?: boolean }[],
 ): Promise<ActionState<TaskResponseDTO>> {
   const t = await getTranslations("tasks.actions");
   try {
@@ -146,7 +146,11 @@ export async function saveTaskWithDetails(
             input.taskId,
             input.initialChecklist,
             input.currentChecklist,
-            { skipInvalidation: true },
+            {
+              skipInvalidation: true,
+              skipRewardDemotionSync:
+                data.taskType === "HABIT" || data.difficulty !== "HARD",
+            },
           )
         : Promise.resolve({
             items: (data.checklist ?? []) as ChecklistItemResponseDTO[],

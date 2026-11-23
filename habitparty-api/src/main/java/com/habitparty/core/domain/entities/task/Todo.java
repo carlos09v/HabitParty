@@ -197,37 +197,13 @@ public class Todo extends Task {
   }
 
   public TaskReward calculateBaseReward() {
-    int baseXp = switch (this.getDifficulty()) {
-      case TRIVIAL -> 2;
-      case EASY -> 5;
-      case MEDIUM -> 15;
-      case HARD -> 30;
-    };
-    
-    BigDecimal baseCoins = switch (this.getDifficulty()) {
-      case TRIVIAL -> new BigDecimal("0.25");
-      case EASY -> new BigDecimal("0.75");
-      case MEDIUM -> new BigDecimal("2.50");
-      case HARD -> new BigDecimal("5.00");
-    };
-
-    return new TaskReward(baseXp, baseCoins);
+    return calculateDifficultyBaseReward(getRewardMultiplierUnits());
   }
 
   @Override
   public TaskReward calculatePenalty() {
-    TaskReward base = calculateBaseReward();
-
-    int penaltyXp = BigDecimal.valueOf(base.xp()).multiply(HALF_RATE).intValue();
-    BigDecimal penaltyCoins = base.coins()
-            .multiply(HALF_RATE)
-            .setScale(2, java.math.RoundingMode.HALF_UP);
-
-    if (penaltyCoins.compareTo(MIN_COINS) < 0) {
-        penaltyCoins = MIN_COINS;
-    }
-
-    return new TaskReward(penaltyXp, penaltyCoins);
+    TaskReward pendingBase = calculateDifficultyBaseReward(getPendingRewardPenaltyUnits());
+    return calculateHalfPenalty(pendingBase);
   }
 
   @Override

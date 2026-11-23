@@ -7,11 +7,13 @@ import com.habitparty.core.domain.entities.task.ChecklistItem;
 public record ChecklistItemResponseDTO(
     UUID id,
     String name,
-    boolean isCompleted) {
+    boolean isCompleted,
+    boolean isRewarded) {
   public static ChecklistItemResponseDTO fromDomain(ChecklistItem item) {
     return new ChecklistItemResponseDTO(
         item.getId(),
         item.getName(),
-        item.isCompleted());
+        item.isCompleted(),
+        item.isRewarded());
   }
 }

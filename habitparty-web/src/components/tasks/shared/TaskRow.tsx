@@ -238,6 +238,7 @@ const TaskRowContent = memo(function TaskRowContent({
     hasChecklist,
     checklistTotal,
     checklistCompleted,
+    checklistRewarded,
     isChecklistAllDone,
     isHardcoreOverdue,
   } = useTaskItemMeta({
@@ -372,6 +373,7 @@ const TaskRowContent = memo(function TaskRowContent({
               <TaskChecklistBadge
                 checklistCompleted={checklistCompleted}
                 checklistTotal={checklistTotal}
+                checklistRewarded={checklistRewarded}
                 isChecklistAllDone={isChecklistAllDone}
               />
             )}

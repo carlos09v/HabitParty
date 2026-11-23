@@ -280,6 +280,9 @@ class ChangeTaskStatusUseCaseTest {
           tx.getDifficultySnapshot().orElse(null),
           tx.getTagsSnapshot().orElse(null),
           tx.getColumnNameSnapshot().orElse(null),
+          tx.getDescriptionSnapshot().orElse(null),
+          tx.getChecklistCompletedSnapshot().orElse(null),
+          tx.getEffortUnitsSnapshot().orElse(null),
           tx.getCreatedAt() != null ? tx.getCreatedAt() : LocalDateTime.now());
       store.add(0, persisted);
       return null;
@@ -574,5 +577,204 @@ class ChangeTaskStatusUseCaseTest {
     assertEquals(0, user.getCurrentCoins().compareTo(BigDecimal.ZERO));
     assertEquals(0, user.getStats().getTotalOnTimeTodosCompleted());
     assertFalse(overdueTodo.isRewardAlreadyClaimed());
+  }
+
+  @Test
+  @DisplayName("Concluir To-Do Difícil marca etapas pendentes automaticamente e paga recompensa consolidada")
+  void completingHardTodoAutoChecksChecklistAndAwardsConsolidatedReward() {
+    user.addXp(100);
+    List<TransactionHistory> store = wireTransactionStore();
+    ChecklistItem checked = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 1", true, true);
+    ChecklistItem pendingRewarded = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 2", false, true);
+    ChecklistItem pendingRewarded2 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 3", false, true);
+    ChecklistItem pendingStandard = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Notas", false, false);
+
+    Todo hardTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Projeto 4h", "Bloco grande", 0,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.TODO, false, LocalDate.now().plusDays(2), LocalDateTime.now(),
+        List.of(checked, pendingRewarded, pendingRewarded2, pendingStandard),
+        TodoReminderType.NONE, null, null, false);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(hardTodo));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenAnswer(inv -> store.size());
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(0);
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
+
+    assertTrue(checked.isCompleted());
+    assertTrue(pendingRewarded.isCompleted());
+    assertTrue(pendingRewarded2.isCompleted());
+    assertTrue(pendingStandard.isCompleted());
+    verify(taskPort).saveChecklistItems(List.of(pendingRewarded, pendingRewarded2, pendingStandard));
+    assertEquals(220, user.getTotalXp());
+    assertEquals(0, new BigDecimal("20.00").compareTo(user.getCurrentCoins()));
+    assertEquals(4, user.getStats().getTotalTasksCompleted());
+    assertEquals(4, user.getStats().getTotalHardTasksCompleted());
+    assertEquals(0, user.getStats().getTotalHardcoreTasksCompleted());
+    assertEquals(1, user.getStats().getTotalChecklistTasksCompleted());
+    assertEquals(1, user.getStats().getTotalOnTimeTodosCompleted());
+    assertEquals(4, store.get(0).getEffortUnitsSnapshot().orElse(null));
+
+    // Desfazer conclusão estorna os 120 XP / 20.00 moedas, as 4 unidades de entrega, o contador de checklist impecável
+    // e restaura apenas os itens auto-marcados (mantendo etapa concluída previamente intacta)
+    var uncheckResult = changeTaskStatusUseCase.executeWithResult(taskId, userId, TaskStatus.PENDING);
+    assertTrue(uncheckResult.rewardReverted());
+    assertEquals(120, uncheckResult.revertedXp());
+    assertEquals(0, new BigDecimal("20.00").compareTo(uncheckResult.revertedCoins()));
+    assertEquals(100, user.getTotalXp());
+    assertEquals(0, user.getCurrentCoins().compareTo(BigDecimal.ZERO));
+    assertEquals(0, user.getStats().getTotalTasksCompleted());
+    assertEquals(0, user.getStats().getTotalHardTasksCompleted());
+    assertEquals(0, user.getStats().getTotalChecklistTasksCompleted());
+    assertEquals(0, user.getStats().getTotalOnTimeTodosCompleted());
+    assertTrue(checked.isCompleted());
+    assertFalse(pendingRewarded.isCompleted());
+    assertFalse(pendingRewarded2.isCompleted());
+    assertFalse(pendingStandard.isCompleted());
+    verify(taskPort, times(2)).saveChecklistItems(List.of(pendingRewarded, pendingRewarded2, pendingStandard));
+  }
+
+  @Test
+  @DisplayName("Diária Difícil Hardcore com 2 etapas recompensadas escala e estorna totalTasks/Hard/Hardcore em +3 unidades")
+  void hardHardcoreDailyWithRewardedStepsScalesAndRevertsEffortUnits() {
+    List<TransactionHistory> store = wireTransactionStore();
+    ChecklistItem step1 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Parte 1", false, true);
+    ChecklistItem step2 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Parte 2", false, true);
+    ChecklistItem freeNote = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Subtarefa grátis", false, false);
+
+    Daily hardcoreHardDaily = new Daily(
+        taskId, UUID.randomUUID(), userId, "Bloco Hardcore 3h", "", 1,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.DAILY, true, LocalDate.now(), LocalDateTime.now().minusDays(1),
+        List.of(step1, step2, freeNote),
+        0, LocalDate.now().minusDays(1), DailyRepeatType.DAILY, 1, null, null, null);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(hardcoreHardDaily));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenAnswer(inv -> store.size());
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(0);
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
+
+    // 1 base + 2 recompensadas = 3 unidades (subtarefa gratuita não soma unidade extra)
+    assertEquals(3, user.getStats().getTotalTasksCompleted());
+    assertEquals(3, user.getStats().getTotalHardTasksCompleted());
+    assertEquals(3, user.getStats().getTotalHardcoreTasksCompleted());
+    assertEquals(1, user.getStats().getTotalChecklistTasksCompleted());
+    assertEquals(3, store.get(0).getEffortUnitsSnapshot().orElse(null));
+
+    var uncheckResult = changeTaskStatusUseCase.executeWithResult(taskId, userId, TaskStatus.PENDING);
+    assertTrue(uncheckResult.rewardReverted());
+    assertEquals(0, user.getStats().getTotalTasksCompleted());
+    assertEquals(0, user.getStats().getTotalHardTasksCompleted());
+    assertEquals(0, user.getStats().getTotalHardcoreTasksCompleted());
+    assertEquals(0, user.getStats().getTotalChecklistTasksCompleted());
+  }
+
+  @Test
+  @DisplayName("Estornar transação legada sem effortUnitsSnapshot reverte exatamente 1 unidade sem subfluxo")
+  void revertingLegacyTransactionWithoutEffortSnapshotDefaultsToOneUnit() {
+    user.addXp(100);
+    user.getStats().recordTaskCompleted(true, false, 1);
+
+    ChecklistItem rewarded = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa", true, true);
+    Todo legacyCompletedTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Legado", null, 0,
+        TaskPriority.MEDIUM, List.of(), TaskDifficulty.HARD, TaskStatus.COMPLETED,
+        TaskType.TODO, false, LocalDate.now(), LocalDateTime.now().minusDays(1),
+        List.of(rewarded),
+        TodoReminderType.NONE, null, LocalDateTime.now(), false);
+
+    TransactionHistory legacyTx = new TransactionHistory(
+        UUID.randomUUID(), userId, taskId, new BigDecimal("5.00"), 30, null,
+        TransactionType.TODO_COMPLETED, "Legado", null, null, TaskDifficulty.HARD, List.of(),
+        null, null, Boolean.TRUE, null, LocalDateTime.now());
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(legacyCompletedTodo));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.findTop2ByUserIdAndReferenceIdAndType(userId, taskId, TransactionType.TODO_COMPLETED))
+        .thenReturn(List.of(legacyTx));
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    user.addCoins(new BigDecimal("5.00"));
+    var uncheckResult = changeTaskStatusUseCase.executeWithResult(taskId, userId, TaskStatus.PENDING);
+
+    assertTrue(uncheckResult.rewardReverted());
+    assertEquals(0, user.getStats().getTotalTasksCompleted());
+    assertEquals(0, user.getStats().getTotalHardTasksCompleted());
+  }
+
+  @Test
+  @DisplayName("Estornar tarefa após desmarcar subitem do checklist ainda reverte Checklist Impecável (bloqueia exploit)")
+  void uncheckingTaskAfterMutatingChecklistStillRevertsChecklistPerfectionistCounter() {
+    List<TransactionHistory> store = wireTransactionStore();
+    ChecklistItem step1 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Passo 1", false, false);
+    ChecklistItem step2 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Passo 2", false, false);
+
+    Todo checklistTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Estudo", null, 0,
+        TaskPriority.MEDIUM, List.of(), TaskDifficulty.MEDIUM, TaskStatus.PENDING,
+        TaskType.TODO, false, LocalDate.now().plusDays(1), LocalDateTime.now(),
+        List.of(step1, step2),
+        TodoReminderType.NONE, null, null, false);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(checklistTodo));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenAnswer(inv -> store.size());
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(0);
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
+    assertEquals(1, user.getStats().getTotalChecklistTasksCompleted());
+
+    // Simula usuário desmarcando um subitem depois da tarefa concluída
+    step1.toggle();
+    assertFalse(step1.isCompleted());
+
+    var uncheckResult = changeTaskStatusUseCase.executeWithResult(taskId, userId, TaskStatus.PENDING);
+    assertTrue(uncheckResult.rewardReverted());
+    assertEquals(0, user.getStats().getTotalChecklistTasksCompleted());
+    assertFalse(step2.isCompleted());
+  }
+
+  @Test
+  @DisplayName("To-Do Difícil Hardcore atrasado penaliza só etapas pendentes antes de concluir automaticamente as restantes")
+  void overdueHardcoreHardTodoPenalizesOnlyPendingRewardedStepsBeforeAutoChecking() {
+    user.addXp(200);
+    user.addCoins(new BigDecimal("50.00"));
+
+    ChecklistItem completedBeforeDeadline = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Feita", true, true);
+    ChecklistItem pending1 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Pendente 1", false, true);
+    ChecklistItem pending2 = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Pendente 2", false, true);
+
+    Todo overdueHardTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Card Atrasado", null, 0,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.TODO, true, LocalDate.now().minusDays(1), LocalDateTime.now().minusDays(2),
+        List.of(completedBeforeDeadline, pending1, pending2),
+        TodoReminderType.NONE, null, null, false);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(overdueHardTodo));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(0);
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result = changeTaskStatusUseCase.executeWithResult(taskId, userId, TaskStatus.COMPLETED);
+
+    // Penalidade: 50% de 3 unidades (base + 2 pendentes) = -45 XP, -7.50 coins
+    // Recompensa tardia: 50% de 4 unidades = +60 XP, +10.00 coins
+    // Líquido: 200 - 45 + 60 = 215 XP; 50.00 - 7.50 + 10.00 = 52.50 coins
+    assertEquals(45, result.penaltyAppliedXp());
+    assertEquals(0, new BigDecimal("7.50").compareTo(result.penaltyAppliedCoins()));
+    assertEquals(215, user.getTotalXp());
+    assertEquals(0, new BigDecimal("52.50").compareTo(user.getCurrentCoins()));
+    assertTrue(pending1.isCompleted());
+    assertTrue(pending2.isCompleted());
+    verify(taskPort).saveChecklistItems(List.of(pending1, pending2));
   }
 }

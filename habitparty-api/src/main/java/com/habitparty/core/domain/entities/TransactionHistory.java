@@ -35,6 +35,10 @@ public class TransactionHistory {
   private final String columnNameSnapshot;
   // Descrição (snapshot da recompensa no momento da transação)
   private final String descriptionSnapshot;
+  // Snapshot imutável indicando se a conclusão preencheu todos os itens do checklist (CHECKLIST_PERFECTIONIST)
+  private final Boolean checklistCompletedSnapshot;
+  // Snapshot imutável das unidades de entrega (1 + etapas recompensadas) creditadas na conclusão
+  private final Integer effortUnitsSnapshot;
 
   public TransactionHistory(UUID id, UUID userId, UUID referenceId,
       BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
@@ -42,7 +46,7 @@ public class TransactionHistory {
       String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
       TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, LocalDateTime createdAt) {
     this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
-        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, null, null, createdAt);
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, null, null, null, null, createdAt);
   }
 
   public TransactionHistory(UUID id, UUID userId, UUID referenceId,
@@ -52,7 +56,7 @@ public class TransactionHistory {
       TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
       LocalDateTime createdAt) {
     this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
-        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, columnNameSnapshot, null, createdAt);
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, columnNameSnapshot, null, null, null, createdAt);
   }
 
   public TransactionHistory(UUID id, UUID userId, UUID referenceId,
@@ -61,6 +65,29 @@ public class TransactionHistory {
       String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
       TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
       String descriptionSnapshot, LocalDateTime createdAt) {
+    this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, columnNameSnapshot,
+        descriptionSnapshot, null, null, createdAt);
+  }
+
+  public TransactionHistory(UUID id, UUID userId, UUID referenceId,
+      BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
+      TransactionType transactionType, String nameSnapshot,
+      String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
+      TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
+      String descriptionSnapshot, Boolean checklistCompletedSnapshot, LocalDateTime createdAt) {
+    this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, columnNameSnapshot,
+        descriptionSnapshot, checklistCompletedSnapshot, null, createdAt);
+  }
+
+  public TransactionHistory(UUID id, UUID userId, UUID referenceId,
+      BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
+      TransactionType transactionType, String nameSnapshot,
+      String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
+      TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
+      String descriptionSnapshot, Boolean checklistCompletedSnapshot, Integer effortUnitsSnapshot,
+      LocalDateTime createdAt) {
 
     // Validações de integridade do Livro-Caixa
     if (userId == null)
@@ -88,6 +115,8 @@ public class TransactionHistory {
     this.tagsSnapshot = tagsSnapshot;
     this.columnNameSnapshot = columnNameSnapshot;
     this.descriptionSnapshot = descriptionSnapshot;
+    this.checklistCompletedSnapshot = checklistCompletedSnapshot;
+    this.effortUnitsSnapshot = (effortUnitsSnapshot != null && effortUnitsSnapshot > 0) ? effortUnitsSnapshot : null;
     this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
   }
 
@@ -158,5 +187,13 @@ public class TransactionHistory {
 
   public Optional<String> getDescriptionSnapshot() {
     return Optional.ofNullable(descriptionSnapshot);
+  }
+
+  public Optional<Boolean> getChecklistCompletedSnapshot() {
+    return Optional.ofNullable(checklistCompletedSnapshot);
+  }
+
+  public Optional<Integer> getEffortUnitsSnapshot() {
+    return Optional.ofNullable(effortUnitsSnapshot).filter(v -> v > 0);
   }
 }

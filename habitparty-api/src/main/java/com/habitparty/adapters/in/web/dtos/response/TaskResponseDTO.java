@@ -77,6 +77,8 @@ public record TaskResponseDTO(
         @JsonInclude(JsonInclude.Include.NON_NULL) Integer revertedXp,
         @JsonInclude(JsonInclude.Include.NON_NULL) java.math.BigDecimal revertedCoins,
         @JsonInclude(JsonInclude.Include.NON_NULL) Boolean streakReverted,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Integer penaltyAppliedXp,
+        @JsonInclude(JsonInclude.Include.NON_NULL) java.math.BigDecimal penaltyAppliedCoins,
         OffsetDateTime lastCompletedAt,
 
         // --- Métricas de Foco Vinculado ---
@@ -114,6 +116,30 @@ public record TaskResponseDTO(
             Integer revertedXp,
             java.math.BigDecimal revertedCoins,
             Boolean streakReverted) {
+        return fromDomain(
+                task,
+                referenceDate,
+                zoneId,
+                rewardGranted,
+                rewardReverted,
+                revertedXp,
+                revertedCoins,
+                streakReverted,
+                null,
+                null);
+    }
+
+    public static TaskResponseDTO fromDomain(
+            Task task,
+            LocalDate referenceDate,
+            ZoneId zoneId,
+            Boolean rewardGranted,
+            Boolean rewardReverted,
+            Integer revertedXp,
+            java.math.BigDecimal revertedCoins,
+            Boolean streakReverted,
+            Integer penaltyAppliedXp,
+            java.math.BigDecimal penaltyAppliedCoins) {
         LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
         ZoneId effectiveZone = zoneId != null ? zoneId : ZoneId.systemDefault();
         // Converte o checklist para DTO (se existir)
@@ -192,6 +218,8 @@ public record TaskResponseDTO(
                 revertedXp,
                 revertedCoins,
                 streakReverted,
+                penaltyAppliedXp,
+                penaltyAppliedCoins,
                 lastCompletedAt,
 
                 // Métricas de Foco

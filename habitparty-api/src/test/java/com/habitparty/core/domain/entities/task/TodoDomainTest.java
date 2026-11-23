@@ -328,4 +328,80 @@ class TodoDomainTest {
             List.of("NivelUmVinteCincoChars123 > NivelDoisVinteCincoChars > NivelTresVinteCincoCh1 > Nivel4"),
             false));
   }
+
+  @Test
+  @DisplayName("To-Do Difícil escala recompensa por etapa recompensada até o limite de 4 e protege etapas já concluídas da penalidade")
+  void scalesRewardWithRewardedChecklistStepsAndProtectsCompletedStepsFromPenalty() {
+    UUID userId = UUID.randomUUID();
+    UUID taskId = UUID.randomUUID();
+    LocalDate yesterday = LocalDate.now().minusDays(1);
+
+    List<ChecklistItem> steps = List.of(
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 1", true, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 2", false, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 3", false, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Subtask padrão", false, false));
+
+    Todo hardOnTimeTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Projeto Difícil", null, 0,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.TODO, true, LocalDate.now().plusDays(1), LocalDateTime.now(),
+        steps, TodoReminderType.NONE, null, null, false);
+
+    // Base HARD = 30 XP / $5.00. Com 3 etapas recompensadas = 4 unidades -> 120 XP / $20.00
+    TaskReward fullReward = hardOnTimeTodo.calculateReward(LocalDate.now());
+    assertEquals(120, fullReward.xp());
+    assertEquals(0, new BigDecimal("20.00").compareTo(fullReward.coins()));
+
+    Todo hardOverdueTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Projeto Atrasado", null, 0,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.TODO, true, yesterday, LocalDateTime.now(),
+        steps, TodoReminderType.NONE, null, null, false);
+
+    // Penalidade só incide sobre base (1) + pendentes (2) = 3 unidades -> 50% de 90 XP / $15.00 = 45 XP / $7.50
+    TaskReward penalty = hardOverdueTodo.calculatePenalty(LocalDate.now());
+    assertEquals(45, penalty.xp());
+    assertEquals(0, new BigDecimal("7.50").compareTo(penalty.coins()));
+
+    // Conclusão tardia recebe 50% sobre o card consolidado inteiro (4 unidades) = 60 XP / $10.00
+    TaskReward lateReward = hardOverdueTodo.calculateReward(LocalDate.now());
+    assertEquals(60, lateReward.xp());
+    assertEquals(0, new BigDecimal("10.00").compareTo(lateReward.coins()));
+  }
+
+  @Test
+  @DisplayName("To-Do não-Difícil ignora etapas marcadas como recompensadas e valida limite de 4 no Difícil")
+  void nonHardTodoIgnoresRewardedStepsAndHardValidatesMaxLimit() {
+    UUID userId = UUID.randomUUID();
+    UUID taskId = UUID.randomUUID();
+    List<ChecklistItem> fiveRewarded = List.of(
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "1", false, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "2", false, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "3", false, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "4", false, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "5", false, true));
+
+    Todo mediumTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Médio", null, 0,
+        TaskPriority.MEDIUM, List.of(), TaskDifficulty.MEDIUM, TaskStatus.PENDING,
+        TaskType.TODO, false, null, LocalDateTime.now(),
+        fiveRewarded, TodoReminderType.NONE, null, null, false);
+
+    TaskReward mediumReward = mediumTodo.calculateReward(LocalDate.now());
+    assertEquals(15, mediumReward.xp());
+    assertEquals(0, new BigDecimal("2.50").compareTo(mediumReward.coins()));
+
+    Todo hardTodoCapped = new Todo(
+        taskId, UUID.randomUUID(), userId, "Difícil", null, 0,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.TODO, false, null, LocalDateTime.now(),
+        fiveRewarded, TodoReminderType.NONE, null, null, false);
+
+    // Teto máximo de 4 etapas -> 5 unidades (150 XP / $25.00), mesmo se houver 5 flags legadas
+    TaskReward hardMaxReward = hardTodoCapped.calculateReward(LocalDate.now());
+    assertEquals(150, hardMaxReward.xp());
+    assertEquals(0, new BigDecimal("25.00").compareTo(hardMaxReward.coins()));
+    assertThrows(DomainValidationException.class, () -> hardTodoCapped.validateCanRewardChecklistItem(null));
+  }
 }

@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import { normalizeTaskType } from "@/constants/task";
 import { useUserStore } from "@/store/userStore";
-import type { Task } from "@/types/task";
+import type { Task, TaskResponseDTO } from "@/types/task";
+import { calculateTaskReward } from "@/utils/economy";
 import { computeOptimisticHabitDelta } from "@/utils/taskMapper";
 
 export interface FocusRecordedEventDetail {
@@ -24,6 +25,7 @@ export function dispatchTaskFocusRecorded(detail: FocusRecordedEventDetail) {
 
 export interface FocusTaskCompletedEventDetail {
   taskId?: string;
+  updatedTask?: TaskResponseDTO;
 }
 
 export function applyFocusRecordedToTask(
@@ -44,6 +46,7 @@ export function applyFocusRecordedToTask(
 export function applyFocusCompletionToTask(
   task: Task,
   timeZone?: string | null,
+  updatedTask?: TaskResponseDTO,
 ): Task {
   if (normalizeTaskType(task) === "habit") {
     return {
@@ -54,11 +57,44 @@ export function applyFocusCompletionToTask(
     };
   }
 
+  const nextChecklist =
+    updatedTask?.checklist ??
+    (task.checklist && task.checklist.length > 0
+      ? task.checklist.map((item) => ({ ...item, isCompleted: true }))
+      : task.checklist);
+  const nextPenaltyApplied =
+    updatedTask?.isPenaltyApplied ?? task.isPenaltyApplied;
+  const nextStreak =
+    updatedTask?.currentStreak !== undefined
+      ? updatedTask.currentStreak
+      : task.streak;
+  const reward = calculateTaskReward({
+    ...task,
+    streak: nextStreak,
+    currentStreak: nextStreak,
+    isPenaltyApplied: nextPenaltyApplied,
+    checklist: nextChecklist,
+    timeZone,
+  });
+
   return {
     ...task,
     completed: true,
     hasClaimedReward: true,
-    lastCompletedAt: new Date().toISOString(),
+    lastCompletedAt: updatedTask?.lastCompletedAt ?? new Date().toISOString(),
+    streak: nextStreak,
+    currentStreak:
+      updatedTask?.currentStreak !== undefined
+        ? updatedTask.currentStreak
+        : task.currentStreak,
+    highestStreak:
+      updatedTask?.highestStreak !== undefined
+        ? updatedTask.highestStreak
+        : task.highestStreak,
+    isPenaltyApplied: nextPenaltyApplied,
+    checklist: nextChecklist,
+    rewardXp: reward.xp,
+    rewardGold: reward.gold,
   };
 }
 
@@ -101,7 +137,7 @@ export function useFocusTaskSync({
       if (!detail?.taskId) return;
       const tz = useUserStore.getState().user?.timezone;
       onTaskCompletedRef.current?.(detail.taskId, (task) =>
-        applyFocusCompletionToTask(task, tz),
+        applyFocusCompletionToTask(task, tz, detail.updatedTask),
       );
     };
 

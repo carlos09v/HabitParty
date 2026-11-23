@@ -45,6 +45,7 @@ export function TaskDetailsFooter({
       isHardcoreModeEnabled: task.isHardcoreModeEnabled,
       dueDate: task.dueDate,
       isPenaltyApplied: task.isPenaltyApplied,
+      checklist: task.checklist,
       locale,
       timeZone: userTimeZone,
       isGamified,

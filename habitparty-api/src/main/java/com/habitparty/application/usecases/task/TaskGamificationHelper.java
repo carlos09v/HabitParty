@@ -15,6 +15,7 @@ import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
+import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Task.TaskReward;
 import com.habitparty.core.domain.entities.task.Todo;
@@ -86,17 +87,21 @@ public final class TaskGamificationHelper {
     ZoneId userZone = user.resolveZoneId(effectiveClock.getZone());
     LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now(effectiveClock.withZone(userZone));
     TaskReward reward = task.calculateReward(effectiveDate);
+    int effortUnits = Math.max(1, task.getRewardMultiplierUnits());
     user.addXp(reward.xp());
     user.addCoins(reward.coins());
+    boolean checklistCompleted = user.getStats() != null
+        && task.getChecklist() != null
+        && !task.getChecklist().isEmpty()
+        && task.getChecklist().stream().allMatch(ChecklistItem::isCompleted);
     if (user.getStats() != null) {
       user.getStats().recordTaskCompleted(
           task.getDifficulty() == TaskDifficulty.HARD,
-          task.isHardcoreModeEnabled()
+          task.isHardcoreModeEnabled(),
+          effortUnits
       );
       // Checklist Impecável: tarefa com ao menos 1 subitem e todos marcados no momento da conclusão
-      if (task.getChecklist() != null
-          && !task.getChecklist().isEmpty()
-          && task.getChecklist().stream().allMatch(ChecklistItem::isCompleted)) {
+      if (checklistCompleted) {
         user.getStats().recordChecklistTaskCompleted();
       }
       // Pontualidade Real: Afazer (To-Do) com data de vencimento concluído dentro do prazo e sem penalidade
@@ -131,6 +136,9 @@ public final class TaskGamificationHelper {
         task.getDifficulty(),
         task.getTags(),
         columnName,
+        null,
+        task instanceof Habit ? null : checklistCompleted,
+        effortUnits,
         LocalDateTime.ofInstant(effectiveClock.instant(), ZoneId.systemDefault())
     );
     transactionPort.save(transaction);

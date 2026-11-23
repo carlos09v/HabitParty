@@ -103,6 +103,7 @@ export function mapTaskResponseToTask(
     isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
     dueDate: taskDto.dueDate,
     isPenaltyApplied: taskDto.isPenaltyApplied,
+    checklist: taskDto.checklist,
     timeZone,
   });
 
@@ -480,15 +481,32 @@ export function computeOptimisticHabitDelta(
 export function mergeTaskWithResponseDTO(
   task: Task,
   dto: TaskResponseDTO,
+  timeZone?: string | null,
 ): Task {
   const isCompleted = dto.status === "COMPLETED";
+  const nextChecklist = dto.checklist ?? task.checklist;
+  const nextStreak =
+    dto.currentStreak !== undefined ? dto.currentStreak : task.streak;
+  const nextPenaltyApplied = dto.isPenaltyApplied ?? task.isPenaltyApplied;
+  const reward = calculateTaskReward({
+    ...task,
+    streak: nextStreak,
+    currentStreak: nextStreak,
+    positiveCount: dto.positiveCount ?? task.positiveCount,
+    isPenaltyApplied: nextPenaltyApplied,
+    checklist: nextChecklist,
+    timeZone,
+  });
   return {
     ...task,
+    checklist: nextChecklist,
+    rewardXp: reward.xp,
+    rewardGold: reward.gold,
     completed: isCompleted,
     hasClaimedReward: Boolean(dto.isRewardClaimed || isCompleted),
     positiveCount: dto.positiveCount ?? task.positiveCount,
     negativeCount: dto.negativeCount ?? task.negativeCount,
-    streak: dto.currentStreak !== undefined ? dto.currentStreak : task.streak,
+    streak: nextStreak,
     currentStreak:
       dto.currentStreak !== undefined ? dto.currentStreak : task.currentStreak,
     highestStreak:
@@ -499,7 +517,7 @@ export function mergeTaskWithResponseDTO(
         : isCompleted || dto.isRewardClaimed
           ? task.lastCompletedAt
           : undefined,
-    isPenaltyApplied: dto.isPenaltyApplied ?? task.isPenaltyApplied,
+    isPenaltyApplied: nextPenaltyApplied,
   };
 }
 
@@ -686,7 +704,23 @@ export function resetTaskOnMidnightRollover(
 ): Task {
   const type = normalizeTaskType(task);
   if (type === "daily") {
-    return { ...task, completed: false, hasClaimedReward: false };
+    const todayIso = getTodayDateString(referenceDate, timeZone);
+    const dueDatePart = task.dueDate?.split("T")[0];
+    const shouldResetChecklist =
+      Boolean(task.completed) ||
+      Boolean(task.hasClaimedReward) ||
+      !dueDatePart ||
+      dueDatePart < todayIso;
+
+    return {
+      ...task,
+      completed: false,
+      hasClaimedReward: false,
+      checklist:
+        shouldResetChecklist && task.checklist
+          ? task.checklist.map((item) => ({ ...item, isCompleted: false }))
+          : task.checklist,
+    };
   }
   if (type === "habit") {
     const resetCounter = (task.resetCounter ?? "daily").toLowerCase();

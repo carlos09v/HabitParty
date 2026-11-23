@@ -38,4 +38,13 @@ public class ChecklistItemJpaEntity {
 
   @Column(name = "is_completed", nullable = false)
   private boolean isCompleted = false;
+
+  @Column(name = "is_rewarded", nullable = false)
+  private boolean isRewarded = false;
+
+  @Column(name = "order_index", nullable = false)
+  private int orderIndex = 0;
+
+  @Column(name = "auto_completed", nullable = false)
+  private boolean autoCompleted = false;
 }

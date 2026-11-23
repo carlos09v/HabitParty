@@ -65,6 +65,9 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     // Exemplo de busca com validação de usuário
     Optional<TaskJpaEntity> findByIdAndUserId(UUID id, UUID userId);
 
+    @Query("SELECT t.boardColumnId FROM TaskJpaEntity t WHERE t.id = :taskId")
+    Optional<UUID> findBoardColumnIdById(@Param("taskId") UUID taskId);
+
     // Retorna o maior índice daquela coluna. O COALESCE garante que, se a coluna estiver vazia, ele retorne -1 (assim a primeira tarefa será 0)
     @Query("SELECT COALESCE(MAX(t.orderIndex), -1) FROM TaskJpaEntity t WHERE t.boardColumnId = :boardColumnId")
     Integer findMaxOrderIndexByBoardColumnId(@Param("boardColumnId") UUID boardColumnId);

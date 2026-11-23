@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
+import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service 
@@ -27,18 +28,32 @@ public class UpdateChecklistItemUseCase {
 
   @Transactional
   public ChecklistItem execute(UUID itemId, UUID userIdLogado, String newName) {
+    return execute(itemId, userIdLogado, newName, null);
+  }
+
+  @Transactional
+  public ChecklistItem execute(UUID itemId, UUID userIdLogado, String newName, Boolean isRewarded) {
     ChecklistItem item = port.findChecklistItemByIdAndUserId(itemId, userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado."));
 
-    if (workspaceWriteGuard != null) {
-      workspaceWriteGuard.assertTaskWritable(
-          port,
-          item.getTaskId(),
-          userIdLogado,
-          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para editar checklists nele!");
+    boolean shouldPromoteReward = Boolean.TRUE.equals(isRewarded) && !item.isRewarded();
+    Task task = shouldPromoteReward
+        ? ChecklistItemValidationHelper.loadOwnedWritableTask(
+            port, workspaceWriteGuard, item.getTaskId(), userIdLogado)
+        : null;
+    if (!shouldPromoteReward) {
+      ChecklistItemValidationHelper.assertTaskWritable(
+          port, workspaceWriteGuard, item.getTaskId(), userIdLogado);
     }
 
     item.updateName(newName);
+
+    if (isRewarded != null) {
+      if (shouldPromoteReward) {
+        task.validateCanRewardChecklistItem(item.getId());
+      }
+      item.setRewarded(isRewarded.booleanValue());
+    }
 
     return port.saveChecklistItem(item);
   }

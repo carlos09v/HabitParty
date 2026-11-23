@@ -28,14 +28,16 @@ public class AddChecklistItemUseCase {
 
   @Transactional
   public ChecklistItem execute(UUID taskId, UUID userIdLogado, String itemName) {
-    Task task = taskPort.findById(taskId)
-        .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
-    task.validateOwnership(userIdLogado);
-    if (workspaceWriteGuard != null) {
-      workspaceWriteGuard.assertColumnWritable(
-          task.getBoardColumnId(),
-          userIdLogado,
-          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para editar checklists nele!");
+    return execute(taskId, userIdLogado, itemName, false);
+  }
+
+  @Transactional
+  public ChecklistItem execute(UUID taskId, UUID userIdLogado, String itemName, boolean isRewarded) {
+    Task task = ChecklistItemValidationHelper.loadOwnedWritableTask(
+        taskPort, workspaceWriteGuard, taskId, userIdLogado);
+
+    if (isRewarded) {
+      task.validateCanRewardChecklistItem(null);
     }
 
     ChecklistItem newItem = new ChecklistItem(
@@ -43,6 +45,9 @@ public class AddChecklistItemUseCase {
         taskId,
         userIdLogado,
         itemName,
+        false,
+        isRewarded,
+        task.nextChecklistOrderIndex(),
         false
     );
 

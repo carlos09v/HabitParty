@@ -284,7 +284,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
     difficulties: {
       title: "Economia Rígida: Dificuldades e Recompensas",
       description:
-        "Ganhos de XP e moedas (🪙) baseados na carga de esforço real e duração estimada de cada atividade.",
+        "Ganhos de XP e moedas (🪙) baseados na carga de esforço real e duração estimada. Diárias e Afazeres Difíceis suportam até 4 Etapas Recompensadas no checklist (+30 XP e +5 🪙 extras por etapa, até +150 XP e +25 🪙 por card, contando proporcionalmente nas conquistas).",
       columns: [
         "Nível",
         "Dificuldade",
@@ -318,7 +318,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
           icon: "🟪",
           label: "Difícil",
           description:
-            "Esforço cognitivo ou físico intenso: 1 a 2 horas (ex: sessão de estudo pesado, projeto de programação).",
+            "Esforço intenso (1–2h): estudo pesado, projeto ou prova. Acima de 2h, use até 4 Etapas Recompensadas no checklist (+30 XP e +5 🪙 cada).",
         },
       ],
     },
@@ -501,7 +501,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       title:
         "🏅 Catálogo de Conquistas, Raridades & Pontos de Troféu (/profile)",
       description:
-        "As 63 conquistas permanentes (4.170 pts no total) premiam marcos de execução, ofensivas, foco, economia, organização e comportamentos secretos com Pontos de Conquista (Trophy Score) e podem ser exibidas nos 4 espaços de destaque da sua Vitrine.",
+        "As 63 conquistas permanentes (4.170 pts no total) premiam marcos de execução, ofensivas, foco, economia, organização e comportamentos secretos com Pontos de Conquista (Trophy Score) e podem ser exibidas nos 4 espaços de destaque da sua Vitrine. Etapas Recompensadas em tarefas Difíceis também somam +1 unidade de entrega cada nos marcos de tarefas, difíceis e Hardcore.",
       columns: [
         "Raridade / Tier",
         "Pontos de Conquista",
@@ -528,7 +528,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
           label: "🔵 Rara (Rare)",
           countLabel: "18 conquistas",
           examples:
-            "250 Tarefas, Checklist Impecável (20), Pontualidade Real (20 To-Dos no Prazo), Ofensivas de 30 e 60 dias, Domínio do Impulso (7 Ciclos sem Recaída), Estado de Fluxo (90m), 10h de Foco, Mira Certeira (10 Metas de Atividade), 1.000 Moedas, Carteira com 500 Moedas, 5 Cupons de Tempo Esgotados, 6.000 / 12.000 XP, Vitrine Personalizada, 10 Hardcore, Coruja da Meia-Noite e Madrugador (Secretas).",
+            "250 Tarefas, Checklist Impecável (50), Pontualidade Real (20 To-Dos no Prazo), Ofensivas de 30 e 60 dias, Domínio do Impulso (7 Ciclos sem Recaída), Estado de Fluxo (90m), 10h de Foco, Mira Certeira (10 Metas de Atividade), 1.000 Moedas, Carteira com 500 Moedas, 5 Cupons de Tempo Esgotados, 6.000 / 12.000 XP, Vitrine Personalizada, 10 Hardcore, Coruja da Meia-Noite e Madrugador (Secretas).",
         },
         {
           rarity: "EPIC",
@@ -601,7 +601,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
     difficulties: {
       title: "Strict Economy: Difficulties & Rewards",
       description:
-        "XP and coin (🪙) earnings based on the real effort load and estimated duration of each activity.",
+        "XP and coin (🪙) earnings based on real effort load and estimated duration. Hard Dailies and To-Dos support up to 4 Rewarded Checklist Steps (+30 XP and +5 🪙 extra per step, up to +150 XP and +25 🪙 per card, counting proportionally in achievements and stats).",
       columns: [
         "Level",
         "Difficulty",
@@ -635,7 +635,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
           icon: "🟪",
           label: "Hard",
           description:
-            "Intense cognitive or physical effort: 1 to 2 hours (e.g., heavy study session, programming project).",
+            "Intense effort (1–2h): heavy study, project, or exam. For 2h+ blocks, mark up to 4 Rewarded Checklist Steps (+30 XP and +5 🪙 each).",
         },
       ],
     },
@@ -811,7 +811,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
     achievementRarities: {
       title: "🏅 Achievements Catalog, Rarities & Trophy Score (/profile)",
       description:
-        "All 63 permanent achievements (4,170 pts in total) reward execution milestones, streaks, deep focus, economy goals, organization, and secret behaviors with Achievement Points (Trophy Score) and can be pinned to the 4 highlight slots on your Showcase.",
+        "All 63 permanent achievements (4,170 pts in total) reward execution milestones, streaks, deep focus, economy goals, organization, and secret behaviors with Achievement Points (Trophy Score) and can be pinned to the 4 highlight slots on your Showcase. Rewarded Checklist Steps on Hard tasks also count proportionally (+1 delivery unit each) toward task, hard-task, and hardcore-mode milestones.",
       columns: [
         "Rarity / Tier",
         "Achievement Points",
@@ -838,7 +838,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
           label: "🔵 Rare",
           countLabel: "18 achievements",
           examples:
-            "250 Tasks, Flawless Checklist (20), Royal Punctuality (20 On-Time To-Dos), 30 and 60-day Streaks, Impulse Mastery (7 Clean Habit Cycles), 90m Flow State, 10h Focus, Bullseye Focus (10 Activity Goals Met), 1,000 Coins, 500-coin Wallet, 5 Depleted Time Coupons, 6,000 / 12,000 XP, Curated Showcase, 10 Hardcore, Midnight Owl & Early Bird (Secret).",
+            "250 Tasks, Flawless Checklist (50), Royal Punctuality (20 On-Time To-Dos), 30 and 60-day Streaks, Impulse Mastery (7 Clean Habit Cycles), 90m Flow State, 10h Focus, Bullseye Focus (10 Activity Goals Met), 1,000 Coins, 500-coin Wallet, 5 Depleted Time Coupons, 6,000 / 12,000 XP, Curated Showcase, 10 Hardcore, Midnight Owl & Early Bird (Secret).",
         },
         {
           rarity: "EPIC",

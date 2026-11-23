@@ -320,24 +320,28 @@ public class Daily extends Task {
 
   @Override
   public TaskReward calculateReward(LocalDate referenceDate) {
-    // 1. Base pela DIFICULDADE (Exclusivo de Daily/Todo)
-    int baseXp = switch (this.getDifficulty()) {
-      case TRIVIAL -> 2;
-      case EASY -> 5;
-      case MEDIUM -> 15;
-      case HARD -> 30;
-    };
-    
-    BigDecimal baseCoins = switch (this.getDifficulty()) {
-      case TRIVIAL -> new BigDecimal("0.25");
-      case EASY -> new BigDecimal("0.75");
-      case MEDIUM -> new BigDecimal("2.50");
-      case HARD -> new BigDecimal("5.00");
-    };
+    return calculateRewardForUnits(referenceDate, getRewardMultiplierUnits(), true);
+  }
+
+  @Override
+  public TaskReward calculatePenalty(LocalDate referenceDate) {
+    // Penalidades não devem ser amplificadas pelo bônus de consistência de +10% (alinha com rollover e frontend)
+    TaskReward pendingBase = calculateDifficultyBaseReward(getPendingRewardPenaltyUnits());
+    return calculateHalfPenalty(pendingBase);
+  }
+
+  private TaskReward calculateRewardForUnits(
+      LocalDate referenceDate,
+      int effortUnits,
+      boolean applyConsistencyBonus) {
+    // 1. Base pela DIFICULDADE (Exclusivo de Daily/Todo) multiplicada pelas Etapas Recompensadas
+    TaskReward unitScaledBase = calculateDifficultyBaseReward(effortUnits);
+    int baseXp = unitScaledBase.xp();
+    BigDecimal baseCoins = unitScaledBase.coins();
 
     // 2. Bônus de consistência de +10% após 14 execuções seguidas nos dias agendados (sem decaimento)
     int effectiveStreak = getEffectiveStreak(referenceDate);
-    BigDecimal multiplier = effectiveStreak >= CONSISTENCY_BONUS_THRESHOLD
+    BigDecimal multiplier = applyConsistencyBonus && effectiveStreak >= CONSISTENCY_BONUS_THRESHOLD
         ? DAILY_CONSISTENCY_BONUS_RATE
         : BigDecimal.ONE;
 

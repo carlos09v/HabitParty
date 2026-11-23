@@ -66,10 +66,13 @@ export function TaskDetailsPopover({
     setIsAddingItem,
     newItemText,
     setNewItemText,
+    isNewItemRewarded,
+    setIsNewItemRewarded,
     cancelAddItem,
     isHabit,
     isDaily,
     isTodo,
+    canRewardChecklistItems,
     handleCloseWithSave,
     handleToggleTask,
     handleHabitDelta,
@@ -84,6 +87,7 @@ export function TaskDetailsPopover({
     handleUpdateTag,
     handleAddCheckItem,
     handleToggleCheckItem,
+    handleToggleCheckItemReward,
     handleUpdateCheckItem,
     handleDeleteCheckItem,
     handleDeleteTask,
@@ -234,13 +238,18 @@ export function TaskDetailsPopover({
           {!isHabit && (
             <TaskDetailsChecklist
               checklist={checklist}
+              canReward={canRewardChecklistItems}
+              isTaskCompleted={completed}
               isAddingItem={isAddingItem}
               newItemText={newItemText}
               onNewItemTextChange={setNewItemText}
+              isNewItemRewarded={isNewItemRewarded}
+              onNewItemRewardedChange={setIsNewItemRewarded}
               onStartAddItem={() => setIsAddingItem(true)}
               onCancelAddItem={cancelAddItem}
               onAddItem={handleAddCheckItem}
               onToggleItem={handleToggleCheckItem}
+              onToggleReward={handleToggleCheckItemReward}
               onUpdateItem={handleUpdateCheckItem}
               onDeleteItem={handleDeleteCheckItem}
             />

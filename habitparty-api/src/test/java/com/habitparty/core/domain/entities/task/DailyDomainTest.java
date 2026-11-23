@@ -340,4 +340,46 @@ class DailyDomainTest {
     assertEquals(4, daily.getCurrentStreak());
     assertEquals(4, daily.getHighestStreak());
   }
+
+  @Test
+  @DisplayName("Daily Difícil com etapas recompensadas aplica +10% de streak 14 proporcionalmente e penaliza apenas pendentes")
+  void hardDailyWithRewardedStepsScalesStreakBonusAndPendingOnlyPenalty() {
+    UUID taskId = UUID.randomUUID();
+    List<ChecklistItem> steps = List.of(
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Parte 1", true, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Parte 2", true, true),
+        new ChecklistItem(UUID.randomUUID(), taskId, userId, "Parte 3", false, true));
+
+    Daily hardDailyStreak0 = new Daily(
+        taskId, columnId, userId, "Bloco Deep Work", null, 1,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.DAILY, true, LocalDate.now(), LocalDateTime.now(),
+        steps, 0, LocalDate.now(), DailyRepeatType.DAILY, 1, null, null, null);
+
+    // 4 unidades = 120 XP / $20.00
+    Task.TaskReward streak0Reward = hardDailyStreak0.calculateReward(LocalDate.now());
+    assertEquals(120, streak0Reward.xp());
+    assertEquals(0, new BigDecimal("20.00").compareTo(streak0Reward.coins()));
+
+    // Penalidade de falha Hardcore: base (1) + pendente (1) = 2 unidades -> 50% de 60 XP / $10.00 = 30 XP / $5.00
+    Task.TaskReward penalty = hardDailyStreak0.calculatePenalty(LocalDate.now());
+    assertEquals(30, penalty.xp());
+    assertEquals(0, new BigDecimal("5.00").compareTo(penalty.coins()));
+
+    Daily hardDailyStreak14 = new Daily(
+        taskId, columnId, userId, "Bloco Deep Work", null, 1,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.DAILY, true, LocalDate.now(), LocalDateTime.now(),
+        steps, 14, LocalDate.now(), DailyRepeatType.DAILY, 1, null, null, null);
+
+    // 14+ dias de consistência (+10%) sobre 120 XP / $20.00 -> 132 XP / $22.00
+    Task.TaskReward streak14Reward = hardDailyStreak14.calculateReward(LocalDate.now());
+    assertEquals(132, streak14Reward.xp());
+    assertEquals(0, new BigDecimal("22.00").compareTo(streak14Reward.coins()));
+
+    // Penalidade com streak 14+ não é amplificada pelo bônus de consistência (mantém 30 XP / $5.00)
+    Task.TaskReward streak14Penalty = hardDailyStreak14.calculatePenalty(LocalDate.now());
+    assertEquals(30, streak14Penalty.xp());
+    assertEquals(0, new BigDecimal("5.00").compareTo(streak14Penalty.coins()));
+  }
 }

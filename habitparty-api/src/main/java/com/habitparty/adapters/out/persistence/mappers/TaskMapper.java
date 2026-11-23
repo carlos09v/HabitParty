@@ -3,6 +3,7 @@ package com.habitparty.adapters.out.persistence.mappers;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
@@ -29,9 +30,10 @@ public class TaskMapper {
    * Não acessa a coleção LAZY {@code entity.getChecklist()}, evitando N+1 e LazyInitializationException.
    */
   public Task toDomain(TaskJpaEntity entity, List<ChecklistItem> preloadedChecklist) {
+        TaskJpaEntity unwrapped = Hibernate.unproxy(entity, TaskJpaEntity.class);
         List<ChecklistItem> checklist = preloadedChecklist != null ? preloadedChecklist : List.of();
 
-        if (entity instanceof HabitJpaEntity h) {
+        if (unwrapped instanceof HabitJpaEntity h) {
             Habit habit = new Habit(
                 h.getId(), h.getBoardColumnId(), h.getUserId(), h.getName(), h.getDescription(),
                 h.getOrderIndex(), h.getPriority(), h.getTags(), h.getDifficulty(),
@@ -43,7 +45,7 @@ public class TaskMapper {
             habit.restoreFocusMetrics(h.getTotalFocusMinutes(), h.getFocusCyclesCount());
             return habit;
         } 
-        else if (entity instanceof DailyJpaEntity d) {
+        else if (unwrapped instanceof DailyJpaEntity d) {
             Daily daily = new Daily(
                 d.getId(), d.getBoardColumnId(), d.getUserId(), d.getName(), d.getDescription(),
                 d.getOrderIndex(), d.getPriority(), d.getTags(), d.getDifficulty(),
@@ -55,7 +57,7 @@ public class TaskMapper {
             daily.restoreFocusMetrics(d.getTotalFocusMinutes(), d.getFocusCyclesCount());
             return daily;
         } 
-        else if (entity instanceof TodoJpaEntity t) {
+        else if (unwrapped instanceof TodoJpaEntity t) {
             Todo todo = new Todo(
                 t.getId(), t.getBoardColumnId(), t.getUserId(), t.getName(), t.getDescription(),
                 t.getOrderIndex(), t.getPriority(), t.getTags(), t.getDifficulty(),

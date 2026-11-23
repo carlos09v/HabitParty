@@ -930,9 +930,9 @@
     },
     "CHECKLIST_PERFECTIONIST": {
       "title": "Checklist Impecável",
-      "essentialTitle": "20 Checklists Completos",
-      "description": "Conclua 20 tarefas com todos os itens do checklist marcados.",
-      "essentialDescription": "Conclua 20 tarefas com 100% dos subitens do checklist concluídos."
+      "essentialTitle": "50 Checklists Completos",
+      "description": "Conclua 50 tarefas com todos os itens do checklist marcados.",
+      "essentialDescription": "Conclua 50 tarefas com 100% dos subitens do checklist concluídos."
     },
     "STREAK_14": {
       "title": "Quinzena Inabalável",
@@ -1337,19 +1337,19 @@
     "simulator": {
       "title": "Simulador de Esforço até Este Degrau",
       "infoTitle": "Como o simulador calcula?",
-      "infoDesc": "Os cálculos usam as recompensas matemáticas reais do sistema (+15 XP por tarefa Média, +30 XP por Difícil, +10 XP por Hábito Normal, +8 XP por Pomodoro padrão e +15 XP por Deep Work 50m+).",
+      "infoDesc": "Os cálculos usam as recompensas matemáticas reais do sistema (+15 XP por tarefa Média, +30 XP por Difícil — até +150 XP com 4 etapas recompensadas —, +10 XP por Hábito Normal, +8 XP por Pomodoro padrão e +15 XP por Deep Work 50m+).",
       "paceLabel": "Seu ritmo diário:",
       "paceUnit": "XP/dia",
       "estimatedTimeLabel": "Tempo estimado no ritmo escolhido:",
       "daysEstimate": "~{days} {days, plural, one {dia} other {dias}}",
       "readyNow": "Já alcançado!",
       "mediumTasks": "Tarefas Médias",
-      "hardTasks": "Tarefas Difíceis",
+      "hardTasks": "Difíceis / Etapas",
       "normalHabits": "Hábitos Normais",
       "standardPomos": "Pomodoros Padrão",
       "deepWorkPomos": "Deep Work (50m+)",
       "xpPerAction": "+{xp} XP cada",
-      "infoDescEssential": "Os cálculos usam a pontuação matemática real do sistema (+15 pts por tarefa Média, +30 pts por Difícil, +10 pts por Hábito Normal, +8 pts por Pomodoro padrão e +15 pts por Deep Work 50m+).",
+      "infoDescEssential": "Os cálculos usam a pontuação matemática real do sistema (+15 pts por tarefa Média, +30 pts por Difícil — até +150 pts com 4 etapas de esforço —, +10 pts por Hábito Normal, +8 pts por Pomodoro padrão e +15 pts por Deep Work 50m+).",
       "ptsPerAction": "+{xp} pts cada"
     },
     "achievement": {
@@ -1365,9 +1365,9 @@
       "tooltipAria": "Entenda como ganhar XP e evoluir sua patente",
       "tooltipIntro": "Ao contrário das moedas (🪙), seu XP é vitalício e nunca diminui ao comprar recompensas na Loja:",
       "tasksLabel": "• Afazeres (To-Dos):",
-      "tasksDesc": "De +2 XP (Trivial) até +30 XP (Difícil) mantendo 100% no prazo.",
+      "tasksDesc": "De +2 XP (Trivial) até +30 XP (Difícil) no prazo — ou até +150 XP marcando até 4 Etapas Recompensadas (+30 XP/etapa).",
       "dailiesLabel": "• Diárias (Dailies):",
-      "dailiesDesc": "100% da dificuldade nos dias agendados + bônus de +10% após 14 execuções seguidas.",
+      "dailiesDesc": "100% da dificuldade nos dias agendados (+30 XP por etapa recompensada em Difíceis) + bônus de +10% após 14 execuções seguidas.",
       "habitsLabel": "• Hábitos (+):",
       "habitsDesc": "De +5 XP (Baixo) até +25 XP (Alto) para impulsionar consistência contínua.",
       "focusLabel": "• Sessões de Foco:",
@@ -1376,8 +1376,8 @@
       "titleEssential": "Fontes de Pontos (nunca são gastos na Vitrine)",
       "tooltipAriaEssential": "Entenda como acumular pontos e evoluir sua patente executiva",
       "tooltipIntroEssential": "Ao contrário dos Créditos, seus Pontos são vitalícios e nunca diminuem ao resgatar recompensas na Vitrine:",
-      "tasksDescEssential": "De +2 pts (Trivial) até +30 pts (Difícil) mantendo 100% no prazo.",
-      "dailiesDescEssential": "100% do esforço base nos dias agendados + bônus de +10% após 14 execuções seguidas.",
+      "tasksDescEssential": "De +2 pts (Trivial) até +30 pts (Difícil) no prazo — ou até +150 pts marcando até 4 Etapas de Esforço (+30 pts/etapa).",
+      "dailiesDescEssential": "100% do esforço base nos dias agendados (+30 pts por etapa de esforço em Difíceis) + bônus de +10% após 14 execuções seguidas.",
       "habitsDescEssential": "De +5 pts (Baixo) até +25 pts (Alto) para impulsionar consistência contínua.",
       "focusDescEssential": "Pomodoro Padrão (+8 pts/ciclo), Deep Work 50m+ (+15 pts/ciclo) e Cronômetro Livre (+7 pts a cada 30m).",
       "noSpendNoteEssential": "💡 Somente penalidades de Prazo Rígido (ou deduções em Hábitos negativos no limite) reduzem pontos dentro da mesma patente, com trava anti-rebaixamento."

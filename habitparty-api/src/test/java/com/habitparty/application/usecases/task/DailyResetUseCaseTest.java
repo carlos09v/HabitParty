@@ -32,6 +32,7 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.task.DailyResetUseCase.RolloverSummary;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Todo;
@@ -613,5 +614,51 @@ class DailyResetUseCaseTest {
     assertEquals(TaskStatus.PENDING, weeklyHabit.getStatus());
     assertEquals(0, weeklyHabit.getPositiveCount());
     assertEquals(4, weeklyHabit.getCurrentStreak());
+  }
+
+  @Test
+  @DisplayName("Rollover reseta checkboxes de Diária concluída e calcula penalidade só de etapas pendentes antes de resetar")
+  void rolloverResetsChecklistAndPenalizesOnlyPendingRewardedStepsBeforeReset() {
+    user.addXp(195); // totalXp: 5 -> 200 (APPRENTICE, piso 100)
+    UUID completedDailyId = UUID.randomUUID();
+    UUID failedDailyId = UUID.randomUUID();
+    ChecklistItem c1 = new ChecklistItem(UUID.randomUUID(), completedDailyId, userId, "Passo 1", true, true);
+    ChecklistItem c2 = new ChecklistItem(UUID.randomUUID(), completedDailyId, userId, "Passo 2", true, false);
+
+    Daily completedYesterday = new Daily(
+        completedDailyId, UUID.randomUUID(), userId, "Rotina Concluída", null,
+        0, TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.COMPLETED,
+        TaskType.DAILY, false, todaySp.minusDays(1), LocalDateTime.of(2026, 11, 1, 8, 0),
+        List.of(c1, c2), 3, todaySp.minusDays(5), DailyRepeatType.DAILY, 1, null, null,
+        todaySp.minusDays(1).atTime(20, 0));
+
+    ChecklistItem fDone = new ChecklistItem(UUID.randomUUID(), failedDailyId, userId, "Feita antes", true, true);
+    ChecklistItem fPend1 = new ChecklistItem(UUID.randomUUID(), failedDailyId, userId, "Faltou 1", false, true);
+    ChecklistItem fPend2 = new ChecklistItem(UUID.randomUUID(), failedDailyId, userId, "Faltou 2", false, true);
+
+    Daily failedHardDaily = new Daily(
+        failedDailyId, UUID.randomUUID(), userId, "Rotina Parcial", null,
+        1, TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.DAILY, true, todaySp.minusDays(1), LocalDateTime.of(2026, 11, 1, 8, 0),
+        List.of(fDone, fPend1, fPend2), 2, todaySp.minusDays(5), DailyRepeatType.DAILY, 1, null, null, null);
+
+    stubSingleDueUser(user);
+    stubUserWasActiveYesterday(user, SAO_PAULO);
+    when(port.findRecurringTasksByUserIds(anyCollection()))
+        .thenReturn(List.of(completedYesterday, failedHardDaily));
+
+    dailyResetUseCase.executeDailyRolloverSummary();
+
+    // Penalidade só incide sobre base (1) + pendentes (2) = 3 unidades -> 50% de 90 XP / $15.00 = -45 XP / -$7.50
+    // User começou com 200 XP e $100.00 -> 155 XP e $92.50
+    assertEquals(155, user.getTotalXp());
+    assertEquals(0, new BigDecimal("92.50").compareTo(user.getCurrentCoins()));
+
+    // Ambas as Diárias tiveram todos os checkboxes resetados para o novo ciclo
+    assertEquals(TaskStatus.PENDING, completedYesterday.getStatus());
+    assertFalse(c1.isCompleted());
+    assertFalse(c2.isCompleted());
+    assertFalse(fDone.isCompleted());
+    verify(port).resetChecklistCompletionByTaskIds(List.of(completedDailyId, failedDailyId));
   }
 }

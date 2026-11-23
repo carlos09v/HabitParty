@@ -202,6 +202,7 @@ public class DailyResetUseCase {
     }
 
     List<Task> changedTasks = new ArrayList<>();
+    List<Daily> rolledOverDailies = new ArrayList<>();
     List<Task> failedRecurringHardcoreTasks = new ArrayList<>();
     List<UUID> cleanHabitCycleUsers = new ArrayList<>();
 
@@ -220,6 +221,9 @@ public class DailyResetUseCase {
 
       if (outcome.changed()) {
         changedTasks.add(task);
+        if (task instanceof Daily d) {
+          rolledOverDailies.add(d);
+        }
       }
       if (outcome.hasFailed() && task.isHardcoreModeEnabled()) {
         failedRecurringHardcoreTasks.add(task);
@@ -233,6 +237,15 @@ public class DailyResetUseCase {
     applyHardcorePenalties(overdueTodos, "Falhou no prazo: ", usersById, dirtyUsers, dueTodayById);
     rewardCleanHabitCycles(cleanHabitCycleUsers, usersById, dirtyUsers);
 
+    // Só reseta os checkboxes das Diárias após calcular eventuais penalidades do ciclo encerrado,
+    // preservando etapas recompensadas que já haviam sido concluídas antes da virada do dia.
+    List<UUID> resetChecklistTaskIds = new ArrayList<>();
+    for (Daily d : rolledOverDailies) {
+      if (!d.resetAllChecklistItems().isEmpty()) {
+        resetChecklistTaskIds.add(d.getId());
+      }
+    }
+
     int expiredStreaks = expireInactiveUserStreaks(dueTodayById, dueZonesById, usersById, dirtyUsers);
 
     for (Map.Entry<UUID, LocalDate> entry : dueTodayById.entrySet()) {
@@ -244,6 +257,9 @@ public class DailyResetUseCase {
 
     if (!changedTasks.isEmpty()) {
       port.saveAll(changedTasks);
+    }
+    if (!resetChecklistTaskIds.isEmpty()) {
+      port.resetChecklistCompletionByTaskIds(resetChecklistTaskIds);
     }
     if (!dirtyUsers.isEmpty()) {
       userPort.saveAll(dirtyUsers.values());

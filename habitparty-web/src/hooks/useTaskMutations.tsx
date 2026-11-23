@@ -21,7 +21,7 @@ import type { AppLocale } from "@/i18n/config";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
-import type { Task } from "@/types/task";
+import type { ChecklistItem, Task } from "@/types/task";
 import { getTodayDateString } from "@/utils/date";
 import {
   calculateTaskPenalty,
@@ -49,6 +49,7 @@ export interface TaskToggleRollbackState {
   completed: boolean;
   hasClaimedReward?: boolean;
   lastCompletedAt?: string;
+  checklist?: ChecklistItem[];
 }
 
 export function applyOptimisticTaskToggle(
@@ -61,6 +62,13 @@ export function applyOptimisticTaskToggle(
     completed,
     hasClaimedReward: completed ? true : task.hasClaimedReward,
     lastCompletedAt: completed ? nowIso : task.lastCompletedAt,
+    checklist:
+      completed &&
+      task.type?.toLowerCase() !== "habit" &&
+      task.checklist &&
+      task.checklist.length > 0
+        ? task.checklist.map((item) => ({ ...item, isCompleted: true }))
+        : task.checklist,
   };
 }
 
@@ -73,6 +81,10 @@ export function applyOptimisticTaskRollback(
     completed: previousState.completed,
     hasClaimedReward: previousState.hasClaimedReward,
     lastCompletedAt: previousState.lastCompletedAt,
+    checklist:
+      previousState.checklist !== undefined
+        ? previousState.checklist
+        : task.checklist,
   };
 }
 
@@ -111,11 +123,7 @@ export interface UseTaskMutationsOptions {
   onOptimisticHabit: (taskId: string, delta: number) => void;
   onRollbackToggle: (
     taskId: string,
-    previousState: {
-      completed: boolean;
-      hasClaimedReward?: boolean;
-      lastCompletedAt?: string;
-    },
+    previousState: TaskToggleRollbackState,
   ) => void;
   onOptimisticDelete?: (task: Task, columnId?: string) => void;
   onRollbackDelete?: (task: Task, columnId?: string) => void;
@@ -189,21 +197,17 @@ export function useTaskMutations({
         completed: Boolean(targetTask.completed),
         hasClaimedReward: targetTask.hasClaimedReward,
         lastCompletedAt: targetTask.lastCompletedAt,
+        checklist: targetTask.checklist?.map((item) => ({ ...item })),
       };
       const optimisticStore = useOptimisticDashboardStore.getState();
+      const optimisticTask = applyOptimisticTaskToggle(targetTask, completed);
 
       onOptimisticToggle(taskId, completed);
-      optimisticStore.upsertTask(
-        applyOptimisticTaskToggle(targetTask, completed),
-      );
+      optimisticStore.upsertTask(optimisticTask);
       if (completed) {
         soundEffects.playTaskCompleteSound();
       }
-      onTaskUpdatedInDetails?.({
-        ...targetTask,
-        completed,
-        hasClaimedReward: completed ? true : targetTask.hasClaimedReward,
-      });
+      onTaskUpdatedInDetails?.(optimisticTask);
 
       startTransition(async () => {
         try {
@@ -216,18 +220,19 @@ export function useTaskMutations({
               rewardedTaskIdsRef.current.delete(taskId);
             }
             toast.error(res.error || t("statusUpdateError"));
+            const rolledBackTask = applyOptimisticTaskRollback(
+              targetTask,
+              rollbackState,
+            );
             onRollbackToggle(taskId, rollbackState);
-            optimisticStore.upsertTask({
-              ...targetTask,
-              completed: rollbackState.completed,
-              lastCompletedAt: rollbackState.lastCompletedAt,
-            });
-            onTaskUpdatedInDetails?.(targetTask);
+            optimisticStore.upsertTask(rolledBackTask);
+            onTaskUpdatedInDetails?.(rolledBackTask);
             return;
           }
 
+          const userTimeZone = useUserStore.getState().user?.timezone;
           const reconciledTask = res.data
-            ? mergeTaskWithResponseDTO(targetTask, res.data)
+            ? mergeTaskWithResponseDTO(targetTask, res.data, userTimeZone)
             : null;
           if (reconciledTask) {
             onReconcileTask?.(reconciledTask);
@@ -268,24 +273,34 @@ export function useTaskMutations({
 
             // Se era um To-Do Hardcore atrasado sem penalidade aplicada antes da conclusão,
             // o backend deduz a penalidade antes de conceder a recompensa tardia
+            const hasServerPenalty =
+              res.data?.penaltyAppliedXp !== undefined ||
+              res.data?.penaltyAppliedCoins !== undefined;
             if (
-              targetTask.type?.toLowerCase() === "todo" &&
-              Boolean(targetTask.isHardcoreModeEnabled) &&
-              !targetTask.isPenaltyApplied &&
-              Boolean(res.data?.isPenaltyApplied)
+              hasServerPenalty ||
+              (targetTask.type?.toLowerCase() === "todo" &&
+                Boolean(targetTask.isHardcoreModeEnabled) &&
+                !targetTask.isPenaltyApplied &&
+                Boolean(res.data?.isPenaltyApplied))
             ) {
-              const overduePenalty = calculateTaskPenalty({
-                taskType: targetTask.type,
-                difficulty: targetTask.difficulty,
-                importanceType: targetTask.importanceType,
-                repeatType: targetTask.repeatType,
-                resetCounter: targetTask.resetCounter,
-                currentStreak:
-                  targetTask.currentStreak ?? targetTask.streak ?? 0,
-                isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
-                dueDate: targetTask.dueDate,
-                timeZone: useUserStore.getState().user?.timezone,
-              });
+              const overduePenalty = hasServerPenalty
+                ? {
+                    xp: res.data?.penaltyAppliedXp ?? 0,
+                    gold: Number(res.data?.penaltyAppliedCoins ?? 0),
+                  }
+                : calculateTaskPenalty({
+                    taskType: targetTask.type,
+                    difficulty: targetTask.difficulty,
+                    importanceType: targetTask.importanceType,
+                    repeatType: targetTask.repeatType,
+                    resetCounter: targetTask.resetCounter,
+                    currentStreak:
+                      targetTask.currentStreak ?? targetTask.streak ?? 0,
+                    isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
+                    dueDate: targetTask.dueDate,
+                    checklist: rollbackState.checklist,
+                    timeZone: userTimeZone,
+                  });
               const penaltyResult = deductUserPenalty(
                 overduePenalty.xp,
                 overduePenalty.gold,
@@ -313,6 +328,7 @@ export function useTaskMutations({
               dueDate: targetTask.dueDate,
               isPenaltyApplied:
                 targetTask.isPenaltyApplied || res.data?.isPenaltyApplied,
+              checklist: res.data?.checklist ?? rollbackState.checklist,
               locale,
               timeZone: useUserStore.getState().user?.timezone,
               isGamified,
@@ -470,8 +486,9 @@ export function useTaskMutations({
           const optimisticStore = useOptimisticDashboardStore.getState();
 
           // Reconcilia os contadores e streak exatos retornados pelo backend
+          const userTimeZone = useUserStore.getState().user?.timezone;
           const reconciledTask = res.data
-            ? mergeTaskWithResponseDTO(targetTask, res.data)
+            ? mergeTaskWithResponseDTO(targetTask, res.data, userTimeZone)
             : null;
           if (reconciledTask) {
             onReconcileTask?.(reconciledTask);

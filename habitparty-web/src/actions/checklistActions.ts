@@ -115,6 +115,41 @@ export async function toggleChecklistItem(
 }
 
 /**
+ * Alterna o status de etapa recompensada de um item de checklist
+ * (exclusivo para Daily/To-Do na dificuldade Difícil, máximo 4 por tarefa).
+ */
+export async function toggleChecklistItemReward(
+  itemId: string,
+): Promise<ActionState<ChecklistItemResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
+  try {
+    const { data, error } = await serverApi.PATCH(
+      "/tasks/checklists/{itemId}/reward",
+      {
+        params: { path: { itemId } },
+      },
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("toggleChecklistRewardFailed")),
+      };
+    }
+
+    invalidateChecklistTags();
+
+    return { success: true, data: data as ChecklistItemResponseDTO };
+  } catch (err) {
+    console.error("[ChecklistAction:ToggleReward]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+/**
  * Remove um item do checklist
  */
 export async function deleteChecklistItem(
@@ -151,7 +186,7 @@ export async function deleteChecklistItem(
  */
 export async function cloneTaskChecklistItems(
   newTaskId: string,
-  items?: { name?: string }[],
+  items?: { name?: string; isRewarded?: boolean }[],
   options?: { skipInvalidation?: boolean },
 ): Promise<ChecklistItemResponseDTO[]> {
   if (!items || items.length === 0) return [];
@@ -165,7 +200,10 @@ export async function cloneTaskChecklistItems(
     try {
       const { data } = await serverApi.POST("/tasks/{taskId}/checklists", {
         params: { path: { taskId: newTaskId } },
-        body: { name: item.name as string },
+        body: {
+          name: item.name as string,
+          isRewarded: Boolean(item.isRewarded),
+        },
       });
       if (data) {
         createdItems.push(data as ChecklistItemResponseDTO);
@@ -186,6 +224,7 @@ export type ChecklistSnapshotItem = {
   id?: string;
   name?: string;
   isCompleted?: boolean;
+  isRewarded?: boolean;
 };
 
 /**
@@ -197,7 +236,7 @@ export async function syncTaskChecklistChanges(
   taskId: string,
   initialItems: ChecklistSnapshotItem[],
   currentItems: ChecklistSnapshotItem[],
-  options?: { skipInvalidation?: boolean },
+  options?: { skipInvalidation?: boolean; skipRewardDemotionSync?: boolean },
 ): Promise<{ items: ChecklistItemResponseDTO[]; failedCount: number }> {
   const isPersisted = (item: ChecklistSnapshotItem) =>
     Boolean(item.id) && !item.id?.startsWith("temp-");
@@ -230,9 +269,78 @@ export async function syncTaskChecklistChanges(
     }
   };
 
-  // 1. Remoções
-  await Promise.all(
-    [...initialById.keys()]
+  const syncPersistedItem = async (
+    item: ChecklistSnapshotItem,
+    original: ChecklistSnapshotItem | undefined,
+    name: string,
+  ): Promise<ChecklistItemResponseDTO> => {
+    const itemId = item.id as string;
+    let resolved: ChecklistItemResponseDTO = item as ChecklistItemResponseDTO;
+    const rewardChanged =
+      Boolean(original?.isRewarded) !== Boolean(item.isRewarded);
+    const shouldSkipRewardDemotion =
+      Boolean(options?.skipRewardDemotionSync) &&
+      original?.name === name &&
+      Boolean(original?.isRewarded) &&
+      !item.isRewarded;
+
+    if (
+      original &&
+      (original.name !== name || (rewardChanged && !shouldSkipRewardDemotion))
+    ) {
+      const updated = await call(() =>
+        serverApi.PUT("/tasks/checklists/{itemId}", {
+          params: { path: { itemId } },
+          body: { name, isRewarded: Boolean(item.isRewarded) },
+        }),
+      );
+      if (updated) resolved = updated as ChecklistItemResponseDTO;
+    }
+    if (
+      original &&
+      Boolean(original.isCompleted) !== Boolean(item.isCompleted)
+    ) {
+      const toggled = await call(() =>
+        serverApi.PATCH("/tasks/checklists/{itemId}/toggle", {
+          params: { path: { itemId } },
+        }),
+      );
+      if (toggled) resolved = toggled as ChecklistItemResponseDTO;
+    }
+    return resolved;
+  };
+
+  // Fase 1: Remoções + atualizações que NÃO promovem etapas a recompensadas (inclui rebaixamentos true -> false).
+  // Garante liberação de vagas do limite 4/4 antes de promoções ou criações com isRewarded: true.
+  const persistedResults = new Map<string, ChecklistItemResponseDTO>();
+  const phase1Updates: Array<Promise<void>> = [];
+  const phase2Promotions: Array<{
+    item: ChecklistSnapshotItem;
+    original?: ChecklistSnapshotItem;
+    name: string;
+  }> = [];
+
+  for (const item of currentItems) {
+    const name = item.name?.trim();
+    if (!name || !isPersisted(item)) continue;
+
+    const itemId = item.id as string;
+    const original = initialById.get(itemId);
+    const isRewardPromotion = Boolean(item.isRewarded) && !original?.isRewarded;
+
+    if (isRewardPromotion) {
+      phase2Promotions.push({ item, original, name });
+    } else {
+      phase1Updates.push(
+        syncPersistedItem(item, original, name).then((resolved) => {
+          persistedResults.set(itemId, resolved);
+        }),
+      );
+    }
+  }
+
+  await Promise.all([
+    ...[...initialById.keys()]
       .filter((id) => !currentIds.has(id))
       .map((itemId) =>
         call(() =>
@@ -241,47 +349,18 @@ export async function syncTaskChecklistChanges(
           }),
         ),
       ),
-  );
+    ...phase1Updates,
+  ]);
 
-  // 2. Edições de itens existentes em paralelo + inclusões de novos itens em ordem
-  const persistedUpdates = new Map<string, Promise<ChecklistItemResponseDTO>>();
-  for (const item of currentItems) {
-    const name = item.name?.trim();
-    if (!name || !isPersisted(item)) continue;
-
-    const itemId = item.id as string;
-    const original = initialById.get(itemId);
-    persistedUpdates.set(
-      itemId,
-      (async () => {
-        let resolved: ChecklistItemResponseDTO =
-          item as ChecklistItemResponseDTO;
-        if (original && original.name !== name) {
-          const updated = await call(() =>
-            serverApi.PUT("/tasks/checklists/{itemId}", {
-              params: { path: { itemId } },
-              body: { name },
-            }),
-          );
-          if (updated) resolved = updated as ChecklistItemResponseDTO;
-        }
-        if (
-          original &&
-          Boolean(original.isCompleted) !== Boolean(item.isCompleted)
-        ) {
-          const toggled = await call(() =>
-            serverApi.PATCH("/tasks/checklists/{itemId}/toggle", {
-              params: { path: { itemId } },
-            }),
-          );
-          if (toggled) resolved = toggled as ChecklistItemResponseDTO;
-        }
-        return resolved;
-      })(),
+  // Fase 2: Promoções de isRewarded (false -> true) após vagas já liberadas na Fase 1
+  if (phase2Promotions.length > 0) {
+    await Promise.all(
+      phase2Promotions.map(async ({ item, original, name }) => {
+        const resolved = await syncPersistedItem(item, original, name);
+        persistedResults.set(item.id as string, resolved);
+      }),
     );
   }
-
-  await Promise.all(persistedUpdates.values());
 
   const finalItems: ChecklistItemResponseDTO[] = [];
   const pendingNewToggles: Array<{ index: number; itemId: string }> = [];
@@ -291,7 +370,7 @@ export async function syncTaskChecklistChanges(
     if (!name) continue;
 
     if (isPersisted(item)) {
-      const resolved = await persistedUpdates.get(item.id as string);
+      const resolved = persistedResults.get(item.id as string);
       if (resolved) finalItems.push(resolved);
       continue;
     }
@@ -300,7 +379,7 @@ export async function syncTaskChecklistChanges(
     const created = (await call(() =>
       serverApi.POST("/tasks/{taskId}/checklists", {
         params: { path: { taskId } },
-        body: { name },
+        body: { name, isRewarded: Boolean(item.isRewarded) },
       }),
     )) as ChecklistItemResponseDTO | undefined;
     if (!created) continue;

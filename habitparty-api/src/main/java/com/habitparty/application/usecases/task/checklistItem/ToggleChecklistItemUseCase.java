@@ -30,13 +30,8 @@ public class ToggleChecklistItemUseCase {
     ChecklistItem item = taskPort.findChecklistItemByIdAndUserId(itemId, userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado ou acesso negado."));
 
-    if (workspaceWriteGuard != null) {
-      workspaceWriteGuard.assertTaskWritable(
-          taskPort,
-          item.getTaskId(),
-          userIdLogado,
-          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para editar checklists nele!");
-    }
+    ChecklistItemValidationHelper.assertTaskWritable(
+        taskPort, workspaceWriteGuard, item.getTaskId(), userIdLogado);
 
     item.toggle();
 

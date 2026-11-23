@@ -101,8 +101,9 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "O HabitParty divide sua rotina em três modalidades complementares e permite organizá-las com Tags Hierárquicas (ex: 'Estudos > Inglês' usando '>') para filtrar do macro ao detalhe:",
     bullets: [
       "Hábitos: Ações contínuas que podem ser positivas (+), negativas (-) ou mistas. Não possuem data fixa, usam Importância (Baixa, Normal, Alta) e contam com botão de Foco Rápido na própria linha.",
-      "Diárias (Dailies): Rotinas recorrentes programadas para dias específicos da semana (ex: segundas e quartas). Renovam automaticamente na virada do dia no seu fuso horário, mantêm 100% do valor base sem decaimento e desbloqueiam +10% de bônus de consistência após 14 execuções seguidas nos dias agendados.",
+      "Diárias (Dailies): Rotinas recorrentes programadas para dias específicos da semana (ex: segundas e quartas). Renovam automaticamente na virada do dia no seu fuso horário (incluindo seus checklists), mantêm 100% do valor base sem decaimento e desbloqueiam +10% de bônus de consistência após 14 execuções seguidas nos dias agendados.",
       "Afazeres (To-Dos): Tarefas pontuais com prazo de entrega (data e horário limite gratuitos), lembretes programados, checklists de subtarefas e descrições em Rich-Text (listas, negrito e links) de até 2.000 caracteres. Assinantes Premium também podem agendar Afazeres como Eventos (com horário de início e término ou dia inteiro) e acompanhar o selo pulsante 'Em andamento' no quadro.",
+      "Etapas Recompensadas (Diárias e Afazeres Difíceis): Em blocos extensos (+2h), em vez de dividir em 'Parte 1' e 'Parte 2', você pode marcar até 4 subtarefas como Etapas Recompensadas (ou Etapas de Esforço no Essencial). Cada etapa adiciona +100% da recompensa base (+30 XP/pts e +5 🪙/Créditos) e soma +1 unidade de entrega nas estatísticas e conquistas — tudo entregue de uma só vez ao concluir o card.",
     ],
     tags: [
       "tarefas",
@@ -112,6 +113,9 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "rotina",
       "tags",
       "rich-text",
+      "etapas recompensadas",
+      "subtarefas",
+      "checklist",
     ],
     highlightBadge: "Estrutura",
     actionLink: { label: "Ver Minhas Tarefas", href: "/tasks" },
@@ -125,7 +129,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "É um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). A nomenclatura se adapta ao seu Modo de Experiência e ao tipo da atividade: chama-se 'Prazo Rígido' (em Afazeres) ou 'Compromisso Diário' (em Hábitos/Diárias) no Modo Essencial (Produtividade), e 'Modo Hardcore' no Modo Aventura (RPG). Ao ativá-lo:",
     bullets: [
       "Afazeres (To-Dos): A data de entrega torna-se obrigatória e fica bloqueada contra adiamentos após o vencimento. Se atrasar, a entrega tardia rende apenas 50% da recompensa.",
-      "Penalidade Noturna: Se a atividade não for cumprida até as 23:59 do dia/prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas/XP (no Modo Aventura) ou Créditos/Pontos (no Modo Essencial) do seu saldo.",
+      "Penalidade Noturna & Proteção de Etapas Concluídas: Se a atividade não for cumprida até as 23:59 do dia/prazo, o sistema deduz 50% do valor da tarefa em Moedas/XP (Aventura) ou Créditos/Pontos (Essencial). Em tarefas Difíceis com Etapas Recompensadas, a multa incide apenas sobre a base e as etapas ainda pendentes — etapas já marcadas no prazo ficam protegidas.",
       "Hábitos e Diárias: Falhar na rotina marcada como inegociável reseta a ofensiva (Streak) para o Dia 1 e cobra a multa disciplinar.",
       "Quando usar: Reserve exclusivamente para os seus 1 ou 2 compromissos inegociáveis do dia ou da semana, evitando a autossabotagem.",
     ],
@@ -444,7 +448,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     bullets: [
       "Desbloqueio Automático em Tempo Real: Sempre que você conclui uma tarefa, faz check-in em hábito, registra uma sessão de foco, resgata uma recompensa, abre uma Caixa Misteriosa ou cria um novo Workspace, o servidor avalia seu progresso e desbloqueia novas medalhas automaticamente com efeito sonoro cristalino de troféu.",
       "Pontos de Conquista (Trophy Score): Cada medalha concede de +10 pts (Comum) a +250 pts (Lendária), compondo seu placar de prestígio exibido na Sidebar e na Vitrine (sem alterar o equilíbrio de moedas da loja). Ao somar 1.000 pts você ainda desbloqueia a medalha 'Colecionador de Glórias'.",
-      "Conquistas Comportamentais: Além de volume, algumas medalhas premiam como você trabalha — entregar 20 Afazeres antes do prazo (Pontualidade Real), concluir 7 ciclos de Hábitos Negativos/Mistos sem recaídas (Domínio do Impulso), bater 10 metas de tempo de Atividades no Focus (Mira Certeira), concluir tarefas com 100% do checklist marcado, esgotar cupons de tempo da Mochila, manter 500 moedas na carteira, preencher os 4 espaços da Vitrine ou criar 2 Workspaces.",
+      "Conquistas Comportamentais & Etapas Recompensadas: Além de volume, algumas medalhas premiam como você trabalha — entregar 20 Afazeres antes do prazo (Pontualidade Real), concluir 7 ciclos de Hábitos Negativos/Mistos sem recaídas (Domínio do Impulso), bater 10 metas de tempo de Atividades no Focus (Mira Certeira), concluir 50 tarefas com 100% do checklist marcado (Checklist Impecável), esgotar cupons de tempo da Mochila, manter 500 moedas na carteira, preencher os 4 espaços da Vitrine ou criar 2 Workspaces. Em tarefas Difíceis, cada Etapa Recompensada marcada também conta proporcionalmente (+1 unidade de entrega) nos marcos de tarefas, difíceis, Hardcore e na Retrospectiva.",
       "Conquistas Secretas (???): 8 medalhas especiais (Hardcore, Caixas Misteriosas, Coruja da Meia-Noite e Madrugador) permanecem ocultas com título e descrição mascarados até que você descubra e cumpra seu requisito especial na jornada. Os horários das sessões de foco usam o relógio local do seu dispositivo.",
     ],
     tags: [

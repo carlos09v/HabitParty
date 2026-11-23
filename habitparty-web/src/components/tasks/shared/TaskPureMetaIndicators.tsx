@@ -1,22 +1,35 @@
-import { Bell, CheckSquare, Flag, Mail, MessageSquare } from "lucide-react";
+import {
+  Bell,
+  CheckSquare,
+  Flag,
+  Mail,
+  MessageSquare,
+  Swords,
+  Zap,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { TASK_PRIORITY_META, toPriorityMessageKey } from "@/constants/task";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
 
 export function TaskChecklistBadge({
   checklistCompleted,
   checklistTotal,
+  checklistRewarded = 0,
   isChecklistAllDone,
   isCompact = false,
 }: {
   checklistCompleted: number;
   checklistTotal: number;
+  checklistRewarded?: number;
   isChecklistAllDone: boolean;
   isCompact?: boolean;
 }) {
   const t = useTranslations("dashboard.taskShared.badges");
+  const { isGamified } = useExperienceMode();
+  const RewardIcon = isGamified ? Swords : Zap;
   const progressPercent =
     checklistTotal > 0
       ? Math.round((checklistCompleted / checklistTotal) * 100)
@@ -29,12 +42,27 @@ export function TaskChecklistBadge({
         isCompact ? "text-label-s leading-none" : "text-tiny",
         isChecklistAllDone
           ? "text-success-500 bg-success-500/12 border-success-500/35 font-semibold"
-          : "text-neutral-200 bg-surface border-neutral-700 dark:bg-white/5 dark:border-white/12",
+          : checklistRewarded > 0
+            ? "text-amber-800 bg-amber-500/10 border-amber-500/35 dark:text-gold dark:bg-gold/10 dark:border-gold/30 font-semibold"
+            : "text-neutral-200 bg-surface border-neutral-700 dark:bg-white/5 dark:border-white/12",
       )}
-      title={t("checklistTitle", {
-        completed: checklistCompleted,
-        total: checklistTotal,
-      })}
+      title={
+        checklistRewarded > 0
+          ? t(
+              isGamified
+                ? "checklistWithRewardedTitle"
+                : "checklistWithRewardedTitleProductivity",
+              {
+                completed: checklistCompleted,
+                total: checklistTotal,
+                rewarded: checklistRewarded,
+              },
+            )
+          : t("checklistTitle", {
+              completed: checklistCompleted,
+              total: checklistTotal,
+            })
+      }
     >
       <CheckSquare
         size={isCompact ? 9 : 11}
@@ -43,6 +71,12 @@ export function TaskChecklistBadge({
       <span>
         {checklistCompleted}/{checklistTotal}
       </span>
+      {checklistRewarded > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-amber-700 dark:text-gold">
+          <RewardIcon size={isCompact ? 9 : 10} aria-hidden="true" />
+          <span>{checklistRewarded}</span>
+        </span>
+      )}
       <ProgressBar
         as="span"
         decorative

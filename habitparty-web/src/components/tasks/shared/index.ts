@@ -3,6 +3,12 @@ export {
   type ChecklistItemRowProps,
   useChecklistInlineEdit,
 } from "./ChecklistEditor";
+export {
+  ChecklistRewardCounter,
+  ChecklistRewardInfoTooltip,
+  getChecklistRewardStats,
+  useChecklistRewardRowHelpers,
+} from "./ChecklistRewardInfoTooltip";
 export { RichTextDescriptionEditor } from "./RichTextDescriptionEditor";
 export { TaskActionControl } from "./TaskActionControl";
 export { TaskEventBadge } from "./TaskEventBadge";

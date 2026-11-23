@@ -271,12 +271,21 @@ public class UserStats {
 
   // --- CONTADORES DE CONQUISTAS E VITRINE ---
   public void recordTaskCompleted(boolean isHard, boolean isHardcore) {
-    this.totalTasksCompleted += 1;
+    recordTaskCompleted(isHard, isHardcore, 1);
+  }
+
+  /**
+   * Registra a conclusão de uma tarefa escalando os contadores por {@code effortUnits}
+   * (1 unidade base + até 4 etapas recompensadas em tarefas difíceis).
+   */
+  public void recordTaskCompleted(boolean isHard, boolean isHardcore, int effortUnits) {
+    int safeUnits = Math.max(1, effortUnits);
+    this.totalTasksCompleted += safeUnits;
     if (isHard) {
-      this.totalHardTasksCompleted += 1;
+      this.totalHardTasksCompleted += safeUnits;
     }
     if (isHardcore) {
-      this.totalHardcoreTasksCompleted += 1;
+      this.totalHardcoreTasksCompleted += safeUnits;
     }
     this.updatedAt = LocalDateTime.now();
   }
@@ -285,6 +294,23 @@ public class UserStats {
       int xpReverted,
       BigDecimal coinsReverted,
       boolean fullyReverted) {
+  }
+
+  public TaskReversalOutcome revertTaskCompletion(
+      int xpToRevert,
+      BigDecimal coinsToRevert,
+      boolean isHard,
+      boolean isHardcore,
+      boolean hasCompletedChecklist,
+      boolean wasOnTimeTodo) {
+    return revertTaskCompletion(
+        xpToRevert,
+        coinsToRevert,
+        isHard,
+        isHardcore,
+        hasCompletedChecklist,
+        wasOnTimeTodo,
+        1);
   }
 
   /**
@@ -298,7 +324,9 @@ public class UserStats {
       boolean isHard,
       boolean isHardcore,
       boolean hasCompletedChecklist,
-      boolean wasOnTimeTodo) {
+      boolean wasOnTimeTodo,
+      int effortUnits) {
+    int safeUnits = Math.max(1, effortUnits);
     int xpReverted = 0;
     boolean xpFullyReverted = true;
     if (xpToRevert > 0) {
@@ -325,12 +353,12 @@ public class UserStats {
       }
     }
 
-    this.totalTasksCompleted = Math.max(0, this.totalTasksCompleted - 1);
+    this.totalTasksCompleted = Math.max(0, this.totalTasksCompleted - safeUnits);
     if (isHard) {
-      this.totalHardTasksCompleted = Math.max(0, this.totalHardTasksCompleted - 1);
+      this.totalHardTasksCompleted = Math.max(0, this.totalHardTasksCompleted - safeUnits);
     }
     if (isHardcore) {
-      this.totalHardcoreTasksCompleted = Math.max(0, this.totalHardcoreTasksCompleted - 1);
+      this.totalHardcoreTasksCompleted = Math.max(0, this.totalHardcoreTasksCompleted - safeUnits);
     }
     if (hasCompletedChecklist) {
       this.totalChecklistTasksCompleted = Math.max(0, this.totalChecklistTasksCompleted - 1);

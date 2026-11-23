@@ -944,6 +944,26 @@ export interface paths {
     patch: operations["toggleItem"];
     trace?: never;
   };
+  "/tasks/checklists/{itemId}/reward": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Alternar Recompensa do Item
+     * @description Define ou remove o status de etapa recompensada de um item de checklist (exclusivo para Daily e To-Do na dificuldade Difícil, limite de 4 por tarefa).
+     */
+    patch: operations["toggleItemReward"];
+    trace?: never;
+  };
   "/inventory/{itemId}/send-to-focus": {
     parameters: {
       query?: never;
@@ -1391,6 +1411,7 @@ export interface components {
       id?: string;
       name?: string;
       isCompleted?: boolean;
+      isRewarded?: boolean;
     };
     TaskResponseDTO: {
       /** Format: uuid */
@@ -1464,6 +1485,9 @@ export interface components {
       revertedXp?: number;
       revertedCoins?: number;
       streakReverted?: boolean;
+      /** Format: int32 */
+      penaltyAppliedXp?: number;
+      penaltyAppliedCoins?: number;
       /** Format: date-time */
       lastCompletedAt?: string;
       /** Format: int32 */
@@ -1631,6 +1655,7 @@ export interface components {
     };
     CreateChecklistItemDTO: {
       name: string;
+      isRewarded?: boolean;
     };
     MysteryBoxLootItem: {
       name: string;
@@ -3361,6 +3386,28 @@ export interface operations {
     };
   };
   toggleItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        itemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["ChecklistItemResponseDTO"];
+        };
+      };
+    };
+  };
+  toggleItemReward: {
     parameters: {
       query?: never;
       header?: never;

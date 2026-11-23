@@ -2,8 +2,10 @@ package com.habitparty.application.usecases.task;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -28,6 +30,7 @@ import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
+import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.UserGender;
@@ -156,5 +159,42 @@ class UpdateTaskUseCaseTest {
         TodoReminderType.NONE, null, false, null, null);
 
     assertThrows(LimitExceededException.class, () -> useCase.execute(taskId, userId, command));
+  }
+
+  @Test
+  @DisplayName("Rebaixar tarefa Difícil para Média limpa isRewarded das etapas mantendo os itens no checklist")
+  void downgradeFromHardClearsRewardedChecklistFlags() {
+    Clock fixedClock = Clock.fixed(Instant.parse("2026-11-14T12:00:00Z"), ZoneId.of("UTC"));
+    TaskRepository taskPort = mock(TaskRepository.class);
+    UserRepository userPort = mock(UserRepository.class);
+    EmailDispatchLogRepository emailLogPort = mock(EmailDispatchLogRepository.class);
+    UpdateTaskUseCase useCase = new UpdateTaskUseCase(taskPort, userPort, emailLogPort, fixedClock);
+
+    UUID userId = UUID.randomUUID();
+    UUID taskId = UUID.randomUUID();
+    ChecklistItem rewardedStep = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Etapa 1", false, true);
+    ChecklistItem normalStep = new ChecklistItem(UUID.randomUUID(), taskId, userId, "Padrão", false, false);
+
+    Todo hardTodo = new Todo(
+        taskId, UUID.randomUUID(), userId, "Card Difícil", null, 0,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.TODO, false, LocalDate.of(2026, 11, 20), LocalDateTime.of(2026, 11, 13, 10, 0),
+        List.of(rewardedStep, normalStep), TodoReminderType.NONE, null, null);
+
+    User user = buildUser(userId, "America/Sao_Paulo");
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(hardTodo));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(taskPort.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    UpdateTaskCommand downgradeCommand = new UpdateTaskCommand(
+        "Card Agora Médio", null, TaskPriority.MEDIUM, List.of(),
+        TaskDifficulty.MEDIUM, false, LocalDate.of(2026, 11, 20),
+        null, null, null, null, null, null, null, null,
+        TodoReminderType.NONE, null, false, null, null);
+
+    Task updated = useCase.execute(taskId, userId, downgradeCommand);
+    assertFalse(rewardedStep.isRewarded());
+    assertTrue(updated.getChecklist().size() == 2);
+    verify(taskPort).saveChecklistItems(List.of(rewardedStep));
   }
 }

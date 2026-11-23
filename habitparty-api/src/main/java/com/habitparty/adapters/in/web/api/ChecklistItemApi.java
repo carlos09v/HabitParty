@@ -42,6 +42,13 @@ public interface ChecklistItemApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado
     );
 
+    @Operation(summary = "Alternar Recompensa do Item", description = "Define ou remove o status de etapa recompensada de um item de checklist (exclusivo para Daily e To-Do na dificuldade Difícil, limite de 4 por tarefa).")
+    @PatchMapping("/checklists/{itemId}/reward")
+    ResponseEntity<ChecklistItemResponseDTO> toggleItemReward(
+        @PathVariable UUID itemId,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado
+    );
+
     @Operation(summary = "Excluir Item do Checklist", description = "Remove um item de checklist.")
     @DeleteMapping("/checklists/{itemId}")
     ResponseEntity<Void> deleteItem(

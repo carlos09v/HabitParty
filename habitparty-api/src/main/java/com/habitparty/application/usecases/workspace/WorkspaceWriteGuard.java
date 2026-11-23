@@ -114,8 +114,9 @@ public class WorkspaceWriteGuard {
     if (user.isPremium()) {
       return;
     }
-    Task task = taskPort.findById(taskId)
+    UUID boardColumnId = taskPort.findBoardColumnIdById(taskId)
+        .or(() -> taskPort.findById(taskId).map(Task::getBoardColumnId))
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
-    assertColumnWritable(user, task.getBoardColumnId(), message);
+    assertColumnWritable(user, boardColumnId, message);
   }
 }

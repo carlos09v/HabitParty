@@ -76,6 +76,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
     hasChecklist,
     checklistTotal,
     checklistCompleted,
+    checklistRewarded,
     isChecklistAllDone,
     isHardcoreOverdue,
   } = useTaskCardItem({
@@ -233,7 +234,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
       {/* 3. BASE: Frequência/Prazo/Saldo + Ofensiva (Streak) / Indicador de Esforço */}
       <div
         className={cn(
-          "flex items-center justify-between gap-2 text-neutral-400 border-t border-neutral-700/60 dark:border-white/8",
+          "flex flex-wrap items-center justify-between gap-2 text-neutral-400 border-t border-neutral-700/60 dark:border-white/8",
           isCompact ? "pt-1.5 text-label-s" : "pt-2 text-tiny",
         )}
       >
@@ -327,7 +328,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto flex-wrap justify-end">
           {!isHabit && (
             <TaskFocusTimeBadge
               taskId={task.id}
@@ -341,6 +342,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
             <TaskChecklistBadge
               checklistCompleted={checklistCompleted}
               checklistTotal={checklistTotal}
+              checklistRewarded={checklistRewarded}
               isChecklistAllDone={isChecklistAllDone}
               isCompact={isCompact}
             />

@@ -4,8 +4,11 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+  countRewardedChecklistItems,
+  MAX_REWARDED_SUBTASKS,
   MAX_TASK_TAGS,
   normalizeTaskType,
+  supportsRewardedChecklistSteps,
   TASK_DETAILS_POPOVER_OPTIONS,
   TASK_TITLE_MAX_LENGTH,
 } from "@/constants/task";
@@ -47,6 +50,7 @@ export function useTaskDetailsPopover({
   const descRef = useRef(task?.description || "");
   const descriptionFlushRef = useRef<(() => string) | null>(null);
   const newItemRef = useRef("");
+  const newItemRewardedRef = useRef(false);
   const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
   const syncChecklistRef = useRef<(nextList: ChecklistItem[]) => void>(
     () => {},
@@ -74,17 +78,22 @@ export function useTaskDetailsPopover({
     syncChecklistRef.current(nextList);
   }, []);
 
+  const canRewardChecklistItems = supportsRewardedChecklistSteps(task);
+
   const {
     checklist,
     resetChecklist,
     addItem: addChecklistItem,
     toggleItem: toggleChecklistItem,
+    toggleItemReward: toggleChecklistItemReward,
     updateItem: updateChecklistItem,
     deleteItem: deleteChecklistItem,
   } = useChecklist({
     initialItems: task?.checklist,
     taskId: task?.id,
     onChecklistChanged: handleChecklistChanged,
+    canRewardItems: canRewardChecklistItems,
+    isRewardLocked: completed,
   });
 
   // Estados de controle da interface
@@ -92,6 +101,7 @@ export function useTaskDetailsPopover({
   const [newTagText, setNewTagText] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemText, setNewItemText] = useState("");
+  const [isNewItemRewarded, setIsNewItemRewarded] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 640 : false,
   );
@@ -154,8 +164,12 @@ export function useTaskDetailsPopover({
       if (checkField("tags")) {
         setTags(sourceTask.tags || []);
       }
+      if (checkField("checklist") && fieldsToSync && sourceTask.checklist) {
+        resetChecklist(sourceTask.checklist);
+        checklistRef.current = sourceTask.checklist;
+      }
     },
-    [],
+    [resetChecklist],
   );
 
   const handleNewTaskSelected = useCallback(
@@ -168,6 +182,8 @@ export function useTaskDetailsPopover({
       setIsAddingItem(false);
       setNewItemText("");
       newItemRef.current = "";
+      setIsNewItemRewarded(false);
+      newItemRewardedRef.current = false;
     },
     [resetChecklist],
   );
@@ -226,7 +242,16 @@ export function useTaskDetailsPopover({
 
     const pendingItem = newItemRef.current.trim();
     if (pendingItem) {
-      addChecklistItem(pendingItem);
+      const currentTask = getCurrentTask();
+      const canMarkRewarded =
+        supportsRewardedChecklistSteps(currentTask) &&
+        !currentTask?.completed &&
+        newItemRewardedRef.current &&
+        countRewardedChecklistItems(checklistRef.current) <
+          MAX_REWARDED_SUBTASKS;
+      newItemRef.current = "";
+      newItemRewardedRef.current = false;
+      addChecklistItem(pendingItem, canMarkRewarded);
     }
   }, [getCurrentTask, saveTaskField, addChecklistItem]);
 
@@ -243,7 +268,19 @@ export function useTaskDetailsPopover({
     const next = !completed;
     if (onToggleComplete?.(currentTask.id, next) === false) return;
     setCompleted(next);
-    const updatedTask = { ...currentTask, completed: next };
+    const nextChecklist =
+      next && !isHabit && checklistRef.current.length > 0
+        ? checklistRef.current.map((item) => ({ ...item, isCompleted: true }))
+        : checklistRef.current;
+    if (next && !isHabit && checklistRef.current.length > 0) {
+      resetChecklist(nextChecklist);
+      checklistRef.current = nextChecklist;
+    }
+    const updatedTask = {
+      ...currentTask,
+      completed: next,
+      checklist: nextChecklist,
+    };
     setLatestTaskDraft(updatedTask);
     onTaskUpdate?.(updatedTask);
   };
@@ -405,10 +442,17 @@ export function useTaskDetailsPopover({
   const handleAddCheckItem = async () => {
     const trimmed = newItemText.trim();
     if (!trimmed) return;
+    const shouldReward =
+      canRewardChecklistItems &&
+      !completed &&
+      isNewItemRewarded &&
+      countRewardedChecklistItems(checklist) < MAX_REWARDED_SUBTASKS;
     setNewItemText("");
     newItemRef.current = "";
+    setIsNewItemRewarded(false);
+    newItemRewardedRef.current = false;
     setIsAddingItem(false);
-    await addChecklistItem(trimmed);
+    await addChecklistItem(trimmed, shouldReward);
   };
 
   const handleDeleteTask = () => {
@@ -493,13 +537,21 @@ export function useTaskDetailsPopover({
       setNewItemText(val);
       newItemRef.current = val;
     },
+    isNewItemRewarded,
+    setIsNewItemRewarded: (val: boolean) => {
+      setIsNewItemRewarded(val);
+      newItemRewardedRef.current = val;
+    },
     cancelAddItem: () => {
       setIsAddingItem(false);
+      setIsNewItemRewarded(false);
       newItemRef.current = "";
+      newItemRewardedRef.current = false;
     },
     isHabit,
     isDaily,
     isTodo,
+    canRewardChecklistItems,
     handleCloseWithSave,
     handleToggleTask,
     handleHabitDelta,
@@ -514,6 +566,7 @@ export function useTaskDetailsPopover({
     handleUpdateTag,
     handleAddCheckItem,
     handleToggleCheckItem: toggleChecklistItem,
+    handleToggleCheckItemReward: toggleChecklistItemReward,
     handleUpdateCheckItem: updateChecklistItem,
     handleDeleteCheckItem: deleteChecklistItem,
     handleDeleteTask,

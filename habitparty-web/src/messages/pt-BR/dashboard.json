@@ -280,6 +280,8 @@
     },
     "badges": {
       "checklistTitle": "Subtarefas: {completed} de {total} concluídas",
+      "checklistWithRewardedTitle": "Subtarefas: {completed} de {total} concluídas • {rewarded} {rewarded, plural, one {etapa recompensada} other {etapas recompensadas}}",
+      "checklistWithRewardedTitleProductivity": "Subtarefas: {completed} de {total} concluídas • {rewarded} {rewarded, plural, one {etapa de esforço} other {etapas de esforço}}",
       "cardDoubleClickHint": "Clique: detalhes • Duplo clique: editar",
       "quickEditButtonTitle": "Editar tarefa (ou dê duplo clique no card)",
       "doubleClickEditOneTimeTip": "Dica: dê duplo clique em qualquer card para abrir direto a edição completa!",

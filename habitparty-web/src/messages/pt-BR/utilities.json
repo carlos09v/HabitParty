@@ -92,6 +92,8 @@
     "breakdown": {
       "baseReward": "Recompensa Base",
       "baseValueProductivity": "+{formattedGold} créditos / +{xp} pts",
+      "rewardedSteps": "Etapas Recompensadas ({count}/{max})",
+      "rewardedStepsProductivity": "Etapas de Esforço ({count}/{max})",
       "routineBonus": "Bônus de Rotina",
       "hardcorePenalty": "Penalidade Hardcore",
       "deadlinePenalty": "Penalidade de Prazo",

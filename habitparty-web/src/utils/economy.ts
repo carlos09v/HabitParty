@@ -1,8 +1,11 @@
 import {
+  countRewardedChecklistItems,
   DIFFICULTY_REWARDS,
   HABIT_IMPORTANCE_REWARDS,
+  MAX_REWARDED_SUBTASKS,
   normalizeTaskDifficulty,
   normalizeTaskType,
+  supportsRewardedChecklistSteps,
 } from "@/constants/task";
 import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
@@ -224,6 +227,8 @@ export interface TaskRewardCalculationInput {
   isHardcoreModeEnabled?: boolean;
   dueDate?: string;
   isPenaltyApplied?: boolean;
+  checklist?: Array<{ isCompleted?: boolean; isRewarded?: boolean }>;
+  rewardedStepsCount?: number;
   locale?: AppLocale;
   timeZone?: string | null;
   isGamified?: boolean;
@@ -253,6 +258,9 @@ export interface TaskRewardBreakdown {
   unit: string;
   hasDecay: boolean;
   hasBonus: boolean;
+  rewardedStepsCount?: number;
+  unitBaseReward?: { xp: number; gold: number };
+  stepsBonusReward?: { xp: number; gold: number };
 }
 
 /**
@@ -399,7 +407,24 @@ export function getTaskRewardBreakdown(
     rawDifficulty === "HARD"
       ? rawDifficulty
       : "MEDIUM";
-  const base = DIFFICULTY_REWARDS[diffKey];
+  const unitBase = DIFFICULTY_REWARDS[diffKey];
+  const rewardedStepsCount = resolveRewardedStepsCount(
+    task,
+    normalizedType,
+    diffKey,
+  );
+  const effortUnits = 1 + rewardedStepsCount;
+  const base = {
+    xp: unitBase.xp * effortUnits,
+    gold: roundHalfUpTwoDecimals(unitBase.gold * effortUnits),
+  };
+  const stepsBonusReward =
+    rewardedStepsCount > 0
+      ? {
+          xp: unitBase.xp * rewardedStepsCount,
+          gold: roundHalfUpTwoDecimals(unitBase.gold * rewardedStepsCount),
+        }
+      : undefined;
   const baseCoinsFormatted = formatUnit(formatCoins(base.gold, { locale }));
 
   if (normalizedType === "daily") {
@@ -452,6 +477,9 @@ export function getTaskRewardBreakdown(
       unit: t("units.scheduledCycles"),
       hasDecay: false,
       hasBonus: hasConsistencyBonus,
+      rewardedStepsCount,
+      unitBaseReward: { xp: unitBase.xp, gold: unitBase.gold },
+      stepsBonusReward,
     };
   }
 
@@ -495,6 +523,9 @@ export function getTaskRewardBreakdown(
       unit: t("units.repetitions"),
       hasDecay: true,
       hasBonus: false,
+      rewardedStepsCount,
+      unitBaseReward: { xp: unitBase.xp, gold: unitBase.gold },
+      stepsBonusReward,
     };
   }
 
@@ -514,7 +545,51 @@ export function getTaskRewardBreakdown(
     unit: t("units.repetitions"),
     hasDecay: false,
     hasBonus: false,
+    rewardedStepsCount,
+    unitBaseReward: { xp: unitBase.xp, gold: unitBase.gold },
+    stepsBonusReward,
   };
+}
+
+function resolveRewardedStepsCount(
+  task: TaskRewardCalculationInput,
+  normalizedType: "habit" | "daily" | "todo",
+  diffKey: "TRIVIAL" | "EASY" | "MEDIUM" | "HARD",
+): number {
+  if (!supportsRewardedChecklistSteps(normalizedType, diffKey)) return 0;
+  if (
+    typeof task.rewardedStepsCount === "number" &&
+    Number.isFinite(task.rewardedStepsCount)
+  ) {
+    return Math.max(
+      0,
+      Math.min(MAX_REWARDED_SUBTASKS, Math.floor(task.rewardedStepsCount)),
+    );
+  }
+  return countRewardedChecklistItems(task.checklist);
+}
+
+function resolvePendingRewardedStepsCount(
+  task: TaskRewardCalculationInput,
+  normalizedType: "habit" | "daily" | "todo",
+  diffKey: "TRIVIAL" | "EASY" | "MEDIUM" | "HARD",
+): number {
+  if (!supportsRewardedChecklistSteps(normalizedType, diffKey)) return 0;
+  if (!Array.isArray(task.checklist) || task.checklist.length === 0) {
+    return resolveRewardedStepsCount(task, normalizedType, diffKey);
+  }
+  let seen = 0;
+  let pending = 0;
+  for (const item of task.checklist) {
+    if (item?.isRewarded) {
+      seen++;
+      if (!item.isCompleted) {
+        pending++;
+      }
+      if (seen >= MAX_REWARDED_SUBTASKS) break;
+    }
+  }
+  return pending;
 }
 
 /**
@@ -531,13 +606,38 @@ export function calculateTaskReward(task: TaskRewardCalculationInput): {
 /**
  * Calcula a penalidade de XP e Moedas de uma tarefa (Modo Hardcore / Hábito Negativo).
  * Aplica 50% de multa sobre a recompensa calculada (mínimo de 0.01 moedas).
+ * Para Daily e To-Do Difícil, considera apenas a base + etapas recompensadas pendentes.
  */
 export function calculateTaskPenalty(task: TaskRewardCalculationInput): {
   xp: number;
   gold: number;
 } {
-  const reward = calculateTaskReward(task);
+  const normalizedType = normalizeTaskType(task);
   const penaltyRate = 0.5;
+  if (normalizedType !== "habit") {
+    const rawDifficulty = normalizeTaskDifficulty(task.difficulty);
+    const diffKey =
+      rawDifficulty === "TRIVIAL" ||
+      rawDifficulty === "EASY" ||
+      rawDifficulty === "HARD"
+        ? rawDifficulty
+        : "MEDIUM";
+    const unitBase = DIFFICULTY_REWARDS[diffKey];
+    const pendingUnits =
+      1 + resolvePendingRewardedStepsCount(task, normalizedType, diffKey);
+    const pendingBaseXp = unitBase.xp * pendingUnits;
+    const pendingBaseGold = roundHalfUpTwoDecimals(
+      unitBase.gold * pendingUnits,
+    );
+    return {
+      xp: Math.floor(pendingBaseXp * penaltyRate),
+      gold: Math.max(
+        0.01,
+        Math.round(pendingBaseGold * penaltyRate * 100) / 100,
+      ),
+    };
+  }
+  const reward = calculateTaskReward(task);
   const penaltyXp = Math.floor(reward.xp * penaltyRate);
   const penaltyGold = Math.max(
     0.01,
@@ -607,17 +707,50 @@ export function toTaskRewardEstimate(
     });
   }
 
+  const rewardedCount = breakdown.rewardedStepsCount ?? 0;
+  const displayedBaseReward =
+    rewardedCount > 0 && breakdown.unitBaseReward
+      ? breakdown.unitBaseReward
+      : breakdown.baseReward;
+  const rewardedStepsLabel = isGamified
+    ? t("breakdown.rewardedSteps", {
+        count: rewardedCount,
+        max: MAX_REWARDED_SUBTASKS,
+      })
+    : t("breakdown.rewardedStepsProductivity", {
+        count: rewardedCount,
+        max: MAX_REWARDED_SUBTASKS,
+      });
+
   const breakdownItems: import("@/types/reward").RewardEstimateBreakdownItem[] =
     [
       {
         label: t("breakdown.baseReward"),
         value: isGamified
-          ? `+${formatCoins(breakdown.baseReward.gold, { locale })} 🪙 / +${breakdown.baseReward.xp} XP`
+          ? `+${formatCoins(displayedBaseReward.gold, { locale })} 🪙 / +${displayedBaseReward.xp} XP`
           : t("breakdown.baseValueProductivity", {
-              formattedGold: formatCoins(breakdown.baseReward.gold, { locale }),
-              xp: breakdown.baseReward.xp,
+              formattedGold: formatCoins(displayedBaseReward.gold, { locale }),
+              xp: displayedBaseReward.xp,
             }),
       },
+      ...(rewardedCount > 0 && breakdown.stepsBonusReward
+        ? [
+            {
+              label: rewardedStepsLabel,
+              value: isGamified
+                ? `+${formatCoins(breakdown.stepsBonusReward.gold, { locale })} 🪙 / +${breakdown.stepsBonusReward.xp} XP`
+                : t("breakdown.baseValueProductivity", {
+                    formattedGold: formatCoins(
+                      breakdown.stepsBonusReward.gold,
+                      {
+                        locale,
+                      },
+                    ),
+                    xp: breakdown.stepsBonusReward.xp,
+                  }),
+            },
+          ]
+        : []),
       ...(breakdown.hasBonus
         ? [
             {
@@ -643,16 +776,19 @@ export function toTaskRewardEstimate(
   return {
     gold: breakdown.finalReward.gold,
     xp: breakdown.finalReward.xp,
-    status: breakdown.hasBonus
-      ? "boosted"
-      : breakdown.hasDecay
-        ? "reduced"
-        : "full",
+    status:
+      breakdown.hasBonus || (!breakdown.hasDecay && rewardedCount > 0)
+        ? "boosted"
+        : breakdown.hasDecay
+          ? "reduced"
+          : "full",
     stageLabel: breakdown.hasBonus
       ? `${breakdown.stageLabel} (+${breakdown.bonusPercentage}%)`
       : breakdown.hasDecay
         ? `${breakdown.stageLabel} (-${breakdown.decayPercentage}%)`
-        : undefined,
+        : rewardedCount > 0
+          ? rewardedStepsLabel
+          : undefined,
     notices,
     breakdown: breakdownItems,
   };

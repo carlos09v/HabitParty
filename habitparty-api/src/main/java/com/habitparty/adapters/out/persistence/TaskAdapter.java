@@ -65,8 +65,11 @@ public class TaskAdapter implements TaskRepository {
     if (entities == null || entities.isEmpty()) {
       return List.of();
     }
-    List<UUID> ids = entities.stream().map(TaskJpaEntity::getId).toList();
-    Map<UUID, List<ChecklistItem>> checklists = loadChecklistsByTaskIds(ids);
+    List<UUID> checklistTaskIds = entities.stream()
+        .filter(e -> e.getTaskType() != TaskType.HABIT)
+        .map(TaskJpaEntity::getId)
+        .toList();
+    Map<UUID, List<ChecklistItem>> checklists = loadChecklistsByTaskIds(checklistTaskIds);
     return entities.stream()
         .map(e -> taskMapper.toDomain(e, checklists.getOrDefault(e.getId(), List.of())))
         .toList();
@@ -110,7 +113,7 @@ public class TaskAdapter implements TaskRepository {
     if (userIds == null || userIds.isEmpty()) {
       return List.of();
     }
-    return toDomainListWithoutChecklist(port.findRecurringTasksByUserIds(userIds));
+    return toDomainList(port.findRecurringTasksByUserIds(userIds));
   }
 
   @Override
@@ -123,7 +126,7 @@ public class TaskAdapter implements TaskRepository {
     if (userIds == null || userIds.isEmpty()) {
       return List.of();
     }
-    return toDomainListWithoutChecklist(port.findOverdueHardcoreTodosByUserIds(userIds, maxDueDate));
+    return toDomainList(port.findOverdueHardcoreTodosByUserIds(userIds, maxDueDate));
   }
 
   @Override
@@ -223,8 +226,12 @@ public class TaskAdapter implements TaskRepository {
   @Override
   public Optional<Task> findById(UUID id) {
     return port.findById(id)
-        .map(entity -> taskMapper.toDomain(entity,
-            loadChecklistsByTaskIds(List.of(entity.getId())).getOrDefault(entity.getId(), List.of())));
+        .map(entity -> {
+          List<ChecklistItem> checklist = entity.getTaskType() == TaskType.HABIT
+              ? List.of()
+              : loadChecklistsByTaskIds(List.of(entity.getId())).getOrDefault(entity.getId(), List.of());
+          return taskMapper.toDomain(entity, checklist);
+        });
   }
 
   @Override
@@ -275,6 +282,14 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  public Optional<UUID> findBoardColumnIdById(UUID id) {
+    if (id == null) {
+      return Optional.empty();
+    }
+    return port.findBoardColumnIdById(id);
+  }
+
+  @Override
   public Optional<Integer> findOrderIndexByIdAndBoardColumnIdAndUserId(
       UUID taskId,
       UUID boardColumnId,
@@ -306,18 +321,45 @@ public class TaskAdapter implements TaskRepository {
 
   @Override
   public ChecklistItem saveChecklistItem(ChecklistItem item) {
-    // TRUQUE DE PERFORMANCE: Como queremos salvar apenas o item (ex: toggle), 
-    // não precisamos carregar a Task inteira do banco.
-    // Usamos o getReferenceById para criar uma Task "oca" apenas com o ID!
+    int updated = checklistRepository.updateItemFields(
+        item.getId(),
+        item.getUserId(),
+        item.getName(),
+        item.isCompleted(),
+        item.isRewarded(),
+        item.getOrderIndex(),
+        item.isAutoCompleted());
+    if (updated > 0) {
+      return item;
+    }
+
+    // Inserção de novo item: usa getReferenceById para referenciar a Task sem carregá-la inteira
     TaskJpaEntity dummyTask = port.getReferenceById(item.getTaskId());
-
-    // Passamos o domínio e a Task oca para o mapper que você criou
     ChecklistItemJpaEntity entity = checklistMapper.toEntity(item, dummyTask);
-
-    // Salva no banco (O método save devolve a entidade recém-salva)
     ChecklistItemJpaEntity savedEntity = checklistRepository.save(entity);
 
     return checklistMapper.toDomain(savedEntity);
+  }
+
+  @Override
+  public List<ChecklistItem> saveChecklistItems(List<ChecklistItem> items) {
+    if (items == null || items.isEmpty()) {
+      return List.of();
+    }
+    List<ChecklistItemJpaEntity> entities = items.stream()
+        .map(item -> checklistMapper.toEntity(item, port.getReferenceById(item.getTaskId())))
+        .toList();
+    return checklistRepository.saveAll(entities).stream()
+        .map(checklistMapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public void resetChecklistCompletionByTaskIds(Collection<UUID> taskIds) {
+    if (taskIds == null || taskIds.isEmpty()) {
+      return;
+    }
+    checklistRepository.resetCompletedByTaskIds(taskIds);
   }
 
   @Override

@@ -86,6 +86,12 @@ public class TransactionHistoryJpaEntity {
   @Column(name = "description_snapshot", length = 500)
   private String descriptionSnapshot;
 
+  @Column(name = "checklist_completed_snapshot")
+  private Boolean checklistCompletedSnapshot;
+
+  @Column(name = "effort_units_snapshot")
+  private Integer effortUnitsSnapshot;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 }

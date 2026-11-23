@@ -71,6 +71,10 @@ public interface TaskRepository {
   // Para quando a coluna estiver vazia e a primeira task precisar do index 0
   int findMaxOrderIndexByBoardColumnId(UUID boardColumnId);
 
+  default Optional<UUID> findBoardColumnIdById(UUID taskId) {
+    return findById(taskId).map(Task::getBoardColumnId);
+  }
+
   default Optional<Integer> findOrderIndexByIdAndBoardColumnIdAndUserId(
       UUID taskId,
       UUID boardColumnId,
@@ -118,5 +122,13 @@ public interface TaskRepository {
   // ChecklistItem
   Optional<ChecklistItem> findChecklistItemByIdAndUserId(UUID itemId, UUID userId);
   ChecklistItem saveChecklistItem(ChecklistItem item);
+  default List<ChecklistItem> saveChecklistItems(List<ChecklistItem> items) {
+    if (items == null || items.isEmpty()) {
+      return List.of();
+    }
+    return items.stream().map(this::saveChecklistItem).toList();
+  }
+  default void resetChecklistCompletionByTaskIds(Collection<UUID> taskIds) {
+  }
   void deleteChecklistItemById(UUID itemId);
 }

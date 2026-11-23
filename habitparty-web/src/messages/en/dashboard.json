@@ -280,6 +280,8 @@
     },
     "badges": {
       "checklistTitle": "Subtasks: {completed} of {total} completed",
+      "checklistWithRewardedTitle": "Subtasks: {completed} of {total} completed • {rewarded} rewarded {rewarded, plural, one {step} other {steps}}",
+      "checklistWithRewardedTitleProductivity": "Subtasks: {completed} of {total} completed • {rewarded} effort {rewarded, plural, one {step} other {steps}}",
       "cardDoubleClickHint": "Click: details • Double-click: edit",
       "quickEditButtonTitle": "Edit task (or double-click card)",
       "doubleClickEditOneTimeTip": "Tip: double-click any card to open the full edit modal directly!",

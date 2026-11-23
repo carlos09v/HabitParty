@@ -930,9 +930,9 @@
     },
     "CHECKLIST_PERFECTIONIST": {
       "title": "Flawless Checklist",
-      "essentialTitle": "20 Complete Checklists",
-      "description": "Complete 20 tasks with every checklist item checked.",
-      "essentialDescription": "Complete 20 tasks with 100% of their checklist items done."
+      "essentialTitle": "50 Complete Checklists",
+      "description": "Complete 50 tasks with every checklist item checked.",
+      "essentialDescription": "Complete 50 tasks with 100% of their checklist items done."
     },
     "STREAK_14": {
       "title": "Unshakable Fortnight",
@@ -1337,19 +1337,19 @@
     "simulator": {
       "title": "Effort Simulator for This Rank",
       "infoTitle": "How is this calculated?",
-      "infoDesc": "Estimates use real in-app reward math (+15 XP per Medium task, +30 XP per Hard task, +10 XP per Normal habit, +8 XP per Standard Pomodoro, and +15 XP per 50m+ Deep Work).",
+      "infoDesc": "Estimates use real in-app reward math (+15 XP per Medium task, +30 XP per Hard task — up to +150 XP with 4 rewarded steps —, +10 XP per Normal habit, +8 XP per Standard Pomodoro, and +15 XP per 50m+ Deep Work).",
       "paceLabel": "Your daily pace:",
       "paceUnit": "XP/day",
       "estimatedTimeLabel": "Estimated time at selected pace:",
       "daysEstimate": "~{days} {days, plural, one {day} other {days}}",
       "readyNow": "Already unlocked!",
       "mediumTasks": "Medium Tasks",
-      "hardTasks": "Hard Tasks",
+      "hardTasks": "Hard Tasks / Steps",
       "normalHabits": "Normal Habits",
       "standardPomos": "Standard Pomodoros",
       "deepWorkPomos": "Deep Work (50m+)",
       "xpPerAction": "+{xp} XP each",
-      "infoDescEssential": "Estimates use real in-app scoring math (+15 pts per Medium task, +30 pts per Hard task, +10 pts per Normal habit, +8 pts per Standard Pomodoro, and +15 pts per 50m+ Deep Work).",
+      "infoDescEssential": "Estimates use real in-app scoring math (+15 pts per Medium task, +30 pts per Hard task — up to +150 pts with 4 effort steps —, +10 pts per Normal habit, +8 pts per Standard Pomodoro, and +15 pts per 50m+ Deep Work).",
       "ptsPerAction": "+{xp} pts each"
     },
     "achievement": {
@@ -1365,9 +1365,9 @@
       "tooltipAria": "Learn how to earn XP and advance your rank",
       "tooltipIntro": "Unlike coins (🪙), XP is lifetime-cumulative and is never deducted when redeeming rewards in the Store:",
       "tasksLabel": "• To-Dos:",
-      "tasksDesc": "From +2 XP (Trivial) up to +30 XP (Hard) at 100% base value when completed on time.",
+      "tasksDesc": "From +2 XP (Trivial) up to +30 XP (Hard) on time — or up to +150 XP with up to 4 Rewarded Steps (+30 XP/step).",
       "dailiesLabel": "• Dailies:",
-      "dailiesDesc": "100% difficulty XP on scheduled days + a +10% consistency bonus after 14 consecutive completions.",
+      "dailiesDesc": "100% difficulty XP on scheduled days (+30 XP per rewarded step on Hard) + a +10% consistency bonus after 14 consecutive completions.",
       "habitsLabel": "• Habits (+):",
       "habitsDesc": "From +5 XP (Low) up to +25 XP (High) to reinforce daily momentum.",
       "focusLabel": "• Focus Sessions:",
@@ -1376,8 +1376,8 @@
       "titleEssential": "Point Sources (never spent in the Showcase)",
       "tooltipAriaEssential": "Learn how to earn points and advance your executive rank",
       "tooltipIntroEssential": "Unlike Credits, Points are lifetime-cumulative and are never deducted when redeeming rewards in the Showcase:",
-      "tasksDescEssential": "From +2 pts (Trivial) up to +30 pts (Hard) at 100% base value when completed on time.",
-      "dailiesDescEssential": "100% base effort points on scheduled days + a +10% consistency bonus after 14 consecutive completions.",
+      "tasksDescEssential": "From +2 pts (Trivial) up to +30 pts (Hard) on time — or up to +150 pts with up to 4 Effort Steps (+30 pts/step).",
+      "dailiesDescEssential": "100% base effort points on scheduled days (+30 pts per effort step on Hard) + a +10% consistency bonus after 14 consecutive completions.",
       "habitsDescEssential": "From +5 pts (Low) up to +25 pts (High) to reinforce daily momentum.",
       "focusDescEssential": "Standard Pomodoro (+8 pts/cycle), Deep Work 50m+ (+15 pts/cycle), and Free Stopwatch (+7 pts per 30m).",
       "noSpendNoteEssential": "💡 Only Strict Deadline penalties (or negative habits within a tier) affect points, and a floor lock prevents demoting below your current rank."

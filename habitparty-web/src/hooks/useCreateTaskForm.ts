@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { createTask, saveTaskWithDetails } from "@/actions/taskActions";
 import {
   ALL_WEEK_DAYS,
+  countRewardedChecklistItems,
+  MAX_REWARDED_SUBTASKS,
   MAX_TASK_TAGS,
   normalizeTaskDifficulty,
+  supportsRewardedChecklistSteps,
 } from "@/constants/task";
 import { useChecklist } from "@/hooks/useChecklist";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
@@ -268,12 +271,19 @@ export function useCreateTaskForm({
     initialForm.monthlyOption,
   );
 
+  const canRewardChecklistItems = supportsRewardedChecklistSteps(
+    taskType,
+    difficulty,
+  );
+
   // Checklist de subtarefas gerenciado pelo hook central useChecklist
   const {
     checklist,
     resetChecklist,
     addItem: addChecklistItem,
     toggleItem: toggleChecklistItem,
+    toggleItemReward: toggleChecklistItemReward,
+    clearRewardedItems,
     updateItem: updateChecklistItem,
     deleteItem: deleteChecklistItem,
   } = useChecklist({
@@ -281,13 +291,27 @@ export function useCreateTaskForm({
     taskId: taskToEdit?.id,
     // Subtarefas só são persistidas ao clicar em Salvar (cancelar descarta as alterações)
     deferPersistence: true,
+    canRewardItems: canRewardChecklistItems,
   });
   const [newChecklistText, setNewChecklistText] = useState("");
+  const [isNewChecklistRewarded, setIsNewChecklistRewarded] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const handleDifficultyChange = (nextDifficulty: TaskDifficultyOption) => {
+    setDifficulty(nextDifficulty);
+    if (nextDifficulty !== "HARD") {
+      clearRewardedItems();
+      setIsNewChecklistRewarded(false);
+    }
+  };
+
   const handleTaskTypeChange = (type: TaskTypeOption) => {
     setTaskType(type);
+    if (type === "HABIT") {
+      clearRewardedItems();
+      setIsNewChecklistRewarded(false);
+    }
     if (type === "TODO" && !dueDate) {
       setIsHardcore(false);
     } else if (type === "HABIT" && habitType === "NEGATIVE") {
@@ -356,6 +380,7 @@ export function useCreateTaskForm({
     setMonthlyOption(next.monthlyOption);
     resetChecklist(next.checklist);
     setNewChecklistText("");
+    setIsNewChecklistRewarded(false);
   }, [
     isOpen,
     sessionKey,
@@ -371,8 +396,13 @@ export function useCreateTaskForm({
   const handleAddChecklistItem = async () => {
     const trimmed = newChecklistText.trim();
     if (!trimmed) return;
-    await addChecklistItem(trimmed);
+    const shouldReward =
+      canRewardChecklistItems &&
+      isNewChecklistRewarded &&
+      countRewardedChecklistItems(checklist) < MAX_REWARDED_SUBTASKS;
+    await addChecklistItem(trimmed, shouldReward);
     setNewChecklistText("");
+    setIsNewChecklistRewarded(false);
   };
 
   const handleRemoveChecklistItem = (index: number) => {
@@ -386,6 +416,13 @@ export function useCreateTaskForm({
     const target = checklist[index];
     if (target?.id) {
       toggleChecklistItem(target.id);
+    }
+  };
+
+  const handleToggleChecklistItemReward = (index: number) => {
+    const target = checklist[index];
+    if (target?.id) {
+      toggleChecklistItemReward(target.id);
     }
   };
 
@@ -465,6 +502,7 @@ export function useCreateTaskForm({
         isHardcoreModeEnabled: isHardcore,
         dueDate: dueDate || undefined,
         isPenaltyApplied: taskToEdit?.isPenaltyApplied,
+        checklist,
         locale,
         timeZone: useUserStore.getState().user?.timezone,
         isGamified,
@@ -555,6 +593,27 @@ export function useCreateTaskForm({
           checklistFailedCount,
           moveError,
         } = response.data;
+        const syncedRewards = calculateTaskReward({
+          taskType,
+          difficulty,
+          importanceType,
+          resetCounter,
+          repeatType,
+          currentStreak: isEditing ? (taskToEdit?.streak ?? 0) : 0,
+          isHardcoreModeEnabled: isHardcore,
+          dueDate: dueDate || undefined,
+          isPenaltyApplied: taskToEdit?.isPenaltyApplied,
+          checklist: finalChecklist,
+          locale,
+          timeZone: useUserStore.getState().user?.timezone,
+          isGamified,
+        });
+        const syncedDraftTask: Task = {
+          ...draftTask,
+          checklist: finalChecklist,
+          rewardXp: syncedRewards.xp,
+          rewardGold: syncedRewards.gold,
+        };
         if (checklistFailedCount > 0) {
           toast.error(t("checklistSyncError"));
         }
@@ -562,9 +621,8 @@ export function useCreateTaskForm({
           toast.error(moveError || t("moveTaskColumnError"));
           onSuccess?.(
             {
-              ...draftTask,
+              ...syncedDraftTask,
               columnId: originalColumnId || columnId,
-              checklist: finalChecklist,
             },
             originalColumnId || columnId,
           );
@@ -573,7 +631,7 @@ export function useCreateTaskForm({
         }
 
         toast.success(t("updateTaskSuccess"));
-        onSuccess?.({ ...draftTask, checklist: finalChecklist }, columnId);
+        onSuccess?.(syncedDraftTask, columnId);
         onClose();
         return;
       }
@@ -647,7 +705,8 @@ export function useCreateTaskForm({
     importanceType,
     setImportanceType,
     difficulty,
-    setDifficulty,
+    setDifficulty: handleDifficultyChange,
+    canRewardChecklistItems,
     priority,
     setPriority,
     dueDate,
@@ -674,11 +733,14 @@ export function useCreateTaskForm({
     checklist,
     newChecklistText,
     setNewChecklistText,
+    isNewChecklistRewarded,
+    setIsNewChecklistRewarded,
     nameInputRef,
     handleModalAnimationEnd,
     handleAddChecklistItem,
     handleRemoveChecklistItem,
     handleToggleChecklistItem,
+    handleToggleChecklistItemReward,
     handleUpdateChecklistItem,
     taskToEdit,
     handleSubmit,

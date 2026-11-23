@@ -31,13 +31,8 @@ public class DeleteChecklistItemUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrada."));
     item.validateOwnership(userIdLogado);
 
-    if (workspaceWriteGuard != null) {
-      workspaceWriteGuard.assertTaskWritable(
-          taskRepository,
-          item.getTaskId(),
-          userIdLogado,
-          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para editar checklists nele!");
-    }
+    ChecklistItemValidationHelper.assertTaskWritable(
+        taskRepository, workspaceWriteGuard, item.getTaskId(), userIdLogado);
 
     taskRepository.deleteChecklistItemById(itemId);
   }

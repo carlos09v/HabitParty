@@ -95,9 +95,21 @@ public class ChangeTaskStatusUseCase {
       boolean rewardReverted,
       int revertedXp,
       BigDecimal revertedCoins,
-      boolean streakReverted) {
+      boolean streakReverted,
+      Integer penaltyAppliedXp,
+      BigDecimal penaltyAppliedCoins) {
     public ExecutionResult(Task task, boolean rewardGranted) {
-      this(task, rewardGranted, false, 0, BigDecimal.ZERO, false);
+      this(task, rewardGranted, false, 0, BigDecimal.ZERO, false, null, null);
+    }
+
+    public ExecutionResult(
+        Task task,
+        boolean rewardGranted,
+        boolean rewardReverted,
+        int revertedXp,
+        BigDecimal revertedCoins,
+        boolean streakReverted) {
+      this(task, rewardGranted, rewardReverted, revertedXp, revertedCoins, streakReverted, null, null);
     }
   }
 
@@ -135,6 +147,9 @@ public class ChangeTaskStatusUseCase {
     User rewardedUser = null;
     UserLevel reachedLevel = null;
     ReversalResult reversal = ReversalResult.none();
+    Integer penaltyAppliedXp = null;
+    BigDecimal penaltyAppliedCoins = null;
+    List<ChecklistItem> checklistItemsToSave = List.of();
     if (newStatus == TaskStatus.COMPLETED && task.getStatus() != TaskStatus.COMPLETED) {
       User user = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
@@ -146,11 +161,14 @@ public class ChangeTaskStatusUseCase {
 
         // Se for um Todo Hardcore atrasado e a penalidade ainda não foi aplicada (ex: cron da meia-noite não rodou),
         // aplica a dedução do atraso e registra no histórico antes de creditar a recompensa tardia
+        // e antes de concluir automaticamente as etapas do checklist (preservando etapas já concluídas no prazo)
         if (task instanceof Todo todo && todo.isHardcoreModeEnabled() && todo.isOverdue(today)) {
           if (!todo.isPenaltyApplied()) {
             todo.markPenaltyApplied();
             TaskReward penalty = todo.calculatePenalty(today);
             user.applyPenalty(penalty.coins(), penalty.xp());
+            penaltyAppliedXp = penalty.xp();
+            penaltyAppliedCoins = penalty.coins();
 
             TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
                 userIdLogado, todo, penalty, TransactionType.TASK_FAILED, "Falhou no prazo: ", columnName);
@@ -162,6 +180,10 @@ public class ChangeTaskStatusUseCase {
           habit.refreshStreakForDate(today);
         } else if (task instanceof Daily daily) {
           daily.refreshStreakForDate(today);
+        }
+
+        if (task instanceof Daily || task instanceof Todo) {
+          checklistItemsToSave = task.markAllChecklistItemsCompleted();
         }
 
         TransactionType txType = switch (task.getTaskType()) {
@@ -179,11 +201,14 @@ public class ChangeTaskStatusUseCase {
         }
         task.registerCompletion(now);
         rewardedUser = user;
+      } else if (task instanceof Daily || task instanceof Todo) {
+        checklistItemsToSave = task.markAllChecklistItemsCompleted();
       }
     } else if (newStatus == TaskStatus.PENDING
         && task.getStatus() == TaskStatus.COMPLETED
         && (task instanceof Daily || task instanceof Todo)) {
       reversal = revertTaskCompletionIfClaimed(task, userIdLogado);
+      checklistItemsToSave = task.revertAutoCompletedChecklistItems();
     }
 
     // 3. Atualiza o status no Domínio
@@ -191,6 +216,9 @@ public class ChangeTaskStatusUseCase {
 
     // 4. Salva e devolve a tarefa atualizada
     Task savedTask = taskPort.save(task);
+    if (!checklistItemsToSave.isEmpty()) {
+      taskPort.saveChecklistItems(checklistItemsToSave);
+    }
 
     if (rewardedUser != null) {
       if (eventPublisher != null) {
@@ -209,7 +237,9 @@ public class ChangeTaskStatusUseCase {
         reversal.rewardReverted(),
         reversal.revertedXp(),
         reversal.revertedCoins(),
-        reversal.streakReverted());
+        reversal.streakReverted(),
+        penaltyAppliedXp,
+        penaltyAppliedCoins);
   }
 
   private ReversalResult revertTaskCompletionIfClaimed(Task task, UUID userIdLogado) {
@@ -254,9 +284,11 @@ public class ChangeTaskStatusUseCase {
 
     boolean isHard = task.getDifficulty() == TaskDifficulty.HARD;
     boolean isHardcore = task.isHardcoreModeEnabled();
-    boolean hasCompletedChecklist = task.getChecklist() != null
-        && !task.getChecklist().isEmpty()
-        && task.getChecklist().stream().allMatch(ChecklistItem::isCompleted);
+    boolean hasCompletedChecklist = latestTx.getChecklistCompletedSnapshot()
+        .orElseGet(() -> task.getChecklist() != null
+            && !task.getChecklist().isEmpty()
+            && task.getChecklist().stream().allMatch(ChecklistItem::isCompleted));
+    int effortUnits = latestTx.getEffortUnitsSnapshot().orElse(1);
     boolean wasOnTimeTodo = false;
     if (task instanceof Todo todo && todo.getDueDate().isPresent() && !todo.isPenaltyApplied()) {
       LocalDate completionDate = todo.getCompletedAt() != null
@@ -273,7 +305,8 @@ public class ChangeTaskStatusUseCase {
             isHard,
             isHardcore,
             hasCompletedChecklist,
-            wasOnTimeTodo)
+            wasOnTimeTodo,
+            effortUnits)
         : new TaskReversalOutcome(0, BigDecimal.ZERO, false);
 
     if (latestTx.getId() != null) {
