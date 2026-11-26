@@ -81,7 +81,7 @@ export function resolveCatalogItemVisuals({
   const typeKey = toRewardTypeMessageKey(type);
   const typeMeta = REWARD_TYPE_META[typeKey as RewardType];
   const RewardIcon = getRewardIcon(iconName, type);
-  const isMystery = isMysteryBoxReward(type, iconName);
+  const isMystery = isMysteryBoxReward(type);
   const mysteryTier =
     includeMysteryTier && isMystery ? getMysteryBoxTier(packageLevel) : null;
 

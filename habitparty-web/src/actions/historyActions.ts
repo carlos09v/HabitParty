@@ -1,67 +1,28 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { invalidateHistoryDomainTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
 import { serverApi } from "@/api/server";
-import type { GetHistoryParams } from "@/services/historyService";
 
-/**
- * Exporta o extrato de transações em formato CSV diretamente pelo backend,
- * respeitando os filtros ativos (aba, período e busca) e garantindo sanitização contra CSV Injection.
- */
-export async function exportTransactionsCsvAction(
-  filters?: Pick<GetHistoryParams, "tab" | "period" | "search">,
-): Promise<ActionState<string>> {
-  const t = await getTranslations("history.actions");
-  try {
-    const query: Record<string, string> = {};
-    if (filters?.tab && filters.tab !== "ALL") {
-      query.tab = filters.tab;
-    }
-    if (filters?.period && filters.period !== "ALL") {
-      query.period = filters.period;
-    }
-    if (filters?.search?.trim()) {
-      query.search = filters.search.trim();
-    }
-
-    const { data, error } = await serverApi.GET("/transactions/export", {
-      params: {
-        query,
-      },
-      parseAs: "text",
-    });
-
-    if (error || typeof data !== "string") {
-      return {
-        success: false,
-        error: getErrorMessage(error, t("exportCsvFailed")),
-      };
-    }
-
-    return { success: true, data };
-  } catch (err) {
-    console.error("[HistoryAction:ExportCsv]", err);
-    return {
-      success: false,
-      error: t("exportCsvUnexpectedError"),
-    };
-  }
+export interface TransactionBatchMutationResult {
+  affectedCount: number;
+  ids: string[];
 }
 
 /**
- * Exclui vários registros de transação de uma vez (seleção múltipla no Histórico)
+ * Oculta logicamente vários registros de transação de uma vez (seleção múltipla no Histórico).
+ * Preserva a integridade operacional de streaks, limites diários e retrospectiva.
  */
 export async function deleteTransactionsBatchAction(
   ids: string[],
-): Promise<ActionState<void>> {
+): Promise<ActionState<TransactionBatchMutationResult>> {
   const t = await getTranslations("history.actions");
   if (ids.length === 0) {
-    return { success: true, data: undefined };
+    return { success: true, data: { affectedCount: 0, ids: [] } };
   }
   try {
-    const { error } = await serverApi.DELETE("/transactions/batch", {
+    const { data, error } = await serverApi.DELETE("/transactions/batch", {
       body: { ids },
     });
 
@@ -72,9 +33,14 @@ export async function deleteTransactionsBatchAction(
       };
     }
 
-    updateTag("transactions");
-    updateTag("retrospective");
-    return { success: true, data: undefined };
+    invalidateHistoryDomainTags();
+    return {
+      success: true,
+      data: {
+        affectedCount: data?.affectedCount ?? ids.length,
+        ids,
+      },
+    };
   } catch (err) {
     console.error("[HistoryAction:DeleteBatch]", err);
     return {
@@ -85,7 +51,7 @@ export async function deleteTransactionsBatchAction(
 }
 
 /**
- * Exclui um registro específico de transação
+ * Oculta logicamente um registro específico de transação do extrato.
  */
 export async function deleteTransactionAction(
   id: string,
@@ -105,14 +71,52 @@ export async function deleteTransactionAction(
       };
     }
 
-    updateTag("transactions");
-    updateTag("retrospective");
+    invalidateHistoryDomainTags();
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[HistoryAction:Delete]", err);
     return {
       success: false,
       error: t("deleteUnexpectedError"),
+    };
+  }
+}
+
+/**
+ * Restaura registros ocultados do extrato (suporte à ação Desfazer / Undo).
+ */
+export async function restoreTransactionsBatchAction(
+  ids: string[],
+): Promise<ActionState<TransactionBatchMutationResult>> {
+  const t = await getTranslations("history.actions");
+  if (ids.length === 0) {
+    return { success: true, data: { affectedCount: 0, ids: [] } };
+  }
+  try {
+    const { data, error } = await serverApi.POST("/transactions/restore", {
+      body: { ids },
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("restoreFailed")),
+      };
+    }
+
+    invalidateHistoryDomainTags();
+    return {
+      success: true,
+      data: {
+        affectedCount: data?.affectedCount ?? ids.length,
+        ids,
+      },
+    };
+  } catch (err) {
+    console.error("[HistoryAction:RestoreBatch]", err);
+    return {
+      success: false,
+      error: t("restoreUnexpectedError"),
     };
   }
 }

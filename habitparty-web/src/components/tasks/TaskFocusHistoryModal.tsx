@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  AlertCircle,
   Calendar,
   CheckCircle2,
   FileText,
   History,
   Loader2,
   Pencil,
+  RotateCcw,
   Sparkles,
   Timer,
   Trash2,
@@ -25,7 +27,6 @@ import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { dispatchTaskFocusRecorded } from "@/hooks/useFocusTaskSync";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
@@ -38,11 +39,12 @@ import type {
 import type { Task } from "@/types/task";
 import { formatCoins, formatDateTime } from "@/utils";
 import {
-  formatDurationMinutes,
+  formatFocusMinutes,
   formatFocusRecordDuration,
 } from "@/utils/focusFormatters";
-import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
 import { mapFocusRecords } from "@/utils/focusMapper";
+import { resolveFocusRecordTitle } from "@/utils/focusRecordDisplay";
+import { executeDeleteFocusRecord } from "@/utils/focusRecordMutations";
 
 const FocusManualRecordModal = dynamic(
   () =>
@@ -56,6 +58,7 @@ export interface TaskFocusHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
+  isReadOnly?: boolean;
   onTaskUpdate?: (updatedTask: Task) => void;
 }
 
@@ -63,6 +66,7 @@ export function TaskFocusHistoryModal({
   isOpen,
   onClose,
   task,
+  isReadOnly = false,
   onTaskUpdate,
 }: TaskFocusHistoryModalProps) {
   const t = useTranslations("tasks.detailsPopover.focusHistoryModal");
@@ -77,10 +81,13 @@ export function TaskFocusHistoryModal({
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadSeqRef = useRef(0);
 
   const [activities, setActivities] = useState<FocusActivity[]>([]);
   const activitiesRef = useRef<FocusActivity[]>([]);
   const [dailyQuotaRecords, setDailyQuotaRecords] = useState<FocusRecord[]>([]);
+  const quotaRecordsLoadedRef = useRef(false);
   const [editingRecord, setEditingRecord] = useState<FocusRecord | null>(null);
 
   const [localMinutes, setLocalMinutes] = useState(
@@ -103,9 +110,12 @@ export function TaskFocusHistoryModal({
   const loadPage = useCallback(
     async (pageToLoad: number, knownActivities?: FocusActivity[]) => {
       if (!task?.id) return;
+      const reqSeq = ++loadSeqRef.current;
+      setLoadError(null);
       setIsLoading(true);
       try {
         const res = await getTaskFocusRecords(task.id, pageToLoad);
+        if (reqSeq !== loadSeqRef.current) return;
         if (res.success && res.data) {
           setRecords(
             mapFocusRecords(
@@ -116,46 +126,100 @@ export function TaskFocusHistoryModal({
           );
           setTotalPages(res.data.totalPages);
           setTotalElements(res.data.totalElements);
+        } else {
+          setLoadError(
+            (!res.success ? res.error : undefined) || t("loadErrorTitle"),
+          );
+        }
+      } catch {
+        if (reqSeq === loadSeqRef.current) {
+          setLoadError(t("loadErrorTitle"));
         }
       } finally {
-        setIsLoading(false);
+        if (reqSeq === loadSeqRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [task?.id, userTimeZone],
+    [task?.id, userTimeZone, t],
   );
 
   useEffect(() => {
-    if (!isOpen || !task?.id) return;
+    if (!isOpen || !task?.id) {
+      loadSeqRef.current += 1;
+      quotaRecordsLoadedRef.current = false;
+      setLoadError(null);
+      return;
+    }
     let cancelled = false;
+    const reqSeq = ++loadSeqRef.current;
+    quotaRecordsLoadedRef.current = false;
     setPage(0);
+    setLoadError(null);
+    setIsLoading(true);
 
     void (async () => {
-      const [actRes, quotaRes] = await Promise.all([
-        listFocusActivities(),
-        getFocusRecordsPage(0, 100),
-      ]);
-      if (cancelled) return;
-      const loadedActivities = actRes.success && actRes.data ? actRes.data : [];
-      if (actRes.success && actRes.data) {
-        activitiesRef.current = actRes.data;
-        setActivities(actRes.data);
+      try {
+        const [actRes, recordsRes] = await Promise.all([
+          listFocusActivities(),
+          getTaskFocusRecords(task.id, 0),
+        ]);
+        if (cancelled || reqSeq !== loadSeqRef.current) return;
+        const loadedActivities =
+          actRes.success && actRes.data ? actRes.data : [];
+        if (actRes.success && actRes.data) {
+          activitiesRef.current = actRes.data;
+          setActivities(actRes.data);
+        }
+        if (recordsRes.success && recordsRes.data) {
+          setRecords(
+            mapFocusRecords(
+              recordsRes.data.records,
+              loadedActivities,
+              userTimeZone,
+            ),
+          );
+          setTotalPages(recordsRes.data.totalPages);
+          setTotalElements(recordsRes.data.totalElements);
+        } else {
+          setLoadError(
+            (!recordsRes.success ? recordsRes.error : undefined) ||
+              t("loadErrorTitle"),
+          );
+        }
+      } catch {
+        if (!cancelled && reqSeq === loadSeqRef.current) {
+          setLoadError(t("loadErrorTitle"));
+        }
+      } finally {
+        if (!cancelled && reqSeq === loadSeqRef.current) {
+          setIsLoading(false);
+        }
       }
-      if (quotaRes.success && quotaRes.data) {
-        setDailyQuotaRecords(
-          mapFocusRecords(
-            quotaRes.data.records,
-            loadedActivities,
-            userTimeZone,
-          ),
-        );
-      }
-      await loadPage(0, loadedActivities);
     })();
 
     return () => {
       cancelled = true;
+      loadSeqRef.current += 1;
     };
-  }, [isOpen, task?.id, loadPage, userTimeZone]);
+  }, [isOpen, task?.id, userTimeZone, t]);
+
+  const ensureDailyQuotaLoaded = useCallback(async () => {
+    if (quotaRecordsLoadedRef.current) return;
+    quotaRecordsLoadedRef.current = true;
+    const quotaRes = await getFocusRecordsPage(0, 100);
+    if (quotaRes.success && quotaRes.data) {
+      setDailyQuotaRecords(
+        mapFocusRecords(
+          quotaRes.data.records,
+          activitiesRef.current,
+          userTimeZone,
+        ),
+      );
+    } else {
+      quotaRecordsLoadedRef.current = false;
+    }
+  }, [userTimeZone]);
 
   const focusableTasksForModal = useMemo<FocusableTaskItem[]>(() => {
     if (!task) return [];
@@ -178,11 +242,13 @@ export function TaskFocusHistoryModal({
   };
 
   const handleRequestEdit = (record: FocusRecord) => {
+    if (isReadOnly) return;
     setEditingRecord(record);
+    void ensureDailyQuotaLoaded();
   };
 
   const handleRecordUpdated = (updatedRecord: FocusRecord) => {
-    if (!editingRecord || !task) return;
+    if (isReadOnly || !editingRecord || !task) return;
     const oldMins = Math.max(1, editingRecord.durationMinutes);
     const oldPomos = editingRecord.completedPomos ?? 0;
 
@@ -190,6 +256,8 @@ export function TaskFocusHistoryModal({
       prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)),
     );
 
+    // `applyUpdatedFocusRecordSideEffects` (no FocusManualRecordModal) já disparou
+    // `dispatchTaskFocusRecorded` com o delta exato para tarefa antiga e nova — não duplicar aqui.
     if (updatedRecord.taskId !== task.id) {
       const nextMins = Math.max(0, localMinutes - oldMins);
       const nextCycles = Math.max(0, localCycles - oldPomos);
@@ -213,8 +281,10 @@ export function TaskFocusHistoryModal({
 
     const newMins = Math.max(1, updatedRecord.durationMinutes);
     const newPomos = updatedRecord.completedPomos ?? 0;
-    const nextMins = Math.max(0, localMinutes - oldMins + newMins);
-    const nextCycles = Math.max(0, localCycles - oldPomos + newPomos);
+    const deltaMins = newMins - oldMins;
+    const deltaPomos = newPomos - oldPomos;
+    const nextMins = Math.max(0, localMinutes + deltaMins);
+    const nextCycles = Math.max(0, localCycles + deltaPomos);
     setLocalMinutes(nextMins);
     setLocalCycles(nextCycles);
     onTaskUpdate?.({
@@ -226,26 +296,31 @@ export function TaskFocusHistoryModal({
   };
 
   const handleRequestDelete = (record: FocusRecord) => {
+    if (isReadOnly) return;
     setDeleteHistory(false);
     setPendingDeleteRecord(record);
   };
 
   const handleConfirmDelete = async () => {
-    if (!pendingDeleteRecord || !task) return;
+    if (isReadOnly || !pendingDeleteRecord || !task) return;
+    const recordToDelete = pendingDeleteRecord;
     setIsDeleting(true);
     try {
-      await executeDeleteFocusRecord(
-        pendingDeleteRecord.id,
+      const deleted = await executeDeleteFocusRecord(
+        recordToDelete.id,
         {
           success: t("deleteRecordSuccess"),
           error: t("deleteRecordError"),
         },
         () => {
-          const removedMins = Math.max(1, pendingDeleteRecord.durationMinutes);
-          const removedPomos = pendingDeleteRecord.completedPomos ?? 0;
+          const removedMins = Math.max(1, recordToDelete.durationMinutes);
+          const removedPomos = recordToDelete.completedPomos ?? 0;
           const nextMins = Math.max(0, localMinutes - removedMins);
           const nextCycles = Math.max(0, localCycles - removedPomos);
 
+          setDailyQuotaRecords((prev) =>
+            prev.filter((r) => r.id !== recordToDelete.id),
+          );
           setLocalMinutes(nextMins);
           setLocalCycles(nextCycles);
 
@@ -270,9 +345,11 @@ export function TaskFocusHistoryModal({
           }
         },
         deleteHistory,
-        pendingDeleteRecord,
+        recordToDelete,
       );
-      setPendingDeleteRecord(null);
+      if (deleted) {
+        setPendingDeleteRecord(null);
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -306,7 +383,7 @@ export function TaskFocusHistoryModal({
                   {t("totalAccumulated")}
                 </span>
                 <span className="text-xs font-bold text-neutral-100 truncate">
-                  {formatDurationMinutes(localMinutes)}
+                  {formatFocusMinutes(localMinutes)}
                 </span>
               </div>
             </div>
@@ -351,6 +428,25 @@ export function TaskFocusHistoryModal({
                 />
                 <span className="text-xs">{t("loading")}</span>
               </div>
+            ) : loadError ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-xl border border-dashed border-red-500/35 bg-red-500/5 gap-2.5">
+                <AlertCircle
+                  size={26}
+                  className="text-danger-400"
+                  aria-hidden="true"
+                />
+                <span className="text-xs font-bold text-neutral-200">
+                  {loadError}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void loadPage(page)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface hover:bg-surface-hover border border-neutral-700 dark:border-white/15 text-neutral-100 transition-colors cursor-pointer"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  <span>{t("retryButton")}</span>
+                </button>
+              </div>
             ) : records.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-card/40">
                 <History
@@ -382,7 +478,7 @@ export function TaskFocusHistoryModal({
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-neutral-100 truncate">
                           {
-                            resolveFocusRecordDisplay(rec, t("directTaskFocus"))
+                            resolveFocusRecordTitle(rec, t("directTaskFocus"))
                               .title
                           }
                         </span>
@@ -438,27 +534,29 @@ export function TaskFocusHistoryModal({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleRequestEdit(rec)}
-                        title={t("editRecordAria")}
-                        aria-label={t("editRecordAria")}
-                        className="p-1.5 rounded-lg border border-transparent hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-amber-500/10 dark:hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 transition-colors cursor-pointer shrink-0"
-                      >
-                        <Pencil size={14} aria-hidden="true" />
-                      </button>
+                    {!isReadOnly && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleRequestEdit(rec)}
+                          title={t("editRecordAria")}
+                          aria-label={t("editRecordAria")}
+                          className="p-1.5 rounded-lg border border-transparent hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-amber-500/10 dark:hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 transition-colors cursor-pointer shrink-0"
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRequestDelete(rec)}
-                        title={t("deleteRecordAria")}
-                        aria-label={t("deleteRecordAria")}
-                        className="p-1.5 rounded-lg border border-transparent hover:border-red-500/40 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-colors cursor-pointer shrink-0"
-                      >
-                        <Trash2 size={14} aria-hidden="true" />
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDelete(rec)}
+                          title={t("deleteRecordAria")}
+                          aria-label={t("deleteRecordAria")}
+                          className="p-1.5 rounded-lg border border-transparent hover:border-red-500/40 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-colors cursor-pointer shrink-0"
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -481,7 +579,7 @@ export function TaskFocusHistoryModal({
       </BaseModal>
 
       {/* Modal de Edição Completa de Registro */}
-      {editingRecord && (
+      {!isReadOnly && editingRecord && (
         <FocusManualRecordModal
           isOpen={editingRecord !== null}
           onClose={() => setEditingRecord(null)}
@@ -495,7 +593,7 @@ export function TaskFocusHistoryModal({
       )}
 
       {/* Confirmação de Exclusão de Registro */}
-      {pendingDeleteRecord && (
+      {!isReadOnly && pendingDeleteRecord && (
         <ConfirmationModal
           isOpen={pendingDeleteRecord !== null}
           onClose={() => !isDeleting && setPendingDeleteRecord(null)}
@@ -505,7 +603,7 @@ export function TaskFocusHistoryModal({
           description={
             <p>
               {t.rich("deleteConfirmDescription", {
-                duration: formatDurationMinutes(
+                duration: formatFocusMinutes(
                   pendingDeleteRecord.durationMinutes,
                 ),
                 strong: (chunks) => (

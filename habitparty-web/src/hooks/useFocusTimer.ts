@@ -1,17 +1,17 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import {
-  setFocusTimerTranslators,
-  useFocusTimerStore,
-} from "@/store/focusTimerStore";
-import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
-import type { FocusTimerControlsState, FocusTimerState } from "@/types/focus";
+  DEFAULT_CYCLES_UNTIL_LONG_BREAK,
+  DEFAULT_POMO_MINUTES,
+} from "@/constants/focusRules";
+import { useIsClient } from "@/hooks/useIsClient";
+import { registerFocusSessionSavedCallback } from "@/store/focus/focusTimerState";
+import { useFocusPreferencesStore } from "@/store/focusPreferencesStore";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import {
   canCompleteFocusSession,
   formatFocusDisplayTime,
-  getFocusOvertimeSeconds,
   getFocusProgressPercent,
   getFocusTimerDerivedState,
   getNextFocusBreakMinutes,
@@ -19,13 +19,96 @@ import {
   isFocusSessionRewardCapped,
   isPartialPomoSession,
 } from "@/utils/focusFormatters";
-import { setFocusBrowserTranslations } from "@/utils/focusTimerBrowser";
-
-let lastRegisteredStoreTranslator: unknown = null;
-let lastRegisteredNotificationsTranslator: unknown = null;
 
 interface UseFocusTimerOptions {
   onSessionSaved?: () => void;
+}
+
+const STATIC_FOCUS_TIMER_ACTIONS = {
+  toggleTimer: () => useFocusTimerStore.getState().toggleTimer(),
+  pauseTimer: () => useFocusTimerStore.getState().pauseTimer(),
+  resumeTimer: () => useFocusTimerStore.getState().resumeTimer(),
+  resetTimer: () => useFocusTimerStore.getState().resetTimer(),
+  stopFromWidget: () => useFocusTimerStore.getState().stopFromWidget(),
+  skipBreak: () => useFocusTimerStore.getState().skipBreak(),
+  startBreak: () => useFocusTimerStore.getState().startBreak(),
+  completeSession: (
+    notes?: string,
+    options?: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["completeSession"]
+    >[1],
+  ) => useFocusTimerStore.getState().completeSession(notes, options),
+  changeMode: (
+    newMode: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["changeMode"]
+    >[0],
+  ) => useFocusTimerStore.getState().changeMode(newMode),
+  changeDuration: (minutes: number) =>
+    useFocusTimerStore.getState().changeDuration(minutes),
+  startFocusActivity: (
+    activity: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["startFocusActivity"]
+    >[0],
+  ) => useFocusTimerStore.getState().startFocusActivity(activity),
+  startFocusItem: (
+    item: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["startFocusItem"]
+    >[0],
+  ) => useFocusTimerStore.getState().startFocusItem(item),
+  startFocusTask: (task: { id: string; title: string }) =>
+    useFocusTimerStore.getState().startFocusTask(task),
+  selectActivityTarget: (
+    activity: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["selectActivityTarget"]
+    >[0],
+  ) => useFocusTimerStore.getState().selectActivityTarget(activity),
+  selectItemTarget: (
+    item: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["selectItemTarget"]
+    >[0],
+  ) => useFocusTimerStore.getState().selectItemTarget(item),
+  selectTaskTarget: (task: { id: string; title: string } | null) =>
+    useFocusTimerStore.getState().selectTaskTarget(task),
+  unlinkTaskFromTarget: () =>
+    useFocusTimerStore.getState().unlinkTaskFromTarget(),
+  completeLinkedTask: (taskId: string, taskName?: string) =>
+    useFocusTimerStore.getState().completeLinkedTask(taskId, taskName),
+  resetTarget: () => useFocusTimerStore.getState().resetTarget(),
+  transferTarget: (
+    activity: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["transferTarget"]
+    >[0],
+  ) => useFocusTimerStore.getState().transferTarget(activity),
+  linkActivityToTask: (
+    activity: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["linkActivityToTask"]
+    >[0],
+  ) => useFocusTimerStore.getState().linkActivityToTask(activity),
+  syncTargetMetadata: (
+    metadata: Parameters<
+      ReturnType<typeof useFocusTimerStore.getState>["syncTargetMetadata"]
+    >[0],
+  ) => useFocusTimerStore.getState().syncTargetMetadata(metadata),
+} as const;
+
+function useFocusBreakPreferences() {
+  const isClient = useIsClient();
+  const shortBreakMinutes = useFocusPreferencesStore(
+    (s) => s.shortBreakMinutes,
+  );
+  const longBreakMinutes = useFocusPreferencesStore((s) => s.longBreakMinutes);
+  const cyclesUntilLongBreak = useFocusPreferencesStore(
+    (s) => s.cyclesUntilLongBreak,
+  );
+
+  return {
+    prefs: isClient
+      ? { shortBreakMinutes, longBreakMinutes, cyclesUntilLongBreak }
+      : undefined,
+    cyclesPerBlock: isClient
+      ? Math.max(2, cyclesUntilLongBreak)
+      : DEFAULT_CYCLES_UNTIL_LONG_BREAK,
+  };
 }
 
 /**
@@ -40,6 +123,80 @@ export function useFocusSessionNotes() {
 }
 
 /**
+ * Ações estáveis da store do timer de foco em objeto estático no nível do módulo
+ * (zero alocações e zero avaliações de seletores Zustand a 1Hz por consumidor).
+ */
+export function useFocusTimerActions() {
+  return STATIC_FOCUS_TIMER_ACTIONS;
+}
+
+function useRegisterFocusSessionSavedCallback(onSessionSaved?: () => void) {
+  useEffect(() => {
+    if (!onSessionSaved) return;
+    return registerFocusSessionSavedCallback(onSessionSaved);
+  }, [onSessionSaved]);
+}
+
+/**
+ * Fatia enxuta de estado para o `FocusContainer` (protegida contra mismatch de hidratação SSR).
+ */
+export function useFocusContainerTimerSlice({
+  onSessionSaved,
+}: UseFocusTimerOptions = {}) {
+  useRegisterFocusSessionSavedCallback(onSessionSaved);
+  const isClient = useIsClient();
+
+  const rawIsActive = useFocusTimerStore((s) => s.isActive);
+  const rawIsPaused = useFocusTimerStore((s) => s.isPaused);
+  const rawMode = useFocusTimerStore((s) => s.mode);
+  const rawPhase = useFocusTimerStore((s) => s.phase);
+  const rawTarget = useFocusTimerStore((s) => s.target);
+  const rawHasElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds > 0);
+
+  const isActive = isClient ? rawIsActive : false;
+  const isPaused = isClient ? rawIsPaused : false;
+  const mode = isClient ? rawMode : "POMO";
+  const phase = isClient ? rawPhase : "WORK";
+  const target = isClient ? rawTarget : null;
+  const hasElapsedSeconds = isClient ? rawHasElapsedSeconds : false;
+
+  return {
+    isActive,
+    isPaused,
+    isRunning: isActive && !isPaused,
+    mode,
+    phase,
+    target,
+    hasElapsedSeconds,
+    ...STATIC_FOCUS_TIMER_ACTIONS,
+  };
+}
+
+/**
+ * Fatia mínima para o `FocusMain` (protegida contra mismatch de hidratação SSR).
+ */
+export function useFocusMainTimerSlice() {
+  const isClient = useIsClient();
+  const rawIsActive = useFocusTimerStore((s) => s.isActive);
+  const rawIsPaused = useFocusTimerStore((s) => s.isPaused);
+  const rawTarget = useFocusTimerStore((s) => s.target);
+
+  const isActive = isClient ? rawIsActive : false;
+  const isPaused = isClient ? rawIsPaused : false;
+  const target = isClient ? rawTarget : null;
+
+  return {
+    isActive,
+    isPaused,
+    isRunning: isActive && !isPaused,
+    target,
+    toggleTimer: STATIC_FOCUS_TIMER_ACTIONS.toggleTimer,
+    resetTarget: STATIC_FOCUS_TIMER_ACTIONS.resetTarget,
+    selectActivityTarget: STATIC_FOCUS_TIMER_ACTIONS.selectActivityTarget,
+  };
+}
+
+/**
  * Hook com foco em CONTROLES e AÇÕES do Timer.
  * NÃO se inscreve nas variáveis que sofrem tick a cada 1 segundo (elapsedSeconds, secondsRemaining)
  * nem nas anotações de texto (sessionNotes).
@@ -48,116 +205,53 @@ export function useFocusSessionNotes() {
 export function useFocusTimerControls({
   onSessionSaved,
 }: UseFocusTimerOptions = {}) {
-  const tStore = useTranslations("focus.store");
-  const tNotifications = useTranslations("focus.notifications");
+  useRegisterFocusSessionSavedCallback(onSessionSaved);
+  const isClient = useIsClient();
 
-  const isActive = useFocusTimerStore((s) => s.isActive);
-  const isPaused = useFocusTimerStore((s) => s.isPaused);
-  const mode = useFocusTimerStore((s) => s.mode);
-  const phase = useFocusTimerStore((s) => s.phase);
-  const target = useFocusTimerStore((s) => s.target);
-  const totalDurationSeconds = useFocusTimerStore(
+  const rawIsActive = useFocusTimerStore((s) => s.isActive);
+  const rawIsPaused = useFocusTimerStore((s) => s.isPaused);
+  const rawMode = useFocusTimerStore((s) => s.mode);
+  const rawPhase = useFocusTimerStore((s) => s.phase);
+  const rawTarget = useFocusTimerStore((s) => s.target);
+  const rawTotalDurationSeconds = useFocusTimerStore(
     (s) => s.totalDurationSeconds,
   );
-  const startedAt = useFocusTimerStore((s) => s.startedAt);
-  const hasElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds > 0);
-  const canComplete = useFocusTimerStore((s) => canCompleteFocusSession(s));
-  const isPartialPomo = useFocusTimerStore((s) => isPartialPomoSession(s));
-  const isOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
-  const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
-  const isCompletingLinkedTask = useFocusTimerStore(
+  const rawHasElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds > 0);
+  const rawCanComplete = useFocusTimerStore((s) => canCompleteFocusSession(s));
+  const rawIsPartialPomo = useFocusTimerStore((s) => isPartialPomoSession(s));
+  const rawIsOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
+  const rawIsSavingSession = useFocusTimerStore((s) => s.isSavingSession);
+  const rawIsCompletingLinkedTask = useFocusTimerStore(
     (s) => s.isCompletingLinkedTask,
   );
-  const isSessionRewardCapped = useFocusTimerStore((s) =>
+  const rawIsSessionRewardCapped = useFocusTimerStore((s) =>
     isFocusSessionRewardCapped(s),
   );
-  const nextBreakMinutes = useFocusTimerStore((s) =>
-    getNextFocusBreakMinutes(s.completedCycles),
+  const rawCompletedCycles = useFocusTimerStore((s) => s.completedCycles);
+  const { prefs: breakPrefs } = useFocusBreakPreferences();
+
+  const isActive = isClient ? rawIsActive : false;
+  const isPaused = isClient ? rawIsPaused : false;
+  const mode = isClient ? rawMode : "POMO";
+  const phase = isClient ? rawPhase : "WORK";
+  const target = isClient ? rawTarget : null;
+  const totalDurationSeconds = isClient
+    ? rawTotalDurationSeconds
+    : DEFAULT_POMO_MINUTES * 60;
+  const hasElapsedSeconds = isClient ? rawHasElapsedSeconds : false;
+  const canComplete = isClient ? rawCanComplete : false;
+  const isPartialPomo = isClient ? rawIsPartialPomo : false;
+  const isOvertime = isClient ? rawIsOvertime : false;
+  const isSavingSession = isClient ? rawIsSavingSession : false;
+  const isCompletingLinkedTask = isClient ? rawIsCompletingLinkedTask : false;
+  const isSessionRewardCapped = isClient ? rawIsSessionRewardCapped : false;
+  const completedCycles = isClient ? rawCompletedCycles : 0;
+  const nextBreakMinutes = getNextFocusBreakMinutes(
+    completedCycles,
+    breakPrefs,
   );
-
-  const toggleTimer = useFocusTimerStore((s) => s.toggleTimer);
-  const pauseTimer = useFocusTimerStore((s) => s.pauseTimer);
-  const resumeTimer = useFocusTimerStore((s) => s.resumeTimer);
-  const resetTimer = useFocusTimerStore((s) => s.resetTimer);
-  const skipBreak = useFocusTimerStore((s) => s.skipBreak);
-  const startBreak = useFocusTimerStore((s) => s.startBreak);
-  const completeSession = useFocusTimerStore((s) => s.completeSession);
-  const changeMode = useFocusTimerStore((s) => s.changeMode);
-  const changeDuration = useFocusTimerStore((s) => s.changeDuration);
-  const startFocusActivity = useFocusTimerStore((s) => s.startFocusActivity);
-  const startFocusItem = useFocusTimerStore((s) => s.startFocusItem);
-  const startFocusTask = useFocusTimerStore((s) => s.startFocusTask);
-  const selectActivityTarget = useFocusTimerStore(
-    (s) => s.selectActivityTarget,
-  );
-  const selectItemTarget = useFocusTimerStore((s) => s.selectItemTarget);
-  const selectTaskTarget = useFocusTimerStore((s) => s.selectTaskTarget);
-  const unlinkTaskFromTarget = useFocusTimerStore(
-    (s) => s.unlinkTaskFromTarget,
-  );
-  const completeLinkedTask = useFocusTimerStore((s) => s.completeLinkedTask);
-  const resetTarget = useFocusTimerStore((s) => s.resetTarget);
-  const transferTarget = useFocusTimerStore((s) => s.transferTarget);
-  const linkActivityToTask = useFocusTimerStore((s) => s.linkActivityToTask);
-  const syncTargetMetadata = useFocusTimerStore((s) => s.syncTargetMetadata);
-
-  const isSoundEnabled = useSoundPreferencesStore((s) => s.timerSoundsEnabled);
-  const timerSoundType = useSoundPreferencesStore((s) => s.timerSoundType);
-  const toggleSound = useFocusTimerStore((s) => s.toggleSound);
-  const setTimerSoundType = useFocusTimerStore((s) => s.setTimerSoundType);
-  const setOnSessionSavedCallback = useFocusTimerStore(
-    (s) => s.setOnSessionSavedCallback,
-  );
-
-  useEffect(() => {
-    if (
-      lastRegisteredStoreTranslator === tStore &&
-      lastRegisteredNotificationsTranslator === tNotifications
-    ) {
-      return;
-    }
-    lastRegisteredStoreTranslator = tStore;
-    lastRegisteredNotificationsTranslator = tNotifications;
-    setFocusTimerTranslators({
-      store: (key, values) => tStore(key as never, values as never),
-      notifications: (key, values) =>
-        tNotifications(key as never, values as never),
-    });
-    setFocusBrowserTranslations({
-      defaultDocumentTitle: tNotifications("defaultDocumentTitle"),
-      titlePausedPrefix: tNotifications("titlePausedPrefix"),
-      titleBreakPrefix: tNotifications("titleBreakPrefix"),
-      titleFocusPrefix: tNotifications("titleFocusPrefix"),
-      titleOvertimePrefix: tNotifications("titleOvertimePrefix"),
-    });
-  }, [tStore, tNotifications]);
-
-  useEffect(() => {
-    if (onSessionSaved) {
-      setOnSessionSavedCallback(onSessionSaved);
-    }
-  }, [onSessionSaved, setOnSessionSavedCallback]);
-
-  const controlsState: FocusTimerControlsState = {
-    isActive,
-    isPaused,
-    mode,
-    phase,
-    target,
-    totalDurationSeconds,
-    startedAt,
-    hasElapsedSeconds,
-    canComplete,
-    isPartialPomo,
-    isOvertime,
-    isSavingSession,
-    isCompletingLinkedTask,
-    isSessionRewardCapped,
-  };
 
   return {
-    // Estado livre de ticking e livre de keystrokes
-    controlsState,
     isActive,
     isPaused,
     isRunning: isActive && !isPaused,
@@ -165,7 +259,6 @@ export function useFocusTimerControls({
     phase,
     target,
     totalDurationSeconds,
-    startedAt,
     hasElapsedSeconds,
     canComplete,
     isPartialPomo,
@@ -174,76 +267,58 @@ export function useFocusTimerControls({
     isCompletingLinkedTask,
     isSessionRewardCapped,
     nextBreakMinutes,
-
-    // Preferências de som sincronizadas com soundPreferencesStore
-    isSoundEnabled,
-    timerSoundType,
-    toggleSound,
-    setTimerSoundType,
-
-    // Ações
-    toggleTimer,
-    pauseTimer,
-    resumeTimer,
-    resetTimer,
-    skipBreak,
-    startBreak,
-    completeSession,
-    changeMode,
-    changeDuration,
-    startFocusActivity,
-    startFocusItem,
-    startFocusTask,
-    selectActivityTarget,
-    selectItemTarget,
-    selectTaskTarget,
-    unlinkTaskFromTarget,
-    completeLinkedTask,
-    resetTarget,
-    transferTarget,
-    linkActivityToTask,
-    syncTargetMetadata,
+    ...STATIC_FOCUS_TIMER_ACTIONS,
   };
 }
 
 /**
  * Hook para componentes que exibem a CONTAGEM EM TEMPO REAL (a cada 1 segundo).
- * Usado exclusivamente em componentes-folha visuais (FocusStageTimerCircle, SidebarFocusWidget).
+ * Usado exclusivamente em componentes-folha visuais (FocusStageTimerCircle, SidebarFocusWidget, FocusPipWidget).
  */
 export function useFocusTimerDisplay() {
-  const secondsRemaining = useFocusTimerStore((s) => s.secondsRemaining);
-  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
-  const totalDurationSeconds = useFocusTimerStore(
+  const isClient = useIsClient();
+  const rawSecondsRemaining = useFocusTimerStore((s) => s.secondsRemaining);
+  const rawElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  const rawTotalDurationSeconds = useFocusTimerStore(
     (s) => s.totalDurationSeconds,
   );
-  const mode = useFocusTimerStore((s) => s.mode);
-  const phase = useFocusTimerStore((s) => s.phase);
-  const target = useFocusTimerStore((s) => s.target);
-  const isActive = useFocusTimerStore((s) => s.isActive);
-  const isPaused = useFocusTimerStore((s) => s.isPaused);
-  const completedCycles = useFocusTimerStore((s) => s.completedCycles);
+  const rawMode = useFocusTimerStore((s) => s.mode);
+  const rawPhase = useFocusTimerStore((s) => s.phase);
+  const rawTarget = useFocusTimerStore((s) => s.target);
+  const rawIsActive = useFocusTimerStore((s) => s.isActive);
+  const rawIsPaused = useFocusTimerStore((s) => s.isPaused);
+  const rawCompletedCycles = useFocusTimerStore((s) => s.completedCycles);
+  const { prefs: breakPrefs, cyclesPerBlock } = useFocusBreakPreferences();
 
-  const derived = getFocusTimerDerivedState({
-    isActive,
-    isPaused,
-    mode,
-    phase,
-    secondsRemaining,
-    elapsedSeconds,
-    totalDurationSeconds,
-    completedCycles,
-    target,
-  });
-  const isCountdown = mode === "POMO" || derived.isInventory || derived.isBreak;
-  const overtimeSeconds = derived.isOvertime
-    ? getFocusOvertimeSeconds({ elapsedSeconds, totalDurationSeconds })
-    : 0;
+  const secondsRemaining = isClient
+    ? rawSecondsRemaining
+    : DEFAULT_POMO_MINUTES * 60;
+  const elapsedSeconds = isClient ? rawElapsedSeconds : 0;
+  const totalDurationSeconds = isClient
+    ? rawTotalDurationSeconds
+    : DEFAULT_POMO_MINUTES * 60;
+  const mode = isClient ? rawMode : "POMO";
+  const phase = isClient ? rawPhase : "WORK";
+  const target = isClient ? rawTarget : null;
+  const isActive = isClient ? rawIsActive : false;
+  const isPaused = isClient ? rawIsPaused : false;
+  const completedCycles = isClient ? rawCompletedCycles : 0;
 
-  const displaySeconds = derived.isOvertime
-    ? overtimeSeconds
-    : isCountdown
-      ? secondsRemaining
-      : elapsedSeconds;
+  const derived = getFocusTimerDerivedState(
+    {
+      isActive,
+      isPaused,
+      mode,
+      phase,
+      secondsRemaining,
+      elapsedSeconds,
+      totalDurationSeconds,
+      completedCycles,
+      target,
+    },
+    breakPrefs,
+  );
+
   const formattedTime = formatFocusDisplayTime({
     mode,
     phase,
@@ -263,7 +338,6 @@ export function useFocusTimerDisplay() {
   });
 
   return {
-    displaySeconds,
     formattedTime,
     progressPercent,
     secondsRemaining,
@@ -273,7 +347,6 @@ export function useFocusTimerDisplay() {
     phase,
     isBreak: derived.isBreak,
     isOvertime: derived.isOvertime,
-    overtimeSeconds,
     target,
     isActive,
     isPaused,
@@ -283,33 +356,7 @@ export function useFocusTimerDisplay() {
     isPartialPomo: derived.isPartialPomo,
     isSessionRewardCapped: derived.isSessionRewardCapped,
     nextBreakMinutes: derived.nextBreakMinutes,
+    cyclesPerBlock,
     completedCycles,
-  };
-}
-
-/**
- * Hook unificado para conveniência e compatibilidade regressiva.
- */
-export function useFocusTimer(options: UseFocusTimerOptions = {}) {
-  const controls = useFocusTimerControls(options);
-  const display = useFocusTimerDisplay();
-
-  const timerState: FocusTimerState = {
-    isActive: controls.isActive,
-    isPaused: controls.isPaused,
-    mode: controls.mode,
-    phase: controls.phase,
-    secondsRemaining: display.secondsRemaining,
-    totalDurationSeconds: controls.totalDurationSeconds,
-    elapsedSeconds: display.elapsedSeconds,
-    completedCycles: display.completedCycles,
-    target: controls.target,
-    startedAt: controls.startedAt,
-  };
-
-  return {
-    ...controls,
-    ...display,
-    timerState,
   };
 }

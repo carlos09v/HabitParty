@@ -21,7 +21,7 @@ public class UpdateChecklistItemUseCase {
     this.port = port;
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }

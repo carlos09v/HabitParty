@@ -2,7 +2,8 @@ import { Crown, type LucideIcon, Sparkles, Target } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
-import { cn, USER_LEVELS } from "@/utils";
+import { cn } from "@/utils/cn";
+import { USER_LEVELS } from "@/utils/levels";
 
 type SummaryCardTone = "gold" | "neutral";
 

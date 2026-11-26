@@ -1,10 +1,12 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useIsClient } from "@/hooks/useIsClient";
-import { cn } from "@/utils";
+import { useNativeModalDialog } from "@/hooks/useNativeModalDialog";
+import { cn } from "@/utils/cn";
 
 export interface BaseModalProps {
   isOpen: boolean;
@@ -23,6 +25,8 @@ export interface BaseModalProps {
   className?: string;
   containerClassName?: string;
   headerExtra?: React.ReactNode;
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
 }
 
 export function BaseModal({
@@ -42,66 +46,52 @@ export function BaseModal({
   className,
   containerClassName,
   headerExtra,
+  ariaLabel,
+  ariaLabelledBy,
 }: BaseModalProps) {
+  const tModal = useTranslations("ui.modal");
   const mounted = useIsClient();
+  const titleId = useId();
+  const descriptionId = useId();
   const onOpenAnimationEndRef = useRef(onOpenAnimationEnd);
-  onOpenAnimationEndRef.current = onOpenAnimationEnd;
+  useEffect(() => {
+    onOpenAnimationEndRef.current = onOpenAnimationEnd;
+  }, [onOpenAnimationEnd]);
+
+  // Abre/fecha o <dialog> nativo na top layer (focus trap, Esc, inert e restauração de foco nativos)
+  // Montado via portal no document.body para nunca herdar `inert` do `#app-shell` (ex.: quando aberto via SlideOverDrawer)
+  const { dialogRef, dialogEventHandlers } = useNativeModalDialog({
+    isOpen: isOpen && mounted,
+    onClose,
+    preventClose,
+  });
 
   // Em modo prefers-reduced-motion (.animate-in desativado via CSS), dispara o callback no 1º frame pós-abertura
   useEffect(() => {
-    if (!isOpen || !onOpenAnimationEndRef.current) return;
+    if (!isOpen || !mounted || !onOpenAnimationEndRef.current) return;
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const frameId = window.requestAnimationFrame(() => {
       onOpenAnimationEndRef.current?.();
     });
     return () => window.cancelAnimationFrame(frameId);
-  }, [isOpen]);
-
-  // Control body scroll lock and escape key
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !preventClose) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, preventClose, onClose]);
+  }, [isOpen, mounted]);
 
   if (!isOpen || !mounted) return null;
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !preventClose) {
-      onClose();
-    }
-  };
-
   return createPortal(
-    <div
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={title ? titleId : ariaLabelledBy}
+      aria-describedby={description ? descriptionId : undefined}
+      aria-label={
+        !title && !ariaLabelledBy ? (ariaLabel ?? tModal("close")) : undefined
+      }
+      {...dialogEventHandlers}
       className={cn(
-        "fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-3 sm:p-4 animate-in fade-in duration-150",
+        "hp-dialog-modal fixed inset-0 w-screen h-dvh open:flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150",
         containerClassName,
       )}
-      onClick={handleOverlayClick}
-      onKeyDown={(e) => {
-        if (e.key === "Escape" && !preventClose) {
-          onClose();
-        }
-      }}
-      tabIndex={-1}
-      aria-modal="true"
-      role="dialog"
     >
       <div
         onAnimationEnd={(e) => {
@@ -110,7 +100,7 @@ export function BaseModal({
           }
         }}
         className={cn(
-          "bg-popover border rounded-xl w-full p-4 sm:p-6 shadow-2xl relative animate-in zoom-in-95 duration-150 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto custom-scrollbar",
+          "bg-popover border rounded-xl w-full p-4 sm:p-6 shadow-2xl relative animate-in zoom-in-95 duration-150 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain custom-scrollbar",
           borderColor,
           maxWidth,
           className,
@@ -121,10 +111,10 @@ export function BaseModal({
             type="button"
             onClick={onClose}
             disabled={preventClose}
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-1 text-neutral-300 hover:text-gold transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded-md disabled:opacity-50 cursor-pointer"
-            aria-label="Fechar"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-1 text-neutral-300 hover:text-gold-ink dark:hover:text-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring rounded-md disabled:opacity-50 cursor-pointer"
+            aria-label={tModal("close")}
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         )}
 
@@ -132,7 +122,7 @@ export function BaseModal({
           <div className="flex items-center gap-3 mb-4 pr-9">
             <div
               className={cn(
-                "w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs shrink-0 transition-colors",
+                "w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold-ink dark:text-gold shadow-glow-gold-xs shrink-0 transition-colors",
                 headerIconClassName,
               )}
             >
@@ -141,13 +131,19 @@ export function BaseModal({
             {headerExtra}
             <div className="flex flex-col min-w-0">
               {title && (
-                <h2 className="text-base sm:text-lg font-bold text-neutral-100 flex items-center gap-2 flex-wrap">
+                <h2
+                  id={titleId}
+                  className="text-base sm:text-lg font-bold text-neutral-100 flex items-center gap-2 flex-wrap"
+                >
                   <span>{title}</span>
                   {headerBadge}
                 </h2>
               )}
               {description && (
-                <div className="text-xs text-neutral-400 font-normal leading-relaxed mt-0.5">
+                <div
+                  id={descriptionId}
+                  className="text-xs text-neutral-400 font-normal leading-relaxed mt-0.5"
+                >
                   {description}
                 </div>
               )}
@@ -159,7 +155,10 @@ export function BaseModal({
               <div className="flex items-center gap-2 mb-4 pr-9">
                 {headerExtra}
                 {title && (
-                  <h2 className="text-label-g uppercase tracking-wider text-gold-ink dark:text-gold font-bold flex items-center gap-2 flex-wrap">
+                  <h2
+                    id={titleId}
+                    className="text-label-g uppercase tracking-wider text-gold-ink dark:text-gold font-bold flex items-center gap-2 flex-wrap"
+                  >
                     <span>{title}</span>
                     {headerBadge}
                   </h2>
@@ -168,7 +167,10 @@ export function BaseModal({
             )}
 
             {description && (
-              <div className="text-body-s text-neutral-300 mb-5 leading-relaxed">
+              <div
+                id={descriptionId}
+                className="text-body-s text-neutral-300 mb-5 leading-relaxed"
+              >
                 {description}
               </div>
             )}
@@ -177,7 +179,7 @@ export function BaseModal({
 
         {children}
       </div>
-    </div>,
+    </dialog>,
     document.body,
   );
 }

@@ -31,6 +31,11 @@ public class CreateCheckoutSessionUseCase {
   public String execute(UUID userId, PlanType plan, PaymentMethodType paymentMethod, String locale) {
     boolean isEnglish = isEnglishLocale(locale);
 
+    if (plan == null || paymentMethod == null) {
+      throw new DomainValidationException(
+          isEnglish ? "Plan and payment method are required." : "O plano e a forma de pagamento são obrigatórios.");
+    }
+
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException(
             isEnglish ? "User not found." : "Usuário não encontrado."));
@@ -44,8 +49,12 @@ public class CreateCheckoutSessionUseCase {
           "Pix payment is only available in BRL (Brazil). Please select Credit Card.");
     }
 
-    // Impede assinaturas duplicadas no cartão se já houver uma assinatura recorrente ativa
-    if (user.hasActiveRecurringSubscription() && paymentMethod == PaymentMethodType.CREDIT_CARD) {
+    // Impede assinaturas duplicadas no cartão se já houver uma assinatura recorrente ativa ou em dunning (PAST_DUE)
+    if (paymentMethod == PaymentMethodType.CREDIT_CARD
+        && (user.hasActiveRecurringSubscription()
+            || (user.getSubscriptionStatus() == com.habitparty.core.domain.enums.SubscriptionStatus.PAST_DUE
+                && user.getStripeSubscriptionId() != null
+                && !user.getStripeSubscriptionId().isBlank()))) {
       throw new DomainValidationException(
           isEnglish
               ? "You already have an active Credit Card subscription! Please use the Customer Portal in your account to manage your plan."

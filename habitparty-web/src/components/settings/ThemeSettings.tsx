@@ -12,19 +12,20 @@ import {
   Zap,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
-import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import {
+  DEFAULT_THEME_ID,
   getThemeDefinition,
   STANDARD_THEMES,
   type ThemeDefinition,
   VIP_THEMES,
 } from "@/constants/themes";
 import { useThemeMode } from "@/hooks/useThemeMode";
+import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import type { ThemeId } from "@/types/ui";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 const THEME_ICONS: Record<ThemeId, ReactNode> = {
   dark: <Moon size={16} aria-hidden="true" />,
@@ -204,36 +205,31 @@ function ThemePreviewCard({
   );
 }
 
-export function ThemeSettings() {
-  const t = useTranslations("settings.theme");
-  const { theme, setTheme, mounted } = useThemeMode();
-  const isPremium = useUserStore((s) => s.is_Premium);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+interface ThemeSettingsProps {
+  initialTheme?: ThemeId | null;
+  initialIsPremium?: boolean;
+}
 
-  if (!mounted) {
-    return (
-      <div className="animate-pulse flex flex-col gap-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-        </div>
-        <div className="h-px w-full bg-neutral-700/40 dark:bg-white/10" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-          <div className="h-36 bg-surface/60 dark:bg-white/5 rounded-xl" />
-        </div>
-      </div>
-    );
-  }
+export function ThemeSettings({
+  initialTheme = null,
+  initialIsPremium = false,
+}: ThemeSettingsProps = {}) {
+  const t = useTranslations("settings.theme");
+  const { theme: storeTheme, setTheme, mounted } = useThemeMode();
+  const storeIsPremium = useUserStore((s) => s.is_Premium);
+  const storeHasUser = useUserStore((s) => Boolean(s.user));
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
+
+  const theme: ThemeId = mounted
+    ? storeTheme
+    : (initialTheme ?? DEFAULT_THEME_ID);
+  const isPremium = mounted && storeHasUser ? storeIsPremium : initialIsPremium;
 
   const handleSelectTheme = (themeId: ThemeId) => {
     const def = getThemeDefinition(themeId);
     if (def.isPremium && !isPremium) {
       toast.info(t("lockedToast"));
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       return;
     }
     if (theme !== themeId) {
@@ -241,111 +237,96 @@ export function ThemeSettings() {
     }
   };
 
+  const renderThemeCards = (
+    items: readonly ThemeDefinition[],
+    isVipGrid: boolean,
+  ) =>
+    items.map((item) => (
+      <ThemePreviewCard
+        key={item.id}
+        definition={item}
+        title={t(item.id)}
+        description={t(`${item.id}Desc`)}
+        polarityLabel={
+          item.polarity === "light" ? t("polarityLight") : t("polarityDark")
+        }
+        badgeLabel={
+          isVipGrid
+            ? t("vipBadge")
+            : item.isDefault
+              ? t("defaultBadge")
+              : t("freeBadge")
+        }
+        isSelected={theme === item.id}
+        isLocked={isVipGrid && !isPremium}
+        onSelect={handleSelectTheme}
+      />
+    ));
+
   return (
-    <>
-      <div className="flex flex-col gap-6">
-        {/* BLOCO 1: TEMAS GRATUITOS (2 ESCUROS + 2 CLAROS) */}
-        <div className="flex flex-col gap-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-            {t("standardSectionTitle")}
-          </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {STANDARD_THEMES.map((item) => (
-              <ThemePreviewCard
-                key={item.id}
-                definition={item}
-                title={t(item.id)}
-                description={t(`${item.id}Desc`)}
-                polarityLabel={
-                  item.polarity === "light"
-                    ? t("polarityLight")
-                    : t("polarityDark")
-                }
-                badgeLabel={item.isDefault ? t("defaultBadge") : t("freeBadge")}
-                isSelected={theme === item.id}
-                isLocked={false}
-                onSelect={handleSelectTheme}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="h-px w-full bg-neutral-700 dark:bg-white/10" />
-
-        {/* BLOCO 2: TEMAS ATMOSFÉRICOS VIP */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-amber-700 dark:text-gold shrink-0 mt-0.5">
-                <Crown size={18} aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-bold text-neutral-50">
-                    {t("vipSectionTitle")}
-                  </h3>
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gold/20 text-amber-800 dark:text-gold border border-gold/40">
-                    {t("vipBadge")}
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  {t("vipSectionDesc")}
-                </p>
-              </div>
-            </div>
-
-            {!isPremium && (
-              <button
-                type="button"
-                onClick={() => setIsUpgradeModalOpen(true)}
-                className="px-3.5 py-2 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover transition-colors cursor-pointer shrink-0 shadow-xs self-start sm:self-center"
-              >
-                {t("unlockVip")}
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {VIP_THEMES.map((item) => (
-              <ThemePreviewCard
-                key={item.id}
-                definition={item}
-                title={t(item.id)}
-                description={t(`${item.id}Desc`)}
-                polarityLabel={
-                  item.polarity === "light"
-                    ? t("polarityLight")
-                    : t("polarityDark")
-                }
-                badgeLabel={t("vipBadge")}
-                isSelected={theme === item.id}
-                isLocked={!isPremium}
-                onSelect={handleSelectTheme}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* BANNER INFORMATIVO DE TEMA ATIVO */}
-        <div className="rounded-xl border border-gold/25 bg-gold/10 p-3.5 flex items-center gap-3 text-xs">
-          <span className="w-7 h-7 rounded-lg bg-gold text-on-gold flex items-center justify-center shrink-0 shadow-xs">
-            {THEME_ICONS[theme]}
-          </span>
-          <p className="text-neutral-200 leading-relaxed">
-            <strong className="text-amber-800 dark:text-gold font-bold">
-              {t("statusActiveLabel")}
-            </strong>
-            {t(STATUS_KEY_BY_THEME[theme])}
-          </p>
+    <div className="flex flex-col gap-6">
+      {/* BLOCO 1: TEMAS GRATUITOS (2 ESCUROS + 2 CLAROS) */}
+      <div className="flex flex-col gap-3">
+        <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+          {t("standardSectionTitle")}
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {renderThemeCards(STANDARD_THEMES, false)}
         </div>
       </div>
 
-      {isUpgradeModalOpen && (
-        <LazyUpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      )}
-    </>
+      <div className="h-px w-full bg-neutral-700 dark:bg-white/10" />
+
+      {/* BLOCO 2: TEMAS ATMOSFÉRICOS VIP */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-amber-700 dark:text-gold shrink-0 mt-0.5">
+              <Crown size={18} aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-bold text-neutral-50">
+                  {t("vipSectionTitle")}
+                </h3>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gold/20 text-amber-800 dark:text-gold border border-gold/40">
+                  {t("vipBadge")}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+                {t("vipSectionDesc")}
+              </p>
+            </div>
+          </div>
+
+          {!isPremium && (
+            <button
+              type="button"
+              onClick={openUpgradeModal}
+              className="px-3.5 py-2 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover transition-colors cursor-pointer shrink-0 shadow-xs self-start sm:self-center"
+            >
+              {t("unlockVip")}
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {renderThemeCards(VIP_THEMES, true)}
+        </div>
+      </div>
+
+      {/* BANNER INFORMATIVO DE TEMA ATIVO */}
+      <div className="rounded-xl border border-gold/25 bg-gold/10 p-3.5 flex items-center gap-3 text-xs">
+        <span className="w-7 h-7 rounded-lg bg-gold text-on-gold flex items-center justify-center shrink-0 shadow-xs">
+          {THEME_ICONS[theme]}
+        </span>
+        <p className="text-neutral-200 leading-relaxed">
+          <strong className="text-amber-800 dark:text-gold font-bold">
+            {t("statusActiveLabel")}
+          </strong>
+          {t(STATUS_KEY_BY_THEME[theme])}
+        </p>
+      </div>
+    </div>
   );
 }

@@ -98,7 +98,8 @@ class RecalculateFocusRewardsUseCaseTest {
   @DisplayName("Em modo dryRun=true, apenas calcula prévia sem alterar banco ou saldo")
   void shouldPreviewWithoutMutatingWhenDryRunIsTrue() {
     when(transactionHistoryRepository.countMismatchedFocusCompletedTimestamps()).thenReturn(2L);
-    when(userRepository.findAll()).thenReturn(List.of(user));
+    when(focusRecordRepository.findDistinctProductiveUserIds()).thenReturn(List.of(userId));
+    when(userRepository.findAllByIds(List.of(userId))).thenReturn(List.of(user));
     when(focusRecordRepository.findAllByUserId(userId)).thenReturn(List.of(stopwatch30));
 
     var result = useCase.execute(true);
@@ -120,7 +121,8 @@ class RecalculateFocusRewardsUseCaseTest {
   @DisplayName("Em modo dryRun=false, sincroniza datas, credita diferenças positivas e avalia conquistas")
   void shouldApplyUpdatesAndEvaluateAchievementsWhenDryRunIsFalse() {
     when(transactionHistoryRepository.syncFocusCompletedTimestamps()).thenReturn(2);
-    when(userRepository.findAll()).thenReturn(List.of(user));
+    when(focusRecordRepository.findDistinctProductiveUserIds()).thenReturn(List.of(userId));
+    when(userRepository.findAllByIds(List.of(userId))).thenReturn(List.of(user));
     when(focusRecordRepository.findAllByUserId(userId)).thenReturn(List.of(stopwatch30));
 
     var result = useCase.execute(false);

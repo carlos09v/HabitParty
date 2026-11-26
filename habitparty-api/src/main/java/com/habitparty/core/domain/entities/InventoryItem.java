@@ -11,9 +11,8 @@ import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class InventoryItem {
+public class InventoryItem implements OwnedByUser {
   private UUID id;
   private UUID userId;
   private UUID rewardId;
@@ -57,12 +56,6 @@ public class InventoryItem {
     this.lootItemsSnapshot = lootItemsSnapshot;
   }
 
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
-  }
-
   // Gastar um item de uso único direto do inventário
   public void validateForConsumption() {
     if (this.status != InventoryItemStatus.AVAILABLE) {
@@ -75,6 +68,12 @@ public class InventoryItem {
     if (this.status != InventoryItemStatus.AVAILABLE) {
       throw new DomainValidationException("O item precisa estar disponível para entrar em foco.");
     }
+    if (this.rewardTypeSnapshot != RewardType.TIME_BASED) {
+      throw new DomainValidationException("Apenas cupons de tempo podem ser enviados para o modo Foco.");
+    }
+    if (this.remainingSeconds != null && this.remainingSeconds <= 1) {
+      throw new DomainValidationException("Este cupom não possui tempo restante para entrar em foco.");
+    }
     this.status = InventoryItemStatus.IN_FOCUS;
   }
 
@@ -83,13 +82,19 @@ public class InventoryItem {
     if (this.status != InventoryItemStatus.IN_FOCUS) {
       throw new DomainValidationException("O item não está no foco para ser devolvido.");
     }
+    if (this.remainingSeconds != null && this.remainingSeconds <= 1) {
+      throw new DomainValidationException("Cupons esgotados devem ser concluídos em vez de devolvidos à mochila.");
+    }
     this.status = InventoryItemStatus.AVAILABLE;
   }
 
   // O tempo é descontado, mas o item NÃO SOME SOZINHO se zerar.
   public void deductSeconds(int secondsSpent) {
     if (this.status != InventoryItemStatus.IN_FOCUS) {
-      throw new IllegalStateException("O tempo só pode ser descontado de itens em foco.");
+      throw new DomainValidationException("O tempo só pode ser descontado de itens em foco.");
+    }
+    if (secondsSpent < 0) {
+      throw new DomainValidationException("Os segundos descontados não podem ser negativos.");
     }
 
     if (this.remainingSeconds == null) {
@@ -158,7 +163,22 @@ public class InventoryItem {
   // O usuário CLICA no botão "Concluir" na tela de foco ou no inventário
   public void consume() {
     if (this.status != InventoryItemStatus.IN_FOCUS && this.status != InventoryItemStatus.AVAILABLE) {
-      throw new IllegalStateException("Este item não pode ser consumido no estado atual.");
+      throw new DomainValidationException("Este item não pode ser consumido no estado atual.");
+    }
+
+    if (this.status == InventoryItemStatus.AVAILABLE) {
+      if (this.rewardTypeSnapshot == RewardType.MISTERY_BOX) {
+        throw new DomainValidationException("Caixas misteriosas devem ser abertas antes de serem consumidas.");
+      }
+      if (this.rewardTypeSnapshot == RewardType.TIME_BASED
+          && this.remainingSeconds != null
+          && this.remainingSeconds > 1) {
+        throw new DomainValidationException(
+            "Cupons de tempo devem ser usados no modo Foco antes de serem concluídos.");
+      }
+      if (this.rewardTypeSnapshot == RewardType.TIME_BASED) {
+        this.remainingSeconds = 0;
+      }
     }
 
     // Se o item está no foco e é baseado em tempo, barra o consumo se ainda houver saldo significativo
@@ -175,7 +195,10 @@ public class InventoryItem {
 
   public void discard() {
     if (this.status == InventoryItemStatus.CONSUMED) {
-      throw new IllegalStateException("Não é possível descartar um item que já foi consumido.");
+      throw new DomainValidationException("Não é possível descartar um item que já foi consumido.");
+    }
+    if (this.status == InventoryItemStatus.DISCARDED) {
+      throw new DomainValidationException("Este item já foi descartado.");
     }
     this.status = InventoryItemStatus.DISCARDED;
   }

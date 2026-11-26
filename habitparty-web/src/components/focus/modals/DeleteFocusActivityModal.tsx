@@ -1,6 +1,13 @@
 "use client";
 
-import { Loader2, ShieldCheck, Sparkles, Timer } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Timer,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { getFocusActivityDeletionSummary } from "@/actions/focusActions";
@@ -27,7 +34,8 @@ interface DeleteFocusActivityModalProps {
 
 /**
  * Modal compartilhado de confirmação de exclusão de atividade de foco (/focus e /dashboard).
- * Exibe a prévia exata do XP e moedas acumulados pela atividade e reforça a trava não-negativa (>= 0).
+ * Exibe a prévia exata do XP e moedas acumulados pela atividade, trata erro com retry
+ * e reforça a trava não-negativa (>= 0).
  */
 export function DeleteFocusActivityModal({
   activity,
@@ -46,40 +54,42 @@ export function DeleteFocusActivityModal({
   const [summary, setSummary] =
     useState<FocusActivityDeletionSummaryResponseDTO | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
 
   const activityId = activity?.id;
 
   useEffect(() => {
     if (!activityId) {
       setSummary(null);
+      setSummaryError(false);
       setIsLoadingSummary(false);
       return;
     }
 
     let cancelled = false;
     setSummary(null);
+    setSummaryError(false);
     setIsLoadingSummary(true);
+
+    // retryToken dispara novo carregamento manual quando o usuário clica em "Tentar novamente"
+    void retryToken;
 
     getFocusActivityDeletionSummary(activityId)
       .then((res) => {
         if (cancelled) return;
         if (res.success && res.data) {
           setSummary(res.data);
+          setSummaryError(false);
         } else {
-          setSummary({
-            totalRecordsCount: 0,
-            totalXpEarned: 0,
-            totalCoinsEarned: 0,
-          });
+          setSummary(null);
+          setSummaryError(true);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setSummary({
-            totalRecordsCount: 0,
-            totalXpEarned: 0,
-            totalCoinsEarned: 0,
-          });
+          setSummary(null);
+          setSummaryError(true);
         }
       })
       .finally(() => {
@@ -91,7 +101,7 @@ export function DeleteFocusActivityModal({
     return () => {
       cancelled = true;
     };
-  }, [activityId]);
+  }, [activityId, retryToken]);
 
   if (!activity) return null;
 
@@ -117,6 +127,7 @@ export function DeleteFocusActivityModal({
       }}
       onConfirm={() => onConfirm(summary)}
       isLoading={isDeleting}
+      confirmDisabled={isLoadingSummary || summaryError}
       title={t("title")}
       description={
         <div className="flex flex-col gap-3">
@@ -131,8 +142,34 @@ export function DeleteFocusActivityModal({
 
           {isLoadingSummary ? (
             <div className="flex items-center gap-2 rounded-xl border border-neutral-700/80 dark:border-primary/25 bg-surface/60 px-3 py-2.5 text-xs text-neutral-400">
-              <Loader2 size={14} className="animate-spin shrink-0 text-gold" />
+              <Loader2
+                size={14}
+                className="animate-spin shrink-0 text-gold"
+                aria-hidden="true"
+              />
               <span>{t("summaryLoading")}</span>
+            </div>
+          ) : summaryError ? (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-xs text-rose-700 dark:text-rose-300"
+            >
+              <span className="flex items-center gap-1.5 font-medium">
+                <AlertTriangle
+                  size={14}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{t("summaryError")}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setRetryToken((prev) => prev + 1)}
+                className="min-h-7 pointer-coarse:min-h-9 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-rose-500/40 bg-rose-500/15 hover:bg-rose-500/25 font-semibold text-rose-700 dark:text-rose-200 transition-colors cursor-pointer"
+              >
+                <RefreshCw size={12} aria-hidden="true" />
+                {t("summaryRetry")}
+              </button>
             </div>
           ) : summary && totalRecordsCount > 0 ? (
             <div
@@ -147,6 +184,7 @@ export function DeleteFocusActivityModal({
                 <span className="font-semibold flex items-center gap-1.5">
                   <Timer
                     size={13}
+                    aria-hidden="true"
                     className={
                       deleteHistory
                         ? "text-rose-700 dark:text-rose-400"
@@ -173,7 +211,7 @@ export function DeleteFocusActivityModal({
                       : "bg-primary/10 border-primary/25 text-primary dark:text-primary-light",
                   )}
                 >
-                  <Sparkles size={12} />
+                  <Sparkles size={12} aria-hidden="true" />
                   {deleteHistory ? `-${totalXp}` : `+${totalXp}`} {xpUnit}
                   {deleteHistory && actualXpLoss < totalXp
                     ? ` (-${actualXpLoss})`
@@ -200,6 +238,7 @@ export function DeleteFocusActivityModal({
                 <p className="text-[11px] leading-relaxed text-neutral-400 flex items-start gap-1.5 pt-0.5">
                   <ShieldCheck
                     size={13}
+                    aria-hidden="true"
                     className="text-emerald-800 dark:text-emerald-400 shrink-0 mt-0.5"
                   />
                   <span>
@@ -216,9 +255,17 @@ export function DeleteFocusActivityModal({
       confirmText={t("confirm")}
       cancelText={t("cancel")}
       variant="danger"
-      checkboxLabel={t("deleteHistoryLabel")}
+      checkboxLabel={
+        !isLoadingSummary && !summaryError && totalRecordsCount > 0
+          ? t("deleteHistoryLabel")
+          : undefined
+      }
       checkboxHint={
-        isGamified ? t("deleteHistoryHint") : t("deleteHistoryHintProductivity")
+        !isLoadingSummary && !summaryError && totalRecordsCount > 0
+          ? isGamified
+            ? t("deleteHistoryHint")
+            : t("deleteHistoryHintProductivity")
+          : undefined
       }
       checkboxChecked={deleteHistory}
       onCheckboxChange={onDeleteHistoryChange}

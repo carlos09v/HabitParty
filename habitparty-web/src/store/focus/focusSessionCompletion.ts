@@ -1,12 +1,14 @@
 import { toast } from "sonner";
 import { createFocusRecord } from "@/actions/focusActions";
-import { DEFAULT_POMO_MINUTES } from "@/constants/focus";
+import { DEFAULT_POMO_MINUTES } from "@/constants/focusRules";
 import { dispatchTaskFocusRecorded } from "@/hooks/useFocusTaskSync";
+import { pauseAmbientIfSynced } from "@/store/focus/focusAmbientSync";
 import {
   buildIdleTimerPatch,
   type FocusStoreGetter,
   type FocusStoreSetter,
   type FocusTimerStoreState,
+  notifyFocusSessionSaved,
 } from "@/store/focus/focusTimerState";
 import {
   startGlobalTicker,
@@ -19,12 +21,15 @@ import type { FocusRecordType } from "@/types/focus";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { getTodayDateString, toLocalISOString } from "@/utils/date";
 import { formatCoins } from "@/utils/economy";
-import { formatDurationMinSec } from "@/utils/focusFormatters";
+import {
+  formatDurationMinSec,
+  resolveLinkedTask,
+} from "@/utils/focusFormatters";
 import {
   getBrowserDocumentLocale,
+  tStoreMsg,
   updateDocumentTitle,
 } from "@/utils/focusTimerBrowser";
-import { tStoreMsg } from "@/utils/focusTimerMessages";
 import { awardUserRewards } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -71,8 +76,9 @@ function notifyStandardCompletion(
     | undefined;
   const xp = recordData?.xpEarned ?? 0;
   const coins = recordData?.coinsEarned ?? 0;
+  const locale = getBrowserDocumentLocale();
 
-  const rewardResult = awardUserRewards(xp, coins);
+  const rewardResult = awardUserRewards(xp, coins, { locale });
   if (xp > 0 || coins > 0) {
     useOptimisticDashboardStore.getState().addTransaction({
       xpAmount: xp,
@@ -108,9 +114,7 @@ function notifyStandardCompletion(
             {
               time: timeStr,
               xp,
-              coins: formatCoins(Number(coins), {
-                locale: getBrowserDocumentLocale(),
-              }),
+              coins: formatCoins(Number(coins), { locale }),
             },
           ),
           taskAction ? { action: taskAction, duration: 8000 } : undefined,
@@ -167,18 +171,23 @@ export async function executeCompleteSession(
     return false;
   }
 
+  const isInventory = state.target.type === "inventory";
   const elapsed = state.elapsedSeconds;
-  if (elapsed < 60) {
+  const isDepletedInventory =
+    isInventory && state.secondsRemaining <= 1 && elapsed > 0;
+  if (elapsed < 60 && !isDepletedInventory) {
     toast.warning(tStoreMsg("minDurationWarningToast"));
     return false;
   }
 
-  const wasRunning = state.isActive && !state.isPaused;
+  const wasRunning =
+    state.isActive &&
+    !state.isPaused &&
+    !(isInventory && state.secondsRemaining <= 1);
   isCompletingSessionGuard = true;
   set({ isSavingSession: true });
   stopGlobalTicker();
 
-  const isInventory = state.target?.type === "inventory";
   const now = new Date();
   const exactSeconds = Math.max(1, elapsed);
   const userTimeZone = useUserStore.getState().user?.timezone;
@@ -202,14 +211,8 @@ export async function executeCompleteSession(
     !isInventory && state.target?.type === "activity"
       ? state.target.id
       : undefined;
-  const resolvedTaskId = !isInventory
-    ? state.target?.taskId ||
-      (state.target?.type === "task" ? state.target.id : undefined)
-    : undefined;
-  const resolvedTaskName = !isInventory
-    ? state.target?.taskName ||
-      (state.target?.type === "task" ? state.target.name : undefined)
-    : undefined;
+  const { taskId: resolvedTaskId, taskName: resolvedTaskName } =
+    resolveLinkedTask(state.target);
 
   try {
     const res = await createFocusRecord({
@@ -260,13 +263,13 @@ export async function executeCompleteSession(
       }
 
       stopGlobalTicker();
+      pauseAmbientIfSynced();
       set((prev) =>
         buildIdleTimerPatch(
           isInventory
             ? DEFAULT_POMO_MINUTES * 60
             : prev.totalDurationSeconds || DEFAULT_POMO_MINUTES * 60,
           {
-            sessionNotes: "",
             target: isInventory ? null : prev.target,
             completedCycles: isCompletedPomo
               ? prev.completedCycles + 1
@@ -276,8 +279,8 @@ export async function executeCompleteSession(
       );
       updateDocumentTitle(get());
 
-      // Notifica componentes inscritos (ex: router.refresh())
-      state.onSessionSavedCallback?.();
+      // Notifica componentes inscritos fora da store reativa (ex: router.refresh())
+      notifyFocusSessionSaved();
       return true;
     }
 

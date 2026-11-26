@@ -1,18 +1,13 @@
 "use client";
 
-import {
-  type DragEndEvent,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ActionState } from "@/actions/types";
+import { useDndSensors } from "@/hooks/useDndSensors";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 interface UseReorderableListOptions<
   T extends { id: string; orderIndex?: number },
@@ -62,24 +57,14 @@ export function useReorderableList<
 }: UseReorderableListOptions<T>) {
   const t = useTranslations("ui.reorder");
   const [items, setItems] = useState<T[]>(initialItems);
-  const itemsRef = useRef<T[]>(initialItems);
-  itemsRef.current = items;
-  const resolveDragReorderRef = useRef(resolveDragReorder);
-  resolveDragReorderRef.current = resolveDragReorder;
+  const itemsRef = useLatestRef(items);
+  const resolveDragReorderRef = useLatestRef(resolveDragReorder);
 
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+  const sensors = useDndSensors();
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -156,9 +141,11 @@ export function useReorderableList<
     },
     [
       isFiltering,
+      itemsRef,
       maxUnlockedCount,
       onlyChangedOrderIndex,
       onReorderServerAction,
+      resolveDragReorderRef,
       t,
     ],
   );

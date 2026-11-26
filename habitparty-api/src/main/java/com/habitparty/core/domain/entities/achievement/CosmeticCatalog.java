@@ -1,6 +1,7 @@
 package com.habitparty.core.domain.entities.achievement;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -133,7 +134,7 @@ public final class CosmeticCatalog {
   }
 
   public static String normalizeAndValidateFrame(User user, String rawFrame, CosmeticUnlockContext context) {
-    String clean = rawFrame.trim().toLowerCase();
+    String clean = rawFrame.trim().toLowerCase(Locale.ROOT);
     if (!VALID_AVATAR_FRAMES.contains(clean)) {
       throw new DomainValidationException("Moldura de avatar inválida: " + rawFrame);
     }
@@ -178,7 +179,7 @@ public final class CosmeticCatalog {
   }
 
   public static String normalizeAndValidateTitle(User user, String rawTitle, CosmeticUnlockContext context) {
-    String clean = rawTitle.trim().toUpperCase();
+    String clean = rawTitle.trim().toUpperCase(Locale.ROOT);
     if ("NONE".equals(clean)) {
       return null;
     }
@@ -236,7 +237,7 @@ public final class CosmeticCatalog {
   }
 
   public static String normalizeAndValidateAvatarPreset(User user, String rawPreset) {
-    String clean = rawPreset.trim().toLowerCase();
+    String clean = rawPreset.trim().toLowerCase(Locale.ROOT);
     if ("none".equals(clean)) {
       return null;
     }
@@ -274,14 +275,14 @@ public final class CosmeticCatalog {
     if (avatarFrame == null || avatarFrame.isBlank()) {
       return false;
     }
-    return MASTERY_AVATAR_FRAMES.contains(avatarFrame.trim().toLowerCase());
+    return MASTERY_AVATAR_FRAMES.contains(avatarFrame.trim().toLowerCase(Locale.ROOT));
   }
 
   public static boolean shouldResetTitleOnMetricsReset(String equippedTitle, boolean historyDeleted) {
     if (equippedTitle == null || equippedTitle.isBlank()) {
       return false;
     }
-    String clean = equippedTitle.trim().toUpperCase();
+    String clean = equippedTitle.trim().toUpperCase(Locale.ROOT);
     if (ACHIEVEMENT_TITLES.contains(clean) || "ARTIFACT_COLLECTOR".equals(clean)) {
       return true;
     }
@@ -292,7 +293,7 @@ public final class CosmeticCatalog {
     if (user == null || avatarPreset == null || avatarPreset.isBlank()) {
       return false;
     }
-    UserLevel requiredLevel = LEVEL_AVATAR_PRESETS.get(avatarPreset.trim().toLowerCase());
+    UserLevel requiredLevel = LEVEL_AVATAR_PRESETS.get(avatarPreset.trim().toLowerCase(Locale.ROOT));
     if (requiredLevel == null) {
       return false;
     }

@@ -1,9 +1,12 @@
 "use client";
 
-import { FilterX, SlidersHorizontal, Tag } from "lucide-react";
+import { SlidersHorizontal, Tag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
-import { createPortal } from "react-dom";
+import {
+  FilterPopoverShell,
+  HierarchicalTagRow,
+} from "@/components/tasks/shared";
 import {
   STATUS_FILTER_OPTIONS,
   TASK_TYPE_FILTER_OPTIONS,
@@ -24,7 +27,6 @@ import type {
 } from "@/types/task";
 import type { RoutineFilterPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
-import { getTagDepth, getTagLeafLabel } from "@/utils/tags";
 
 const UNSELECTED_PILL_CLASSES =
   "bg-surface border border-neutral-700/70 text-neutral-200 hover:bg-surface-hover dark:border-transparent dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10";
@@ -50,14 +52,17 @@ export function RoutineFilterPopover({
     toggle: toggleFilterPopover,
     coords,
     shouldRenderPortal,
+    portalContainer,
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align: "left",
     estimatedHeight: 400,
     estimatedWidth: 320,
+    maxAllowedHeight: 420,
     offset: 8,
     margin: 12,
     zIndex: 130,
+    restoreFocusOnEscape: true,
   });
 
   const activeFiltersCount =
@@ -114,278 +119,213 @@ export function RoutineFilterPopover({
         )}
       </button>
 
-      {showFilterPopover &&
-        shouldRenderPortal &&
-        coords &&
-        createPortal(
-          <div
-            ref={popoverRef}
-            id={popoverId}
-            role="dialog"
-            aria-modal="false"
-            aria-label={t("title")}
-            style={floatingStyle}
-            className={cn(
-              "w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-white/20 p-4 shadow-lg dark:shadow-popover-dark animate-in fade-in zoom-in-95 duration-150",
-              coords.placement === "top" ? "origin-bottom" : "origin-top",
-            )}
-          >
-            {/* Cabeçalho do Popover */}
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/10 mb-3">
-              <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
-                <SlidersHorizontal
-                  size={13}
-                  className="text-gold-ink dark:text-gold"
-                  aria-hidden="true"
-                />
-                {t("title")}
-              </span>
-              {activeFiltersCount > 0 && (
+      {showFilterPopover && shouldRenderPortal && coords && portalContainer && (
+        <FilterPopoverShell
+          id={popoverId}
+          popoverRef={popoverRef}
+          portalContainer={portalContainer}
+          floatingStyle={floatingStyle}
+          placement={coords.placement}
+          title={t("title")}
+          clearLabel={t("clear")}
+          activeFiltersCount={activeFiltersCount}
+          onReset={handleResetFilters}
+          className="w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] dark:border-white/20 shadow-lg dark:shadow-popover-dark"
+        >
+          <div className="flex flex-col gap-3 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+            {/* 1. Tipo de Tarefa */}
+            <fieldset className="flex flex-col gap-1.5 border-0 p-0 m-0">
+              <legend className="text-label-g font-semibold text-neutral-400 mb-1.5">
+                {t("typeLabel")}
+              </legend>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TASK_TYPE_FILTER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    aria-pressed={filters.taskType === opt.id}
+                    onClick={() =>
+                      updateFilter("taskType", opt.id as "all" | TaskTypeOption)
+                    }
+                    className={cn(
+                      "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
+                      PILL_FOCUS_CLASSES,
+                      filters.taskType === opt.id
+                        ? `${SELECTED_PILL_CLASSES} shadow-xs`
+                        : UNSELECTED_PILL_CLASSES,
+                    )}
+                  >
+                    {t(`types.${opt.id as "all" | TaskTypeOption}`)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* 2. Dificuldade / Esforço */}
+            <fieldset className="flex flex-col gap-1.5 border-0 p-0 m-0">
+              <legend className="text-label-g font-semibold text-neutral-400 mb-1.5">
+                {isGamified ? t("difficultyLabel") : t("effortLabel")}
+              </legend>
+              <div className="flex flex-wrap gap-1">
                 <button
                   type="button"
-                  onClick={handleResetFilters}
-                  className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-danger-500 rounded transition-colors cursor-pointer"
+                  aria-pressed={filters.difficulty === "all"}
+                  onClick={() => updateFilter("difficulty", "all")}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                    PILL_FOCUS_CLASSES,
+                    filters.difficulty === "all"
+                      ? SELECTED_PILL_CLASSES
+                      : UNSELECTED_PILL_CLASSES,
+                  )}
                 >
-                  <FilterX size={12} aria-hidden="true" />
-                  <span>{t("clear")}</span>
+                  {t("allOptions")}
                 </button>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3 max-h-80 overflow-y-auto custom-scrollbar pr-1">
-              {/* 1. Tipo de Tarefa */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-label-g font-semibold text-neutral-400">
-                  {t("typeLabel")}
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {TASK_TYPE_FILTER_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      aria-pressed={filters.taskType === opt.id}
-                      onClick={() =>
-                        updateFilter(
-                          "taskType",
-                          opt.id as "all" | TaskTypeOption,
-                        )
-                      }
-                      className={cn(
-                        "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
-                        PILL_FOCUS_CLASSES,
-                        filters.taskType === opt.id
-                          ? `${SELECTED_PILL_CLASSES} shadow-xs`
-                          : UNSELECTED_PILL_CLASSES,
-                      )}
-                    >
-                      {t(`types.${opt.id as "all" | TaskTypeOption}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. Dificuldade / Esforço */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-label-g font-semibold text-neutral-400">
-                  {isGamified ? t("difficultyLabel") : t("effortLabel")}
-                </span>
-                <div className="flex flex-wrap gap-1">
+                {TASK_DIFFICULTY_OPTIONS.map((diff) => (
                   <button
+                    key={diff.id}
                     type="button"
-                    aria-pressed={filters.difficulty === "all"}
-                    onClick={() => updateFilter("difficulty", "all")}
+                    aria-pressed={filters.difficulty === diff.id}
+                    onClick={() =>
+                      updateFilter(
+                        "difficulty",
+                        diff.id as TaskDifficultyOption,
+                      )
+                    }
                     className={cn(
                       "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
                       PILL_FOCUS_CLASSES,
-                      filters.difficulty === "all"
+                      filters.difficulty === diff.id
+                        ? SELECTED_PILL_CLASSES
+                        : UNSELECTED_PILL_CLASSES,
+                    )}
+                  >
+                    {t(`difficulties.${diff.id}`)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* 3. Prioridade */}
+            <fieldset className="flex flex-col gap-1.5 border-0 p-0 m-0">
+              <legend className="text-label-g font-semibold text-neutral-400 mb-1.5">
+                {t("priorityLabel")}
+              </legend>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  aria-pressed={filters.priority === "all"}
+                  onClick={() => updateFilter("priority", "all")}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                    PILL_FOCUS_CLASSES,
+                    filters.priority === "all"
+                      ? SELECTED_PILL_CLASSES
+                      : UNSELECTED_PILL_CLASSES,
+                  )}
+                >
+                  {t("allOptions")}
+                </button>
+                {TODO_PRIORITY_OPTIONS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={filters.priority === p.id}
+                    onClick={() =>
+                      updateFilter("priority", p.id as TaskPriorityOption)
+                    }
+                    className={cn(
+                      "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                      PILL_FOCUS_CLASSES,
+                      filters.priority === p.id
+                        ? SELECTED_PILL_CLASSES
+                        : UNSELECTED_PILL_CLASSES,
+                    )}
+                  >
+                    {t(`priorities.${toPriorityMessageKey(p.id)}`)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* 4. Status */}
+            <fieldset className="flex flex-col gap-1.5 border-0 p-0 m-0">
+              <legend className="text-label-g font-semibold text-neutral-400 mb-1.5">
+                {t("statusLabel")}
+              </legend>
+              <div className="grid grid-cols-3 gap-1">
+                {STATUS_FILTER_OPTIONS.map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    aria-pressed={filters.status === st.id}
+                    onClick={() =>
+                      updateFilter(
+                        "status",
+                        st.id as "all" | "pending" | "completed",
+                      )
+                    }
+                    className={cn(
+                      "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
+                      PILL_FOCUS_CLASSES,
+                      filters.status === st.id
+                        ? `${SELECTED_PILL_CLASSES} shadow-xs`
+                        : UNSELECTED_PILL_CLASSES,
+                    )}
+                  >
+                    {t(`statuses.${st.id as "all" | "pending" | "completed"}`)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* 5. Tags (se houver disponíveis no quadro) */}
+            {availableTags.length > 0 && (
+              <fieldset className="flex flex-col gap-1.5 pt-1 border-0 border-t border-neutral-700 dark:border-white/5 p-0 m-0">
+                <legend className="sr-only">{t("tagsLabel")}</legend>
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="text-label-g font-semibold text-neutral-400 flex items-center gap-1"
+                    aria-hidden="true"
+                  >
+                    <Tag size={11} aria-hidden="true" /> {t("tagsLabel")}
+                  </span>
+                  <button
+                    type="button"
+                    aria-pressed={filters.tag === null}
+                    onClick={() => updateFilter("tag", null)}
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-tiny font-medium transition-colors cursor-pointer",
+                      PILL_FOCUS_CLASSES,
+                      filters.tag === null
                         ? SELECTED_PILL_CLASSES
                         : UNSELECTED_PILL_CLASSES,
                     )}
                   >
                     {t("allOptions")}
                   </button>
-                  {TASK_DIFFICULTY_OPTIONS.map((diff) => (
-                    <button
-                      key={diff.id}
-                      type="button"
-                      aria-pressed={filters.difficulty === diff.id}
-                      onClick={() =>
+                </div>
+                <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                  {availableTags.map((tagItem) => (
+                    <HierarchicalTagRow
+                      key={tagItem}
+                      tag={tagItem}
+                      isSelected={filters.tag === tagItem}
+                      count={tagCounts?.[tagItem]}
+                      onSelect={(selected) =>
                         updateFilter(
-                          "difficulty",
-                          diff.id as TaskDifficultyOption,
+                          "tag",
+                          filters.tag === selected ? null : selected,
                         )
                       }
-                      className={cn(
-                        "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
-                        PILL_FOCUS_CLASSES,
-                        filters.difficulty === diff.id
-                          ? SELECTED_PILL_CLASSES
-                          : UNSELECTED_PILL_CLASSES,
-                      )}
-                    >
-                      {t(`difficulties.${diff.id}`)}
-                    </button>
+                    />
                   ))}
                 </div>
-              </div>
-
-              {/* 3. Prioridade */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-label-g font-semibold text-neutral-400">
-                  {t("priorityLabel")}
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    type="button"
-                    aria-pressed={filters.priority === "all"}
-                    onClick={() => updateFilter("priority", "all")}
-                    className={cn(
-                      "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
-                      PILL_FOCUS_CLASSES,
-                      filters.priority === "all"
-                        ? SELECTED_PILL_CLASSES
-                        : UNSELECTED_PILL_CLASSES,
-                    )}
-                  >
-                    {t("allOptions")}
-                  </button>
-                  {TODO_PRIORITY_OPTIONS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      aria-pressed={filters.priority === p.id}
-                      onClick={() =>
-                        updateFilter("priority", p.id as TaskPriorityOption)
-                      }
-                      className={cn(
-                        "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
-                        PILL_FOCUS_CLASSES,
-                        filters.priority === p.id
-                          ? SELECTED_PILL_CLASSES
-                          : UNSELECTED_PILL_CLASSES,
-                      )}
-                    >
-                      {t(`priorities.${toPriorityMessageKey(p.id)}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 4. Status */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-label-g font-semibold text-neutral-400">
-                  {t("statusLabel")}
-                </span>
-                <div className="grid grid-cols-3 gap-1">
-                  {STATUS_FILTER_OPTIONS.map((st) => (
-                    <button
-                      key={st.id}
-                      type="button"
-                      aria-pressed={filters.status === st.id}
-                      onClick={() =>
-                        updateFilter(
-                          "status",
-                          st.id as "all" | "pending" | "completed",
-                        )
-                      }
-                      className={cn(
-                        "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
-                        PILL_FOCUS_CLASSES,
-                        filters.status === st.id
-                          ? `${SELECTED_PILL_CLASSES} shadow-xs`
-                          : UNSELECTED_PILL_CLASSES,
-                      )}
-                    >
-                      {t(
-                        `statuses.${st.id as "all" | "pending" | "completed"}`,
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 5. Tags (se houver disponíveis no quadro) */}
-              {availableTags.length > 0 && (
-                <div className="flex flex-col gap-1.5 pt-1 border-t border-neutral-700 dark:border-white/5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
-                      <Tag size={11} aria-hidden="true" /> {t("tagsLabel")}
-                    </span>
-                    <button
-                      type="button"
-                      aria-pressed={filters.tag === null}
-                      onClick={() => updateFilter("tag", null)}
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-tiny font-medium transition-colors cursor-pointer",
-                        PILL_FOCUS_CLASSES,
-                        filters.tag === null
-                          ? SELECTED_PILL_CLASSES
-                          : UNSELECTED_PILL_CLASSES,
-                      )}
-                    >
-                      {t("allOptions")}
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
-                    {availableTags.map((tagItem) => {
-                      const depth = getTagDepth(tagItem);
-                      const leafLabel = getTagLeafLabel(tagItem);
-                      const isSelected = filters.tag === tagItem;
-                      const count = tagCounts?.[tagItem];
-                      return (
-                        <button
-                          key={tagItem}
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() =>
-                            updateFilter("tag", isSelected ? null : tagItem)
-                          }
-                          title={tagItem}
-                          style={{ paddingLeft: `${8 + depth * 14}px` }}
-                          className={cn(
-                            "w-full text-left pr-2 py-1 rounded-md text-tiny font-medium transition-colors cursor-pointer flex items-center justify-between gap-2 min-w-0",
-                            PILL_FOCUS_CLASSES,
-                            isSelected
-                              ? SELECTED_PILL_CLASSES
-                              : UNSELECTED_PILL_CLASSES,
-                          )}
-                        >
-                          <span className="flex items-center gap-1.5 min-w-0">
-                            <span
-                              aria-hidden="true"
-                              className={cn(
-                                "shrink-0",
-                                isSelected
-                                  ? "text-on-gold/80"
-                                  : "text-neutral-400 dark:text-neutral-500",
-                              )}
-                            >
-                              {depth > 0 ? "↳" : "#"}
-                            </span>
-                            <span className="truncate">{leafLabel}</span>
-                          </span>
-                          {count !== undefined && (
-                            <span
-                              className={cn(
-                                "shrink-0 tabular-nums text-tiny px-1.5 py-0.5 rounded-full",
-                                isSelected
-                                  ? "bg-on-gold/15 text-on-gold font-bold"
-                                  : "bg-neutral-700/60 dark:bg-white/8 text-neutral-300 dark:text-neutral-400",
-                              )}
-                            >
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>,
-          document.body,
-        )}
+              </fieldset>
+            )}
+          </div>
+        </FilterPopoverShell>
+      )}
     </div>
   );
 }

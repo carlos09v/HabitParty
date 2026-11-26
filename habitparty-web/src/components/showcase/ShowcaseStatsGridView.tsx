@@ -1,9 +1,25 @@
 "use client";
 
 import { CheckSquare, Flame, Hourglass, Swords, Trophy } from "lucide-react";
+import { createContext, type ReactNode, useContext } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useUIStore } from "@/store/uiStore";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
+
+const ShowcaseStatsVisibilityContext = createContext(true);
+
+export function ShowcaseStatsVisibilityProvider({
+  canViewAchievements,
+  children,
+}: {
+  canViewAchievements: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <ShowcaseStatsVisibilityContext.Provider value={canViewAchievements}>
+      {children}
+    </ShowcaseStatsVisibilityContext.Provider>
+  );
+}
 
 export type ShowcaseStatIconKey =
   | "flame"
@@ -37,34 +53,39 @@ interface ShowcaseStatsGridViewProps {
   sectionTitleGamified: string;
   sectionTitleEssential: string;
   cards: ShowcaseStatCardData[];
-  initialIsGamified: boolean;
 }
 
 export function ShowcaseStatsGridView({
   sectionTitleGamified,
   sectionTitleEssential,
   cards,
-  initialIsGamified,
 }: ShowcaseStatsGridViewProps) {
-  const hydrated = useUIStore((s) => s.hydrated);
   const { isGamified } = useExperienceMode();
-  const resolvedIsGamified = hydrated ? isGamified : initialIsGamified;
+  const canViewAchievements = useContext(ShowcaseStatsVisibilityContext);
+  const visibleCards = canViewAchievements
+    ? cards
+    : cards.filter((card) => card.id !== "achievementsProgress");
 
   return (
     <section className="@container flex flex-col gap-3">
       <h2 className="text-body-m font-extrabold text-neutral-100">
-        {resolvedIsGamified ? sectionTitleGamified : sectionTitleEssential}
+        {isGamified ? sectionTitleGamified : sectionTitleEssential}
       </h2>
 
-      <div className="grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-4 gap-4">
-        {cards.map((card) => {
+      <div
+        className={cn(
+          "grid grid-cols-1 @xl:grid-cols-2 gap-4",
+          visibleCards.length === 3 ? "@4xl:grid-cols-3" : "@4xl:grid-cols-4",
+        )}
+      >
+        {visibleCards.map((card) => {
           const Icon =
             STAT_ICONS[
-              resolvedIsGamified
+              isGamified
                 ? card.iconKey
                 : (card.essentialIconKey ?? card.iconKey)
             ];
-          const subLabel = resolvedIsGamified
+          const subLabel = isGamified
             ? card.sub
             : (card.essentialSub ?? card.sub);
           return (
@@ -83,9 +104,7 @@ export function ShowcaseStatsGridView({
 
               <div className="min-w-0 flex-1">
                 <span className="text-tiny font-bold uppercase tracking-wider text-neutral-400 block truncate">
-                  {resolvedIsGamified
-                    ? card.gamifiedLabel
-                    : card.essentialLabel}
+                  {isGamified ? card.gamifiedLabel : card.essentialLabel}
                 </span>
                 <span className="text-lg font-black text-neutral-50 tabular-nums block mt-0.5">
                   {card.value}

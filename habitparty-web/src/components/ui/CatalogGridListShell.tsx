@@ -1,5 +1,3 @@
-"use client";
-
 import {
   closestCenter,
   DndContext,
@@ -20,21 +18,25 @@ import type { ReactNode } from "react";
 import {
   ItemRowHeader,
   type ItemRowHeaderProps,
-} from "@/components/ui/ItemRow";
+} from "@/components/ui/ItemRowHeader";
 import type { ViewMode } from "@/types/ui";
 import { cn } from "@/utils";
+import { CATALOG_CARD_GRID_CLASS } from "@/utils/catalogLayout";
 
 const DND_MODIFIERS = [restrictToParentElement, restrictToWindowEdges];
+const EMPTY_SENSORS: SensorDescriptor<SensorOptions>[] = [];
 
 export interface CatalogGridListShellProps {
-  dndContextId: string;
+  dndContextId?: string;
   itemIds: string[];
   viewMode: ViewMode;
   headerMode: ItemRowHeaderProps["mode"];
   listAriaLabel?: string;
-  gridClassName?: string;
-  sensors: SensorDescriptor<SensorOptions>[];
-  onDragEnd: (event: DragEndEvent) => void;
+  disableDnd?: boolean;
+  hideHeader?: boolean;
+  bottomPaddingClassName?: string;
+  sensors?: SensorDescriptor<SensorOptions>[];
+  onDragEnd?: (event: DragEndEvent) => void;
   children: ReactNode;
 }
 
@@ -48,50 +50,59 @@ export function CatalogGridListShell({
   viewMode,
   headerMode,
   listAriaLabel,
-  gridClassName,
+  disableDnd = false,
+  hideHeader = false,
+  bottomPaddingClassName = "pb-8",
   sensors,
   onDragEnd,
   children,
 }: CatalogGridListShellProps) {
+  const isCardMode = viewMode !== "list";
+  // Mantém a árvore de DndContext/SortableContext estável quando o catálogo suporta DnD,
+  // evitando desmontar e remontar todos os cards/linhas ao filtrar ou alternar entre 1 e 2 itens.
+  const hasDndCapability = Boolean(sensors && onDragEnd);
+  const isDndDisabled = disableDnd || itemIds.length <= 1;
+
+  const content = isCardMode ? (
+    <div className="@container w-full">
+      <div className={cn(CATALOG_CARD_GRID_CLASS, bottomPaddingClassName)}>
+        {children}
+      </div>
+    </div>
+  ) : (
+    <div
+      className={cn(
+        "@container flex flex-col gap-2.5 w-full",
+        bottomPaddingClassName,
+      )}
+    >
+      {!hideHeader && itemIds.length > 0 && <ItemRowHeader mode={headerMode} />}
+      <ul className="flex flex-col gap-2 w-full" aria-label={listAriaLabel}>
+        {children}
+      </ul>
+    </div>
+  );
+
+  if (!hasDndCapability) {
+    return content;
+  }
+
   return (
     <DndContext
       id={dndContextId}
-      sensors={sensors}
+      sensors={isDndDisabled ? EMPTY_SENSORS : sensors}
       collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
       modifiers={DND_MODIFIERS}
     >
       <SortableContext
         items={itemIds}
+        disabled={isDndDisabled}
         strategy={
-          viewMode === "card"
-            ? rectSortingStrategy
-            : verticalListSortingStrategy
+          isCardMode ? rectSortingStrategy : verticalListSortingStrategy
         }
       >
-        {viewMode === "card" ? (
-          <div className="@container w-full">
-            <div
-              className={cn(
-                "catalog-card-grid grid grid-cols-1 w-full pb-8",
-                gridClassName ??
-                  "@min-[520px]:grid-cols-2 @min-[800px]:grid-cols-3 @min-[1080px]:grid-cols-4 @min-[1280px]:grid-cols-5 gap-3.5",
-              )}
-            >
-              {children}
-            </div>
-          </div>
-        ) : (
-          <div className="@container flex flex-col gap-2.5 w-full pb-8">
-            <ItemRowHeader mode={headerMode} />
-            <ul
-              className="flex flex-col gap-2 w-full"
-              aria-label={listAriaLabel}
-            >
-              {children}
-            </ul>
-          </div>
-        )}
+        {content}
       </SortableContext>
     </DndContext>
   );

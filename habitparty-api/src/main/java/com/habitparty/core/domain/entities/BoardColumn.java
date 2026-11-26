@@ -4,9 +4,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class BoardColumn {
+public class BoardColumn implements OwnedByUser {
   private UUID id;
   private UUID userId; // FK
   private UUID workspaceId; // FK
@@ -24,12 +23,6 @@ public class BoardColumn {
     this.orderIndex = orderIndex;
     this.icon = icon;
     this.isVisible = isVisible;
-  }
-
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
   }
 
   // Quando o usuário quiser guardar a lista na mochila, você chama esse método:

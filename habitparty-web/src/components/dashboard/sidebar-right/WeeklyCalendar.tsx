@@ -8,7 +8,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useMergedOptimisticTransactions } from "@/hooks/useMergedOptimisticTransactions";
 import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import type { AppLocale } from "@/i18n/config";
 import {
@@ -32,11 +33,11 @@ export function WeeklyCalendar({
   transactions = [],
   tasks = [],
   records = [],
-  onSelectDay,
+  timeZone,
 }: WeeklyCalendarProps) {
   const t = useTranslations("dashboard.sidebarRight.weeklyCalendar");
   const locale = useLocale() as AppLocale;
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
+  const userTimeZone = useUserStore((s) => s.user?.timezone) ?? timeZone;
   const storeTodayFocusMinutes = useUserStore((s) => s.todayFocusMinutes);
   const storeTodayMetricsDate = useUserStore((s) => s.todayMetricsDate);
 
@@ -49,25 +50,19 @@ export function WeeklyCalendar({
   const requestMobileDrawerClose = useDashboardFilterStore(
     (s) => s.requestMobileDrawerClose,
   );
-  const optimisticTransactions = useOptimisticDashboardStore(
-    (s) => s.transactions,
-  );
+  const weekOffset = useDashboardFilterStore((s) => s.calendarWeekOffset);
+  const setWeekOffset = useDashboardFilterStore((s) => s.setCalendarWeekOffset);
   const upsertedTasks = useOptimisticDashboardStore((s) => s.upsertedTasks);
   const deletedTaskIds = useOptimisticDashboardStore((s) => s.deletedTaskIds);
-
-  const [weekOffset, setWeekOffset] = useState(0);
+  const streakRevertedDate = useOptimisticDashboardStore(
+    (s) => s.streakRevertedDate,
+  );
 
   const todayIso = useMidnightRollover(userTimeZone);
   // biome-ignore lint/correctness/useExhaustiveDependencies: atualiza a data-base do calendário ao virar o dia
   const baseDate = useMemo(() => new Date(), [todayIso]);
 
-  const mergedTransactions = useMemo(
-    () =>
-      optimisticTransactions.length > 0
-        ? [...transactions, ...optimisticTransactions]
-        : transactions,
-    [transactions, optimisticTransactions],
-  );
+  const mergedTransactions = useMergedOptimisticTransactions(transactions);
 
   const mergedTasks = useMemo(() => {
     const hasTaskDeltas =
@@ -108,6 +103,7 @@ export function WeeklyCalendar({
         userTimeZone,
         records,
         todayFocusMinutesOverride,
+        streakRevertedDate,
       ),
     [
       mergedTasks,
@@ -119,6 +115,7 @@ export function WeeklyCalendar({
       userTimeZone,
       records,
       todayFocusMinutesOverride,
+      streakRevertedDate,
     ],
   );
 
@@ -128,7 +125,6 @@ export function WeeklyCalendar({
       setStoreFilter("today");
       syncDashboardFilterUrl("today", null);
       requestMobileDrawerClose();
-      onSelectDay?.(isoString);
       return;
     }
 
@@ -140,7 +136,6 @@ export function WeeklyCalendar({
       syncDashboardFilterUrl(activeFilter, isoString);
     }
     requestMobileDrawerClose();
-    onSelectDay?.(isoString);
   };
 
   const handleResetToToday = () => {
@@ -153,13 +148,16 @@ export function WeeklyCalendar({
   const showResetToday = weekOffset !== 0 || Boolean(urlDate);
 
   return (
-    <div className="flex flex-col gap-2.5 w-full">
+    <div
+      id="dashboard-weekly-calendar"
+      className="flex flex-col gap-2.5 w-full scroll-mt-4"
+    >
       {/* Header do Widget com Intervalo da Semana e Ação "Hoje" */}
       <div className="flex flex-wrap items-center justify-between gap-2 w-full">
         <div className="flex items-center gap-2 min-w-0">
-          <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
+          <h3 className="text-subtitle-s font-bold text-neutral-100 truncate">
             {t("title")}
-          </h4>
+          </h3>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-2xs dark:shadow-none text-tiny font-semibold text-neutral-300 shrink-0">
             <CalendarIcon
               size={11}

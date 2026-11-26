@@ -390,8 +390,8 @@ class AchievementResetAndTriggerAuditTest {
     PaymentGatewayPort paymentGatewayPort = mock(PaymentGatewayPort.class);
     EvaluateUserAchievementsUseCase evaluateUseCase = mock(EvaluateUserAchievementsUseCase.class);
 
-    when(paymentEventRepository.existsByEventId(any())).thenReturn(false);
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(paymentEventRepository.claimEvent(any(), any(), any())).thenReturn(true);
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
     when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
     ProcessStripeWebhookUseCase useCase = new ProcessStripeWebhookUseCase(
@@ -413,7 +413,7 @@ class AchievementResetAndTriggerAuditTest {
     verify(evaluateUseCase).execute(user);
 
     User pixUser = createTestUser(UUID.randomUUID());
-    when(userRepository.findById(pixUser.getId())).thenReturn(Optional.of(pixUser));
+    when(userRepository.findByIdForUpdate(pixUser.getId())).thenReturn(Optional.of(pixUser));
     useCase.execute(new PaymentWebhookEvent.CheckoutCompleted(
         "evt_founder_pix",
         "cs_pix_1",
@@ -429,7 +429,7 @@ class AchievementResetAndTriggerAuditTest {
     verify(evaluateUseCase).execute(pixUser);
 
     User subUpdatedUser = createTestUser(UUID.randomUUID());
-    when(userRepository.findById(subUpdatedUser.getId())).thenReturn(Optional.of(subUpdatedUser));
+    when(userRepository.findByIdForUpdate(subUpdatedUser.getId())).thenReturn(Optional.of(subUpdatedUser));
     useCase.execute(new PaymentWebhookEvent.SubscriptionUpdated(
         "evt_founder_sub_updated",
         "sub_2",

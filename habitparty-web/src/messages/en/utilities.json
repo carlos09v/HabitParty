@@ -102,7 +102,6 @@
   },
   "focus": {
     "defaultActivityName": "Activity",
-    "atTime": "{day} at {time}",
     "remainingTime": {
       "completed": "Time completed!",
       "remainingValue": "{duration} left",
@@ -113,13 +112,14 @@
       "lastWeek": "Last wk.",
       "offsetWeekNegative": "Wk. {offset}",
       "offsetWeekPositive": "Wk. +{offset}",
-      "dateRange": "{startMonth}/{startDay} to {endMonth}/{endDay}"
+      "dateRangeFormatted": "{start} to {end}"
     },
     "rewards": {
       "loggedTimeLabel": "Logged Time",
       "loggedTimeValue": "{count} {count, plural, one {minute} other {minutes}}",
       "pomodoroCyclesLabel": "Pomodoro Cycles",
       "pomodoroCyclesValue": "{cycles} cycle(s) (avg. {avgMins}m/cycle)",
+      "coinsUnit": "coins",
       "creditsUnit": "credits",
       "itemZeroGamified": "Backpack leisure items do not grant XP or Coins.",
       "itemZeroProductivity": "Inventory leisure items do not grant Points or Credits.",
@@ -131,9 +131,11 @@
       "maxCapTitleProductivity": "{maxMinutes}m Ultradian Cap",
       "maxCapGamified": "Time beyond {maxMinutes} min per session does not grant extra coins (anti-AFK).",
       "maxCapProductivity": "Time beyond {maxMinutes} min per session does not grant extra credits. Pause briefly before the next cycle.",
+      "antiExploitTitle": "Anti-Exploit",
       "antiExploitMessage": "Average below {threshold}m/cycle reduces rewards proportionally.",
       "shortCycleTitle": "Short Cycle ({min}m-{max}m)",
       "shortCycleMessage": "Average of {avg}m/cycle (+{shortCoins}/cycle). Standard range ({stdMin}m-{stdMax}m) yields +{stdCoins}.",
+      "deepWorkTitle": "Deep Work ({min}m+)",
       "deepWorkMessage": "Extended uninterrupted session qualifies for the maximum bonus (+{coins}/cycle)!",
       "dailyHardCapZeroReason": "Daily reward cap ({hours}h) reached for this day.",
       "dailyHardCapTitleGamified": "Daily Cap Reached (8h)",

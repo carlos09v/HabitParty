@@ -9,23 +9,29 @@ import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 import { getRewardIcon } from "@/utils/rewardMapper";
 
 interface MysteryBoxTierPopoverProps {
+  id?: string;
   tier: MysteryBoxTier;
   isGamified?: boolean;
-  alignClass?: string;
   customPrice?: number;
+  showPriceFooter?: boolean;
   customLootItems?: MysteryBoxLootItem[];
   popoverRef?: Ref<HTMLElement>;
   style?: CSSProperties;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export function MysteryBoxTierPopover({
+  id,
   tier,
   isGamified = true,
-  alignClass = "bottom-full mb-2.5 left-1/2 -translate-x-1/2",
   customPrice,
+  showPriceFooter = true,
   customLootItems,
   popoverRef,
   style,
+  onMouseEnter,
+  onMouseLeave,
 }: MysteryBoxTierPopoverProps) {
   const t = useTranslations("rewards.tierPopover");
   const tMystery = useTranslations("rewards.mysteryBox");
@@ -46,14 +52,13 @@ export function MysteryBoxTierPopover({
 
   return (
     <aside
+      id={id}
       ref={popoverRef}
       style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       aria-label={t("detailsAria", { name: tierName })}
-      className={cn(
-        "w-64 sm:w-72 max-w-[calc(100vw-24px)] max-h-[80dvh] overflow-y-auto overscroll-contain custom-scrollbar pointer-events-none animate-in fade-in zoom-in-95 duration-150",
-        !style && "absolute z-50",
-        !style && alignClass,
-      )}
+      className="w-64 sm:w-72 max-w-[calc(100vw-24px)] max-h-[80dvh] overflow-y-auto overscroll-contain custom-scrollbar animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
     >
       <div className="rounded-xl bg-popover border border-neutral-700 dark:border-white/20 p-3.5 shadow-popover-dark flex flex-col gap-2.5 text-neutral-100">
         {/* Header do Popover */}
@@ -156,28 +161,30 @@ export function MysteryBoxTierPopover({
           </div>
         </div>
 
-        {/* Rodapé do Popover: Custo Econômico Recomendado ou Preço Atual */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-neutral-700 dark:border-white/10 text-tiny gap-2">
-          <span className="text-neutral-400">
-            {customPrice !== undefined
-              ? isGamified
-                ? t("priceInCoins")
-                : t("priceInCredits")
-              : t("balancedPrice")}
-          </span>
-          <span className="font-bold text-amber-700 dark:text-gold flex items-center gap-1 tabular-nums">
-            <CoinIcon size={12} withGlow={isGamified} />
-            <span>
-              {formatCoins(displayPrice, { locale })}{" "}
-              {isGamified ? t("coinsUnit") : t("creditsUnit")}
+        {/* Rodapé do Popover: Custo Econômico Recomendado ou Preço Atual (omitido em itens já adquiridos na Mochila) */}
+        {showPriceFooter && (
+          <div className="flex items-center justify-between pt-1.5 border-t border-neutral-700 dark:border-white/10 text-tiny gap-2">
+            <span className="text-neutral-400">
+              {customPrice !== undefined
+                ? isGamified
+                  ? t("priceInCoins")
+                  : t("priceInCredits")
+                : t("balancedPrice")}
             </span>
-            {!isGamified && displayPrice > 0 && (
-              <span className="text-[10px] font-medium text-neutral-400">
-                ({formatCreditsLeisureEquivalence(displayPrice)})
+            <span className="font-bold text-amber-700 dark:text-gold flex items-center gap-1 tabular-nums">
+              <CoinIcon size={12} withGlow={isGamified} />
+              <span>
+                {formatCoins(displayPrice, { locale })}{" "}
+                {isGamified ? t("coinsUnit") : t("creditsUnit")}
               </span>
-            )}
-          </span>
-        </div>
+              {!isGamified && displayPrice > 0 && (
+                <span className="text-[10px] font-medium text-neutral-400">
+                  ({formatCreditsLeisureEquivalence(displayPrice)})
+                </span>
+              )}
+            </span>
+          </div>
+        )}
       </div>
     </aside>
   );

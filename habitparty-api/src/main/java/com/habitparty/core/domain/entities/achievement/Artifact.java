@@ -1,36 +1,27 @@
 package com.habitparty.core.domain.entities.achievement;
 
+import java.util.Locale;
 import java.util.UUID;
 
 import com.habitparty.core.domain.enums.AchievementRarity;
 import com.habitparty.core.domain.enums.ArtifactSourceType;
 
-public class Artifact {
-  private final UUID id;
-  private final String code;
-  private final String iconName;
-  private final AchievementRarity rarity;
-  private final ArtifactSourceType sourceType;
-  private final String requiredAchievementCode;
-  private final int displayOrder;
+public record Artifact(
+    UUID id,
+    String code,
+    String iconName,
+    AchievementRarity rarity,
+    ArtifactSourceType sourceType,
+    String requiredAchievementCode,
+    int displayOrder) {
 
-  public Artifact(
-      UUID id,
-      String code,
-      String iconName,
-      AchievementRarity rarity,
-      ArtifactSourceType sourceType,
-      String requiredAchievementCode,
-      int displayOrder) {
-    this.id = id;
-    this.code = code;
-    this.iconName = iconName != null && !iconName.isBlank() ? iconName : "Sparkles";
-    this.rarity = rarity != null ? rarity : AchievementRarity.RARE;
-    this.sourceType = sourceType != null ? sourceType : ArtifactSourceType.ACHIEVEMENT;
-    this.requiredAchievementCode = (requiredAchievementCode != null && !requiredAchievementCode.isBlank())
-        ? requiredAchievementCode.trim().toUpperCase()
+  public Artifact {
+    iconName = (iconName != null && !iconName.isBlank()) ? iconName : "Sparkles";
+    rarity = rarity != null ? rarity : AchievementRarity.RARE;
+    sourceType = sourceType != null ? sourceType : ArtifactSourceType.ACHIEVEMENT;
+    requiredAchievementCode = (requiredAchievementCode != null && !requiredAchievementCode.isBlank())
+        ? requiredAchievementCode.trim().toUpperCase(Locale.ROOT)
         : null;
-    this.displayOrder = displayOrder;
   }
 
   public UUID getId() {

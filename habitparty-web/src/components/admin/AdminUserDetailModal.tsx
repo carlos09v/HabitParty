@@ -2,6 +2,7 @@
 
 import { Calendar, Crown, Database, Mail, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useId } from "react";
 import { StorageUsageBar } from "@/components/admin/StorageUsageBar";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { FounderBadge } from "@/components/ui/FounderBadge";
@@ -11,7 +12,10 @@ import {
   UserRoleBadge,
   UserVerifiedBadge,
 } from "@/components/ui/UserStatusBadges";
-import { ADMIN_STORAGE_BREAKDOWN_CONFIG } from "@/constants/admin";
+import {
+  ADMIN_STORAGE_BREAKDOWN_CONFIG,
+  type AdminStorageBreakdownKey,
+} from "@/constants/admin";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
@@ -28,26 +32,28 @@ function getLocalizedSubject(
   log: EmailDispatchLogDTO,
   t: AdminModalTranslator,
 ): string {
+  const lowerSubject = log.subject.toLowerCase();
+
   if (
     log.emailType === "EMAIL_VERIFICATION" ||
-    log.subject.toLowerCase().includes("confirme seu e-mail") ||
-    log.subject.toLowerCase().includes("confirm your email")
+    lowerSubject.includes("confirme seu e-mail") ||
+    lowerSubject.includes("confirm your email")
   ) {
     return t("emails.subjects.EMAIL_VERIFICATION");
   }
 
   if (
     log.emailType === "PASSWORD_RESET" ||
-    log.subject.toLowerCase().includes("recuperação de senha") ||
-    log.subject.toLowerCase().includes("password reset")
+    lowerSubject.includes("recuperação de senha") ||
+    lowerSubject.includes("password reset")
   ) {
     return t("emails.subjects.PASSWORD_RESET");
   }
 
   if (
     log.emailType === "TASK_REMINDER" ||
-    log.subject.toLowerCase().startsWith("lembrete de tarefa:") ||
-    log.subject.toLowerCase().startsWith("task reminder:")
+    lowerSubject.startsWith("lembrete de tarefa:") ||
+    lowerSubject.startsWith("task reminder:")
   ) {
     const taskName = log.subject
       .replace(/^(lembrete de tarefa:\s*|task reminder:\s*)/i, "")
@@ -95,9 +101,9 @@ function getLocalizedErrorMessage(
     return t("emails.errors.resendProviderFailed");
   }
 
-  const quotaMatch = err.match(
-    /cota mensal de (\d+) lembretes excedida para o plano (.*)/i,
-  );
+  const quotaMatch =
+    err.match(/cota mensal de (\d+) lembretes excedida para o plano (.*)/i) ??
+    err.match(/monthly quota of (\d+) reminders exceeded for plan (.*)/i);
   if (quotaMatch) {
     return t("emails.errors.quotaExceeded", {
       max: quotaMatch[1],
@@ -121,6 +127,7 @@ export function AdminUserDetailModal({
 }: AdminUserDetailModalProps) {
   const t = useTranslations("admin.userModal");
   const locale = useLocale() as AppLocale;
+  const headingId = useId();
   const { dateFormat } = useDateFormat();
   const { timeFormat } = useTimeFormat();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
@@ -129,43 +136,29 @@ export function AdminUserDetailModal({
 
   const { summary, storage, recentEmailLogs } = detail;
 
-  const storageItems = [
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[0],
-      bytes: storage.tasksBytes,
-      count: storage.tasksCount,
-    },
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[1],
+  const storageMetricsByKey: Record<
+    AdminStorageBreakdownKey,
+    { bytes: number; count: number }
+  > = {
+    tasks: { bytes: storage.tasksBytes, count: storage.tasksCount },
+    checklists: {
       bytes: storage.checklistsBytes,
       count: storage.checklistsCount,
     },
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[2],
+    workspaces: {
       bytes: storage.workspacesBytes,
       count: storage.workspacesCount,
     },
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[3],
-      bytes: storage.historyBytes,
-      count: storage.historyCount,
-    },
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[4],
-      bytes: storage.inventoryBytes,
-      count: storage.inventoryCount,
-    },
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[5],
-      bytes: storage.focusBytes,
-      count: storage.focusCount,
-    },
-    {
-      ...ADMIN_STORAGE_BREAKDOWN_CONFIG[6],
-      bytes: storage.userRowBytes,
-      count: 1,
-    },
-  ];
+    history: { bytes: storage.historyBytes, count: storage.historyCount },
+    inventory: { bytes: storage.inventoryBytes, count: storage.inventoryCount },
+    focus: { bytes: storage.focusBytes, count: storage.focusCount },
+    userRow: { bytes: storage.userRowBytes, count: 1 },
+  };
+
+  const storageItems = ADMIN_STORAGE_BREAKDOWN_CONFIG.map((cfg) => ({
+    ...cfg,
+    ...storageMetricsByKey[cfg.key],
+  }));
 
   return (
     <BaseModal
@@ -173,6 +166,7 @@ export function AdminUserDetailModal({
       onClose={onClose}
       maxWidth="max-w-3xl"
       showCloseButton={false}
+      ariaLabelledBy={headingId}
       borderColor="border-neutral-700 dark:border-white/10"
       className="p-0 sm:p-0 bg-card dark:bg-surface rounded-2xl flex flex-col overflow-hidden max-h-[90dvh]"
     >
@@ -188,7 +182,10 @@ export function AdminUserDetailModal({
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base sm:text-lg font-bold text-neutral-50 dark:text-neutral-100 truncate max-w-full">
+              <h3
+                id={headingId}
+                className="text-base sm:text-lg font-bold text-neutral-50 dark:text-neutral-100 truncate max-w-full"
+              >
                 {summary.fullName}
               </h3>
               <UserVerifiedBadge
@@ -216,10 +213,10 @@ export function AdminUserDetailModal({
         <button
           type="button"
           onClick={onClose}
-          className="p-2 rounded-xl text-neutral-400 hover:text-neutral-50 hover:bg-surface dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+          className="p-2 rounded-xl text-neutral-400 hover:text-neutral-50 hover:bg-surface dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           aria-label={t("closeAriaLabel")}
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
       </div>
 
@@ -228,8 +225,8 @@ export function AdminUserDetailModal({
         {/* DATAS DA CONTA E EXPIRAÇÃO DO PREMIUM */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center gap-3">
-            <div className="p-2 rounded-lg border bg-purple-500/10 border-purple-500/25 text-purple-700 dark:text-purple-300 shrink-0">
-              <Calendar size={16} />
+            <div className="p-2 rounded-lg border bg-primary/10 border-primary/25 text-primary dark:text-primary-light shrink-0">
+              <Calendar size={16} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <p className="text-label-g font-semibold uppercase tracking-wider text-neutral-400">
@@ -254,11 +251,11 @@ export function AdminUserDetailModal({
               className={cn(
                 "p-2 rounded-lg border shrink-0",
                 summary.isPremium
-                  ? "bg-gold/15 border-gold/30 text-amber-800 dark:text-gold"
+                  ? "bg-gold/15 border-gold/30 text-gold-ink dark:text-gold"
                   : "bg-surface border-neutral-700 text-neutral-400 dark:bg-neutral-800 dark:border-white/10",
               )}
             >
-              <Crown size={16} />
+              <Crown size={16} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <p className="text-label-g font-semibold uppercase tracking-wider text-neutral-400">
@@ -268,9 +265,9 @@ export function AdminUserDetailModal({
                 className={cn(
                   "text-xs font-bold truncate",
                   summary.subscriptionEndsAt
-                    ? "text-amber-800 dark:text-gold font-mono"
+                    ? "text-gold-ink dark:text-gold font-mono"
                     : summary.isPremium
-                      ? "text-emerald-800 dark:text-emerald-400"
+                      ? "text-success-400"
                       : "text-neutral-400",
                 )}
               >
@@ -296,7 +293,8 @@ export function AdminUserDetailModal({
             <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
               <Database
                 size={16}
-                className="text-emerald-800 dark:text-success-500"
+                aria-hidden="true"
+                className="text-success-400"
               />
               <span>{t("storage.title")}</span>
             </div>
@@ -328,7 +326,7 @@ export function AdminUserDetailModal({
                         item.color,
                       )}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-neutral-200 truncate">
@@ -356,7 +354,8 @@ export function AdminUserDetailModal({
             <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider min-w-0">
               <Mail
                 size={16}
-                className="text-amber-800 dark:text-amber-400 shrink-0"
+                aria-hidden="true"
+                className="text-gold-ink dark:text-amber-400 shrink-0"
               />
               <span>{t("emails.title")}</span>
             </div>
@@ -395,11 +394,12 @@ export function AdminUserDetailModal({
                   >
                     <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
                       <div
+                        aria-hidden="true"
                         className={cn(
                           "w-2 h-2 rounded-full shrink-0 mt-1.5 sm:mt-0",
                           isSent
-                            ? "bg-emerald-500 dark:bg-emerald-400 dark:shadow-[0_0_8px_#34d399]"
-                            : "bg-red-500 dark:bg-red-400",
+                            ? "bg-success-500 dark:bg-success-400 dark:shadow-[0_0_8px_#34d399]"
+                            : "bg-danger-500 dark:bg-danger-400",
                         )}
                       />
                       <div className="min-w-0 flex-1">
@@ -412,7 +412,7 @@ export function AdminUserDetailModal({
                           })}
                         </p>
                         {localizedError && (
-                          <p className="text-tiny text-red-600 dark:text-red-400 mt-0.5 break-words">
+                          <p className="text-tiny text-danger-400 mt-0.5 break-words">
                             {t("emails.errorPrefix", {
                               message: localizedError,
                             })}
@@ -426,15 +426,15 @@ export function AdminUserDetailModal({
                         className={cn(
                           "px-2 py-0.5 rounded text-tiny font-bold uppercase tracking-wider whitespace-nowrap",
                           isSent
-                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
-                            : "bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30",
+                            ? "bg-success-500/15 text-success-400 border border-success-500/35"
+                            : "bg-danger-500/15 text-danger-400 border border-danger-500/35",
                         )}
                       >
                         {isSent
                           ? t("emails.statusSent")
                           : t("emails.statusFailed")}
                       </span>
-                      <p className="text-tiny text-neutral-400 dark:text-neutral-500 sm:mt-1 font-mono whitespace-nowrap">
+                      <p className="text-tiny text-neutral-400 sm:mt-1 font-mono whitespace-nowrap">
                         {dateFormatted}
                       </p>
                     </div>
@@ -451,7 +451,7 @@ export function AdminUserDetailModal({
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 rounded-xl bg-card hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/10 dark:hover:bg-white/15 dark:border-white/10 dark:text-white text-xs font-semibold transition-colors cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-card hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/10 dark:hover:bg-white/15 dark:border-white/10 dark:text-white text-xs font-semibold transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           {t("closeButton")}
         </button>

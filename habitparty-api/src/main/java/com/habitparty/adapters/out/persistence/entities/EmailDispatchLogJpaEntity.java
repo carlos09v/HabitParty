@@ -13,10 +13,12 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "email_dispatch_logs", indexes = {
@@ -25,11 +27,13 @@ import lombok.Setter;
 })
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class EmailDispatchLogJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class EmailDispatchLogJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "id", nullable = false)
   private UUID id;
 
@@ -39,6 +43,7 @@ public class EmailDispatchLogJpaEntity {
   @Column(name = "task_id")
   private UUID taskId;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "email_type", nullable = false, length = 30)
   private EmailType emailType;
@@ -49,6 +54,7 @@ public class EmailDispatchLogJpaEntity {
   @Column(name = "subject", length = 255)
   private String subject;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private EmailDispatchStatus status;

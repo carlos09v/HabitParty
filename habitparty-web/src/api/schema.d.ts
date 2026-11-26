@@ -1223,6 +1223,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/focus-records/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Resumo Agregado de Métricas de Foco
+     * @description Retorna métricas completas (Hoje, Total, Ofensiva, Rendimento Diário e minutos por dia) globais ou filtradas por atividade.
+     */
+    get: operations["getFocusSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/focus-records/me": {
     parameters: {
       query?: never;
@@ -1318,6 +1338,22 @@ export interface paths {
      * @description Exclui vários registros do extrato de transações de uma vez (máx. 200).
      */
     delete: operations["deleteTransactionsBatch"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/transactions/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["restoreTransactionsBatch"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1750,6 +1786,44 @@ export interface components {
       /** Format: int32 */
       pomoTargetMinutes?: number;
     };
+    FocusSummaryResponseDTO: {
+      /** Format: int32 */
+      todayRecordsCount?: number;
+      /** Format: int32 */
+      totalRecordsCount?: number;
+      /** Format: int32 */
+      activeStreakDays?: number;
+      /** Format: int32 */
+      totalActiveDays?: number;
+      /** Format: int32 */
+      todayXp?: number;
+      /** Format: int32 */
+      totalXp?: number;
+      todayGold?: number;
+      totalGold?: number;
+      /** Format: int32 */
+      todayFocusMinutes?: number;
+      /** Format: int32 */
+      totalFocusMinutes?: number;
+      /** Format: int32 */
+      todayPomosCount?: number;
+      /** Format: int32 */
+      totalPomosCount?: number;
+      /** Format: int32 */
+      todayAverageMinutes?: number;
+      /** Format: int32 */
+      totalAverageMinutes?: number;
+      /** Format: int32 */
+      globalTodayProductiveMinutes?: number;
+      /** Format: int32 */
+      globalTodayRewardableMinutes?: number;
+      todayDurationByActivityId?: {
+        [key: string]: number;
+      };
+      dailyMinutes?: {
+        [key: string]: number;
+      };
+    };
     FocusRecordResponseDTO: {
       /** Format: uuid */
       id?: string;
@@ -2049,6 +2123,21 @@ export interface components {
       first?: boolean;
       last?: boolean;
       empty?: boolean;
+      summary?: components["schemas"]["TransactionHistorySummaryDTO"];
+    };
+    TransactionHistorySummaryDTO: {
+      goldEarned?: number;
+      goldSpent?: number;
+      /** Format: int32 */
+      xpEarned?: number;
+      /** Format: int32 */
+      xpLost?: number;
+      /** Format: int64 */
+      totalCount?: number;
+    };
+    TransactionBatchResultDTO: {
+      /** Format: int32 */
+      affectedCount?: number;
     };
     PageableObject: {
       /** Format: int64 */
@@ -2075,6 +2164,9 @@ export interface components {
       transactionType?:
         | "REWARD_BOUGHT"
         | "DEBT_PAID"
+        | "HABIT_COMPLETED"
+        | "DAILY_COMPLETED"
+        | "TODO_COMPLETED"
         | "TASK_COMPLETED"
         | "TASK_FAILED"
         | "BAD_HABIT_PENALTY"
@@ -2948,9 +3040,7 @@ export interface operations {
   };
   redeemReward: {
     parameters: {
-      query?: {
-        quantity?: number;
-      };
+      query?: never;
       header?: never;
       path: {
         rewardId: string;
@@ -3561,7 +3651,11 @@ export interface operations {
       query?: {
         tab?: string;
         period?: string;
+        from?: string;
+        to?: string;
         search?: string;
+        direction?: string;
+        sort?: string;
         page?: number;
         size?: number;
       };
@@ -3700,6 +3794,29 @@ export interface operations {
       };
     };
   };
+  getFocusSummary: {
+    parameters: {
+      query?: {
+        /** Format: uuid */
+        activityId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["FocusSummaryResponseDTO"];
+        };
+      };
+    };
+  };
   getMyRecords: {
     parameters: {
       query?: {
@@ -3803,7 +3920,33 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "*/*": components["schemas"]["TransactionBatchResultDTO"];
+        };
+      };
+    };
+  };
+  restoreTransactionsBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeleteTransactionsBatchDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["TransactionBatchResultDTO"];
+        };
       };
     };
   };

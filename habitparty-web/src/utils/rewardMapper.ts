@@ -25,6 +25,28 @@ import type {
 
 export { suggestRewardIconFromTitle } from "./iconSuggestion";
 
+const REWARD_ICON_ALIAS_MAP = new Map<string, LucideIcon>([
+  ["joystick", Gamepad2],
+  ["book_open", BookOpen],
+  ["smile", Smile],
+  ["timer", Timer],
+  ["star", Star],
+  ["mystery_box", Package],
+  ["package", Package],
+]);
+
+/**
+ * Tenta resolver o ícone de uma recompensa (incluindo aliases legados) em O(1),
+ * retornando `undefined` quando o ID não pertence ao catálogo de recompensas.
+ */
+export function findRewardIcon(iconId?: string | null): LucideIcon | undefined {
+  if (!iconId) return undefined;
+  const normalized = iconId.trim().toLowerCase();
+  return (
+    REWARD_ICON_ALIAS_MAP.get(normalized) ?? REWARD_ICON_MAP.get(normalized)
+  );
+}
+
 /**
  * Resolve o componente de ícone de uma recompensa em O(1) via REWARD_ICON_MAP.
  */
@@ -32,18 +54,8 @@ export function getRewardIcon(
   iconId?: string | null,
   rewardType?: string | null,
 ): LucideIcon {
-  if (iconId) {
-    const normalized = iconId.trim().toLowerCase();
-    if (normalized === "joystick") return Gamepad2;
-    if (normalized === "book_open") return BookOpen;
-    if (normalized === "smile") return Smile;
-    if (normalized === "timer") return Timer;
-    if (normalized === "star") return Star;
-    if (normalized === "mystery_box" || normalized === "package")
-      return Package;
-    const found = REWARD_ICON_MAP.get(normalized);
-    if (found) return found;
-  }
+  const found = findRewardIcon(iconId);
+  if (found) return found;
   if (rewardType === "MysteryBox" || rewardType === "MISTERY_BOX") {
     return Package;
   }
@@ -112,15 +124,8 @@ export function toRewardTypeMessageKey(
   }
 }
 
-export function isMysteryBoxReward(
-  type?: string | null,
-  iconName?: string | null,
-): boolean {
-  return (
-    iconName === "mystery_box" ||
-    type === "MysteryBox" ||
-    type === "MISTERY_BOX"
-  );
+export function isMysteryBoxReward(type?: string | null): boolean {
+  return type === "MysteryBox" || type === "MISTERY_BOX";
 }
 
 export function getMysteryBoxTier(
@@ -287,9 +292,13 @@ export function mapRewardFormToCreatePayload(
 
 /**
  * Converte dados do formulário de recompensa no payload de atualização.
+ * Envia `description: ""` quando limpa para que o backend remova a descrição anterior.
  */
 export function mapRewardFormToUpdatePayload(
   input: RewardFormInput,
 ): UpdateRewardDTO {
-  return mapRewardFormToCreatePayload(input);
+  return {
+    ...mapRewardFormToCreatePayload(input),
+    description: input.description?.trim() ?? "",
+  };
 }

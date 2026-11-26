@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import com.habitparty.application.usecases.task.DailyResetUseCase;
 import com.habitparty.application.usecases.task.DailyResetUseCase.RolloverSummary;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 @Component
 public class DailyResetJob {
 
@@ -21,14 +23,16 @@ public class DailyResetJob {
     this.dailyResetUseCase = dailyResetUseCase;
   }
 
-  // Recupera no startup os ciclos diários pendentes (mesma lógica idempotente da Opção A)
+  // Recupera no startup os ciclos diários pendentes (protegido por ShedLock em deploys multi-réplica)
   @EventListener(ApplicationReadyEvent.class)
+  @SchedulerLock(name = "dailyResetJob", lockAtMostFor = "PT14M", lockAtLeastFor = "PT5S")
   public void catchUpOverdueDailyRolloverOnStartup() {
     executeAndLog("Startup");
   }
 
   // Roda a cada 15 minutos em UTC para cobrir fusos horários inteiros e fracionários (:00, :15, :30, :45)
   @Scheduled(cron = "0 */15 * * * *", zone = "UTC")
+  @SchedulerLock(name = "dailyResetJob", lockAtMostFor = "PT14M", lockAtLeastFor = "PT30S")
   public void runDailyReset() {
     executeAndLog("Agendador UTC");
   }

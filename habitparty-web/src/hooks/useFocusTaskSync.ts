@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { normalizeTaskType } from "@/constants/task";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { useUserStore } from "@/store/userStore";
 import type { Task, TaskResponseDTO } from "@/types/task";
 import { calculateTaskReward } from "@/utils/economy";
-import { computeOptimisticHabitDelta } from "@/utils/taskMapper";
+import {
+  computeOptimisticHabitDelta,
+  mergeTaskWithResponseDTO,
+} from "@/utils/taskMapper";
 
 export interface FocusRecordedEventDetail {
   taskId?: string;
@@ -49,6 +53,9 @@ export function applyFocusCompletionToTask(
   updatedTask?: TaskResponseDTO,
 ): Task {
   if (normalizeTaskType(task) === "habit") {
+    if (updatedTask) {
+      return mergeTaskWithResponseDTO(task, updatedTask, timeZone);
+    }
     return {
       ...task,
       ...computeOptimisticHabitDelta(task, 1, timeZone),
@@ -57,22 +64,22 @@ export function applyFocusCompletionToTask(
     };
   }
 
+  if (updatedTask) {
+    const merged = mergeTaskWithResponseDTO(task, updatedTask, timeZone);
+    return {
+      ...merged,
+      completed: true,
+      hasClaimedReward: true,
+      lastCompletedAt: merged.lastCompletedAt ?? new Date().toISOString(),
+    };
+  }
+
   const nextChecklist =
-    updatedTask?.checklist ??
-    (task.checklist && task.checklist.length > 0
+    task.checklist && task.checklist.length > 0
       ? task.checklist.map((item) => ({ ...item, isCompleted: true }))
-      : task.checklist);
-  const nextPenaltyApplied =
-    updatedTask?.isPenaltyApplied ?? task.isPenaltyApplied;
-  const nextStreak =
-    updatedTask?.currentStreak !== undefined
-      ? updatedTask.currentStreak
-      : task.streak;
+      : task.checklist;
   const reward = calculateTaskReward({
     ...task,
-    streak: nextStreak,
-    currentStreak: nextStreak,
-    isPenaltyApplied: nextPenaltyApplied,
     checklist: nextChecklist,
     timeZone,
   });
@@ -81,17 +88,7 @@ export function applyFocusCompletionToTask(
     ...task,
     completed: true,
     hasClaimedReward: true,
-    lastCompletedAt: updatedTask?.lastCompletedAt ?? new Date().toISOString(),
-    streak: nextStreak,
-    currentStreak:
-      updatedTask?.currentStreak !== undefined
-        ? updatedTask.currentStreak
-        : task.currentStreak,
-    highestStreak:
-      updatedTask?.highestStreak !== undefined
-        ? updatedTask.highestStreak
-        : task.highestStreak,
-    isPenaltyApplied: nextPenaltyApplied,
+    lastCompletedAt: new Date().toISOString(),
     checklist: nextChecklist,
     rewardXp: reward.xp,
     rewardGold: reward.gold,
@@ -115,10 +112,8 @@ export function useFocusTaskSync({
   onFocusRecorded,
   onTaskCompleted,
 }: UseFocusTaskSyncOptions) {
-  const onFocusRecordedRef = useRef(onFocusRecorded);
-  const onTaskCompletedRef = useRef(onTaskCompleted);
-  onFocusRecordedRef.current = onFocusRecorded;
-  onTaskCompletedRef.current = onTaskCompleted;
+  const onFocusRecordedRef = useLatestRef(onFocusRecorded);
+  const onTaskCompletedRef = useLatestRef(onTaskCompleted);
 
   useEffect(() => {
     const handleFocusRecorded = (event: Event) => {
@@ -159,5 +154,5 @@ export function useFocusTaskSync({
         handleTaskCompleted,
       );
     };
-  }, []);
+  }, [onFocusRecordedRef, onTaskCompletedRef]);
 }

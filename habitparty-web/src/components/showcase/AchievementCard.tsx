@@ -1,8 +1,10 @@
 "use client";
 
-import { CheckCircle2, Lock, Pin, Trophy } from "lucide-react";
+import { CheckCircle2, Lock, Trophy } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { memo } from "react";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
+import { GalleryPinButton } from "@/components/showcase/GalleryPinButton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getRarityTheme } from "@/constants/achievements";
 import { useDateFormat } from "@/hooks/useDateFormat";
@@ -10,20 +12,24 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { AchievementItemResponseDTO } from "@/types/showcase";
-import { cn, formatShortDate, resolveAchievementCopy } from "@/utils";
+import { cn } from "@/utils/cn";
+import { formatShortDate } from "@/utils/date";
+import { resolveAchievementCopy } from "@/utils/showcaseUtils";
 
 interface AchievementCardProps {
   achievement: AchievementItemResponseDTO;
   isPinnedInShowcase: boolean;
   isVisitorMode: boolean;
   onPinToShowcase: (achievement: AchievementItemResponseDTO) => void;
+  onUnpinFromShowcase?: (achievement: AchievementItemResponseDTO) => void;
 }
 
-export function AchievementCard({
+export const AchievementCard = memo(function AchievementCard({
   achievement,
   isPinnedInShowcase,
   isVisitorMode,
   onPinToShowcase,
+  onUnpinFromShowcase,
 }: AchievementCardProps) {
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
@@ -189,27 +195,22 @@ export function AchievementCard({
             )}
 
             {!isVisitorMode && (
-              <button
-                type="button"
-                onClick={() => onPinToShowcase(achievement)}
-                className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer whitespace-nowrap shrink-0",
-                  isPinnedInShowcase
-                    ? "bg-gold/20 border-gold text-amber-700 dark:text-gold"
-                    : "bg-surface/70 border-neutral-700 text-neutral-200 hover:border-gold/50 hover:text-amber-700 dark:border-primary/25 dark:text-neutral-300 dark:hover:text-gold",
-                )}
-              >
-                <Pin size={11} />
-                <span>
-                  {isPinnedInShowcase
-                    ? t("pinnedInShowcase")
-                    : t("pinToShowcase")}
-                </span>
-              </button>
+              <GalleryPinButton
+                isPinned={isPinnedInShowcase}
+                pinnedLabel={t("pinnedInShowcase")}
+                pinLabel={t("pinToShowcase")}
+                unpinLabel={t("unpinFromShowcase")}
+                onPin={() => onPinToShowcase(achievement)}
+                onUnpin={
+                  onUnpinFromShowcase
+                    ? () => onUnpinFromShowcase(achievement)
+                    : undefined
+                }
+              />
             )}
           </div>
         )}
       </div>
     </article>
   );
-}
+});

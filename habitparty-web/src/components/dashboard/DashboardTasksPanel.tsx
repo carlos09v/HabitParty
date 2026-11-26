@@ -1,67 +1,56 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TaskFilters } from "@/components/dashboard/TaskFilters";
 import { TaskTable } from "@/components/dashboard/TaskTable";
+import { useResolvedReadOnlySets } from "@/components/dashboard/useResolvedReadOnlySets";
 import { TaskModalsHost } from "@/components/tasks/shared";
-import { DASHBOARD_ITEMS_PER_PAGE } from "@/constants/dashboard";
 import { useDashboardTaskActions } from "@/hooks/useDashboardTaskActions";
 import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
 import {
   applyFocusRecordedToTask,
   useFocusTaskSync,
 } from "@/hooks/useFocusTaskSync";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { useQuickFocusTask } from "@/hooks/useQuickFocusTask";
 import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import { useTaskInteractionModals } from "@/hooks/useTaskInteractionModals";
+import { useDashboardFilterStore } from "@/store/dashboardFilterStore";
+import { useUIStore } from "@/store/uiStore";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task, TaskFilterType } from "@/types/task";
-import { extractAvailableTagOptions } from "@/utils/tags";
-import { buildReadOnlySets, isTaskInReadOnlyScope } from "@/utils/taskMapper";
-
-const UpgradePremiumModal = dynamic(
-  () =>
-    import("@/components/subscription/UpgradePremiumModal").then((mod) => ({
-      default: mod.UpgradePremiumModal,
-    })),
-  { ssr: false },
-);
-
-const SwitchFocusTargetModal = dynamic(
-  () =>
-    import("@/components/focus/modals/SwitchFocusTargetModal").then((mod) => ({
-      default: mod.SwitchFocusTargetModal,
-    })),
-  { ssr: false },
-);
+import { computeTagTaskCounts, extractAvailableTagOptions } from "@/utils/tags";
+import { isTaskInReadOnlyScope } from "@/utils/taskMapper";
+import { replaceUrlSearchParams } from "@/utils/urlParams";
 
 export function DashboardTasksPanel({
-  initialTasks,
   columns,
   workspaces = [],
+  activeWorkspaceId,
   defaultColumnId: explicitDefaultColumnId,
   isReadOnly = false,
-  tasks: externalTasks,
-  onTasksChange,
+  readOnlyWorkspaceIds: propReadOnlyWorkspaceIds,
+  readOnlyColumnIds: propReadOnlyColumnIds,
+  tasks: tasksState,
+  onTasksChange: setTasksState,
   hasColumns = true,
+  createTaskTrigger = 0,
   onCreateFirstColumn,
+  timeZone,
 }: DashboardTasksPanelProps) {
   const t = useTranslations("dashboard.tasksPanel");
   const searchParams = useSearchParams();
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
+  const itemsPerPage = useDashboardFilterStore((s) => s.itemsPerPage);
+  const setItemsPerPage = useDashboardFilterStore((s) => s.setItemsPerPage);
+  const resetAdvancedFilters = useDashboardFilterStore(
+    (s) => s.resetAdvancedFilters,
+  );
 
-  const [internalTasks, setInternalTasks] = useState<Task[]>(initialTasks);
-
-  // Sincroniza estado local caso os dados do servidor mudem
-  useEffect(() => {
-    setInternalTasks(initialTasks);
-  }, [initialTasks]);
-
-  const tasksState = externalTasks ?? internalTasks;
-  const setTasksState = onTasksChange ?? setInternalTasks;
+  const tasksStateRef = useLatestRef(tasksState);
 
   const {
     taskModalState,
@@ -76,7 +65,7 @@ export function DashboardTasksPanel({
     closeContextMenu,
   } = useTaskInteractionModals();
 
-  // Sincroniza eventos de foco com a lista ativa (DashboardMain ou local) e com o popover aberto
+  // Sincroniza eventos de foco com a lista controlada (resolvedSelectedTaskDetails deriva o task vivo automaticamente)
   useFocusTaskSync({
     onFocusRecorded: useCallback(
       (taskId: string, durationMinutes: number, cycles: number) => {
@@ -87,63 +76,33 @@ export function DashboardTasksPanel({
               : task,
           ),
         );
-        setSelectedTaskDetails((prev) =>
-          prev && prev.task.id === taskId
-            ? {
-                ...prev,
-                task: applyFocusRecordedToTask(
-                  prev.task,
-                  durationMinutes,
-                  cycles,
-                ),
-              }
-            : prev,
-        );
       },
-      [setTasksState, setSelectedTaskDetails],
+      [setTasksState],
     ),
     onTaskCompleted: useCallback(
       (taskId: string, transformTask: (task: Task) => Task) => {
         setTasksState((prev) =>
           prev.map((task) => (task.id === taskId ? transformTask(task) : task)),
         );
-        setSelectedTaskDetails((prev) =>
-          prev && prev.task.id === taskId
-            ? {
-                ...prev,
-                task: transformTask(prev.task),
-              }
-            : prev,
-        );
       },
-      [setTasksState, setSelectedTaskDetails],
+      [setTasksState],
     ),
   });
 
   const hasMultipleWorkspaces = workspaces.length > 1;
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const {
-    pendingFocusTask,
-    currentFocusTarget,
-    clearPendingFocusTask,
-    handleStartFocusTask,
-    handleTransferFocusTask,
-    handleSaveAndStartFocusTask,
-    handleDiscardAndStartFocusTask,
-  } = useQuickFocusTask();
+  const quickFocus = useQuickFocusTask();
+  const handleStartFocusTaskFromHook = quickFocus.handleStartFocusTask;
 
   const validWorkspaceIds = useMemo(
     () => workspaces.map((w) => w.id).filter((id): id is string => Boolean(id)),
     [workspaces],
   );
-  const validColumnIds = useMemo(
-    () => columns.map((c) => c.id).filter((id): id is string => Boolean(id)),
-    [columns],
-  );
 
-  const { readOnlyWorkspaceIds, readOnlyColumnIds } = useMemo(
-    () => buildReadOnlySets(workspaces, columns),
-    [workspaces, columns],
+  const { readOnlyWorkspaceIds, readOnlyColumnIds } = useResolvedReadOnlySets(
+    workspaces,
+    columns,
+    propReadOnlyWorkspaceIds,
+    propReadOnlyColumnIds,
   );
 
   const writableColumns = useMemo(
@@ -159,41 +118,33 @@ export function DashboardTasksPanel({
     [tasksState],
   );
 
+  const tagCounts = useMemo(
+    () => computeTagTaskCounts(tasksState, availableTags),
+    [tasksState, availableTags],
+  );
+
   const {
     activeFilter,
     setActiveFilter,
     selectedDate,
     handleClearDate,
+    searchQuery,
+    setSearchQuery,
     advancedFilters,
     setAdvancedFilters,
     filteredTasks,
     overdueCount,
-  } = useDashboardTaskFilters(tasksState, validWorkspaceIds, validColumnIds);
-
-  const handleTaskUpdatedInDetailsSync = useCallback(
-    (updatedTask: Task) => {
-      setSelectedTaskDetails((prev) =>
-        prev && prev.task.id === updatedTask.id
-          ? { ...prev, task: updatedTask }
-          : prev,
-      );
-    },
-    [setSelectedTaskDetails],
-  );
-
-  const handleTaskDeletedSync = useCallback(
-    (deletedTaskId: string) => {
-      setSelectedTaskDetails((prev) =>
-        prev && prev.task.id === deletedTaskId ? null : prev,
-      );
-    },
-    [setSelectedTaskDetails],
-  );
+  } = useDashboardTaskFilters(tasksState, validWorkspaceIds, columns, {
+    readOnlyWorkspaceIds,
+    readOnlyColumnIds,
+    timeZone,
+  });
 
   const {
     handleToggleComplete,
     handleHabitChange,
     handleDeleteTask,
+    scheduleUndoDeleteTask,
     handleDuplicateTask,
     duplicatingTaskIds,
     handleTaskSaved,
@@ -203,8 +154,6 @@ export function DashboardTasksPanel({
     columns,
     setTasks: setTasksState,
     defaultColumnId,
-    onTaskUpdatedInDetails: handleTaskUpdatedInDetailsSync,
-    onTaskDeleted: handleTaskDeletedSync,
   });
 
   // Paginação local inteligente sem recarregar o servidor a cada clique
@@ -225,25 +174,75 @@ export function DashboardTasksPanel({
     }
   }, [pageParam]);
 
+  const syncPageUrlToFirst = useCallback(() => {
+    replaceUrlSearchParams((params) => {
+      params.delete("page");
+    });
+  }, []);
+
+  const resetPagination = useCallback(() => {
+    setCurrentPage(1);
+    syncPageUrlToFirst();
+  }, [syncPageUrlToFirst]);
+
+  // Reseta página e limpa ?page= da URL em uma única fonte de verdade quando qualquer filtro/aba/data muda
+  const paginationResetKey = `${activeFilter}|${selectedDate ?? ""}|${advancedFilters.workspaceId}|${advancedFilters.taskType}|${advancedFilters.columnId}|${advancedFilters.difficulty}|${advancedFilters.priority}|${advancedFilters.tag ?? ""}|${advancedFilters.hideCompleted}|${advancedFilters.sortBy}|${searchQuery}|${itemsPerPage}`;
+  const prevPaginationResetKeyRef = useRef(paginationResetKey);
+
+  useEffect(() => {
+    if (prevPaginationResetKeyRef.current === paginationResetKey) return;
+    prevPaginationResetKeyRef.current = paginationResetKey;
+    resetPagination();
+  }, [paginationResetKey, resetPagination]);
+
+  // Ajusta ?page= na URL quando o total encolhe (ex: após excluir/concluir tarefas na última página)
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredTasks.length / itemsPerPage),
+  );
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      replaceUrlSearchParams((params) => {
+        if (totalPages <= 1) {
+          params.delete("page");
+        } else {
+          params.set("page", String(totalPages));
+        }
+      });
+    }
+  }, [currentPage, totalPages]);
+
   const handleFilterChangeWithReset = useCallback(
     (filter: TaskFilterType) => {
-      setCurrentPage(1);
       setActiveFilter(filter);
     },
     [setActiveFilter],
   );
 
   const handleClearDateWithReset = useCallback(() => {
-    setCurrentPage(1);
     handleClearDate();
   }, [handleClearDate]);
 
+  const handleSearchChangeWithReset = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+    },
+    [setSearchQuery],
+  );
+
   const handleAdvancedFiltersChangeWithReset = useCallback(
     (filters: typeof advancedFilters) => {
-      setCurrentPage(1);
       setAdvancedFilters(filters);
     },
     [setAdvancedFilters],
+  );
+
+  const handleItemsPerPageChange = useCallback(
+    (size: number) => {
+      setItemsPerPage(size);
+    },
+    [setItemsPerPage],
   );
 
   const {
@@ -256,6 +255,7 @@ export function DashboardTasksPanel({
     cancelDeleteTask,
   } = useTaskDeleteFlow({
     onConfirmDelete: handleDeleteTask,
+    onSimpleDelete: scheduleUndoDeleteTask,
   });
 
   const handleOpenContextMenu = useCallback(
@@ -286,29 +286,35 @@ export function DashboardTasksPanel({
   const ensureTaskWritable = useCallback(
     (task: Task, columnId?: string): boolean => {
       if (isTaskReadOnly(task, columnId)) {
-        setIsUpgradeModalOpen(true);
+        openUpgradeModal();
         toast.error(t("readOnlyTaskActionError"));
         return false;
       }
       return true;
     },
-    [isTaskReadOnly, t],
+    [isTaskReadOnly, openUpgradeModal, t],
   );
 
   const ensureTaskIdWritable = useCallback(
     (taskId: string): boolean => {
-      const target = tasksState.find((item) => item.id === taskId);
+      const target = tasksStateRef.current.find((item) => item.id === taskId);
       if (target && isTaskReadOnly(target)) {
-        setIsUpgradeModalOpen(true);
+        openUpgradeModal();
         toast.error(t("readOnlyTaskActionError"));
         return false;
       }
       return true;
     },
-    [tasksState, isTaskReadOnly, t],
+    [isTaskReadOnly, openUpgradeModal, t, tasksStateRef],
   );
 
   const defaultWritableColumnId = useMemo(() => {
+    if (
+      advancedFilters.columnId !== "all" &&
+      writableColumns.some((c) => c.id === advancedFilters.columnId)
+    ) {
+      return advancedFilters.columnId;
+    }
     const filteredWsCol =
       advancedFilters.workspaceId !== "all"
         ? writableColumns.find(
@@ -316,27 +322,51 @@ export function DashboardTasksPanel({
           )?.id
         : undefined;
     return filteredWsCol || defaultColumnId;
-  }, [writableColumns, advancedFilters.workspaceId, defaultColumnId]);
+  }, [
+    writableColumns,
+    advancedFilters.columnId,
+    advancedFilters.workspaceId,
+    defaultColumnId,
+  ]);
 
   const handleOpenCreateTaskModal = useCallback(() => {
     if (writableColumns.length === 0) {
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       toast.error(t("newTaskNoWritableTitle"));
       return;
     }
     closeTaskDetails();
+    const contextualTaskType =
+      advancedFilters.taskType !== "all" ? advancedFilters.taskType : undefined;
+    const contextualInitialValues = selectedDate
+      ? { dueDate: selectedDate }
+      : undefined;
     setTaskModalState({
       isOpen: true,
       taskToEdit: null,
       columnId: defaultWritableColumnId,
+      defaultTaskType: contextualTaskType,
+      initialValues: contextualInitialValues,
     });
   }, [
     writableColumns.length,
     defaultWritableColumnId,
+    advancedFilters.taskType,
+    selectedDate,
     closeTaskDetails,
     setTaskModalState,
+    openUpgradeModal,
     t,
   ]);
+
+  const prevCreateTaskTriggerRef = useRef(createTaskTrigger);
+  const openCreateTaskRef = useLatestRef(handleOpenCreateTaskModal);
+  useEffect(() => {
+    if (createTaskTrigger > prevCreateTaskTriggerRef.current) {
+      prevCreateTaskTriggerRef.current = createTaskTrigger;
+      openCreateTaskRef.current();
+    }
+  }, [createTaskTrigger, openCreateTaskRef]);
 
   const handleEditTask = useCallback(
     (task: Task, columnId?: string) => {
@@ -392,11 +422,16 @@ export function DashboardTasksPanel({
     (updated: Task) => {
       if (!ensureTaskWritable(updated)) return;
       handleTaskDetailsUpdate(updated);
-      setSelectedTaskDetails((prev) =>
-        prev ? { ...prev, task: updated } : null,
-      );
     },
-    [ensureTaskWritable, handleTaskDetailsUpdate, setSelectedTaskDetails],
+    [ensureTaskWritable, handleTaskDetailsUpdate],
+  );
+
+  const guardedStartFocusTask = useCallback(
+    (task: Task) => {
+      if (!ensureTaskWritable(task)) return;
+      handleStartFocusTaskFromHook(task);
+    },
+    [ensureTaskWritable, handleStartFocusTaskFromHook],
   );
 
   const resolvedSelectedTaskDetails = useMemo(() => {
@@ -404,10 +439,62 @@ export function DashboardTasksPanel({
     const liveTask = tasksState.find(
       (item) => item.id === selectedTaskDetails.task.id,
     );
-    return liveTask
-      ? { ...selectedTaskDetails, task: liveTask }
-      : selectedTaskDetails;
+    return liveTask ? { ...selectedTaskDetails, task: liveTask } : null;
   }, [selectedTaskDetails, tasksState]);
+
+  useEffect(() => {
+    if (selectedTaskDetails && !resolvedSelectedTaskDetails) {
+      setSelectedTaskDetails(null);
+    }
+  }, [
+    selectedTaskDetails,
+    resolvedSelectedTaskDetails,
+    setSelectedTaskDetails,
+  ]);
+
+  const hasActiveSearchOrFilters =
+    searchQuery.trim() !== "" ||
+    advancedFilters.workspaceId !== "all" ||
+    advancedFilters.taskType !== "all" ||
+    advancedFilters.columnId !== "all" ||
+    advancedFilters.difficulty !== "all" ||
+    advancedFilters.priority !== "all" ||
+    advancedFilters.tag !== null ||
+    advancedFilters.hideCompleted;
+
+  const handleResetSearchAndFilters = useCallback(() => {
+    setSearchQuery("");
+    resetAdvancedFilters();
+    resetPagination();
+  }, [setSearchQuery, resetAdvancedFilters, resetPagination]);
+
+  const handleTaskSavedAndClose = useCallback(
+    (savedTask: Task) => {
+      handleTaskSaved(savedTask);
+      closeTaskModal();
+    },
+    [handleTaskSaved, closeTaskModal],
+  );
+
+  const deleteModalLabels = useMemo(
+    () => ({
+      title: t("deleteModalTitle"),
+      description: (
+        <>
+          {t("deleteModalDescPrefix")}{" "}
+          <span className="font-bold text-neutral-100">
+            &quot;{taskToDelete?.task.title}&quot;
+          </span>
+          {t("deleteModalDescSuffix")}
+        </>
+      ),
+      confirmText: t("deleteModalConfirm"),
+      cancelText: t("deleteModalCancel"),
+      deleteHistoryLabel: t("deleteHistoryLabel"),
+      deleteHistoryHint: t("deleteHistoryHint"),
+    }),
+    [t, taskToDelete?.task.title],
+  );
 
   const formColumns = useMemo(
     () =>
@@ -425,16 +512,16 @@ export function DashboardTasksPanel({
   );
 
   return (
-    <section className="flex flex-col gap-3">
+    <section
+      id="dashboard-tasks-panel"
+      className="flex flex-col gap-3 scroll-mt-4"
+    >
       <header className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2.5 min-w-0">
-          <h3 className="font-bold text-neutral-50 text-lg">{t("title")}</h3>
-          <output
-            className="px-2 py-0.5 rounded-md bg-surface/80 dark:bg-surface/60 border border-neutral-700/70 dark:border-primary/30 text-xs text-neutral-300 font-bold tabular-nums shrink-0"
-            aria-label={t("title")}
-          >
+          <h2 className="font-bold text-neutral-50 text-lg">{t("title")}</h2>
+          <span className="px-2 py-0.5 rounded-md bg-surface/80 dark:bg-surface/60 border border-neutral-700/70 dark:border-primary/30 text-xs text-neutral-300 font-bold tabular-nums shrink-0">
             {filteredTasks.length}
-          </output>
+          </span>
         </div>
       </header>
 
@@ -443,31 +530,42 @@ export function DashboardTasksPanel({
         onFilterChange={handleFilterChangeWithReset}
         selectedDate={selectedDate}
         onClearDate={handleClearDateWithReset}
+        searchQuery={searchQuery}
+        onSearchQueryChange={handleSearchChangeWithReset}
+        activeWorkspaceId={activeWorkspaceId}
         columns={columns}
         workspaces={workspaces}
+        availableTags={availableTags}
+        tagCounts={tagCounts}
         advancedFilters={advancedFilters}
         onAdvancedFiltersChange={handleAdvancedFiltersChangeWithReset}
+        onClearAllFilters={handleResetSearchAndFilters}
         onCreateTask={handleOpenCreateTaskModal}
         canCreateTask={writableColumns.length > 0}
         createTaskDisabledReason={t("newTaskNoWritableTitle")}
         overdueCount={overdueCount}
+        timeZone={timeZone}
       />
 
       <TaskTable
-        itemsPerPage={DASHBOARD_ITEMS_PER_PAGE}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={handleItemsPerPageChange}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         tasks={filteredTasks}
         columns={columns}
         workspaces={workspaces}
+        readOnlyWorkspaceIds={readOnlyWorkspaceIds}
+        readOnlyColumnIds={readOnlyColumnIds}
         activeFilter={activeFilter}
         onToggle={guardedToggleComplete}
         onHabitChange={guardedHabitChange}
         onContextMenu={handleOpenContextMenu}
         onOpenDetails={handleOpenDetails}
         onEditTask={handleEditTask}
-        onStartFocus={handleStartFocusTask}
+        onStartFocus={guardedStartFocusTask}
         selectedDate={selectedDate}
+        timeZone={timeZone}
         emptyVariant={
           !hasColumns
             ? isReadOnly
@@ -478,10 +576,12 @@ export function DashboardTasksPanel({
         onEmptyAction={
           !hasColumns
             ? isReadOnly
-              ? () => setIsUpgradeModalOpen(true)
+              ? openUpgradeModal
               : onCreateFirstColumn
             : undefined
         }
+        hasActiveFilters={hasActiveSearchOrFilters}
+        onClearFilters={handleResetSearchAndFilters}
         deletingTaskIds={checkingDeleteTaskIds}
       />
 
@@ -492,6 +592,8 @@ export function DashboardTasksPanel({
         defaultColumnId={defaultWritableColumnId}
         defaultColumnTitle={t("defaultList")}
         showWorkspaceName={hasMultipleWorkspaces}
+        isTaskReadOnly={isTaskReadOnly}
+        quickFocus={quickFocus}
         contextMenu={contextMenu}
         onCloseContextMenu={closeContextMenu}
         selectedTaskDetails={resolvedSelectedTaskDetails}
@@ -499,61 +601,21 @@ export function DashboardTasksPanel({
         taskModalState={taskModalState}
         onCloseTaskModal={closeTaskModal}
         onOpenEditTask={handleEditTask}
-        onTaskSaved={(savedTask) => {
-          handleTaskSaved(savedTask);
-          closeTaskModal();
-        }}
+        onTaskSaved={handleTaskSavedAndClose}
         onTaskDetailsUpdate={guardedTaskDetailsUpdate}
         onDuplicateTask={guardedDuplicateTask}
         duplicatingTaskIds={duplicatingTaskIds}
         onRequestDeleteTask={guardedRequestDeleteTask}
         onToggleComplete={guardedToggleComplete}
         onHabitChange={guardedHabitChange}
-        onStartFocus={handleStartFocusTask}
+        onStartFocus={guardedStartFocusTask}
         taskToDelete={taskToDelete}
         deleteHistory={deleteHistory}
         onDeleteHistoryChange={setDeleteHistory}
         onConfirmDeleteTask={confirmDeleteTask}
         onCancelDeleteTask={cancelDeleteTask}
-        deleteModalLabels={{
-          title: t("deleteModalTitle"),
-          description: (
-            <>
-              {t("deleteModalDescPrefix")}{" "}
-              <span className="font-bold text-neutral-100">
-                &quot;{taskToDelete?.task.title}&quot;
-              </span>
-              {t("deleteModalDescSuffix")}
-            </>
-          ),
-          confirmText: t("deleteModalConfirm"),
-          cancelText: t("deleteModalCancel"),
-          deleteHistoryLabel: t("deleteHistoryLabel"),
-          deleteHistoryHint: t("deleteHistoryHint"),
-        }}
+        deleteModalLabels={deleteModalLabels}
       />
-
-      {isUpgradeModalOpen && (
-        <UpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      )}
-
-      {pendingFocusTask && (
-        <SwitchFocusTargetModal
-          isOpen={pendingFocusTask !== null}
-          onClose={clearPendingFocusTask}
-          currentName={currentFocusTarget?.name || t("currentSessionFallback")}
-          newTargetName={pendingFocusTask.title}
-          isCurrentInventory={currentFocusTarget?.type === "inventory"}
-          isCurrentTask={currentFocusTarget?.type === "task"}
-          isNewTask={true}
-          onTransfer={handleTransferFocusTask}
-          onSaveAndStartNew={handleSaveAndStartFocusTask}
-          onDiscardAndStartNew={handleDiscardAndStartFocusTask}
-        />
-      )}
     </section>
   );
 }

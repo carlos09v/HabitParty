@@ -104,10 +104,6 @@ public class SearchSocialUsersUseCase {
     return results;
   }
 
-  public static SocialRelationshipStatus resolveRelationshipStatus(UUID viewerId, Friendship rel) {
-    return SocialAccessSupport.resolveRelationshipStatus(viewerId, rel);
-  }
-
   private boolean canReceiveRequest(User target, boolean matchedByCode) {
     FriendRequestPolicy policy = target.getFriendRequestPolicy();
     if (policy == FriendRequestPolicy.NONE) {

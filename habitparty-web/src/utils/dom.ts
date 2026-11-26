@@ -1,12 +1,14 @@
 import type React from "react";
 
 /**
- * Handlers de ponteiro para impedir que botões internos iniciem arraste (@dnd-kit) em cards/linhas ordenáveis.
+ * Handlers de ponteiro para impedir que botões internos iniciem arraste (@dnd-kit)
+ * ou disparem clique duplo em cards/linhas ordenáveis.
  */
 export const STOP_DRAG_PROPAGATION_PROPS = {
   onPointerDown: (e: React.PointerEvent) => e.stopPropagation(),
   onMouseDown: (e: React.MouseEvent) => e.stopPropagation(),
   onTouchStart: (e: React.TouchEvent) => e.stopPropagation(),
+  onDoubleClick: (e: React.MouseEvent) => e.stopPropagation(),
 } as const;
 
 /**

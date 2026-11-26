@@ -2,9 +2,8 @@
 
 import { Crown, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { ListCard } from "@/components/ui/ListCard";
-import { UpgradePremiumModal } from "./UpgradePremiumModal";
+import { useUIStore } from "@/store/uiStore";
 
 interface UpgradeColumnLimitCardProps {
   isPremium?: boolean;
@@ -18,7 +17,7 @@ export function UpgradeColumnLimitCard({
   maxCount,
 }: UpgradeColumnLimitCardProps) {
   const t = useTranslations("upgradeColumnLimitCard");
-  const [isOpen, setIsOpen] = useState(false);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
 
   // Se já for Premium, realmente bateu o teto absoluto de 6/6
   if (isPremium) {
@@ -43,23 +42,18 @@ export function UpgradeColumnLimitCard({
 
   // Se for Free (4/4 ou com colunas na mochila), o card convida para o upgrade com 1 clique!
   return (
-    <>
-      <ListCard
-        title={title}
-        subtitle={subtitle}
-        onClick={() => setIsOpen(true)}
-        className="cursor-pointer group border-gold/40 bg-gold/5 hover:bg-gold/15 hover:border-gold transition-[border-color,background-color]"
-        icon={
-          <Crown
-            size={18}
-            className="text-gold fill-gold/20 group-hover:scale-110 transition-transform"
-            aria-hidden="true"
-          />
-        }
-      />
-      {isOpen && (
-        <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
-      )}
-    </>
+    <ListCard
+      title={title}
+      subtitle={subtitle}
+      onClick={openUpgradeModal}
+      className="cursor-pointer group border-gold/40 bg-gold/5 hover:bg-gold/15 hover:border-gold transition-[border-color,background-color]"
+      icon={
+        <Crown
+          size={18}
+          className="text-gold fill-gold/20 group-hover:scale-110 transition-transform"
+          aria-hidden="true"
+        />
+      }
+    />
   );
 }

@@ -21,6 +21,7 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.ResetAccountDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
+import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserLayoutSummaryResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -50,9 +51,15 @@ public interface UserApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
-    @Operation(summary = "Listar Todos os Usuários", description = "Retorna todos os usuários (rota administrativa).")
+    @Operation(
+        summary = "Listar Usuários (Legado/Paginado)",
+        description = "Retorna usuários paginados (rota administrativa legada; prefira /api/v1/admin/users).",
+        deprecated = true)
     @GetMapping
-    ResponseEntity<List<UserResponseDTO>> getAllUsers();
+    ResponseEntity<List<UserResponseDTO>> getAllUsers(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size
+    );
 
     @Operation(summary = "Deletar Conta do Usuário", description = "Exclui a conta do usuário logado.")
     @DeleteMapping("/me")
@@ -67,9 +74,9 @@ public interface UserApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
-    @Operation(summary = "Alterar Senha", description = "Atualiza a senha do usuário logado.")
+    @Operation(summary = "Alterar Senha", description = "Atualiza a senha do usuário logado, revoga sessões antigas e retorna novos tokens para manter a sessão atual.")
     @PatchMapping("/password")
-    ResponseEntity<Void> updatePassword(
+    ResponseEntity<SignInResponseDTO> updatePassword(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
         @RequestBody @Valid UpdateUserPasswordDTO dto
     );

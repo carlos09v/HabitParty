@@ -68,12 +68,9 @@ export async function getLocaleMode(): Promise<AppLocale> {
 
 export async function getDateFormat(): Promise<DateFormat> {
   const cookieStore = await cookies();
-  const raw = cookieStore.get("dateFormat")?.value;
-  if (raw) {
-    const decoded = decodeURIComponent(raw);
-    if (isValidDateFormat(decoded)) {
-      return decoded;
-    }
+  const decoded = decodeCookieValue(cookieStore.get("dateFormat")?.value);
+  if (isValidDateFormat(decoded)) {
+    return decoded;
   }
   const headerStore = await headers();
   const acceptLang = headerStore.get("accept-language");
@@ -84,12 +81,9 @@ export async function getDateFormat(): Promise<DateFormat> {
 
 export async function getTimeFormat(): Promise<TimeFormat> {
   const cookieStore = await cookies();
-  const raw = cookieStore.get("timeFormat")?.value;
-  if (raw) {
-    const decoded = decodeURIComponent(raw);
-    if (isValidTimeFormat(decoded)) {
-      return decoded;
-    }
+  const decoded = decodeCookieValue(cookieStore.get("timeFormat")?.value);
+  if (isValidTimeFormat(decoded)) {
+    return decoded;
   }
   const headerStore = await headers();
   const acceptLang = headerStore.get("accept-language");
@@ -100,16 +94,9 @@ export async function getTimeFormat(): Promise<TimeFormat> {
 
 export async function getUserTimezoneCookie(): Promise<string> {
   const cookieStore = await cookies();
-  const raw = cookieStore.get(TIMEZONE_COOKIE)?.value;
-  if (raw) {
-    try {
-      const decoded = decodeURIComponent(raw);
-      if (isValidIanaTimeZone(decoded)) {
-        return decoded.trim();
-      }
-    } catch {
-      // Fallback para timezone padrão caso cookie esteja malformado
-    }
+  const decoded = decodeCookieValue(cookieStore.get(TIMEZONE_COOKIE)?.value);
+  if (decoded && isValidIanaTimeZone(decoded)) {
+    return decoded.trim();
   }
   return DEFAULT_TIMEZONE;
 }

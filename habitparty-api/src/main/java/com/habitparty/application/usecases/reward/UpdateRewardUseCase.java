@@ -56,41 +56,23 @@ public class UpdateRewardUseCase {
 
     int newGroupCount = RewardGrouping.countRegularDistinctGroups(userRewards);
     int newDebtCount = RewardGrouping.countActiveDebts(userRewards);
-    if (newDebtCount > previousDebtCount && newDebtCount > RewardGrouping.MAX_ACTIVE_DEBTS) {
-      throw new LimitExceededException(
-          "Limite máximo de " + RewardGrouping.MAX_ACTIVE_DEBTS
-              + " dívidas ativas atingido. Quite uma dívida antes de registrar outra.");
-    }
-    int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
-    if (newGroupCount > previousGroupCount && newGroupCount > maxCards) {
-      throw new LimitExceededException(user.isPremium()
-          ? "Limite de " + RewardGrouping.PREMIUM_MAX_REWARD_CARDS
-              + " cards de recompensa por usuário atingido no plano premium."
-          : "Limite de " + RewardGrouping.FREE_MAX_REWARD_CARDS
-              + " cards de recompensa por usuário atingido no plano gratuito.");
-    }
+    RewardLimitValidator.assertNewDebtWithinLimit(previousDebtCount, newDebtCount);
+    RewardLimitValidator.assertRewardCardQuotaForUpdate(user.isPremium(), previousGroupCount, newGroupCount);
 
     String newGroupKey = RewardGrouping.groupKey(reward);
     RewardCategory updatedCategory = reward.getCategory().orElse(RewardCategory.NONE);
     RewardPackageLevel updatedPackageLevel = reward.getPackageLevel().orElse(RewardPackageLevel.NONE);
     if (RewardGrouping.isGroupable(reward.getType(), updatedCategory)) {
       if (!newGroupKey.equals(previousGroupKey)) {
-        int targetGroupVariants = RewardGrouping.countGroupVariants(userRewards, newGroupKey);
-        if (targetGroupVariants > RewardGrouping.MAX_VARIANTS_PER_GROUP) {
-          throw new LimitExceededException(
-              "Este card já atingiu o limite máximo de "
-                  + RewardGrouping.MAX_VARIANTS_PER_GROUP
-                  + " pacotes.");
-        }
+        RewardLimitValidator.assertGroupVariantLimit(RewardGrouping.countGroupVariants(userRewards, newGroupKey));
       }
-      if ((!newGroupKey.equals(previousGroupKey) || updatedPackageLevel != previousPackageLevel)
-          && RewardGrouping.findConflictingPackageTier(
-                  userRewards, newGroupKey, updatedPackageLevel, reward.getId())
-              .isPresent()) {
-        throw new DomainValidationException(
-            "Este card já possui um pacote de nível "
-                + RewardGrouping.formatPackageLevelLabel(updatedPackageLevel)
-                + ". Escolha outro nível.");
+      if (!newGroupKey.equals(previousGroupKey) || updatedPackageLevel != previousPackageLevel) {
+        RewardLimitValidator.assertNoConflictingPackageTier(
+            userRewards,
+            newGroupKey,
+            updatedPackageLevel,
+            reward.getId(),
+            "Este card já possui um pacote de nível %s. Escolha outro nível.");
       }
     }
 

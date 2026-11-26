@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/utils";
 
 export interface SwitchProps {
@@ -11,6 +9,8 @@ export interface SwitchProps {
   className?: string;
   thumbContent?: React.ReactNode;
   "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
 }
 
 export function Switch({
@@ -22,6 +22,8 @@ export function Switch({
   className,
   thumbContent,
   "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
 }: SwitchProps) {
   const isSm = size === "sm";
 
@@ -37,8 +39,10 @@ export function Switch({
         onCheckedChange(!checked);
       }}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       className={cn(
-        "relative inline-flex shrink-0 items-center rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:opacity-50 select-none",
+        "relative inline-flex shrink-0 items-center rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-50 select-none",
         isSm ? "h-5 w-9" : "h-6 w-11",
         checked
           ? "bg-amber-400 dark:bg-amber-500 shadow-glow-gold-xs border border-amber-300 dark:border-amber-400"

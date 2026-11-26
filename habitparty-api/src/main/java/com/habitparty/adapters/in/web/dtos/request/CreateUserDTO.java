@@ -27,7 +27,7 @@ public record CreateUserDTO(
     String email,
 
     @NotBlank
-    @Size(min = 8, max = 64, message = "A senha deve ter entre 8 e 20 caracteres")
+    @Size(min = 8, max = 64, message = "A senha deve ter entre 8 e 64 caracteres")
     @Pattern(
         regexp = "^(?=.*[A-Z])(?=.*[@$!%*?&#]).+$",
         message = "A nova senha deve conter pelo menos uma letra maiúscula e um caractere especial"

@@ -2,6 +2,7 @@ import type { components } from "@/api/schema";
 import type { FriendRequestPolicy, PrivacyLevel } from "@/types/social";
 
 export type UserResponseDTO = components["schemas"]["UserResponseDTO"] & {
+  hasPassword?: boolean;
   theme?: string | null;
   equippedTitle?: string | null;
   avatarPreset?: string | null;

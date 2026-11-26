@@ -81,40 +81,43 @@ export function HabitFields({ form }: HabitFieldsProps) {
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           <button
             type="button"
+            aria-pressed={habitType === "POSITIVE"}
             disabled={isPending}
             onClick={() => setHabitType("POSITIVE")}
             className={cn(
-              "flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 sm:px-2 rounded-lg border text-xs sm:text-body-s font-bold min-w-0 transition-colors cursor-pointer disabled:opacity-50",
+              "flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 sm:px-2 rounded-lg border text-xs sm:text-body-s font-bold min-w-0 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               habitType === "POSITIVE"
                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
                 : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
             )}
           >
-            <Plus size={15} className="shrink-0" />
+            <Plus size={15} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{t("positiveOption")}</span>
           </button>
 
           <button
             type="button"
+            aria-pressed={habitType === "NEGATIVE"}
             disabled={isPending}
             onClick={() => setHabitType("NEGATIVE")}
             className={cn(
-              "flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 sm:px-2 rounded-lg border text-xs sm:text-body-s font-bold min-w-0 transition-colors cursor-pointer disabled:opacity-50",
+              "flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 sm:px-2 rounded-lg border text-xs sm:text-body-s font-bold min-w-0 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               habitType === "NEGATIVE"
                 ? "bg-rose-500/10 border-rose-500/40 text-rose-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
                 : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
             )}
           >
-            <Minus size={15} className="shrink-0" />
+            <Minus size={15} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{t("negativeOption")}</span>
           </button>
 
           <button
             type="button"
+            aria-pressed={habitType === "BOTH"}
             disabled={isPending}
             onClick={() => setHabitType("BOTH")}
             className={cn(
-              "flex items-center justify-center gap-1 py-2 px-1.5 sm:px-2 rounded-lg border text-xs sm:text-body-s font-bold min-w-0 transition-colors cursor-pointer disabled:opacity-50",
+              "flex items-center justify-center gap-1 py-2 px-1.5 sm:px-2 rounded-lg border text-xs sm:text-body-s font-bold min-w-0 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               habitType === "BOTH"
                 ? "bg-purple-500/10 border-purple-500/40 text-purple-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
                 : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",

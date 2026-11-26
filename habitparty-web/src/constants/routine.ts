@@ -132,16 +132,18 @@ export const QUICK_COLUMN_TEMPLATES = COLUMN_ICONS.filter(
   (i) => !i.isPremium,
 ).slice(0, 6);
 
+/** Índice O(1) para resolução rápida de ícones de coluna (inclui aliases legados). */
+export const COLUMN_ICON_MAP = new Map<string, LucideIcon>([
+  ...COLUMN_ICONS.map((item) => [item.id.toLowerCase(), item.icon] as const),
+  ["droplet", Droplet],
+  ["pill", Pill],
+]);
+
 /** Retorna o ícone Lucide correspondente ao ID da coluna, com fallback para Sun. */
 export function getColumnIcon(iconId?: string | null): LucideIcon {
   if (iconId) {
-    const normalized = iconId.trim().toLowerCase();
-    if (normalized === "droplet") return Droplet;
-    if (normalized === "pill") return Pill;
-    const found = COLUMN_ICONS.find(
-      (item) => item.id.toLowerCase() === normalized,
-    );
-    if (found) return found.icon;
+    const found = COLUMN_ICON_MAP.get(iconId.trim().toLowerCase());
+    if (found) return found;
   }
   return Sun;
 }
@@ -246,7 +248,6 @@ export const COLUMN_ICON_KEYWORD_MAP: Readonly<Record<string, string>> = {
   agua: "water",
   water: "water",
   hidratacao: "water",
-  hidratação: "water",
   beber: "water",
   copo: "water",
 
@@ -409,19 +410,53 @@ export const COLUMN_ICON_KEYWORD_MAP: Readonly<Record<string, string>> = {
   pico: "mountain",
 };
 
-/** Sugere automaticamente o ícone com base nas palavras do nome da coluna. */
-export function inferColumnIcon(name: string): string | null {
+const PREMIUM_COLUMN_ICON_IDS = new Set<string>(
+  COLUMN_ICONS.filter((item) => item.isPremium).map((item) => item.id),
+);
+
+const COLUMN_ICON_PREFIX_ENTRIES = Object.entries(COLUMN_ICON_KEYWORD_MAP)
+  .filter(([keyword]) => keyword.length >= 5)
+  .sort(([a], [b]) => b.length - a.length);
+
+/**
+ * Sugere automaticamente o ícone com base nas palavras do nome da coluna.
+ * Faz correspondência por palavra inteira primeiro (evitando falsos positivos por substring
+ * como "Médio" → "med" ou "Trabalho diário" → "dia") e respeita a permissão VIP.
+ */
+export function inferColumnIcon(
+  name: string,
+  options?: { allowPremium?: boolean },
+): string | null {
   if (!name.trim()) return null;
+  const allowPremium = options?.allowPremium ?? false;
+  const isAllowed = (iconId: string) =>
+    allowPremium || !PREMIUM_COLUMN_ICON_IDS.has(iconId);
+
   const normalized = name
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+  const tokens = normalized.split(/[^a-z0-9]+/).filter(Boolean);
 
-  for (const [keyword, iconId] of Object.entries(COLUMN_ICON_KEYWORD_MAP)) {
-    if (normalized.includes(keyword)) {
-      return iconId;
+  for (const token of tokens) {
+    const exactMatch = COLUMN_ICON_KEYWORD_MAP[token];
+    if (exactMatch && isAllowed(exactMatch)) {
+      return exactMatch;
     }
   }
+
+  for (const token of tokens) {
+    for (const [keyword, iconId] of COLUMN_ICON_PREFIX_ENTRIES) {
+      if (
+        token.length <= keyword.length + 3 &&
+        token.startsWith(keyword) &&
+        isAllowed(iconId)
+      ) {
+        return iconId;
+      }
+    }
+  }
+
   return null;
 }
 

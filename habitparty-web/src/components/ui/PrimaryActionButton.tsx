@@ -23,7 +23,7 @@ export function PrimaryActionButton({
     <button
       type="button"
       className={cn(
-        "flex items-center gap-1.5 rounded-lg bg-gold-warm hover:bg-gold-warm-hover active:bg-gold-warm-pressed text-on-gold font-bold transition-[transform,background-color,color] duration-150 cursor-pointer active:scale-98 shadow-sm shrink-0 select-none px-3.5 py-2.5 text-body-s",
+        "flex items-center gap-1.5 rounded-lg bg-gold-warm hover:bg-gold-warm-hover active:bg-gold-warm-pressed text-on-gold font-bold transition-[transform,background-color,color,opacity] duration-150 cursor-pointer active:scale-98 shadow-sm shrink-0 select-none px-3.5 py-2.5 text-body-s disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:bg-gold-warm disabled:active:scale-100",
         className,
       )}
       {...props}

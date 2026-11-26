@@ -48,6 +48,7 @@
   },
   "faq": {
     "searchPlaceholder": "Pesquisar por dúvida, termo ou regra (ex: decaimento, caixa misteriosa, hardcore)...",
+    "categoriesAriaLabel": "Filtrar tópicos por categoria",
     "clearSearch": "Limpar busca",
     "sectionTitle": "Perguntas & Respostas Frequentes",
     "topicSingular": "tópico",
@@ -85,7 +86,7 @@
         "summary": "Personalize sua experiência com 7 temas, conecte-se com amigos com privacidade granular e gere cards colecionáveis da sua jornada.",
         "highlights": [
           "7 Temas Visuais: 4 gratuitos (Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar) + 3 VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real)",
-          "Rede de Amigos (/friends) por @username ou código exclusivo HP-XXXXXX, Perfis Públicos e notificações de atividade social",
+          "Rede de Amigos (/profile?tab=friends) por @username ou código exclusivo HP-XXXXXX, Perfis Públicos e notificações de atividade social",
           "Privacidade Granular (Público, Apenas Amigos ou Privado) para perfil, estatísticas, ofensivas e política de convites",
           "Retrospectiva Anual sazonal (20/dez a 31/jan) com 5 arquétipos e download de Cards PNG de Perfil e Retrospectiva",
           "Descrições com formatação Rich-Text, Tags Hierárquicas (>), Foco Rápido nas linhas e modo 'Todos os Ambientes' no Dashboard",

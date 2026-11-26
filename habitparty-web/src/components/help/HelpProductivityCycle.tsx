@@ -1,6 +1,6 @@
 import { Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { HELP_PRODUCTIVITY_STEPS } from "@/constants/help";
+import { HELP_PRODUCTIVITY_STEPS } from "@/constants/helpConfig";
 
 export async function HelpProductivityCycle() {
   const t = await getTranslations("help.cycle");
@@ -8,7 +8,11 @@ export async function HelpProductivityCycle() {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <Sparkles className="text-gold" size={20} />
+        <Sparkles
+          className="text-gold-ink dark:text-gold shrink-0"
+          size={20}
+          aria-hidden="true"
+        />
         <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
           {t("title")}
         </h2>

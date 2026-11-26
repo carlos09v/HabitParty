@@ -6,27 +6,26 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  ChevronDown,
-  GripVertical,
-  Loader2,
-  MoreVertical,
-  Plus,
-} from "lucide-react";
+import { CheckCircle2, GripVertical, MoreVertical, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import {
+  ColumnCompletedSection,
+  useRoutineColumnTasks,
+} from "@/components/tasks/shared";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getColumnIcon } from "@/constants/routine";
-import { normalizeTaskType } from "@/constants/task";
+import { useScrollSelectedColumn } from "@/hooks/useScrollSelectedColumn";
 import type { RoutineColumnProps } from "@/types/task-ui";
 import { cn } from "@/utils";
-import { scrollColumnIntoKanbanView } from "@/utils/dom";
+import { STOP_DRAG_PROPAGATION_PROPS } from "@/utils/dom";
 import { RoutineQuickAddForm } from "./RoutineQuickAddForm";
 import { RoutineTaskCard } from "./RoutineTaskCard";
 
 export const RoutineColumn = memo(function RoutineColumn({
   column,
   isSelected = false,
+  isReadOnly = false,
   selectedTaskId,
   deletingTaskIds,
   widthPreset = "normal",
@@ -38,28 +37,43 @@ export const RoutineColumn = memo(function RoutineColumn({
   onOpenColumnMenu,
   onToggleComplete,
   onHabitChange,
+  onStartFocus,
   onLoadArchivedCompleted,
   forceExpandCompleted = false,
   activeDraggedTaskId = null,
   isOverlay = false,
 }: RoutineColumnProps) {
   const t = useTranslations("tasks.column");
+  const tDnd = useTranslations("tasks.dnd");
   const ColumnIcon = getColumnIcon(column.icon);
   const columnRef = useRef<HTMLDivElement | null>(null);
 
   const [isQuickAdding, setIsQuickAdding] = useState(false);
-  const [isCompletedExpanded, setIsCompletedExpanded] =
-    useState(forceExpandCompleted);
-  const [isLoadingArchivedCompleted, setIsLoadingArchivedCompleted] =
-    useState(false);
 
-  useEffect(() => {
-    if (forceExpandCompleted) {
-      setIsCompletedExpanded(true);
-    }
-  }, [forceExpandCompleted]);
-  const archivedTotalCount = column.archivedTotalCount ?? 0;
-  const archivedCompletedCount = column.archivedCompletedCount ?? 0;
+  const {
+    isCompletedExpanded,
+    toggleCompletedExpanded,
+    archivedCompletedCount,
+    activeTasks,
+    completedTodoTasks,
+    draggedCompletedTask,
+    activeTaskIds,
+    completedTaskIds,
+    totalTasks,
+    completedTasks,
+    progressPercent,
+    isAllDone,
+    hasCompletedSection,
+    isCompletelyEmpty,
+  } = useRoutineColumnTasks(column, forceExpandCompleted, activeDraggedTaskId);
+
+  const sortableData = useMemo(
+    () => ({
+      type: "Column" as const,
+      column,
+    }),
+    [column],
+  );
 
   const {
     attributes,
@@ -70,111 +84,30 @@ export const RoutineColumn = memo(function RoutineColumn({
     isDragging,
   } = useSortable({
     id: column.id,
-    data: {
-      type: "Column",
-      column,
-    },
-    disabled: isOverlay,
+    data: sortableData,
+    disabled: isOverlay || isReadOnly,
   });
 
-  const setCombinedRef = (node: HTMLDivElement | null) => {
-    setNodeRef(node);
-    columnRef.current = node;
-  };
+  const setCombinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      columnRef.current = node;
+    },
+    [setNodeRef],
+  );
 
-  useEffect(() => {
-    if (isSelected && columnRef.current) {
-      const timer = setTimeout(() => {
-        if (columnRef.current) {
-          scrollColumnIntoKanbanView(columnRef.current);
-        }
-      }, 80);
-      return () => clearTimeout(timer);
-    }
-  }, [isSelected]);
+  useScrollSelectedColumn(columnRef, isSelected, "kanban");
 
   const style = {
     transform: CSS.Translate.toString(transform),
     transition: isDragging ? undefined : transition,
   };
 
-  const { activeTasks, completedTodoTasks } = useMemo(() => {
-    const active: typeof column.tasks = [];
-    const completedTodos: typeof column.tasks = [];
-    for (const taskItem of column.tasks) {
-      if (normalizeTaskType(taskItem) === "todo" && taskItem.completed) {
-        completedTodos.push(taskItem);
-      } else {
-        active.push(taskItem);
-      }
-    }
-    return { activeTasks: active, completedTodoTasks: completedTodos };
-  }, [column.tasks]);
-
-  const draggedCompletedTask = useMemo(
-    () =>
-      !isCompletedExpanded && activeDraggedTaskId
-        ? completedTodoTasks.find((t) => t.id === activeDraggedTaskId)
-        : undefined,
-    [activeDraggedTaskId, completedTodoTasks, isCompletedExpanded],
-  );
-
-  const taskIds = useMemo(() => {
-    if (isCompletedExpanded) {
-      return [...activeTasks, ...completedTodoTasks].map((t) => t.id);
-    }
-    const ids = activeTasks.map((t) => t.id);
-    if (draggedCompletedTask) {
-      ids.push(draggedCompletedTask.id);
-    }
-    return ids;
-  }, [
-    activeTasks,
-    completedTodoTasks,
-    draggedCompletedTask,
-    isCompletedExpanded,
-  ]);
-
-  const { totalTasks, completedTasks, progressPercent, isAllDone } =
-    useMemo(() => {
-      const total = column.tasks.length + archivedTotalCount;
-      if (total === 0) {
-        return {
-          totalTasks: 0,
-          completedTasks: 0,
-          progressPercent: 0,
-          isAllDone: false,
-        };
-      }
-      const loadedDone = column.tasks.filter((taskItem) => {
-        const isHabitTask = (taskItem.type || "").toLowerCase() === "habit";
-        if (isHabitTask) {
-          return (
-            (taskItem.positiveCount ?? 0) > 0 || Boolean(taskItem.completed)
-          );
-        }
-        return Boolean(taskItem.completed);
-      }).length;
-      const done = loadedDone + archivedCompletedCount;
-      return {
-        totalTasks: total,
-        completedTasks: done,
-        progressPercent: Math.round((done / total) * 100),
-        isAllDone: done === total,
-      };
-    }, [column.tasks, archivedTotalCount, archivedCompletedCount]);
-
-  const handleLoadArchived = async () => {
-    if (!onLoadArchivedCompleted || isLoadingArchivedCompleted) return;
-    setIsLoadingArchivedCompleted(true);
-    try {
-      await onLoadArchivedCompleted(column.id);
-    } finally {
-      setIsLoadingArchivedCompleted(false);
-    }
-  };
-
   const handleTriggerAdd = () => {
+    if (isReadOnly) {
+      onAddTaskToColumn?.(column.id);
+      return;
+    }
     if (onQuickCreateTask) {
       setIsQuickAdding(true);
     } else {
@@ -198,21 +131,35 @@ export const RoutineColumn = memo(function RoutineColumn({
           "transition-none! shadow-card-deep border-gold/70 bg-primary-dark/60 scale-102 rotate-1 z-50",
       )}
     >
-      {/* HEADER DA COLUNA (Arrastável com dnd-kit) */}
-      <div
-        {...attributes}
-        {...listeners}
-        className={cn(
-          "flex flex-col cursor-grab active:cursor-grabbing group/header touch-manipulation shrink-0 border-b border-neutral-700/60 dark:border-white/6 px-3.5 pt-3.5 pb-2.5",
-          isDragging && "touch-none",
-        )}
-      >
+      {/* HEADER DA COLUNA (alça de arrasto isolada dos botões de ação para semântica acessível) */}
+      <div className="flex flex-col group/header shrink-0 border-b border-neutral-700/60 dark:border-white/6 px-3.5 pt-3.5 pb-2.5">
         <div className="flex items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <GripVertical
-              size={15}
-              className="text-neutral-500/70 group-hover/header:text-primary dark:group-hover/header:text-gold transition-colors shrink-0 -mr-0.5"
-            />
+          <div
+            {...(isReadOnly ? {} : listeners)}
+            className={cn(
+              "flex items-center gap-1.5 min-w-0 flex-1 touch-manipulation rounded-lg",
+              isReadOnly
+                ? "cursor-default"
+                : "cursor-grab active:cursor-grabbing",
+              isDragging && "touch-none",
+            )}
+          >
+            {!isReadOnly && (
+              <button
+                type="button"
+                {...(() => {
+                  const { role: _dndRole, ...rest } = attributes;
+                  return rest;
+                })()}
+                {...listeners}
+                aria-label={tDnd("dragColumnHandleAria", {
+                  title: column.title,
+                })}
+                className="flex items-center justify-center p-0.5 rounded text-neutral-500/70 group-hover/header:text-primary dark:group-hover/header:text-gold hover:bg-white/10 transition-colors shrink-0 -mr-0.5 cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
+              >
+                <GripVertical size={15} aria-hidden="true" />
+              </button>
+            )}
             <div
               className={cn(
                 "rounded-lg border transition-colors shrink-0 flex items-center justify-center p-1.5",
@@ -253,48 +200,34 @@ export const RoutineColumn = memo(function RoutineColumn({
           </div>
 
           <div className="flex items-center gap-0.5 shrink-0">
-            <button
-              type="button"
-              aria-label={t("addTaskHeaderTitle")}
-              title={t("addTaskHeaderTitle")}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleTriggerAdd();
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              onTouchStart={(e) => {
-                e.stopPropagation();
-              }}
-              className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <Plus size={16} />
-            </button>
+            {!isReadOnly && (
+              <button
+                type="button"
+                aria-label={t("addTaskHeaderTitle")}
+                title={t("addTaskHeaderTitle")}
+                {...STOP_DRAG_PROPAGATION_PROPS}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTriggerAdd();
+                }}
+                className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+              >
+                <Plus size={16} aria-hidden="true" />
+              </button>
+            )}
 
             <button
               type="button"
               aria-label={t("optionsAria", { title: column.title })}
+              {...STOP_DRAG_PROPAGATION_PROPS}
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenColumnMenu?.(e, column);
               }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              onTouchStart={(e) => {
-                e.stopPropagation();
-              }}
-              className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+              className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
               title={t("optionsTitle")}
             >
-              <MoreVertical size={16} />
+              <MoreVertical size={16} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -315,27 +248,60 @@ export const RoutineColumn = memo(function RoutineColumn({
         )}
       </div>
 
-      {/* ÁREA DE TAREFAS (Sortable vertical com dnd-kit) */}
+      {/* ÁREA DE TAREFAS (Sortable vertical separado entre Ativas e Concluídas) */}
       <div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar gap-2.5 p-3 pb-3.5">
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {column.tasks.length === 0 && !isQuickAdding ? (
-            <button
-              type="button"
-              onClick={handleTriggerAdd}
-              className="group/empty w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/35 bg-card/30 hover:bg-card/60 hover:border-primary/45 dark:hover:border-gold/50 transition-colors cursor-pointer py-7 px-4 gap-2"
-            >
-              <div className="rounded-xl bg-primary/15 border border-primary/30 text-neutral-300 group-hover/empty:bg-primary/15 dark:group-hover/empty:bg-gold/15 group-hover/empty:border-primary/40 dark:group-hover/empty:border-gold/40 group-hover/empty:text-primary dark:group-hover/empty:text-gold group-hover/empty:scale-105 transition-[transform,background-color,border-color,color] duration-150 flex items-center justify-center w-8 h-8">
-                <Plus size={16} />
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="font-semibold text-neutral-300 group-hover/empty:text-neutral-100 transition-colors text-body-s">
+        <SortableContext
+          items={activeTaskIds}
+          strategy={verticalListSortingStrategy}
+        >
+          {isCompletelyEmpty && !isQuickAdding ? (
+            isReadOnly ? (
+              <div className="w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-neutral-700/60 dark:border-white/10 bg-card/20 py-7 px-4 gap-1">
+                <span className="font-semibold text-neutral-400 text-body-s">
                   {t("emptyState")}
                 </span>
-                <span className="text-tiny text-neutral-400 group-hover/empty:text-primary dark:group-hover/empty:text-gold transition-colors">
-                  {t("emptyStateCta")}
-                </span>
               </div>
-            </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleTriggerAdd}
+                className="group/empty w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/35 bg-card/30 hover:bg-card/60 hover:border-primary/45 dark:hover:border-gold/50 transition-colors cursor-pointer py-7 px-4 gap-2"
+              >
+                <div className="rounded-xl bg-primary/15 border border-primary/30 text-neutral-300 group-hover/empty:bg-primary/15 dark:group-hover/empty:bg-gold/15 group-hover/empty:border-primary/40 dark:group-hover/empty:border-gold/40 group-hover/empty:text-primary dark:group-hover/empty:text-gold group-hover/empty:scale-105 transition-[transform,background-color,border-color,color] duration-150 flex items-center justify-center w-8 h-8">
+                  <Plus size={16} />
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="font-semibold text-neutral-300 group-hover/empty:text-neutral-100 transition-colors text-body-s">
+                    {t("emptyState")}
+                  </span>
+                  <span className="text-tiny text-neutral-400 group-hover/empty:text-primary dark:group-hover/empty:text-gold transition-colors">
+                    {t("emptyStateCta")}
+                  </span>
+                </div>
+              </button>
+            )
+          ) : activeTasks.length === 0 &&
+            hasCompletedSection &&
+            !isQuickAdding ? (
+            <div className="w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-success-500/35 bg-success-500/[0.04] py-5 px-4 gap-1.5">
+              <CheckCircle2
+                size={20}
+                className="text-success-500 shrink-0"
+                aria-hidden="true"
+              />
+              <span className="font-semibold text-neutral-200 text-xs">
+                {t("allDoneEmptyTitle")}
+              </span>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={handleTriggerAdd}
+                  className="text-tiny font-semibold text-primary dark:text-gold hover:underline cursor-pointer"
+                >
+                  {t("allDoneEmptyCta")}
+                </button>
+              )}
+            </div>
           ) : (
             activeTasks.map((task) => (
               <RoutineTaskCard
@@ -343,6 +309,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 task={task}
                 columnId={column.id}
                 isSelected={selectedTaskId === task.id}
+                isReadOnly={isReadOnly}
                 isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                 isCompact={widthPreset === "compact"}
                 onOpenDetails={onOpenDetails}
@@ -350,79 +317,47 @@ export const RoutineColumn = memo(function RoutineColumn({
                 onContextMenu={onContextMenu}
                 onToggleCompleted={onToggleComplete}
                 onHabitChange={onHabitChange}
+                onStartFocus={onStartFocus}
               />
             ))
           )}
+        </SortableContext>
 
+        <SortableContext
+          items={completedTaskIds}
+          strategy={verticalListSortingStrategy}
+        >
           {/* Seção colapsável de ToDos concluídos na base da coluna */}
-          {(completedTodoTasks.length > 0 || archivedCompletedCount > 0) && (
-            <div className="flex flex-col gap-2 pt-1.5 mt-0.5 border-t border-neutral-700/60 dark:border-white/8">
-              <button
-                type="button"
-                onClick={() => setIsCompletedExpanded((prev) => !prev)}
-                aria-expanded={isCompletedExpanded}
-                className="flex items-center gap-1.5 w-full rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-white/5 transition-colors cursor-pointer select-none px-2.5 py-1.5 text-xs"
-              >
-                <ChevronDown
-                  size={14}
-                  className={cn(
-                    "shrink-0 transition-transform duration-200",
-                    !isCompletedExpanded && "-rotate-90",
-                  )}
+          {hasCompletedSection && (
+            <ColumnCompletedSection
+              columnId={column.id}
+              variant="card"
+              isExpanded={isCompletedExpanded}
+              onToggleExpanded={toggleCompletedExpanded}
+              totalCompletedCount={
+                completedTodoTasks.length + archivedCompletedCount
+              }
+              archivedCompletedCount={archivedCompletedCount}
+              onLoadArchivedCompleted={onLoadArchivedCompleted}
+            >
+              {completedTodoTasks.map((task) => (
+                <RoutineTaskCard
+                  key={task.id}
+                  task={task}
+                  columnId={column.id}
+                  isSelected={selectedTaskId === task.id}
+                  isReadOnly={isReadOnly}
+                  isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
+                  isCompact={widthPreset === "compact"}
+                  onOpenDetails={onOpenDetails}
+                  onEditTask={onEditTask}
+                  onContextMenu={onContextMenu}
+                  onToggleCompleted={onToggleComplete}
+                  onHabitChange={onHabitChange}
+                  onStartFocus={onStartFocus}
                 />
-                <span className="font-semibold">
-                  {t("completedSectionLabel")}
-                </span>
-                <span className="ml-auto px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/8 text-neutral-300 font-bold text-tiny leading-none">
-                  {completedTodoTasks.length + archivedCompletedCount}
-                </span>
-              </button>
-
-              {isCompletedExpanded && (
-                <div className="flex flex-col gap-2.5">
-                  {completedTodoTasks.map((task) => (
-                    <RoutineTaskCard
-                      key={task.id}
-                      task={task}
-                      columnId={column.id}
-                      isSelected={selectedTaskId === task.id}
-                      isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
-                      isCompact={widthPreset === "compact"}
-                      onOpenDetails={onOpenDetails}
-                      onEditTask={onEditTask}
-                      onContextMenu={onContextMenu}
-                      onToggleCompleted={onToggleComplete}
-                      onHabitChange={onHabitChange}
-                    />
-                  ))}
-
-                  {archivedCompletedCount > 0 && onLoadArchivedCompleted && (
-                    <button
-                      type="button"
-                      disabled={isLoadingArchivedCompleted}
-                      onClick={handleLoadArchived}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait px-3 py-2 text-xs"
-                    >
-                      {isLoadingArchivedCompleted ? (
-                        <>
-                          <Loader2
-                            size={13}
-                            className="animate-spin shrink-0"
-                          />
-                          <span>{t("loadingArchivedCompleted")}</span>
-                        </>
-                      ) : (
-                        <span>
-                          {t("loadArchivedCompleted", {
-                            count: archivedCompletedCount,
-                          })}
-                        </span>
-                      )}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+              ))}
+            </ColumnCompletedSection>
           )}
 
           {/* Mantém o card concluído arrastado montado caso o usuário passe por cima de uma coluna com Concluídos recolhido */}
@@ -434,6 +369,7 @@ export const RoutineColumn = memo(function RoutineColumn({
               <RoutineTaskCard
                 task={draggedCompletedTask}
                 columnId={column.id}
+                isReadOnly={isReadOnly}
                 isCompact={widthPreset === "compact"}
               />
             </div>
@@ -441,7 +377,7 @@ export const RoutineColumn = memo(function RoutineColumn({
         </SortableContext>
 
         {/* Campo de Criação Rápida Inline */}
-        {isQuickAdding && (
+        {isQuickAdding && !isReadOnly && (
           <RoutineQuickAddForm
             columnId={column.id}
             isColumnCompact={widthPreset === "compact"}
@@ -453,8 +389,8 @@ export const RoutineColumn = memo(function RoutineColumn({
       </div>
 
       {/* BOTÃO INFERIOR DE ADICIONAR TAREFA RÁPIDA */}
-      <div className="shrink-0 border-t border-neutral-700/60 dark:border-white/5 bg-surface/95 dark:bg-transparent p-3 pt-2">
-        {!isQuickAdding && (
+      {!isReadOnly && !isQuickAdding && (
+        <div className="shrink-0 border-t border-neutral-700/60 dark:border-white/5 bg-surface/95 dark:bg-transparent p-3 pt-2">
           <button
             type="button"
             onClick={handleTriggerAdd}
@@ -468,8 +404,8 @@ export const RoutineColumn = memo(function RoutineColumn({
             <Plus size={15} />
             <span>{t("addTaskFooterButton")}</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 });

@@ -1,5 +1,5 @@
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
-import type { AppLocale } from "@/i18n/config";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
+import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { FocusRecord, FocusRecordType } from "@/types/focus";
 import type {
@@ -7,6 +7,7 @@ import type {
   RewardEstimateBreakdownItem,
   RewardEstimateNotice,
 } from "@/types/reward";
+import { getCachedNumberFormat } from "./economy";
 
 export interface EstimatedRewardNotice {
   type: "info" | "warning";
@@ -21,29 +22,52 @@ export interface EstimatedRewardResult {
   notice?: EstimatedRewardNotice;
 }
 
+const STOPWATCH_COINS_CENTS_PER_30 = Math.round(
+  FOCUS_REWARD_RULES.STOPWATCH_COINS_PER_30_MIN * 100,
+);
+const UNCOMPLETED_POMO_COINS_CENTS_PER_30 = Math.round(
+  FOCUS_REWARD_RULES.UNCOMPLETED_POMO_COINS_PER_30_MIN * 100,
+);
+const SHORT_POMO_COINS_CENTS = Math.round(
+  FOCUS_REWARD_RULES.SHORT_POMO_COINS_PER_CYCLE * 100,
+);
+const STANDARD_POMO_COINS_CENTS = Math.round(
+  FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE * 100,
+);
+const DEEP_WORK_COINS_CENTS = Math.round(
+  FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE * 100,
+);
+
 /**
- * Calcula o multiplicador de rendimento decrescente diário em escada (Daily Soft/Hard Cap):
- * - 0 a 240 min (0h a 4h): 100% (1.0)
- * - 240 a 360 min (4h a 6h): 50% (0.5)
- * - 360 a 480 min (6h a 8h): 25% (0.25)
- * - > 480 min (> 8h): 0% (0.0)
+ * Divide inteiros não negativos com arredondamento `RoundingMode.HALF_UP` exato,
+ * espelhando `BigDecimal.divide(..., RoundingMode.HALF_UP)` do `FocusRewardCalculator.java`.
  */
-export function calculateDailyFocusMultiplier(
+function divideHalfUpInt(numerator: number, denominator: number): number {
+  if (denominator <= 0 || numerator <= 0) return 0;
+  return Math.floor((2 * numerator + denominator) / (2 * denominator));
+}
+
+/**
+ * Calcula `weightedMinutes * 4` em inteiros exatos (tier1 × 4, tier2 × 2, tier3 × 1)
+ * para evitar qualquer erro de precisão IEEE-754 ao cruzar as faixas diárias (4h / 6h / 8h).
+ */
+function calculateWeightedMinutesTimes4(
   effectiveMinutes: number,
   priorFocusMinutesToday = 0,
 ): number {
-  const safePrior = Math.max(0, priorFocusMinutesToday);
+  const safePrior = Math.max(0, Math.floor(priorFocusMinutesToday));
+  const safeEffective = Math.max(0, Math.floor(effectiveMinutes));
   const tier1 = FOCUS_REWARD_RULES.DAILY_SOFT_CAP_MINUTES;
   const tier2 = FOCUS_REWARD_RULES.DAILY_TIER2_CAP_MINUTES;
   const hardCap = FOCUS_REWARD_RULES.DAILY_HARD_CAP_MINUTES;
 
-  if (safePrior >= hardCap || effectiveMinutes <= 0) {
-    return 0.0;
+  if (safePrior >= hardCap || safeEffective <= 0) {
+    return 0;
   }
 
-  const sessionEnd = safePrior + effectiveMinutes;
+  const sessionEnd = safePrior + safeEffective;
   if (sessionEnd <= tier1) {
-    return 1.0;
+    return safeEffective * 4;
   }
 
   const tier1Minutes = Math.max(0, Math.min(sessionEnd, tier1) - safePrior);
@@ -56,9 +80,29 @@ export function calculateDailyFocusMultiplier(
     Math.min(sessionEnd, hardCap) - Math.max(safePrior, tier2),
   );
 
-  const weightedSum =
-    tier1Minutes * 1.0 + tier2Minutes * 0.5 + tier3Minutes * 0.25;
-  return weightedSum / effectiveMinutes;
+  return tier1Minutes * 4 + tier2Minutes * 2 + tier3Minutes;
+}
+
+/**
+ * Calcula o multiplicador de rendimento decrescente diário em escada (Daily Soft/Hard Cap):
+ * - 0 a 240 min (0h a 4h): 100% (1.0)
+ * - 240 a 360 min (4h a 6h): 50% (0.5)
+ * - 360 a 480 min (6h a 8h): 25% (0.25)
+ * - > 480 min (> 8h): 0% (0.0)
+ */
+export function calculateDailyFocusMultiplier(
+  effectiveMinutes: number,
+  priorFocusMinutesToday = 0,
+): number {
+  const safeEffective = Math.max(0, Math.floor(effectiveMinutes));
+  if (safeEffective <= 0) return 0.0;
+  const weightedTimes4 = calculateWeightedMinutesTimes4(
+    safeEffective,
+    priorFocusMinutesToday,
+  );
+  if (weightedTimes4 <= 0) return 0.0;
+  if (weightedTimes4 === safeEffective * 4) return 1.0;
+  return weightedTimes4 / (4 * safeEffective);
 }
 
 /**
@@ -121,6 +165,7 @@ export function toFocusRewardEstimate(
 
 /**
  * Calcula uma prévia do rendimento de XP e Moedas (fonte única da verdade de regras de foco),
+ * usando aritmética racional inteira `HALF_UP` alinhada ao `FocusRewardCalculator.java` e
  * emitindo alertas claros sobre tetos, anti-exploit, rendimento decrescente diário e ritmos de ciclos.
  */
 export function calculateFocusRewardEstimate(
@@ -134,10 +179,13 @@ export function calculateFocusRewardEstimate(
   isGamified = false,
 ): EstimatedRewardResult {
   const t = getUtilityTranslator(locale, "focus.rewards");
+  const decimalFormatter = getCachedNumberFormat(toIntlLocale(locale), {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   const formatUnit = (value: number) =>
-    isGamified
-      ? `${value.toFixed(2)} 🪙`
-      : `${value.toFixed(2)} ${t("creditsUnit")}`;
+    `${decimalFormatter.format(value)} ${isGamified ? t("coinsUnit") : t("creditsUnit")}`;
+
   if (targetType === "ITEM") {
     return {
       xp: 0,
@@ -148,7 +196,8 @@ export function calculateFocusRewardEstimate(
     };
   }
 
-  if (durationMinutes < FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES) {
+  const safeDuration = Math.max(0, Math.floor(durationMinutes));
+  if (safeDuration < FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES) {
     return {
       xp: 0,
       coins: 0,
@@ -170,15 +219,16 @@ export function calculateFocusRewardEstimate(
   }
 
   const effectiveMinutes = Math.min(
-    durationMinutes,
+    safeDuration,
     FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES,
   );
-  let baseXp = 0;
-  let baseCoins = 0;
+  const safePomos = Math.max(0, Math.floor(completedPomos));
+  let xpTimes30 = 0;
+  let coinsCentsTimes30 = 0;
   let notice: EstimatedRewardNotice | undefined;
 
   // Alerta de Teto de minutos por sessão
-  if (durationMinutes > FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES) {
+  if (safeDuration > FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES) {
     notice = {
       type: "warning",
       title: isGamified
@@ -198,41 +248,40 @@ export function calculateFocusRewardEstimate(
     };
   }
 
-  if (recordType === "POMO" && completedPomos > 0) {
+  if (recordType === "POMO" && safePomos > 0) {
+    const safeTarget =
+      typeof pomoTargetMinutes === "number" && pomoTargetMinutes > 0
+        ? Math.floor(pomoTargetMinutes)
+        : undefined;
     const hasOvertimeBreakdown =
-      typeof pomoTargetMinutes === "number" &&
-      pomoTargetMinutes > 0 &&
-      effectiveMinutes > completedPomos * pomoTargetMinutes;
+      safeTarget !== undefined && effectiveMinutes > safePomos * safeTarget;
     const configuredMinutes = hasOvertimeBreakdown
-      ? completedPomos * pomoTargetMinutes
+      ? safePomos * safeTarget
       : effectiveMinutes;
     const overtimeMinutes = hasOvertimeBreakdown
       ? effectiveMinutes - configuredMinutes
       : 0;
     const minutesPerPomo = hasOvertimeBreakdown
-      ? pomoTargetMinutes
-      : Math.floor(effectiveMinutes / completedPomos);
+      ? safeTarget
+      : Math.floor(effectiveMinutes / safePomos);
 
     if (minutesPerPomo < FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES) {
       // Anti-exploit: muitos ciclos para pouco tempo
-      baseXp =
-        (configuredMinutes / 30.0) *
-        FOCUS_REWARD_RULES.UNCOMPLETED_POMO_XP_PER_30_MIN;
-      baseCoins =
-        (configuredMinutes / 30.0) *
-        FOCUS_REWARD_RULES.UNCOMPLETED_POMO_COINS_PER_30_MIN;
+      xpTimes30 =
+        configuredMinutes * FOCUS_REWARD_RULES.UNCOMPLETED_POMO_XP_PER_30_MIN;
+      coinsCentsTimes30 =
+        configuredMinutes * UNCOMPLETED_POMO_COINS_CENTS_PER_30;
       notice = {
         type: "warning",
-        title: "Anti-Exploit",
+        title: t("antiExploitTitle"),
         message: t("antiExploitMessage", {
           threshold: FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES,
         }),
       };
     } else if (minutesPerPomo < FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES) {
       // Pomodoro curto (15 a 24 min)
-      baseXp = completedPomos * FOCUS_REWARD_RULES.SHORT_POMO_XP_PER_CYCLE;
-      baseCoins =
-        completedPomos * FOCUS_REWARD_RULES.SHORT_POMO_COINS_PER_CYCLE;
+      xpTimes30 = safePomos * FOCUS_REWARD_RULES.SHORT_POMO_XP_PER_CYCLE * 30;
+      coinsCentsTimes30 = safePomos * SHORT_POMO_COINS_CENTS * 30;
       if (!notice) {
         notice = {
           type: "info",
@@ -253,16 +302,18 @@ export function calculateFocusRewardEstimate(
       }
     } else if (minutesPerPomo <= FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES) {
       // Pomodoro padrão (25 a 49 min)
-      baseXp = completedPomos * FOCUS_REWARD_RULES.STANDARD_XP_PER_CYCLE;
-      baseCoins = completedPomos * FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE;
+      xpTimes30 = safePomos * FOCUS_REWARD_RULES.STANDARD_XP_PER_CYCLE * 30;
+      coinsCentsTimes30 = safePomos * STANDARD_POMO_COINS_CENTS * 30;
     } else {
       // Pomodoro longo / Deep work (>= 50 min)
-      baseXp = completedPomos * FOCUS_REWARD_RULES.DEEP_WORK_XP_PER_CYCLE;
-      baseCoins = completedPomos * FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE;
+      xpTimes30 = safePomos * FOCUS_REWARD_RULES.DEEP_WORK_XP_PER_CYCLE * 30;
+      coinsCentsTimes30 = safePomos * DEEP_WORK_COINS_CENTS * 30;
       if (!notice) {
         notice = {
           type: "info",
-          title: `Deep Work (${FOCUS_REWARD_RULES.DEEP_WORK_MIN_MINUTES}m+)`,
+          title: t("deepWorkTitle", {
+            min: FOCUS_REWARD_RULES.DEEP_WORK_MIN_MINUTES,
+          }),
           message: t("deepWorkMessage", {
             coins: formatUnit(FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE),
           }),
@@ -271,33 +322,25 @@ export function calculateFocusRewardEstimate(
     }
 
     if (overtimeMinutes > 0) {
-      baseXp +=
-        (overtimeMinutes / 30.0) * FOCUS_REWARD_RULES.STOPWATCH_XP_PER_30_MIN;
-      baseCoins +=
-        (overtimeMinutes / 30.0) *
-        FOCUS_REWARD_RULES.STOPWATCH_COINS_PER_30_MIN;
+      xpTimes30 += overtimeMinutes * FOCUS_REWARD_RULES.STOPWATCH_XP_PER_30_MIN;
+      coinsCentsTimes30 += overtimeMinutes * STOPWATCH_COINS_CENTS_PER_30;
     }
   } else if (recordType === "POMO") {
-    baseXp =
-      (effectiveMinutes / 30.0) *
-      FOCUS_REWARD_RULES.UNCOMPLETED_POMO_XP_PER_30_MIN;
-    baseCoins =
-      (effectiveMinutes / 30.0) *
-      FOCUS_REWARD_RULES.UNCOMPLETED_POMO_COINS_PER_30_MIN;
+    xpTimes30 =
+      effectiveMinutes * FOCUS_REWARD_RULES.UNCOMPLETED_POMO_XP_PER_30_MIN;
+    coinsCentsTimes30 = effectiveMinutes * UNCOMPLETED_POMO_COINS_CENTS_PER_30;
   } else {
     // STOPWATCH
-    baseXp =
-      (effectiveMinutes / 30.0) * FOCUS_REWARD_RULES.STOPWATCH_XP_PER_30_MIN;
-    baseCoins =
-      (effectiveMinutes / 30.0) * FOCUS_REWARD_RULES.STOPWATCH_COINS_PER_30_MIN;
+    xpTimes30 = effectiveMinutes * FOCUS_REWARD_RULES.STOPWATCH_XP_PER_30_MIN;
+    coinsCentsTimes30 = effectiveMinutes * STOPWATCH_COINS_CENTS_PER_30;
   }
 
-  const multiplier = calculateDailyFocusMultiplier(
+  const weightedMinutesTimes4 = calculateWeightedMinutesTimes4(
     effectiveMinutes,
     priorFocusMinutesToday,
   );
 
-  if (multiplier <= 0.0) {
+  if (weightedMinutesTimes4 <= 0) {
     return {
       xp: 0,
       coins: 0,
@@ -316,7 +359,7 @@ export function calculateFocusRewardEstimate(
     };
   }
 
-  if (multiplier < 1.0) {
+  if (weightedMinutesTimes4 < effectiveMinutes * 4) {
     const inThirdTier =
       priorFocusMinutesToday >= FOCUS_REWARD_RULES.DAILY_TIER2_CAP_MINUTES;
     notice = {
@@ -332,10 +375,14 @@ export function calculateFocusRewardEstimate(
     };
   }
 
-  const xp = Math.round(baseXp * multiplier);
-  const coins = Math.round(baseCoins * multiplier * 100) / 100;
+  const denominator = 120 * effectiveMinutes;
+  const xp = divideHalfUpInt(xpTimes30 * weightedMinutesTimes4, denominator);
+  const coinsCents = divideHalfUpInt(
+    coinsCentsTimes30 * weightedMinutesTimes4,
+    denominator,
+  );
 
-  return { xp, coins, notice };
+  return { xp, coins: coinsCents / 100, notice };
 }
 
 /**

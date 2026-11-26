@@ -496,37 +496,46 @@ class SoundEffectsManager {
   }
 
   /**
+   * Tenta retomar o AudioContext sincronamente dentro de um gesto de clique (ex.: botão Girar Roleta),
+   * garantindo que efeitos rápidos subsequentes (como ticks em rAF) toquem sem atraso.
+   */
+  unlockAudio() {
+    const ctx = this.getContext();
+    if (!ctx || ctx.state === "running") return;
+    ctx.resume().catch(() => {});
+  }
+
+  /**
    * Som de Clique/Tick da Roleta (Giro da fita passando pelo ponteiro)
    */
   playRouletteTickSound(pitchMultiplier = 1) {
     if (!this.getPreferences().uiSoundsEnabled) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
-      const now = ctx.currentTime;
+    this.runWithContext(
+      (ctx) => {
+        const now = ctx.currentTime;
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(950 * pitchMultiplier, now);
-      osc.frequency.exponentialRampToValueAtTime(
-        450 * pitchMultiplier,
-        now + 0.035,
-      );
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(950 * pitchMultiplier, now);
+        osc.frequency.exponentialRampToValueAtTime(
+          450 * pitchMultiplier,
+          now + 0.035,
+        );
 
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-      osc.start(now);
-      osc.stop(now + 0.035);
-    } catch (_e) {
-      // Falha silenciosa
-    }
+        osc.start(now);
+        osc.stop(now + 0.035);
+      },
+      { queueIfSuspended: false },
+    );
   }
 
   /**
@@ -832,11 +841,35 @@ class SoundEffectsManager {
     return buffer;
   }
 
+  private ambientGeneration = 0;
+  private ambientStateListeners = new Set<
+    (activeType: AmbientSoundType) => void
+  >();
+
+  private notifyAmbientState() {
+    const activeType = this.activeAmbientType;
+    for (const listener of this.ambientStateListeners) {
+      try {
+        listener(activeType);
+      } catch (_e) {}
+    }
+  }
+
+  subscribeAmbientState(
+    listener: (activeType: AmbientSoundType) => void,
+  ): () => void {
+    this.ambientStateListeners.add(listener);
+    return () => {
+      this.ambientStateListeners.delete(listener);
+    };
+  }
+
   getActiveAmbientType(): AmbientSoundType {
     return this.activeAmbientType;
   }
 
   stopAmbientSound() {
+    this.ambientGeneration += 1;
     this.ambientCleanupFns.forEach((fn) => {
       try {
         fn();
@@ -854,7 +887,11 @@ class SoundEffectsManager {
       } catch (_e) {}
       this.ambientGainNode = null;
     }
+    const hadActive = this.activeAmbientType !== "none";
     this.activeAmbientType = "none";
+    if (hadActive) {
+      this.notifyAmbientState();
+    }
   }
 
   setAmbientVolume(volume: number) {
@@ -873,7 +910,11 @@ class SoundEffectsManager {
     this.stopAmbientSound();
     if (type === "none") return;
 
+    const myGeneration = this.ambientGeneration;
+
     this.runWithContext((ctx) => {
+      if (myGeneration !== this.ambientGeneration) return;
+
       const prefs = this.getPreferences();
       const volume = volumeOverride ?? prefs.ambientVolume ?? 0.5;
       const safeVolume = Math.max(0, Math.min(1, volume)) * 0.35;
@@ -984,7 +1025,13 @@ class SoundEffectsManager {
         // Estalidos aleatórios de brasas
         const intervalId = setInterval(() => {
           try {
-            if (!this.ambientGainNode) return;
+            if (
+              myGeneration !== this.ambientGeneration ||
+              !this.ambientGainNode
+            ) {
+              clearInterval(intervalId);
+              return;
+            }
             const now = ctx.currentTime;
             const popOsc = ctx.createOscillator();
             const popGain = ctx.createGain();
@@ -1010,6 +1057,7 @@ class SoundEffectsManager {
       }
 
       this.activeAmbientType = type;
+      this.notifyAmbientState();
     });
   }
 }

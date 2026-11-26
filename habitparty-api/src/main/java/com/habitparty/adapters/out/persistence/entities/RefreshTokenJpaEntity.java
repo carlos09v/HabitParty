@@ -8,32 +8,31 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "refresh_tokens")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class RefreshTokenJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class RefreshTokenJpaEntity extends BaseUuidJpaEntity {
+
   @Id
-  // @GeneratedValue(strategy = GenerationType.UUID) => O domínio que irá gerar
+  @ToString.Include
   @Column(name = "refresh_token_id")
   private UUID id;
 
-  // Usamos FetchType.LAZY por performance, para não carregar o Usuário sempre que buscar o token.
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserJpaEntity user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
   @Column(nullable = false, unique = true)
   private String token;
@@ -41,6 +40,7 @@ public class RefreshTokenJpaEntity {
   @Column(name = "expiration_date", nullable = false)
   private Instant expirationDate;
 
+  @ToString.Include
   @Column(nullable = false)
   private boolean revoked;
 

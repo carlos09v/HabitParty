@@ -10,19 +10,78 @@ import {
   isFocusOvertime,
 } from "@/utils/focusFormatters";
 
+export const FOCUS_TIMER_STORAGE_KEY = "habitparty-focus-timer";
+
+export type StoreTranslateFn = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
+
+let registeredStoreTranslator: StoreTranslateFn | null = null;
+let registeredNotificationsTranslator: StoreTranslateFn | null = null;
+
+export function setFocusTimerTranslators(translators: {
+  store?: StoreTranslateFn | null;
+  notifications?: StoreTranslateFn | null;
+}) {
+  registeredStoreTranslator = translators.store ?? null;
+  registeredNotificationsTranslator = translators.notifications ?? null;
+}
+
+export function tStoreMsg(
+  key: string,
+  values?: Record<string, string | number>,
+): string {
+  if (registeredStoreTranslator) {
+    try {
+      return registeredStoreTranslator(key, values);
+    } catch {
+      // Fallback seguro abaixo
+    }
+  }
+  return key;
+}
+
+export function tNotifMsg(
+  key: string,
+  values?: Record<string, string | number>,
+): string {
+  if (registeredNotificationsTranslator) {
+    try {
+      return registeredNotificationsTranslator(key, values);
+    } catch {
+      // Fallback seguro abaixo
+    }
+  }
+  return key;
+}
+
 /**
  * Dispara notificação nativa do navegador ao término de um ciclo ou pausa.
+ * Suprime o alerta do SO quando a aba já está visível e em foco para evitar ruído redundante.
  */
 export function sendBrowserNotification(title: string, body: string) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
+  if (
+    typeof document !== "undefined" &&
+    document.visibilityState === "visible" &&
+    document.hasFocus()
+  ) {
+    return;
+  }
   const isEnabled =
     useSoundPreferencesStore.getState().browserNotificationsEnabled;
   if (isEnabled && Notification.permission === "granted") {
     try {
-      new Notification(title, {
+      const notification = new Notification(title, {
         body,
-        icon: "/favicon.ico",
+        icon: "/assets/favicon_io/android-chrome-192x192.png",
+        tag: "habitparty-focus-timer",
       });
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
     } catch {
       // Falha silenciosa caso o navegador restrinja
     }
@@ -87,7 +146,8 @@ function getActiveBrowserTranslations(): FocusBrowserTranslations {
 let baseDocumentTitle: string | null = null;
 
 /**
- * Atualiza dinamicamente o document.title da aba com o cronômetro ativo.
+ * Atualiza dinamicamente o document.title da aba com o cronômetro ativo,
+ * acompanhando trocas de rota SPA quando o Next.js atualiza o título base.
  */
 export function updateDocumentTitle(state: {
   isActive: boolean;
@@ -103,7 +163,9 @@ export function updateDocumentTitle(state: {
 
   if (!state.isActive) {
     if (baseDocumentTitle) {
-      document.title = baseDocumentTitle;
+      if (document.title.startsWith("(")) {
+        document.title = baseDocumentTitle;
+      }
       baseDocumentTitle = null;
     }
     return;
@@ -111,8 +173,10 @@ export function updateDocumentTitle(state: {
 
   const i18n = getActiveBrowserTranslations();
 
-  if (!baseDocumentTitle && !document.title.startsWith("(")) {
-    baseDocumentTitle = document.title || i18n.defaultDocumentTitle;
+  if (!document.title.startsWith("(") && document.title) {
+    baseDocumentTitle = document.title;
+  } else if (!baseDocumentTitle) {
+    baseDocumentTitle = i18n.defaultDocumentTitle;
   }
 
   const isBreak = state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
@@ -140,30 +204,47 @@ export interface FocusStructuralSnapshot {
   isPaused?: boolean;
   mode?: FocusRecordType;
   phase?: FocusPhase;
-  target?: { id?: string } | null;
+  target?: { id?: string; name?: string; taskId?: string } | null;
   totalDurationSeconds?: number;
+  customWorkDurationMinutes?: number | null;
   completedCycles?: number;
+  hasTriggeredOvertimeAlert?: boolean;
+  sessionNotes?: string;
 }
 
 let lastWriteTime = 0;
 let lastStructuralKey = "";
+let lastPersistedNotes = "";
+let notesFlushTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingStorageEntry: {
   name: string;
   value: StorageValue<FocusStructuralSnapshot>;
 } | null = null;
 
+const NOTES_PERSIST_DEBOUNCE_MS = 600;
+
+function clearScheduledNotesFlush() {
+  if (notesFlushTimer !== null) {
+    clearTimeout(notesFlushTimer);
+    notesFlushTimer = null;
+  }
+}
+
 function buildStructuralKey(state?: FocusStructuralSnapshot): string {
   if (!state) return "";
-  return `${state.isActive}|${state.isPaused}|${state.mode}|${state.phase}|${state.target?.id ?? ""}|${state.totalDurationSeconds}|${state.completedCycles}`;
+  return `${state.isActive}|${state.isPaused}|${state.mode}|${state.phase}|${state.target?.id ?? ""}|${state.target?.name ?? ""}|${state.target?.taskId ?? ""}|${state.totalDurationSeconds}|${state.customWorkDurationMinutes ?? ""}|${state.completedCycles}|${state.hasTriggeredOvertimeAlert ? 1 : 0}`;
 }
 
 export function flushPendingFocusStorage() {
+  clearScheduledNotesFlush();
   if (pendingStorageEntry && typeof window !== "undefined") {
     try {
       window.localStorage.setItem(
         pendingStorageEntry.name,
         JSON.stringify(pendingStorageEntry.value),
       );
+      lastStructuralKey = buildStructuralKey(pendingStorageEntry.value.state);
+      lastPersistedNotes = pendingStorageEntry.value.state?.sessionNotes ?? "";
       pendingStorageEntry = null;
       lastWriteTime = Date.now();
     } catch {
@@ -173,9 +254,9 @@ export function flushPendingFocusStorage() {
 }
 
 /**
- * Storage tipado do Zustand (`PersistStorage`) que evita `JSON.stringify` + `JSON.parse` a cada 1s:
- * inspeciona `value.state` em memória, só serializa em transições estruturais, a cada 15s,
- * ou ao ocultar/fechar a aba via `flushPendingFocusStorage()`.
+ * Storage tipado do Zustand (`PersistStorage`) que evita `JSON.stringify` + `JSON.parse` a cada 1s
+ * ou a cada tecla digitada em `sessionNotes`: só serializa imediatamente em transições estruturais,
+ * com debounce leve para anotações, a cada 15s em ticks, ou ao ocultar/fechar a aba.
  */
 export function createOptimizedFocusPersistStorage<
   T extends FocusStructuralSnapshot,
@@ -185,7 +266,11 @@ export function createOptimizedFocusPersistStorage<
       if (typeof window === "undefined") return null;
       try {
         const raw = window.localStorage.getItem(name);
-        return raw ? (JSON.parse(raw) as StorageValue<T>) : null;
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as StorageValue<T>;
+        lastStructuralKey = buildStructuralKey(parsed?.state);
+        lastPersistedNotes = parsed?.state?.sessionNotes ?? "";
+        return parsed;
       } catch {
         return null;
       }
@@ -196,17 +281,28 @@ export function createOptimizedFocusPersistStorage<
 
       try {
         const structuralKey = buildStructuralKey(value.state);
+        const nextNotes = value.state?.sessionNotes ?? "";
         const now = Date.now();
         const isStructuralChange = structuralKey !== lastStructuralKey;
+        const isNotesChange = nextNotes !== lastPersistedNotes;
 
         if (isStructuralChange || now - lastWriteTime >= 15000) {
+          clearScheduledNotesFlush();
           lastStructuralKey = structuralKey;
+          lastPersistedNotes = nextNotes;
           lastWriteTime = now;
           pendingStorageEntry = null;
           window.localStorage.setItem(name, JSON.stringify(value));
+        } else if (isNotesChange) {
+          clearScheduledNotesFlush();
+          notesFlushTimer = setTimeout(() => {
+            notesFlushTimer = null;
+            flushPendingFocusStorage();
+          }, NOTES_PERSIST_DEBOUNCE_MS);
         }
       } catch {
         try {
+          clearScheduledNotesFlush();
           window.localStorage.setItem(name, JSON.stringify(value));
         } catch {
           // Ignore quota errors
@@ -215,21 +311,20 @@ export function createOptimizedFocusPersistStorage<
     },
     removeItem: (name: string): void => {
       if (typeof window === "undefined") return;
+      clearScheduledNotesFlush();
       pendingStorageEntry = null;
       lastStructuralKey = "";
+      lastPersistedNotes = "";
       window.localStorage.removeItem(name);
     },
   };
 }
 
-export const optimizedFocusStorage =
-  createOptimizedFocusPersistStorage<FocusStructuralSnapshot>();
-
 let listenersRegistered = false;
 
 /**
- * Registra listeners globais da janela para proteger a sessão de foco ativa
- * contra ocultamento/fechamento acidental da aba.
+ * Registra listeners globais da janela/documento para proteger a sessão de foco ativa
+ * contra ocultamento/fechamento acidental da aba e manter múltiplas abas sincronizadas.
  */
 export function registerFocusTimerWindowListeners(
   getStoreState: () => {
@@ -238,11 +333,12 @@ export function registerFocusTimerWindowListeners(
     tick: () => void;
     pauseTimer: () => void;
   },
+  onExternalStorageSync?: () => void,
 ) {
   if (typeof window === "undefined" || listenersRegistered) return;
   listenersRegistered = true;
 
-  window.addEventListener("visibilitychange", () => {
+  document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       flushPendingFocusStorage();
     } else if (document.visibilityState === "visible") {
@@ -251,6 +347,14 @@ export function registerFocusTimerWindowListeners(
         state.tick();
       }
     }
+  });
+
+  // Sincronização multi-aba: evita duas abas tickando simultaneamente ou salvando o mesmo registro 2×
+  window.addEventListener("storage", (event) => {
+    if (event.key !== FOCUS_TIMER_STORAGE_KEY) return;
+    clearScheduledNotesFlush();
+    pendingStorageEntry = null;
+    onExternalStorageSync?.();
   });
 
   // Exibe confirmação nativa do navegador (estilo Gmail) ao tentar fechar/recarregar a aba com foco ativo

@@ -4,10 +4,10 @@ import {
   horizontalListSortingStrategy,
   SortableContext,
 } from "@dnd-kit/sortable";
-import { Columns3, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef } from "react";
-import { COLUMN_WIDTH_CLASSES } from "@/constants/routine";
+import { BoardEmptyState } from "@/components/tasks/shared";
+import { COLUMN_WIDTH_CLASSES, getColumnIcon } from "@/constants/routine";
 import type { RoutineBoardProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { RoutineColumn } from "./RoutineColumn";
@@ -18,9 +18,13 @@ export function RoutineBoard({
   selectedColumnId,
   selectedTaskId,
   deletingTaskIds,
+  isReadOnly = false,
   alignment = "left",
   columnWidths = {},
   getColumnWidthClass: customGetColumnWidthClass,
+  hasActiveFilters = false,
+  onClearFilters,
+  onManageColumns,
   onAddColumn,
   onAddTaskToColumn,
   onOpenDetails,
@@ -29,13 +33,14 @@ export function RoutineBoard({
   onOpenColumnMenu,
   onToggleComplete,
   onHabitChange,
+  onStartFocus,
   onLoadArchivedCompleted,
   forceExpandCompleted = false,
   activeDraggedTaskId = null,
   onQuickCreateTask,
 }: RoutineBoardProps) {
   const t = useTranslations("tasks.board");
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const resolveColumnWidthClass = useCallback(
     (colId: string) => {
@@ -60,60 +65,101 @@ export function RoutineBoard({
     [visibleColumns],
   );
 
+  const totalVisibleTasksCount = useMemo(
+    () =>
+      visibleColumns.reduce(
+        (acc, col) => acc + col.tasks.length + (col.archivedTotalCount ?? 0),
+        0,
+      ),
+    [visibleColumns],
+  );
+
+  const handleJumpToColumn = useCallback((columnId: string) => {
+    const scroller = scrollContainerRef.current;
+    if (!scroller) return;
+    const escapedId =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(columnId)
+        : columnId.replace(/["\\]/g, "\\$&");
+    const target = scroller.querySelector<HTMLElement>(
+      `[data-column-id="${escapedId}"]`,
+    );
+    target?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, []);
+
   // 1. ESTADO VAZIO: WORKSPACE SEM COLUNAS
   if (columns.length === 0) {
     return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-12">
-        <div className="max-w-md w-full flex flex-col items-center gap-4 p-8 rounded-2xl border border-dashed border-primary/35 bg-primary-dark/20">
-          <div className="w-16 h-16 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs">
-            <Columns3 size={32} />
-          </div>
-          <div className="flex flex-col gap-1.5 items-center">
-            <h3 className="text-lg font-bold text-neutral-100">
-              {t("noColumnsTitle")}
-            </h3>
-            <p className="text-sm text-neutral-400 max-w-sm">
-              {t("noColumnsDescription")}
-            </p>
-          </div>
-          {onAddColumn && (
-            <button
-              type="button"
-              onClick={onAddColumn}
-              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-sm shadow-glow-gold-xs transition-colors cursor-pointer"
-            >
-              <Plus size={16} />
-              <span>{t("createFirstColumnButton")}</span>
-            </button>
-          )}
-        </div>
-      </div>
+      <BoardEmptyState
+        variant="no_columns"
+        isReadOnly={isReadOnly}
+        onAddColumn={onAddColumn}
+      />
     );
   }
 
   // 2. ESTADO VAZIO: TODAS AS COLUNAS ESTÃO OCULTAS
   if (visibleColumns.length === 0) {
     return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center text-center p-6">
-        <div className="max-w-md w-full flex flex-col items-center gap-3 p-6 rounded-2xl border border-dashed border-white/10 bg-white/5">
-          <h3 className="text-base font-bold text-neutral-200">
-            {t("allHiddenTitle")}
-          </h3>
-          <p className="text-xs text-neutral-400">
-            {t("allHiddenDescription")}
-          </p>
-        </div>
-      </div>
+      <BoardEmptyState variant="all_hidden" onManageColumns={onManageColumns} />
+    );
+  }
+
+  // 3. ESTADO VAZIO: NENHUMA TAREFA CORRESPONDE AOS FILTROS ATIVOS
+  if (totalVisibleTasksCount === 0 && hasActiveFilters) {
+    return (
+      <BoardEmptyState
+        variant="no_filter_matches"
+        onClearFilters={onClearFilters}
+      />
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full min-h-0 flex-1 flex flex-col min-w-0"
-    >
+    <div className="w-full h-full min-h-0 flex-1 flex flex-col min-w-0">
+      {/* Navegação rápida por colunas em telas mobile (< sm) */}
+      {visibleColumns.length > 1 && (
+        <nav
+          aria-label={t("mobileColumnsNavAria")}
+          className="sm:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 px-1 shrink-0"
+        >
+          {visibleColumns.map((column) => {
+            const ColumnIcon = getColumnIcon(column.icon);
+            const count =
+              column.tasks.length + (column.archivedTotalCount ?? 0);
+            const isActiveCol = selectedColumnId === column.id;
+            return (
+              <button
+                key={column.id}
+                type="button"
+                onClick={() => handleJumpToColumn(column.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70",
+                  isActiveCol
+                    ? "bg-amber-500/15 border-amber-500/45 text-amber-800 dark:bg-gold/15 dark:border-gold/50 dark:text-gold"
+                    : "bg-surface/80 border-neutral-700/70 text-neutral-300 hover:text-neutral-100 dark:border-white/10",
+                )}
+              >
+                <ColumnIcon size={13} className="shrink-0" aria-hidden="true" />
+                <span className="max-w-[120px] truncate">{column.title}</span>
+                <span className="text-tiny font-bold opacity-75 tabular-nums">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       {/* Quadro Kanban: Colunas fluidas com rolagem horizontal suave quando necessário */}
-      <div className="w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0 snap-x snap-proximity sm:snap-none pb-4 pt-2 px-1.5">
+      <div
+        ref={scrollContainerRef}
+        className="w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0 snap-x snap-proximity sm:snap-none pb-4 pt-2 px-1.5"
+      >
         <div
           className={cn(
             "min-w-full w-max h-full flex items-stretch gap-4",
@@ -126,35 +172,49 @@ export function RoutineBoard({
             items={visibleColumnIdsOrdered}
             strategy={horizontalListSortingStrategy}
           >
-            {visibleColumns.map((column, idx) => (
-              <div
-                key={column.id}
-                className={cn(
-                  "h-full shrink-0 flex flex-col snap-center sm:snap-align-none",
-                  resolveColumnWidthClass(column.id),
-                )}
-              >
-                <RoutineColumn
-                  column={column}
-                  columnIndex={idx}
-                  isSelected={selectedColumnId === column.id}
-                  selectedTaskId={selectedTaskId}
-                  deletingTaskIds={deletingTaskIds}
-                  widthPreset={columnWidths[column.id] || "normal"}
-                  onAddTaskToColumn={onAddTaskToColumn}
-                  onQuickCreateTask={onQuickCreateTask}
-                  onOpenDetails={onOpenDetails}
-                  onEditTask={onEditTask}
-                  onContextMenu={onContextMenu}
-                  onOpenColumnMenu={onOpenColumnMenu}
-                  onToggleComplete={onToggleComplete}
-                  onHabitChange={onHabitChange}
-                  onLoadArchivedCompleted={onLoadArchivedCompleted}
-                  forceExpandCompleted={forceExpandCompleted}
-                  activeDraggedTaskId={activeDraggedTaskId}
-                />
-              </div>
-            ))}
+            {visibleColumns.map((column) => {
+              const colHasSelected = Boolean(
+                selectedTaskId &&
+                  column.tasks.some((task) => task.id === selectedTaskId),
+              );
+              const colHasDragged = Boolean(
+                activeDraggedTaskId &&
+                  column.tasks.some((task) => task.id === activeDraggedTaskId),
+              );
+
+              return (
+                <div
+                  key={column.id}
+                  className={cn(
+                    "h-full shrink-0 flex flex-col snap-center sm:snap-align-none",
+                    resolveColumnWidthClass(column.id),
+                  )}
+                >
+                  <RoutineColumn
+                    column={column}
+                    isSelected={selectedColumnId === column.id}
+                    isReadOnly={isReadOnly}
+                    selectedTaskId={colHasSelected ? selectedTaskId : undefined}
+                    deletingTaskIds={deletingTaskIds}
+                    widthPreset={columnWidths[column.id] || "normal"}
+                    onAddTaskToColumn={onAddTaskToColumn}
+                    onQuickCreateTask={onQuickCreateTask}
+                    onOpenDetails={onOpenDetails}
+                    onEditTask={onEditTask}
+                    onContextMenu={onContextMenu}
+                    onOpenColumnMenu={onOpenColumnMenu}
+                    onToggleComplete={onToggleComplete}
+                    onHabitChange={onHabitChange}
+                    onStartFocus={onStartFocus}
+                    onLoadArchivedCompleted={onLoadArchivedCompleted}
+                    forceExpandCompleted={forceExpandCompleted}
+                    activeDraggedTaskId={
+                      colHasDragged ? activeDraggedTaskId : null
+                    }
+                  />
+                </div>
+              );
+            })}
           </SortableContext>
         </div>
       </div>

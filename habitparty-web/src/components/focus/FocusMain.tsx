@@ -1,5 +1,3 @@
-"use client";
-
 import { Timer } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
@@ -10,9 +8,10 @@ import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusContextMenu } from "@/hooks/useFocusContextMenu";
 import { useFocusMutations } from "@/hooks/useFocusMutations";
-import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+import { useFocusMainTimerSlice } from "@/hooks/useFocusTimer";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { AppLocale } from "@/i18n/config";
+import { useUIStore } from "@/store/uiStore";
 import type {
   FocusActivity,
   FocusableTaskItem,
@@ -48,14 +47,6 @@ const DeleteFocusActivityModal = dynamic(
   { ssr: false },
 );
 
-const UpgradePremiumModal = dynamic(
-  () =>
-    import("@/components/subscription/UpgradePremiumModal").then(
-      (mod) => mod.UpgradePremiumModal,
-    ),
-  { ssr: false },
-);
-
 function preloadFocusMainModalChunks() {
   void import("./modals/FocusActivityModal");
 }
@@ -69,10 +60,12 @@ interface FocusMainProps {
     sessionsCount: number;
   };
   todayRewardableMinutes?: number;
+  todayDurationByActivityId?: Record<string, number>;
   isPremium?: boolean;
   selectedActivityId?: string | null;
   selectedBackpackItemId?: string | null;
   onSelectActivity?: (activityId: string | null) => void;
+  onToggleActivityFilter?: (activityId: string | null) => void;
   onSelectBackpackItem?: (item: InventoryItemResponseDTO | null) => void;
   onStartFocusActivity: (act: FocusActivity) => void;
   onStartFocusItem: (item: InventoryItemResponseDTO) => void;
@@ -94,10 +87,12 @@ export function FocusMain({
   focusableTasks = [],
   todaySummary,
   todayRewardableMinutes,
+  todayDurationByActivityId,
   isPremium = false,
   selectedActivityId,
   selectedBackpackItemId,
   onSelectActivity,
+  onToggleActivityFilter,
   onSelectBackpackItem,
   onStartFocusActivity,
   onStartFocusItem,
@@ -111,12 +106,11 @@ export function FocusMain({
 }: FocusMainProps) {
   const t = useTranslations("focus.main");
   const { isGamified } = useExperienceMode();
-  const controls = useFocusTimerControls();
+  const controls = useFocusMainTimerSlice();
   const fromSource = initialFromSource;
   useIdlePreload(preloadFocusMainModalChunks);
 
-  const { isActive, isPaused, target } = controls;
-  const isTimerRunning = isActive && !isPaused;
+  const { isActive, isRunning: isTimerRunning, target } = controls;
 
   // Modais de Criação/Edição de Atividade e Upgrade VIP centralizado
   const [activityModalOpen, setActivityModalOpen] = useState(
@@ -125,11 +119,7 @@ export function FocusMain({
   const [editingActivity, setEditingActivity] = useState<FocusActivity | null>(
     null,
   );
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-
-  const handleOpenUpgradeModal = useCallback(() => {
-    setIsUpgradeModalOpen(true);
-  }, []);
+  const handleOpenUpgradeModal = useUIStore((s) => s.openUpgradeModal);
 
   const handleOpenCreateModal = useCallback(() => {
     setEditingActivity(null);
@@ -159,6 +149,7 @@ export function FocusMain({
     consumingItemIds,
   } = useFocusMutations({
     activities,
+    todayDurationByActivityId,
     selectedActivityId,
     activeTarget: target,
     onSelectActivity,
@@ -186,45 +177,6 @@ export function FocusMain({
         setDeleteModalActivity(act);
       },
     });
-
-  // Deseleciona a atividade ou item da mochila ativo caso o usuário clique em áreas vazias
-  useEffect(() => {
-    if (!selectedActivityId && !selectedBackpackItemId) return;
-
-    let isReady = false;
-    const timer = setTimeout(() => {
-      isReady = true;
-    }, 150);
-
-    const handlePointerDown = (e: MouseEvent) => {
-      if (!isReady) return;
-      const targetEl = e.target as HTMLElement | null;
-      if (!targetEl) return;
-      if (
-        targetEl.closest("[data-focus-card]") ||
-        targetEl.closest("[role='dialog']") ||
-        targetEl.closest("aside") ||
-        targetEl.closest("button") ||
-        targetEl.closest("input") ||
-        targetEl.closest("textarea")
-      ) {
-        return;
-      }
-      onSelectActivity?.(null);
-      onSelectBackpackItem?.(null);
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [
-    selectedActivityId,
-    selectedBackpackItemId,
-    onSelectActivity,
-    onSelectBackpackItem,
-  ]);
 
   const locale = useLocale() as AppLocale;
 
@@ -295,10 +247,12 @@ export function FocusMain({
           backpackItems={backpackItems}
           focusableTasks={focusableTasks}
           todayRewardableMinutes={todayRewardableMinutes}
+          initialIsPremium={isPremium}
           onSelectActivity={onSelectActivity}
           onStartFocusActivity={onStartFocusActivity}
           onStartFocusItem={onStartFocusItem}
           onStartFocusTask={onStartFocusTask}
+          onConsumeBackpackItem={handleConsumeItem}
           onChangeMode={onChangeMode}
           onOpenUpgradeModal={handleOpenUpgradeModal}
           onCreateActivity={handleOpenCreateModal}
@@ -308,6 +262,7 @@ export function FocusMain({
         {/* 3. Seção de Atividades */}
         <FocusActivitiesSection
           activities={activities}
+          todayDurationByActivityId={todayDurationByActivityId}
           isPremium={isPremium}
           activeTargetId={target?.id}
           isTimerActive={isActive}
@@ -315,6 +270,7 @@ export function FocusMain({
           onToggleTimer={controls.toggleTimer}
           selectedActivityId={selectedActivityId}
           onSelectActivity={onSelectActivity}
+          onToggleActivityFilter={onToggleActivityFilter}
           onStartFocus={onStartFocusActivity}
           onOpenCreateModal={handleOpenCreateModal}
           onOpenUpgradeModal={handleOpenUpgradeModal}
@@ -428,14 +384,6 @@ export function FocusMain({
           onDeleteHistoryChange={setDeleteActivityHistory}
           onClose={() => setDeleteModalActivity(null)}
           onConfirm={handleConfirmDeleteActivity}
-        />
-      )}
-
-      {/* 9. Instância Única de Upgrade Premium */}
-      {isUpgradeModalOpen && (
-        <UpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
         />
       )}
     </div>

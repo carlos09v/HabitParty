@@ -1,32 +1,45 @@
 {
   "metadata": {
     "title": "Extrato & Histórico | HabitParty",
-    "titleGamified": "Diário de Jornada | HabitParty",
-    "titleProductivity": "Extrato & Histórico | HabitParty",
     "description": "Consulte e exporte seu extrato de moedas, XP, tarefas, foco e recompensas."
   },
   "loading": {
     "ariaLabel": "Carregando histórico de transações..."
   },
   "page": {
-    "paginationItemLabel": "transações"
+    "paginationItemLabel": "transações",
+    "loadErrorTitle": "Não foi possível carregar o extrato agora",
+    "loadErrorDescription": "Verifique sua conexão e tente novamente. Seus registros permanecem seguros.",
+    "retryButton": "Tentar novamente"
   },
   "welcomeCard": {
+    "compactTitleGamified": "Diário de Jornada",
+    "compactTitleProductivity": "Extrato de Transações",
+    "compactSubtitleGamified": "Acompanhe ganhos, gastos e penalidades no período selecionado.",
+    "compactSubtitleProductivity": "Audite créditos, pontos e resgates no período selecionado.",
     "stats": {
-      "coinsOnPageLabel": "Moedas na Página",
-      "coinsOnPageLabelProductivity": "Créditos na Página",
+      "coinsInPeriodLabel": "Moedas no Período",
+      "coinsInPeriodLabelProductivity": "Créditos no Período",
+      "coinsSpentPrimaryLabel": "Gasto em Compras",
+      "coinsSpentPrimaryLabelProductivity": "Créditos Resgatados",
       "coinsValue": "+{amount} Moedas",
       "coinsValueProductivity": "+{amount} Créditos",
-      "coinsSpentHint": "−{amount} moedas gastas nesta página",
-      "coinsSpentHintProductivity": "−{amount} créditos usados nesta página",
-      "coinsEarnedHint": "ganhas nos registros visíveis",
-      "coinsEarnedHintProductivity": "acumulados nos registros visíveis",
-      "xpOnPageLabel": "XP na Página",
-      "xpOnPageLabelProductivity": "Pontos na Página",
+      "coinsSpentValue": "−{amount} Moedas",
+      "coinsSpentValueProductivity": "−{amount} Créditos",
+      "coinsSpentHint": "−{amount} moedas gastas no período",
+      "coinsSpentHintProductivity": "−{amount} créditos usados no período",
+      "coinsEarnedHint": "ganhas no período filtrado",
+      "coinsEarnedHintProductivity": "acumulados no período filtrado",
+      "coinsEarnedSubHint": "+{amount} moedas ganhas no período",
+      "coinsEarnedSubHintProductivity": "+{amount} créditos acumulados no período",
+      "xpInPeriodLabel": "XP no Período",
+      "xpInPeriodLabelProductivity": "Pontos no Período",
       "xpValue": "+{amount} XP",
       "xpValueProductivity": "+{amount} pts",
-      "xpEarnedHint": "experiência nos registros visíveis",
-      "xpEarnedHintProductivity": "pontos nos registros visíveis",
+      "xpLostHint": "−{amount} XP perdidos no período",
+      "xpLostHintProductivity": "−{amount} pts descontados no período",
+      "xpEarnedHint": "experiência no período filtrado",
+      "xpEarnedHintProductivity": "pontos no período filtrado",
       "totalRecordsLabel": "Total de Registros",
       "transactionSingular": "transação",
       "transactionPlural": "transações",
@@ -34,15 +47,25 @@
     }
   },
   "filters": {
-    "searchPlaceholder": "Pesquisar transação...",
+    "searchPlaceholder": "Pesquisar nome, lista, tag ou descrição...",
     "periodLabel": "Período:",
+    "periodAria": "Filtrar por período",
+    "directionLabel": "Movimento",
+    "directionAria": "Filtrar por direção da movimentação",
+    "sortLabel": "Ordenar",
+    "sortAria": "Ordenar registros",
+    "pageSizeLabel": "Por página",
+    "pageSizeAria": "Quantidade de itens por página",
+    "dateFromLabel": "De",
+    "dateToLabel": "Até",
+    "advancedToggle": "Mais filtros",
+    "clearAll": "Limpar filtros",
+    "tabsAria": "Categorias do histórico",
     "tabs": {
       "ALL": "Todas",
       "TASKS": "Tarefas & Hábitos",
-      "SHOPPING": "Loja",
       "SHOPPING_GAMIFIED": "Loja",
       "SHOPPING_PRODUCTIVITY": "Recompensas",
-      "BACKPACK": "Mochila",
       "BACKPACK_GAMIFIED": "Mochila",
       "BACKPACK_PRODUCTIVITY": "Inventário",
       "FOCUS": "Foco"
@@ -51,12 +74,28 @@
       "ALL": "Todo o período",
       "TODAY": "Hoje",
       "7DAYS": "Últimos 7 dias",
-      "30DAYS": "Últimos 30 dias"
+      "30DAYS": "Últimos 30 dias",
+      "THIS_MONTH": "Este mês",
+      "LAST_MONTH": "Mês passado",
+      "CUSTOM": "Personalizado"
     },
-    "exportButtonTitle": "Exportar Extrato em formato CSV",
+    "directions": {
+      "ALL": "Entradas e saídas",
+      "IN": "Somente ganhos",
+      "OUT": "Somente gastos/perdas"
+    },
+    "sorts": {
+      "NEWEST": "Mais recentes",
+      "OLDEST": "Mais antigos",
+      "HIGHEST_GOLD": "Maior valor",
+      "LOWEST_GOLD": "Menor valor"
+    },
+    "pageSizeOption": "{size} / pág.",
+    "exportButtonTitle": "Exportar Extrato filtrado em formato CSV",
     "exporting": "Exportando...",
     "exportCsvButton": "Exportar CSV",
     "exportCsvShort": "CSV",
+    "updatingStatus": "Atualizando registros do extrato...",
     "csvFilenamePrefix": "meu_extrato",
     "toasts": {
       "exportError": "Erro ao exportar extrato.",
@@ -79,66 +118,75 @@
       "actions": "Ações",
       "selectAllAria": "Selecionar todos os registros da página"
     },
-    "emptyTitle": "Nenhuma transação encontrada",
-    "emptyDescription": "Não há movimentações de moedas ou XP para os filtros selecionados.",
-    "emptyDescriptionProductivity": "Não há movimentações de créditos ou pontos para os filtros selecionados.",
+    "emptyTitle": "Seu extrato ainda está vazio",
+    "emptyDescription": "Conclua tarefas, hábitos ou sessões de foco para começar a registrar seus ganhos de moedas e XP.",
+    "emptyDescriptionProductivity": "Conclua tarefas, rotinas ou sessões de foco para começar a registrar seus créditos e pontos.",
+    "emptyCtaTasks": "Ir para Tarefas",
+    "emptyFilteredTitle": "Nenhuma transação encontrada",
+    "emptyFilteredDescription": "Não há movimentações de moedas ou XP para os filtros selecionados.",
+    "emptyFilteredDescriptionProductivity": "Não há movimentações de créditos ou pontos para os filtros selecionados.",
+    "emptyFilteredClear": "Limpar filtros",
     "recordSingular": "registro",
     "recordPlural": "registros",
     "toasts": {
-      "deleteError": "Erro ao excluir registro.",
-      "deleteSuccess": "Registro removido com sucesso!"
+      "deleteError": "Erro ao remover registro.",
+      "deleteSuccess": "Registro removido do extrato.",
+      "undoAction": "Desfazer",
+      "restoreSuccess": "{count, plural, one {# registro restaurado!} other {# registros restaurados!}}",
+      "restoreError": "Não foi possível restaurar os registros."
     },
     "deleteModal": {
-      "title": "Excluir registro do extrato",
+      "title": "Remover registro do extrato",
       "defaultItemName": "este registro",
-      "description": "Remover <bold>{name}</bold> do seu extrato? Isso <bold>não altera</bold> seu saldo de moedas nem seu XP, apenas apaga o registro.",
-      "deleting": "Excluindo...",
-      "confirmText": "Excluir registro",
+      "description": "Remover <bold>{name}</bold> da visualização do extrato? Isso <bold>não altera</bold> seu saldo de moedas, XP ou ofensiva.",
+      "descriptionProductivity": "Remover <bold>{name}</bold> da visualização do extrato? Isso <bold>não altera</bold> seus créditos, pontos ou ofensiva.",
+      "deleting": "Removendo...",
+      "confirmText": "Remover registro",
       "cancelText": "Cancelar"
     },
     "bulk": {
-      "selectedCount": "{count, plural, one {# registro selecionado} other {# registros selecionados}}",
-      "selectAll": "Selecionar tudo",
-      "clearSelection": "Limpar seleção",
-      "deleteSelected": "Excluir selecionados ({count})",
-      "modalTitle": "Excluir registros selecionados",
-      "modalDescription": "Remover <bold>{count, plural, one {# registro} other {# registros}}</bold> do seu extrato? Isso <bold>não altera</bold> seu saldo de moedas nem seu XP, apenas apaga os registros.",
-      "confirmText": "Excluir registros",
-      "deleteSuccess": "{count, plural, one {# registro removido} other {# registros removidos}} com sucesso!",
-      "deleteError": "Erro ao excluir os registros selecionados."
+      "selectedCount": "{count, plural, one {# selecionado} other {# selecionados}}",
+      "selectAll": "Selecionar página",
+      "clearSelection": "Cancelar",
+      "deleteSelected": "Remover ({count})",
+      "modalTitle": "Remover registros selecionados",
+      "modalDescription": "Remover <bold>{count, plural, one {# registro} other {# registros}}</bold> da visualização do extrato? Isso <bold>não altera</bold> seu saldo de moedas, XP ou ofensiva.",
+      "modalDescriptionProductivity": "Remover <bold>{count, plural, one {# registro} other {# registros}}</bold> da visualização do extrato? Isso <bold>não altera</bold> seus créditos, pontos ou ofensiva.",
+      "confirmText": "Remover registros",
+      "deleteSuccess": "{count, plural, one {# registro removido do extrato.} other {# registros removidos do extrato.}}",
+      "deleteError": "Erro ao remover os registros selecionados."
     }
   },
   "row": {
-    "rowTitle": "Clique para ver os detalhes da transação",
+    "rowTitle": "Ver detalhes de {name}",
     "defaultTransactionName": "Transação",
-    "defaultEventTitle": "Evento",
-    "durationLabel": "Duração:",
     "listPriceLabel": "Preço tabela:",
-    "deleteRecordTitle": "Excluir registro do extrato",
-    "deleteRecordAria": "Excluir registro do extrato",
+    "deleteRecordTitle": "Remover registro do extrato",
+    "deleteRecordAria": "Remover registro {name} do extrato",
     "columnLabel": "Lista:",
     "selectRowAria": "Selecionar registro {name}"
   },
   "detailPopover": {
-    "dialogAria": "Detalhes da Transação",
     "copyIdTitle": "Copiar ID da Transação",
+    "copiedToast": "ID copiado para a área de transferência.",
+    "copyFailedToast": "Não foi possível copiar o ID.",
     "defaultTransactionName": "Transação",
     "closeAria": "Fechar detalhes",
-    "coinBalanceLabel": "Saldo de Moedas",
-    "coinBalanceLabelProductivity": "Saldo de Créditos",
-    "xpLabel": "Experiência (XP)",
-    "xpLabelProductivity": "Pontos de Consistência",
+    "coinChangeLabel": "Variação de Moedas",
+    "coinChangeLabelProductivity": "Variação de Créditos",
+    "xpLabel": "Variação de XP",
+    "xpLabelProductivity": "Variação de Pontos",
     "originalListPriceLabel": "Preço tabela original:",
     "taskDifficultyLabel": "Dificuldade da Tarefa:",
-    "taskDifficultyLabelProductivity": "Esforço da Tarefa:",
+    "taskDifficultyLabelProductivity": "Complexidade da Tarefa:",
     "packageRarityLabel": "Raridade do Pacote:",
     "sessionDurationLabel": "Duração da Sessão:",
     "recordedAtLabel": "Registrado em:",
     "linkedTagsLabel": "Tags vinculadas:",
-    "deleteButton": "Excluir",
+    "deleteButton": "Remover do extrato",
     "closeButton": "Fechar",
     "columnLabel": "Lista:",
-    "descriptionLabel": "Descrição da recompensa"
+    "descriptionLabel": "Descrição"
   },
   "utils": {
     "unknownDate": "Data desconhecida",
@@ -161,10 +209,8 @@
     },
     "contextRoutes": {
       "tasks": "Ver em Tarefas",
-      "inventory": "Ver na Mochila",
       "inventoryGamified": "Ver na Mochila",
       "inventoryProductivity": "Ver no Inventário",
-      "rewards": "Ver na Loja",
       "rewardsGamified": "Ver na Loja",
       "rewardsProductivity": "Ver em Recompensas",
       "focus": "Ver no Foco"
@@ -184,10 +230,10 @@
     }
   },
   "actions": {
-    "exportCsvFailed": "Falha ao exportar arquivo CSV do extrato.",
-    "exportCsvUnexpectedError": "Erro ao gerar arquivo CSV.",
     "deleteFailed": "Falha ao remover o registro de transação.",
     "deleteUnexpectedError": "Erro ao comunicar com servidor para exclusão.",
-    "deleteBatchFailed": "Falha ao remover os registros selecionados."
+    "deleteBatchFailed": "Falha ao remover os registros selecionados.",
+    "restoreFailed": "Falha ao restaurar os registros selecionados.",
+    "restoreUnexpectedError": "Erro ao comunicar com servidor para restauração."
   }
 }

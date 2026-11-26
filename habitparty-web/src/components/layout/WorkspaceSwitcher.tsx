@@ -19,11 +19,13 @@ import {
   deleteWorkspaceAction,
   updateWorkspaceAction,
 } from "@/actions/workspaceActions";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import { useSwitchWorkspace } from "@/hooks/useSwitchWorkspace";
 import { useProgressStore } from "@/store/progressStore";
+import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { cn } from "@/utils";
+import { setActiveWorkspaceCookie } from "@/utils/urlParams";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { DeleteWorkspaceModal } from "./DeleteWorkspaceModal";
 
@@ -43,7 +45,7 @@ export function WorkspaceSwitcher({
   const t = useTranslations("workspace");
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
   const [workspaceToEdit, setWorkspaceToEdit] = useState<{
     id: string;
     name: string;
@@ -57,8 +59,8 @@ export function WorkspaceSwitcher({
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const setActiveWorkspaceId = useWorkspaceStore((s) => s.setActiveWorkspaceId);
   const is_Premium = useUserStore((s) => s.is_Premium);
+  const { switchWorkspace } = useSwitchWorkspace();
 
   const maxWorkspaces = is_Premium ? 4 : 2;
   const canAddMore = workspaces.length < maxWorkspaces;
@@ -110,22 +112,7 @@ export function WorkspaceSwitcher({
 
   const handleSelect = (id: string) => {
     setIsOpen(false);
-    if (id === activeWorkspaceId) return;
-
-    setActiveWorkspaceId(id);
-    if (typeof document !== "undefined") {
-      // biome-ignore lint/suspicious/noDocumentCookie: Sincroniza workspace ativo no cliente imediatamente
-      document.cookie = `activeWorkspaceId=${id}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-    if (isWorkspaceRoute) {
-      useWorkspaceStore.setState({ isSwitchingWorkspace: true });
-      useProgressStore.getState().start("workspace-switch");
-    }
-    const params = new URLSearchParams(
-      searchParams ? searchParams.toString() : "",
-    );
-    params.set("workspaceId", id);
-    router.push(`?${params.toString()}`);
+    switchWorkspace(id);
   };
 
   const handleCreate = (name: string) => {
@@ -141,9 +128,8 @@ export function WorkspaceSwitcher({
           onCreateWorkspace(name);
         }
         const newWorkspaceId = response.data.id || null;
-        if (newWorkspaceId && typeof document !== "undefined") {
-          // biome-ignore lint/suspicious/noDocumentCookie: Sincroniza novo workspace ativo no cliente imediatamente
-          document.cookie = `activeWorkspaceId=${newWorkspaceId}; path=/; max-age=31536000; SameSite=Lax`;
+        if (newWorkspaceId) {
+          setActiveWorkspaceCookie(newWorkspaceId);
         }
         // Atualiza a store localmente com o novo workspace já selecionado como ativo
         useWorkspaceStore.setState({
@@ -155,6 +141,9 @@ export function WorkspaceSwitcher({
           const params = new URLSearchParams(
             searchParams ? searchParams.toString() : "",
           );
+          params.delete("columnId");
+          params.delete("createColumn");
+          params.delete("page");
           params.set("workspaceId", newWorkspaceId);
           router.push(`?${params.toString()}`);
         } else {
@@ -239,6 +228,9 @@ export function WorkspaceSwitcher({
         const nextActiveId = isDeletingActive
           ? newWorkspaces[0]?.id || null
           : activeWorkspaceId;
+        if (isDeletingActive) {
+          setActiveWorkspaceCookie(nextActiveId);
+        }
         useWorkspaceStore.setState({
           workspaces: newWorkspaces,
           activeWorkspaceId: nextActiveId,
@@ -248,6 +240,9 @@ export function WorkspaceSwitcher({
           const params = new URLSearchParams(
             searchParams ? searchParams.toString() : "",
           );
+          params.delete("columnId");
+          params.delete("createColumn");
+          params.delete("page");
           params.set("workspaceId", nextActiveId);
           router.push(`?${params.toString()}`);
         } else {
@@ -524,7 +519,7 @@ export function WorkspaceSwitcher({
                     setIsModalOpen(true);
                   } else if (!is_Premium) {
                     setIsOpen(false);
-                    setIsUpgradeModalOpen(true);
+                    openUpgradeModal();
                   }
                 }}
                 disabled={(!canAddMore && is_Premium) || isPending}
@@ -588,13 +583,6 @@ export function WorkspaceSwitcher({
             if (!isPending) setWorkspaceToDelete(null);
           }}
           onConfirm={handleConfirmDelete}
-        />
-      )}
-
-      {isUpgradeModalOpen && (
-        <UpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
         />
       )}
     </>

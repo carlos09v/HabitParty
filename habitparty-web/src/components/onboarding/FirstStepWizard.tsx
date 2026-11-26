@@ -37,9 +37,15 @@ import type {
 import type { ExperienceMode, ThemeId } from "@/types/ui";
 import type { UserResponseDTO } from "@/types/user";
 import { cn } from "@/utils";
-import { soundEffects } from "@/utils/soundEffects";
+import { detectBrowserTimeZone } from "@/utils/date";
 import { ExperienceModeSelector } from "./ExperienceModeSelector";
 import { OnboardingStepHeader } from "./OnboardingStepHeader";
+import {
+  ONBOARDING_CARD_DISABLED,
+  ONBOARDING_CARD_IDLE,
+  ONBOARDING_CARD_SELECTED,
+  ONBOARDING_FOCUS_RING,
+} from "./onboardingStyles";
 import { ProfileContextStep } from "./ProfileContextStep";
 import { RhythmAndThemeStep } from "./RhythmAndThemeStep";
 import { StarterPackCard } from "./StarterPackCard";
@@ -60,6 +66,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
 
   // Estado elevado entre as 3 etapas para nunca perder escolhas em Back/Next
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
+  const [maxVisitedStep, setMaxVisitedStep] = useState<WizardStep>(1);
   const [usageMode, setUsageMode] = useState<UsageMode>(() =>
     resolveInitialUsageMode(initialUser?.usageMode),
   );
@@ -111,6 +118,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const workspaceInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (currentStep === 3) {
@@ -120,8 +128,18 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
 
   const transitionToStep = (nextStep: WizardStep) => {
     setCurrentStep(nextStep);
+    setMaxVisitedStep((prev) => (nextStep > prev ? nextStep : prev));
+    if (typeof window !== "undefined") {
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      window.scrollTo({
+        top: 0,
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+      });
+    }
     requestAnimationFrame(() => {
-      stepHeadingRef.current?.focus();
+      stepHeadingRef.current?.focus({ preventScroll: true });
     });
   };
 
@@ -148,11 +166,14 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
     }
   };
 
+  // Carrega a engine Web Audio sob demanda apenas quando o usuário habilita sons
   const handleToggleUiSounds = () => {
     const willEnable = !useSoundPreferencesStore.getState().uiSoundsEnabled;
     toggleUiSounds();
     if (willEnable) {
-      soundEffects.playHabitSound();
+      void import("@/utils/soundEffects").then(({ soundEffects }) => {
+        soundEffects.playHabitSound();
+      });
     }
   };
 
@@ -226,17 +247,17 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
 
     setSubmitAttempted(true);
     if (trimmedWorkspaceName.length === 0) {
+      workspaceInputRef.current?.focus();
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const clientTimeZone =
-        typeof Intl !== "undefined"
-          ? Intl.DateTimeFormat().resolvedOptions().timeZone
-          : undefined;
+      const clientTimeZone = detectBrowserTimeZone();
       const latestTheme = (useUIStore.getState().theme ||
         activeTheme) as ThemeId;
+      const hasAnyStarterItem = Object.values(starterPack).some(Boolean);
+      const effectiveStartBlank = startBlank || !hasAnyStarterItem;
 
       const result = await completeFirstStepOnboardingAction({
         workspaceName: trimmedWorkspaceName,
@@ -248,7 +269,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
         dailyFocusGoalMinutes,
         peakPeriod,
         disciplineStyle,
-        startBlank,
+        startBlank: effectiveStartBlank,
         starterPack,
         clientTimeZone,
       });
@@ -308,7 +329,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
       {/* Cabeçalho introdutório + Progresso acessível */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/12 border border-amber-500/30 text-amber-800 dark:bg-gold/15 dark:border-gold/35 dark:text-gold text-xs font-bold">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/12 border border-amber-500/30 text-gold-ink dark:bg-gold/15 dark:border-gold/35 dark:text-gold text-xs font-bold">
             <Sparkles size={13} aria-hidden="true" />
             {t("badge")}
           </span>
@@ -317,10 +338,10 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
           </span>
         </div>
 
-        <h1 className="text-title-m sm:text-title-l font-bold text-neutral-100 leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-50 leading-tight text-balance">
           {t("title")}
         </h1>
-        <p className="text-body-s text-neutral-300 max-w-2xl">
+        <p className="text-body-s text-neutral-300 max-w-2xl text-pretty">
           {t("subtitle")}
         </p>
 
@@ -330,22 +351,32 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
             {WIZARD_STEPS.map((stepNum) => {
               const isActive = currentStep === stepNum;
               const isCompleted = stepNum < currentStep;
-              const canJump = stepNum <= currentStep;
+              const isVisited = stepNum <= maxVisitedStep;
+              const canJump = isVisited && !isActive;
 
               return (
                 <li key={stepNum}>
                   <button
                     type="button"
-                    disabled={!canJump}
+                    disabled={!isVisited}
                     onClick={() => canJump && goToStep(stepNum)}
                     aria-current={isActive ? "step" : undefined}
                     className={cn(
-                      "w-full min-h-[48px] px-3 py-2 rounded-xl border flex items-center gap-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-gold",
+                      "w-full min-h-[48px] px-3 py-2 rounded-xl border flex items-center gap-2 text-left transition-colors",
+                      ONBOARDING_FOCUS_RING,
                       isActive
-                        ? "bg-primary/15 border-amber-500/80 dark:bg-primary/25 dark:border-gold text-neutral-100 shadow-xs"
+                        ? cn(ONBOARDING_CARD_SELECTED, "text-neutral-50")
                         : isCompleted
-                          ? "bg-emerald-500/10 border-emerald-500/40 text-neutral-100 cursor-pointer hover:bg-emerald-500/15"
-                          : "bg-card/50 border-neutral-700/60 text-neutral-400 cursor-not-allowed opacity-75",
+                          ? "bg-success-500/10 border-success-500/40 text-neutral-100 cursor-pointer hover:bg-success-500/15"
+                          : isVisited
+                            ? cn(
+                                ONBOARDING_CARD_IDLE,
+                                "text-neutral-100 cursor-pointer",
+                              )
+                            : cn(
+                                ONBOARDING_CARD_DISABLED,
+                                "text-neutral-400 cursor-not-allowed",
+                              ),
                     )}
                   >
                     <span
@@ -353,9 +384,9 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                       className={cn(
                         "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0",
                         isActive
-                          ? "bg-amber-500 text-slate-950 dark:bg-gold dark:text-slate-950"
+                          ? "bg-gold text-on-gold"
                           : isCompleted
-                            ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                            ? "bg-success-500/20 text-success-400"
                             : "bg-surface text-neutral-400 border border-neutral-700",
                       )}
                     >
@@ -372,7 +403,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
         </nav>
       </div>
 
-      {/* Formulário ativo apenas com a etapa corrente no DOM (fora da ordem de Tab se inativo) */}
+      {/* Formulário ativo apenas com a etapa corrente no DOM */}
       <form onSubmit={handleSubmit} noValidate>
         <div className="rounded-2xl p-4 sm:p-6 flex flex-col gap-5 bg-card/90 dark:bg-surface/65 border border-neutral-700/80 dark:border-primary/25 shadow-lg">
           {currentStep === 1 && (
@@ -417,7 +448,8 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                 onSelectDiscipline={setDisciplineStyle}
                 selectedTheme={activeTheme as ThemeId}
                 onSelectTheme={handleThemeSelect}
-                uiSoundsEnabled={soundsMounted ? uiSoundsEnabled : true}
+                uiSoundsEnabled={uiSoundsEnabled}
+                soundsMounted={soundsMounted}
                 onToggleUiSounds={handleToggleUiSounds}
               />
             </div>
@@ -431,6 +463,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                 headingRef={stepHeadingRef}
               />
               <WorkspaceSetupCard
+                inputRef={workspaceInputRef}
                 workspaceName={workspaceName}
                 onChangeName={handleWorkspaceNameChange}
                 onBlurName={() => setWorkspaceTouched(true)}
@@ -465,7 +498,10 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                   type="button"
                   onClick={handleBack}
                   disabled={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl border border-neutral-700 dark:border-primary/30 bg-surface text-xs font-bold text-neutral-200 hover:text-neutral-100 hover:border-primary/60 transition-colors cursor-pointer disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl border border-neutral-700 dark:border-primary/30 bg-surface text-xs font-bold text-neutral-200 hover:text-neutral-100 hover:border-primary/60 transition-colors cursor-pointer disabled:opacity-50",
+                    ONBOARDING_FOCUS_RING,
+                  )}
                 >
                   <ArrowLeft size={15} aria-hidden="true" />
                   <span>{t("actions.back")}</span>
@@ -476,7 +512,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform] active:scale-[0.98] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform] active:scale-[0.98] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <span>{t("actions.next")}</span>
                   <ArrowRight size={16} aria-hidden="true" />
@@ -486,7 +522,7 @@ export function FirstStepWizard({ initialUser = null }: FirstStepWizardProps) {
                   type="submit"
                   disabled={isSubmitting}
                   aria-busy={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 px-6 min-h-[48px] rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform,opacity] active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center justify-center gap-2 px-6 min-h-[48px] rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-sm font-bold shadow-glow-gold-sm transition-[background-color,transform,opacity] active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <Rocket size={16} aria-hidden="true" />
                   <span>

@@ -60,9 +60,6 @@ class JwtAdapterTest {
     TokenPayload payload = payloadOpt.get();
     assertEquals(userId, payload.userId());
     assertEquals("ADMIN", payload.role());
-
-    String retrievedUserId = jwtAdapter.validateTokenAndGetUserId(token);
-    assertEquals(userId.toString(), retrievedUserId);
   }
 
   @Test
@@ -70,8 +67,5 @@ class JwtAdapterTest {
   void testValidateInvalidTokenReturnsEmpty() {
     Optional<TokenPayload> invalidToken = jwtAdapter.validateToken("invalid.jwt.token");
     assertTrue(invalidToken.isEmpty());
-
-    String userIdResult = jwtAdapter.validateTokenAndGetUserId("invalid.jwt.token");
-    assertEquals("", userIdResult);
   }
 }

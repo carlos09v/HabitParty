@@ -131,4 +131,44 @@ class GetPublicUserShowcaseUseCaseTest {
 
     assertThrows(ResourceNotFoundException.class, () -> useCase.execute(viewerId, "blockeduser"));
   }
+
+  @Test
+  void shouldKeepAchievementPointsAndHideLevelRankWhenStatsPrivateAndAchievementsPublic() {
+    UUID viewerId = UUID.randomUUID();
+    UUID targetId = UUID.randomUUID();
+    User target = createUser(targetId, "conquistador");
+    target.getStats().setAchievementPoints(420);
+    target.updatePrivacySettings(PrivacyLevel.PUBLIC, PrivacyLevel.PRIVATE, PrivacyLevel.PUBLIC, null);
+
+    UserRepository userRepo = mock(UserRepository.class);
+    FriendshipRepository friendshipRepo = mock(FriendshipRepository.class);
+    GetUserShowcaseUseCase showcaseUseCase = mock(GetUserShowcaseUseCase.class);
+    EffectiveStreakResolver streakResolver = mock(EffectiveStreakResolver.class);
+
+    when(userRepo.findByUsernameIgnoreCase("conquistador")).thenReturn(Optional.of(target));
+    when(friendshipRepo.findBetweenUsers(viewerId, targetId)).thenReturn(Optional.empty());
+
+    List<ProfileHighlight> highlights = List.of(
+        new ProfileHighlight(UUID.randomUUID(), targetId, 0, HighlightType.ACCOUNT_BADGE, null, "LEVEL_RANK", LocalDateTime.now()),
+        new ProfileHighlight(UUID.randomUUID(), targetId, 1, HighlightType.ACCOUNT_BADGE, null, "FOUNDER", LocalDateTime.now()),
+        new ProfileHighlight(UUID.randomUUID(), targetId, 2, HighlightType.ACHIEVEMENT, UUID.randomUUID(), "FIRST_TASK", LocalDateTime.now()));
+    when(showcaseUseCase.executeReadOnly(target, false)).thenReturn(
+        new GetUserShowcaseUseCase.UserShowcaseResult(target, 0, highlights, List.of(), 5, 10, 420, 500));
+
+    GetPublicUserShowcaseUseCase useCase = new GetPublicUserShowcaseUseCase(
+        userRepo, friendshipRepo, streakResolver, showcaseUseCase);
+
+    var result = useCase.execute(viewerId, "conquistador");
+
+    assertFalse(result.canViewStats());
+    assertTrue(result.canViewAchievements());
+    assertEquals(420, result.user().achievementPoints());
+    assertNull(result.user().levelTitle());
+    assertEquals(0, result.user().totalXp());
+    // LEVEL_RANK é ocultado, FOUNDER e ACHIEVEMENT permanecem visíveis
+    assertEquals(2, result.highlights().size());
+    assertTrue(result.highlights().stream().noneMatch(h -> "LEVEL_RANK".equals(h.getHighlightKey().orElse(null))));
+    verify(streakResolver, never()).resolve(target);
+    verify(showcaseUseCase).executeReadOnly(target, false);
+  }
 }

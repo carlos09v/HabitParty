@@ -72,23 +72,17 @@ public class GetAllWorkspacesBoardsUseCase {
       allTasks = taskRepository.findByBoardColumnIdInOrderByOrderIndexAsc(columnIds);
     }
 
-    Map<UUID, List<Task>> tasksByColumn = allTasks.stream()
-        .collect(Collectors.groupingBy(Task::getBoardColumnId));
+    Map<UUID, List<Task>> tasksByColumn = KanbanBoardAssembler.groupTasksByColumn(allTasks);
     Map<UUID, List<BoardColumn>> columnsByWorkspace = allColumns.stream()
         .collect(Collectors.groupingBy(BoardColumn::getWorkspaceId));
 
     return workspaces.stream()
-        .map(workspace -> {
-          List<BoardColumn> wsColumns = columnsByWorkspace.getOrDefault(workspace.getId(), List.of());
-          List<KanbanBoard.KanbanColumn> kanbanColumns = wsColumns.stream()
-              .map(column -> KanbanBoard.KanbanColumn.from(
-                  column,
-                  tasksByColumn.getOrDefault(column.getId(), List.of()),
-                  excludeArchivedCompleted,
-                  summariesByColumnId.get(column.getId())))
-              .toList();
-          return new KanbanBoard(workspace, kanbanColumns);
-        })
+        .map(workspace -> KanbanBoardAssembler.assembleBoard(
+            workspace,
+            columnsByWorkspace.getOrDefault(workspace.getId(), List.of()),
+            tasksByColumn,
+            excludeArchivedCompleted,
+            summariesByColumnId))
         .toList();
   }
 }

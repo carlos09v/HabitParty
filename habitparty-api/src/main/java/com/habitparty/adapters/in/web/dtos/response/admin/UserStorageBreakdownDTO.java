@@ -20,10 +20,6 @@ public record UserStorageBreakdownDTO(
     long totalBytes,
     String totalFormatted
 ) {
-  public static String formatBytes(long bytes) {
-    return UserStorageBreakdownProjection.formatBytes(bytes);
-  }
-
   public static UserStorageBreakdownDTO fromProjection(UserStorageBreakdownProjection p) {
     return new UserStorageBreakdownDTO(
         p.tasksBytes(),

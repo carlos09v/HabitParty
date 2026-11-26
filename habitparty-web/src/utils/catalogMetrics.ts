@@ -23,11 +23,13 @@ import type { WelcomeCardStat } from "@/types/ui";
 import { formatCoins } from "@/utils/economy";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
-import { groupRewardsForShowcase } from "@/utils/rewardGrouping";
+import { groupRewardsForShowcase, isDebtReward } from "@/utils/rewardGrouping";
+import { isTaskConsideredDone } from "@/utils/taskMapper";
 
 /**
  * Calcula as estatísticas do WelcomeCard para a tela de Recompensas (Loja).
  * Aceita entradas já agrupadas para evitar recomputar `groupRewardsForShowcase`.
+ * Dívidas descartáveis não entram na contagem de cards regulares da vitrine (alinhando com o contador X/12).
  */
 export function calculateRewardWelcomeStats(
   rewardsOrEntries: Reward[] | RewardDisplayEntry[],
@@ -43,6 +45,7 @@ export function calculateRewardWelcomeStats(
     rewardsOrEntries.length > 0 && "variants" in rewardsOrEntries[0]
       ? (rewardsOrEntries as RewardDisplayEntry[])
       : groupRewardsForShowcase(rewardsOrEntries as Reward[]);
+  let regularShowcaseCount = 0;
   let redeemableCount = 0;
   let timeBasedCount = 0;
   let singleUseCount = 0;
@@ -50,6 +53,10 @@ export function calculateRewardWelcomeStats(
   let groupedPackagesCount = 0;
 
   for (const entry of groupedEntries) {
+    if (isDebtReward(entry.primaryReward)) {
+      continue;
+    }
+    regularShowcaseCount++;
     if (entry.variants.some((v) => v.price <= currentCoins)) {
       redeemableCount++;
     }
@@ -115,7 +122,7 @@ export function calculateRewardWelcomeStats(
     },
     {
       label: t("showcaseLabel"),
-      value: t("cardsCount", { count: groupedEntries.length }),
+      value: t("cardsCount", { count: regularShowcaseCount }),
       icon: Store,
       variant: "primary",
       hint,
@@ -222,7 +229,7 @@ export function calculateTasksWelcomeStats(
     for (const col of cols) {
       for (const tTask of col.tasks) {
         totalTasks++;
-        if (tTask.completed) completedCount++;
+        if (isTaskConsideredDone(tTask)) completedCount++;
         if ((tTask.type || "").toLowerCase() === "habit") habitsCount++;
       }
       totalTasks += col.archivedTotalCount ?? 0;
@@ -232,7 +239,7 @@ export function calculateTasksWelcomeStats(
     const tasks = columnsOrTasks as Task[];
     totalTasks = tasks.length;
     for (const tTask of tasks) {
-      if (tTask.completed) completedCount++;
+      if (isTaskConsideredDone(tTask)) completedCount++;
       if ((tTask.type || "").toLowerCase() === "habit") habitsCount++;
     }
   }

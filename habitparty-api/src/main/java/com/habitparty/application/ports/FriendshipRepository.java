@@ -40,6 +40,10 @@ public interface FriendshipRepository {
 
   long countAcceptedByUserId(UUID userId);
 
+  default long countIncomingPendingByUserId(UUID userId) {
+    return 0L;
+  }
+
   Friendship save(Friendship friendship);
 
   void delete(Friendship friendship);

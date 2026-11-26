@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Ban,
   Check,
@@ -35,14 +33,15 @@ export function PublicFriendActionButtons({
 }: PublicFriendActionButtonsProps) {
   const t = useTranslations("showcase.publicProfile");
   const tFriends = useTranslations("showcase.friends");
+  const targetName = data.user.fullName || `@${data.user.username}`;
 
   const blockButton = (
     <button
       type="button"
       disabled={isMutating}
       onClick={onBlockUser}
-      aria-label={tFriends("blockBtn")}
-      title={tFriends("blockBtn")}
+      aria-label={tFriends("blockUserAria", { name: targetName })}
+      title={tFriends("blockUserAria", { name: targetName })}
       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-red-500/35 bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 transition-colors cursor-pointer"
     >
       <Ban size={13} aria-hidden="true" />
@@ -77,7 +76,11 @@ export function PublicFriendActionButtons({
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-neutral-700 bg-surface/60 text-neutral-300">
               <Lock size={12} aria-hidden="true" />
-              <span>{tFriends("requestsCannotSend")}</span>
+              <span>
+                {data.user.friendRequestPolicy === "FRIEND_CODE_ONLY"
+                  ? tFriends("requestsCodeOnly")
+                  : tFriends("requestsCannotSend")}
+              </span>
             </span>
           )}
           {blockButton}

@@ -95,7 +95,8 @@ class ChecklistItemPersistenceIntegrationTest {
           due_date DATE,
           total_focus_minutes INT NOT NULL DEFAULT 0,
           focus_cycles_count INT NOT NULL DEFAULT 0,
-          created_at TIMESTAMP NOT NULL
+          created_at TIMESTAMP NOT NULL,
+          version BIGINT NOT NULL DEFAULT 0
         )
         """);
     jdbcTemplate.execute("""
@@ -123,7 +124,8 @@ class ChecklistItemPersistenceIntegrationTest {
           completed_at TIMESTAMP,
           is_penalty_applied BOOLEAN NOT NULL DEFAULT FALSE,
           send_email_reminder BOOLEAN NOT NULL DEFAULT FALSE,
-          email_reminder_sent BOOLEAN NOT NULL DEFAULT FALSE
+          email_reminder_sent BOOLEAN NOT NULL DEFAULT FALSE,
+          reminder_attempts INT NOT NULL DEFAULT 0
         )
         """);
     jdbcTemplate.execute("""

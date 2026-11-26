@@ -5,25 +5,30 @@ import type {
   SocialNotificationsFeed,
 } from "@/types/social";
 
-export async function getFriendsOverview(): Promise<FriendsOverviewData | null> {
+async function fetchFriendsOverviewCached(): Promise<FriendsOverviewData> {
   "use cache: private";
   cacheLife("private30");
   cacheTag("social");
 
+  const { data, error } = await serverApi.GET("/friends");
+
+  if (error || !data) {
+    throw new Error("FRIENDS_OVERVIEW_FETCH_FAILED");
+  }
+
+  return data as FriendsOverviewData;
+}
+
+export async function getFriendsOverview(): Promise<FriendsOverviewData | null> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    return null;
+  }
+
   try {
-    const token = await getServerAuthToken();
-    if (!token) {
-      return null;
-    }
-
-    const { data, error } = await serverApi.GET("/friends");
-
-    if (error || !data) {
-      return null;
-    }
-
-    return data as FriendsOverviewData;
-  } catch {
+    return await fetchFriendsOverviewCached();
+  } catch (err) {
+    console.error("[SocialService:getFriendsOverview]", err);
     return null;
   }
 }

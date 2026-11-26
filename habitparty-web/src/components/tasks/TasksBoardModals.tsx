@@ -46,6 +46,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   availableTags = [],
   maxColumns,
   isPremium,
+  workspaceId,
   columnModalState,
   closeColumnModal,
   setColumnModalState,
@@ -58,7 +59,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   contextMenu,
   setContextMenu,
   columnContextMenu,
-  setColumnContextMenu,
+  onCloseColumnContextMenu,
   columnToDelete,
   setColumnToDelete,
   isDeletingColumn,
@@ -81,10 +82,16 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   columnWidths,
   onColumnWidthChange,
   availableTargetWorkspaces,
-  isWorkspaceReadOnly,
+  isWorkspaceReadOnly = false,
   onMoveColumnToWorkspace,
   onMoveLockedWorkspace,
+  onMoveTaskToColumn,
+  onMoveColumnDirection,
   onStartFocus,
+  quickFocus,
+  onOpenEditTask,
+  onOpenCreateColumn,
+  ensureWriteAccess,
 }: TasksBoardModalsProps) {
   const t = useTranslations("tasks.container");
   const tFilters = useTranslations("tasks.filters");
@@ -92,6 +99,12 @@ export const TasksBoardModals = memo(function TasksBoardModals({
 
   const handleInsertColumnRelative = useCallback(
     (refColumn: (typeof columns)[number], position: "left" | "right") => {
+      if (
+        ensureWriteAccess &&
+        !ensureWriteAccess(t("readOnlyCreateColumnToast"))
+      ) {
+        return;
+      }
       if (columns.length >= maxColumns) {
         toast.info(
           isPremium
@@ -113,64 +126,217 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         },
       });
     },
-    [columns, maxColumns, isPremium, setColumnModalState, tFilters],
+    [
+      columns,
+      ensureWriteAccess,
+      isPremium,
+      maxColumns,
+      setColumnModalState,
+      t,
+      tFilters,
+    ],
   );
 
-  const columnContextMenuItems = useMemo(
-    () =>
-      buildColumnContextMenuItems({
-        column: columnContextMenu.column,
-        columnWidths,
-        availableWorkspaces: availableTargetWorkspaces,
-        isSourceWorkspaceReadOnly: isWorkspaceReadOnly,
-        onColumnWidthChange,
-        onEdit: (col) =>
-          setColumnModalState({
-            isOpen: true,
-            columnToEdit: col,
-            insertTarget: null,
-          }),
-        onInsertLeft: (col) => handleInsertColumnRelative(col, "left"),
-        onInsertRight: (col) => handleInsertColumnRelative(col, "right"),
-        onMoveToWorkspace: onMoveColumnToWorkspace
-          ? (col, targetWorkspaceId, targetWorkspaceName) => {
-              void onMoveColumnToWorkspace(
-                col,
-                targetWorkspaceId,
-                targetWorkspaceName,
-              );
-            }
-          : undefined,
-        onMoveLockedWorkspace,
-        onDelete: (col) => setColumnToDelete(col),
-        labels: {
-          edit: tMenus("edit"),
-          delete: tMenus("delete"),
-          insertLeft: tMenus("insertLeft"),
-          insertRight: tMenus("insertRight"),
-          layout: tMenus("layout"),
-          compact: tMenus("compact"),
-          normal: tMenus("normal"),
-          wide: tMenus("wide"),
-          moveTo: tMenus("moveTo"),
-          noTargetWorkspaces: tMenus("noTargetWorkspaces"),
-          vipBadge: tMenus("vipBadge"),
-          readOnlyHint: tMenus("readOnlyWorkspaceHint"),
-        },
-      }),
-    [
-      columnContextMenu.column,
+  const handleRequestEditColumn = useCallback(
+    (col: (typeof columns)[number]) => {
+      if (
+        ensureWriteAccess &&
+        !ensureWriteAccess(t("readOnlyColumnActionToast"))
+      ) {
+        return;
+      }
+      setColumnModalState({
+        isOpen: true,
+        columnToEdit: col,
+        insertTarget: null,
+      });
+    },
+    [ensureWriteAccess, setColumnModalState, t],
+  );
+
+  const handleRequestDeleteColumn = useCallback(
+    (col: (typeof columns)[number]) => {
+      if (
+        ensureWriteAccess &&
+        !ensureWriteAccess(t("readOnlyColumnActionToast"))
+      ) {
+        return;
+      }
+      setColumnToDelete(col);
+    },
+    [ensureWriteAccess, setColumnToDelete, t],
+  );
+
+  const handleCloseColumnsDrawer = useCallback(() => {
+    setIsColumnsDrawerOpen(false);
+  }, [setIsColumnsDrawerOpen]);
+
+  const handleRequestCreateColumn = useCallback(() => {
+    if (onOpenCreateColumn) {
+      onOpenCreateColumn();
+      return;
+    }
+    if (
+      ensureWriteAccess &&
+      !ensureWriteAccess(t("readOnlyCreateColumnToast"))
+    ) {
+      return;
+    }
+    setColumnModalState({ isOpen: true, columnToEdit: null });
+  }, [ensureWriteAccess, onOpenCreateColumn, setColumnModalState, t]);
+
+  const columnContextMenuItems = useMemo(() => {
+    const activeColIndex = columnContextMenu.column
+      ? columns.findIndex((c) => c.id === columnContextMenu.column?.id)
+      : -1;
+    const canMoveLeft = activeColIndex > 0;
+    const canMoveRight =
+      activeColIndex >= 0 && activeColIndex < columns.length - 1;
+
+    return buildColumnContextMenuItems({
+      column: columnContextMenu.column,
       columnWidths,
-      availableTargetWorkspaces,
-      isWorkspaceReadOnly,
+      availableWorkspaces: availableTargetWorkspaces,
+      isSourceWorkspaceReadOnly: isWorkspaceReadOnly,
       onColumnWidthChange,
-      setColumnModalState,
-      handleInsertColumnRelative,
-      onMoveColumnToWorkspace,
+      onEdit: handleRequestEditColumn,
+      canMoveLeft: Boolean(onMoveColumnDirection && canMoveLeft),
+      canMoveRight: Boolean(onMoveColumnDirection && canMoveRight),
+      onMoveLeft: onMoveColumnDirection
+        ? (col) => onMoveColumnDirection(col, "left")
+        : undefined,
+      onMoveRight: onMoveColumnDirection
+        ? (col) => onMoveColumnDirection(col, "right")
+        : undefined,
+      onInsertLeft: (col) => handleInsertColumnRelative(col, "left"),
+      onInsertRight: (col) => handleInsertColumnRelative(col, "right"),
+      onMoveToWorkspace: onMoveColumnToWorkspace
+        ? (col, targetWorkspaceId, targetWorkspaceName) => {
+            void onMoveColumnToWorkspace(
+              col,
+              targetWorkspaceId,
+              targetWorkspaceName,
+            );
+          }
+        : undefined,
       onMoveLockedWorkspace,
-      setColumnToDelete,
-      tMenus,
-    ],
+      onDelete: handleRequestDeleteColumn,
+      labels: {
+        edit: tMenus("edit"),
+        delete: tMenus("delete"),
+        moveLeft: tMenus("moveLeft"),
+        moveRight: tMenus("moveRight"),
+        insertLeft: tMenus("insertLeft"),
+        insertRight: tMenus("insertRight"),
+        layout: tMenus("layout"),
+        compact: tMenus("compact"),
+        normal: tMenus("normal"),
+        wide: tMenus("wide"),
+        moveTo: tMenus("moveTo"),
+        noTargetWorkspaces: tMenus("noTargetWorkspaces"),
+        vipBadge: tMenus("vipBadge"),
+        readOnlyHint: tMenus("readOnlyWorkspaceHint"),
+      },
+    });
+  }, [
+    columns,
+    columnContextMenu.column,
+    columnWidths,
+    availableTargetWorkspaces,
+    isWorkspaceReadOnly,
+    onColumnWidthChange,
+    onMoveColumnDirection,
+    handleRequestEditColumn,
+    handleInsertColumnRelative,
+    onMoveColumnToWorkspace,
+    onMoveLockedWorkspace,
+    handleRequestDeleteColumn,
+    tMenus,
+  ]);
+
+  const handleCloseTaskContextMenu = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, isOpen: false }));
+  }, [setContextMenu]);
+
+  const handleCloseTaskDetails = useCallback(() => {
+    setSelectedTaskDetails(null);
+  }, [setSelectedTaskDetails]);
+
+  const handleCloseTaskModal = useCallback(() => {
+    setTaskModalState({
+      isOpen: false,
+      taskToEdit: null,
+      defaultTaskType: undefined,
+      initialTitle: undefined,
+      initialValues: undefined,
+    });
+  }, [setTaskModalState]);
+
+  const handleOpenEditTaskSafe = useCallback(
+    (
+      task: TasksBoardModalsProps["columns"][number]["tasks"][number],
+      columnId?: string,
+    ) => {
+      if (onOpenEditTask) {
+        onOpenEditTask(task, columnId);
+        return;
+      }
+      if (
+        ensureWriteAccess &&
+        !ensureWriteAccess(t("readOnlyModifyTaskToast"))
+      ) {
+        return;
+      }
+      if (columnId) {
+        setTaskModalState({
+          isOpen: true,
+          columnId,
+          taskToEdit: task,
+        });
+      }
+    },
+    [ensureWriteAccess, onOpenEditTask, setTaskModalState, t],
+  );
+
+  const handleDuplicateTaskSafe = useCallback(
+    (
+      task: TasksBoardModalsProps["columns"][number]["tasks"][number],
+      columnId?: string,
+    ) => {
+      if (columnId) {
+        handleDuplicateTask(task, columnId);
+      }
+    },
+    [handleDuplicateTask],
+  );
+
+  const handleRequestDeleteTaskSafe = useCallback(
+    (
+      task: TasksBoardModalsProps["columns"][number]["tasks"][number],
+      columnId?: string,
+    ) => {
+      if (columnId) {
+        requestDeleteTask(task, columnId);
+      }
+    },
+    [requestDeleteTask],
+  );
+
+  const deleteModalLabels = useMemo(
+    () => ({
+      title: t("deleteTaskModal.title"),
+      description: t.rich("deleteTaskModal.description", {
+        title: taskToDelete?.task.title ?? "",
+        bold: (chunks) => (
+          <span className="font-bold text-neutral-100">{chunks}</span>
+        ),
+      }),
+      confirmText: t("deleteTaskModal.confirmText"),
+      cancelText: t("deleteTaskModal.cancelText"),
+      deleteHistoryLabel: t("deleteTaskModal.deleteHistoryLabel"),
+      deleteHistoryHint: t("deleteTaskModal.deleteHistoryHint"),
+    }),
+    [t, taskToDelete?.task.title],
   );
 
   return (
@@ -181,44 +347,21 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         availableTags={availableTags}
         defaultColumnId={columns[0]?.id}
         defaultColumnTitle={t("defaultColumnTitle")}
+        isReadOnly={isWorkspaceReadOnly}
+        quickFocus={quickFocus}
         contextMenu={contextMenu}
-        onCloseContextMenu={() =>
-          setContextMenu((prev) => ({ ...prev, isOpen: false }))
-        }
+        onCloseContextMenu={handleCloseTaskContextMenu}
         selectedTaskDetails={selectedTaskDetails}
-        onCloseTaskDetails={() => setSelectedTaskDetails(null)}
+        onCloseTaskDetails={handleCloseTaskDetails}
         taskModalState={taskModalState}
-        onCloseTaskModal={() =>
-          setTaskModalState({
-            isOpen: false,
-            taskToEdit: null,
-            defaultTaskType: undefined,
-            initialTitle: undefined,
-            initialValues: undefined,
-          })
-        }
-        onOpenEditTask={(task, columnId) => {
-          if (columnId) {
-            setTaskModalState({
-              isOpen: true,
-              columnId,
-              taskToEdit: task,
-            });
-          }
-        }}
+        onCloseTaskModal={handleCloseTaskModal}
+        onOpenEditTask={handleOpenEditTaskSafe}
         onTaskSaved={handleTaskSaved}
         onTaskDetailsUpdate={handleTaskDetailsUpdate}
-        onDuplicateTask={(task, columnId) => {
-          if (columnId) {
-            handleDuplicateTask(task, columnId);
-          }
-        }}
+        onDuplicateTask={handleDuplicateTaskSafe}
         duplicatingTaskIds={duplicatingTaskIds}
-        onRequestDeleteTask={(task, columnId) => {
-          if (columnId) {
-            requestDeleteTask(task, columnId);
-          }
-        }}
+        onRequestDeleteTask={handleRequestDeleteTaskSafe}
+        onMoveTaskToColumn={onMoveTaskToColumn}
         onToggleComplete={handleToggleComplete}
         onHabitChange={handleHabitChange}
         onStartFocus={onStartFocus}
@@ -227,28 +370,14 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         onDeleteHistoryChange={onDeleteHistoryChange}
         onConfirmDeleteTask={onConfirmDeleteTask}
         onCancelDeleteTask={onCancelDeleteTask}
-        deleteModalLabels={{
-          title: t("deleteTaskModal.title"),
-          description: t.rich("deleteTaskModal.description", {
-            title: taskToDelete?.task.title ?? "",
-            bold: (chunks) => (
-              <span className="font-bold text-neutral-100">{chunks}</span>
-            ),
-          }),
-          confirmText: t("deleteTaskModal.confirmText"),
-          cancelText: t("deleteTaskModal.cancelText"),
-          deleteHistoryLabel: t("deleteTaskModal.deleteHistoryLabel"),
-          deleteHistoryHint: t("deleteTaskModal.deleteHistoryHint"),
-        }}
+        deleteModalLabels={deleteModalLabels}
       />
 
       {/* Menu de Contexto da Coluna (3 pontos) */}
       <ContextMenu
         isOpen={columnContextMenu.isOpen}
         position={columnContextMenu.position}
-        onClose={() =>
-          setColumnContextMenu((prev) => ({ ...prev, isOpen: false }))
-        }
+        onClose={onCloseColumnContextMenu}
         items={columnContextMenuItems}
       />
 
@@ -285,6 +414,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       {columnModalState.isOpen && (
         <CreateBoardColumnModal
           isOpen={columnModalState.isOpen}
+          workspaceId={workspaceId}
           columnToEdit={columnModalState.columnToEdit}
           insertTarget={columnModalState.insertTarget}
           onClose={closeColumnModal}
@@ -296,20 +426,17 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       {isColumnsDrawerOpen && (
         <RoutineColumnsDrawer
           isOpen={isColumnsDrawerOpen}
-          onClose={() => setIsColumnsDrawerOpen(false)}
+          onClose={handleCloseColumnsDrawer}
           columns={columns}
           visibleColumnIds={visibleColumnIds}
           maxColumns={maxColumns}
           isPremium={isPremium}
+          isReadOnly={isWorkspaceReadOnly}
           onToggleVisibility={toggleColumnVisibility}
           onShowAll={showAllColumns}
-          onOpenCreateColumn={() =>
-            setColumnModalState({ isOpen: true, columnToEdit: null })
-          }
-          onEditColumn={(col) =>
-            setColumnModalState({ isOpen: true, columnToEdit: col })
-          }
-          onDeleteColumn={(col) => setColumnToDelete(col)}
+          onOpenCreateColumn={handleRequestCreateColumn}
+          onEditColumn={handleRequestEditColumn}
+          onDeleteColumn={handleRequestDeleteColumn}
         />
       )}
     </>

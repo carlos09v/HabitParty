@@ -129,27 +129,28 @@ export function SelectedTagChip({
           <Pencil size={isPop ? 9 : 10} />
         </button>
       )}
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemoveTag(tag);
-        }}
-        className="hover:text-danger-500 cursor-pointer opacity-80 sm:opacity-70 sm:group-hover/tag:opacity-100 focus-visible:opacity-100 shrink-0 transition-opacity"
-        title={
-          isPop
-            ? tPopover("removeTagTitle", { tag })
-            : t("removeTagTitle", { tag })
-        }
-        aria-label={
-          isPop
-            ? tPopover("removeTagTitle", { tag })
-            : t("removeTagTitle", { tag })
-        }
-      >
-        <X size={isPop ? 10 : 11} />
-      </button>
+      {!disabled && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemoveTag(tag);
+          }}
+          className="hover:text-danger-500 cursor-pointer opacity-80 sm:opacity-70 sm:group-hover/tag:opacity-100 focus-visible:opacity-100 shrink-0 transition-opacity"
+          title={
+            isPop
+              ? tPopover("removeTagTitle", { tag })
+              : t("removeTagTitle", { tag })
+          }
+          aria-label={
+            isPop
+              ? tPopover("removeTagTitle", { tag })
+              : t("removeTagTitle", { tag })
+          }
+        >
+          <X size={isPop ? 10 : 11} />
+        </button>
+      )}
     </span>
   );
 }
@@ -162,6 +163,7 @@ export interface TaskTagDropdownPortalProps {
   triggerId: string;
   floatingStyle: CSSProperties;
   shouldRenderPortal: boolean;
+  portalContainer?: HTMLElement | null;
   placement?: "top" | "bottom";
   isPopoverVariant: boolean;
   query: string;
@@ -194,6 +196,7 @@ export function TaskTagDropdownPortal({
   triggerId,
   floatingStyle,
   shouldRenderPortal,
+  portalContainer,
   placement,
   isPopoverVariant,
   query,
@@ -222,8 +225,8 @@ export function TaskTagDropdownPortal({
   const panel = (
     <div
       ref={popoverRef}
-      id={listboxId}
-      role="listbox"
+      role="dialog"
+      aria-label={t("searchOrCreatePlaceholder")}
       data-select-for={triggerId}
       style={floatingStyle}
       className={cn(
@@ -239,10 +242,18 @@ export function TaskTagDropdownPortal({
       {/* Barra fixa de busca / criação */}
       <div className="p-2 border-b border-neutral-700 dark:border-white/10 flex flex-col gap-1 shrink-0 bg-card/80 dark:bg-popover/90">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-background/60 border border-primary/35 focus-within:border-gold">
-          <Search size={12} className="text-neutral-400 shrink-0" />
+          <Search
+            size={12}
+            className="text-neutral-400 shrink-0"
+            aria-hidden="true"
+          />
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded={true}
+            aria-autocomplete="list"
+            aria-controls={listboxId}
             value={query}
             maxLength={MAX_TAG_PATH_LENGTH}
             onChange={(e) => {
@@ -268,7 +279,7 @@ export function TaskTagDropdownPortal({
               className="text-neutral-400 hover:text-neutral-200 cursor-pointer shrink-0"
               aria-label={t("clearSearchAria")}
             >
-              <X size={12} />
+              <X size={12} aria-hidden="true" />
             </button>
           )}
           {isPopoverVariant && (
@@ -278,7 +289,7 @@ export function TaskTagDropdownPortal({
               className="text-neutral-400 hover:text-gold cursor-pointer shrink-0 pl-1 border-l border-neutral-700 dark:border-white/10"
               aria-label={t("closeSelectorAria")}
             >
-              <X size={12} />
+              <X size={12} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -296,6 +307,9 @@ export function TaskTagDropdownPortal({
       {/* Lista rolável de tags existentes + criação */}
       <div
         ref={listScrollRef}
+        id={listboxId}
+        role="listbox"
+        aria-label={t("searchOrCreatePlaceholder")}
         className="max-h-44 overflow-y-auto custom-scrollbar p-1 flex flex-col gap-0.5"
       >
         {canShowCreateRow && (
@@ -412,5 +426,10 @@ export function TaskTagDropdownPortal({
     </div>
   );
 
-  return shouldRenderPortal ? createPortal(panel, document.body) : panel;
+  const targetContainer =
+    portalContainer ?? (typeof document !== "undefined" ? document.body : null);
+
+  return shouldRenderPortal && targetContainer
+    ? createPortal(panel, targetContainer)
+    : panel;
 }

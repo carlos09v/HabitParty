@@ -1,5 +1,3 @@
-"use client";
-
 import { Minus, Plus } from "lucide-react";
 import type { InputProps } from "@/types/ui";
 import { cn } from "@/utils";

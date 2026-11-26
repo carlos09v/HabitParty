@@ -16,11 +16,7 @@ import {
   buildStarterPackPlan,
   MAX_WORKSPACE_NAME_LENGTH,
 } from "@/constants/onboarding";
-import {
-  getThemePolarity,
-  isValidThemeId,
-  resolveAllowedTheme,
-} from "@/constants/themes";
+import { isValidThemeId } from "@/constants/themes";
 import {
   type AppLocale,
   isValidLocale,
@@ -29,8 +25,10 @@ import {
 import type { FirstStepCompletionPayload } from "@/types/onboarding";
 import type { UserResponseDTO } from "@/types/user";
 import { getTodayDateString } from "@/utils/date";
-
-const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+import {
+  PREFERENCE_COOKIE_OPTIONS,
+  writeThemePreferenceCookies,
+} from "@/utils/themeCookies";
 
 /**
  * Persiste o idioma escolhido.
@@ -44,11 +42,7 @@ const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export async function setLocaleCookie(locale: AppLocale) {
   const validLocale: AppLocale = isValidLocale(locale) ? locale : "en";
   const cookieStore = await cookies();
-  cookieStore.set(LOCALE_COOKIE_NAME, validLocale, {
-    path: "/",
-    maxAge: PREFERENCE_COOKIE_MAX_AGE,
-    sameSite: "lax",
-  });
+  cookieStore.set(LOCALE_COOKIE_NAME, validLocale, PREFERENCE_COOKIE_OPTIONS);
 }
 
 export type CompleteFirstStepResult = ActionState<WorkspaceResponseDTO> & {
@@ -57,9 +51,10 @@ export type CompleteFirstStepResult = ActionState<WorkspaceResponseDTO> & {
 
 /**
  * Conclui o onboarding inicial com paralelização máxima e invalidação única de cache:
+ * - Valida o nome do workspace antes de persistir qualquer mutação;
  * - Cria o primeiro workspace e salva o perfil de onboarding em paralelo;
  * - Persiste os cookies padronizados do app (`activeWorkspaceId`, `theme`, `sitePolarity`, `lastDarkTheme`/`lastLightTheme`);
- * - Cria colunas em paralelo com atividade de foco e recompensas, e semeia tarefas em paralelo ao final.
+ * - Cria colunas sequencialmente (preservando `orderIndex`) em paralelo com atividade de foco e recompensas, e semeia tarefas em paralelo ao final.
  */
 export async function completeFirstStepOnboardingAction(
   payload: FirstStepCompletionPayload,
@@ -68,15 +63,21 @@ export async function completeFirstStepOnboardingAction(
     .trim()
     .slice(0, MAX_WORKSPACE_NAME_LENGTH);
 
+  if (workspaceName.length === 0) {
+    const tWorkspace = await getTranslations("onboarding.workspaceActions");
+    return {
+      success: false,
+      error: tWorkspace("createError"),
+    };
+  }
+
   const [tWorkspace, tPresets, workspaceApiRes, userApiRes, cookieStore] =
     await Promise.all([
       getTranslations("onboarding.workspaceActions"),
       !payload.startBlank
         ? getTranslations("onboarding.starterPack.presets")
         : Promise.resolve(null),
-      workspaceName.length > 0
-        ? serverApi.POST("/workspaces", { body: { name: workspaceName } })
-        : Promise.resolve({ data: undefined, error: true as unknown }),
+      serverApi.POST("/workspaces", { body: { name: workspaceName } }),
       serverApi.PUT("/users", {
         body: {
           experienceMode: payload.experienceMode,
@@ -95,11 +96,7 @@ export async function completeFirstStepOnboardingAction(
   const userUpdated = !userApiRes.error;
   const updatedUser = userApiRes.data as UserResponseDTO | undefined;
 
-  if (
-    workspaceName.length === 0 ||
-    workspaceApiRes.error ||
-    !workspaceApiRes.data?.id
-  ) {
+  if (workspaceApiRes.error || !workspaceApiRes.data?.id) {
     if (userUpdated) {
       updateTag("user");
       invalidateShowcaseDomainTags(false);
@@ -113,29 +110,12 @@ export async function completeFirstStepOnboardingAction(
   const createdWorkspace = workspaceApiRes.data as WorkspaceResponseDTO;
   const workspaceId = createdWorkspace.id as string;
 
-  const cookieOptions = {
-    path: "/",
-    maxAge: PREFERENCE_COOKIE_MAX_AGE,
-    sameSite: "lax" as const,
-  };
-
-  cookieStore.set("activeWorkspaceId", workspaceId, cookieOptions);
+  cookieStore.set("activeWorkspaceId", workspaceId, PREFERENCE_COOKIE_OPTIONS);
 
   const candidateTheme = updatedUser?.theme ?? payload.theme;
-  if (isValidThemeId(candidateTheme)) {
-    const resolvedTheme = resolveAllowedTheme(
-      candidateTheme,
-      Boolean(updatedUser?.isPremium),
-    );
-    const polarity = getThemePolarity(resolvedTheme);
-    cookieStore.set("theme", resolvedTheme, cookieOptions);
-    cookieStore.set("sitePolarity", polarity, cookieOptions);
-    cookieStore.set(
-      polarity === "dark" ? "lastDarkTheme" : "lastLightTheme",
-      resolvedTheme,
-      cookieOptions,
-    );
-  }
+  writeThemePreferenceCookies(cookieStore, candidateTheme, {
+    isPremium: Boolean(updatedUser?.isPremium),
+  });
 
   let starterPackPartialWarning = false;
   let didSeedFocus = false;
@@ -152,9 +132,11 @@ export async function completeFirstStepOnboardingAction(
         disciplineStyle: payload.disciplineStyle,
       });
 
-      const createColumnsSequentially = async (): Promise<string[]> => {
+      const createColumnsSequentially = async (): Promise<
+        Array<string | undefined>
+      > => {
         if (!payload.starterPack.createColumns) return [];
-        const ids: string[] = [];
+        const idsByIndex = new Array<string | undefined>(plan.columns.length);
         for (let idx = 0; idx < plan.columns.length; idx++) {
           const col = plan.columns[idx];
           const colRes = await serverApi.POST("/board_columns", {
@@ -168,10 +150,10 @@ export async function completeFirstStepOnboardingAction(
           if (colRes.error || !colRes.data?.id) {
             starterPackPartialWarning = true;
           } else {
-            ids.push(colRes.data.id);
+            idsByIndex[idx] = colRes.data.id;
           }
         }
-        return ids;
+        return idsByIndex;
       };
 
       const independentPromises: Promise<{ error?: unknown }>[] = [];
@@ -221,7 +203,11 @@ export async function completeFirstStepOnboardingAction(
         }
       }
 
-      if (payload.starterPack.createTasks && createdColumnIds.length > 0) {
+      const firstValidColumnId = createdColumnIds.find((id): id is string =>
+        Boolean(id),
+      );
+
+      if (payload.starterPack.createTasks && firstValidColumnId) {
         const clientTodayIso = getTodayDateString(
           new Date(),
           payload.clientTimeZone,
@@ -235,7 +221,7 @@ export async function completeFirstStepOnboardingAction(
         const taskResults = await Promise.allSettled(
           plan.tasks.map((taskPreset) => {
             const targetColId =
-              createdColumnIds[taskPreset.columnIndex] ?? createdColumnIds[0];
+              createdColumnIds[taskPreset.columnIndex] ?? firstValidColumnId;
             const isHardcore = Boolean(
               taskPreset.isHardcoreIfStrict &&
                 payload.disciplineStyle === "strict",

@@ -284,22 +284,54 @@ export function doesTaskMatchTagFilter(
 
 /**
  * Counts how many tasks match each tag option (including descendants for parent tags,
- * without double-counting tasks that carry both parent and child tags).
+ * without double-counting tasks that carry both parent and child tags) in O(N × K × depth).
  */
 export function computeTagTaskCounts(
   tasks: ReadonlyArray<Pick<Task, "tags" | "category">>,
   availableTags: ReadonlyArray<string>,
 ): Record<string, number> {
   const counts: Record<string, number> = {};
+  const normalizedKeyToTags = new Map<string, string[]>();
+
   for (const tag of availableTags) {
     counts[tag] = 0;
+    const key = normalizeTagPath(tag).toLowerCase();
+    if (!key) continue;
+    const existing = normalizedKeyToTags.get(key);
+    if (existing) {
+      existing.push(tag);
+    } else {
+      normalizedKeyToTags.set(key, [tag]);
+    }
   }
+
   for (const task of tasks) {
-    for (const tag of availableTags) {
-      if (doesTaskMatchTagFilter(task, tag)) {
+    const matchedKeys = new Set<string>();
+    const rawTags = Array.isArray(task.tags) ? task.tags : [];
+    for (const rawTag of rawTags) {
+      const normalized = normalizeTagPath(rawTag);
+      if (!normalized) continue;
+      for (const ancestorOrSelf of getTagAncestorPaths(normalized)) {
+        matchedKeys.add(ancestorOrSelf.toLowerCase());
+      }
+    }
+    if (task.category && task.category !== "Geral") {
+      const normalizedCategory = normalizeTagPath(task.category);
+      if (normalizedCategory) {
+        for (const ancestorOrSelf of getTagAncestorPaths(normalizedCategory)) {
+          matchedKeys.add(ancestorOrSelf.toLowerCase());
+        }
+      }
+    }
+
+    for (const key of matchedKeys) {
+      const tagsForKey = normalizedKeyToTags.get(key);
+      if (!tagsForKey) continue;
+      for (const tag of tagsForKey) {
         counts[tag] += 1;
       }
     }
   }
+
   return counts;
 }

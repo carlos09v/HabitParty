@@ -16,6 +16,7 @@ import {
   MAX_COLUMN_NAME_LENGTH,
   QUICK_COLUMN_TEMPLATES,
 } from "@/constants/routine";
+import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { BoardColumn } from "@/types/task";
 import type { CreateBoardColumnModalProps } from "@/types/task-ui";
@@ -25,6 +26,7 @@ import { soundEffects } from "@/utils/soundEffects";
 export function CreateBoardColumnModal({
   isOpen,
   onClose,
+  workspaceId: propWorkspaceId,
   columnToEdit,
   insertTarget,
   onSuccess,
@@ -36,11 +38,14 @@ export function CreateBoardColumnModal({
   const [selectedIcon, setSelectedIcon] = useState("sun");
   const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const isSubmittingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const activeWorkspaceId = useWorkspaceStore(
+  const isPremium = useUserStore((state) => state.is_Premium);
+  const storeWorkspaceId = useWorkspaceStore(
     (state) => state.activeWorkspaceId,
   );
+  const activeWorkspaceId = propWorkspaceId ?? storeWorkspaceId;
 
   useEffect(() => {
     if (isOpen) {
@@ -53,9 +58,6 @@ export function CreateBoardColumnModal({
         setSelectedIcon("sun");
         setHasManuallyChangedIcon(false);
       }
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
     }
   }, [isOpen, columnToEdit]);
 
@@ -65,7 +67,9 @@ export function CreateBoardColumnModal({
 
     // Sugere automaticamente o ícone com base nas palavras digitadas (ex: estudos -> book, saude -> heart)
     if (!hasManuallyChangedIcon) {
-      const suggestedIcon = inferColumnIcon(newName);
+      const suggestedIcon = inferColumnIcon(newName, {
+        allowPremium: isPremium,
+      });
       if (suggestedIcon) {
         setSelectedIcon(suggestedIcon);
       }
@@ -74,6 +78,7 @@ export function CreateBoardColumnModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     const trimmedName = name.trim();
 
     if (!trimmedName) {
@@ -86,56 +91,61 @@ export function CreateBoardColumnModal({
       return;
     }
 
+    isSubmittingRef.current = true;
     startTransition(async () => {
-      if (isEditing && columnToEdit) {
-        const response = await updateBoardColumn(columnToEdit.id, {
-          name: trimmedName,
-          icon: selectedIcon,
-        });
+      try {
+        if (isEditing && columnToEdit) {
+          const response = await updateBoardColumn(columnToEdit.id, {
+            name: trimmedName,
+            icon: selectedIcon,
+          });
 
-        if (!response.success) {
-          toast.error(response.error || t("toasts.updateError"));
+          if (!response.success) {
+            toast.error(response.error || t("toasts.updateError"));
+            return;
+          }
+
+          toast.success(t("toasts.updateSuccess"));
+          const updatedCol: BoardColumn = {
+            ...columnToEdit,
+            title: response.data.name || trimmedName,
+            icon: response.data.icon || selectedIcon,
+          };
+          onSuccess?.(updatedCol, true);
+          onClose();
           return;
         }
 
-        toast.success(t("toasts.updateSuccess"));
-        const updatedCol: BoardColumn = {
-          ...columnToEdit,
+        if (!activeWorkspaceId) return;
+
+        const response = await createBoardColumn({
+          workspaceId: activeWorkspaceId,
+          name: trimmedName,
+          icon: selectedIcon,
+          ...(insertTarget ? { orderIndex: insertTarget.orderIndex } : {}),
+        });
+
+        if (!response.success) {
+          toast.error(response.error || t("toasts.createError"));
+          return;
+        }
+
+        soundEffects.playCreateSound();
+        toast.success(t("toasts.createSuccess", { name: trimmedName }), {
+          description: t("toasts.createSuccessDesc"),
+        });
+        const newCol: BoardColumn = {
+          id: response.data.id || `col-${Date.now()}`,
           title: response.data.name || trimmedName,
+          order: response.data.orderIndex ?? insertTarget?.orderIndex ?? 0,
           icon: response.data.icon || selectedIcon,
+          tasks: [],
         };
-        onSuccess?.(updatedCol, true);
+        onSuccess?.(newCol, false, insertTarget);
         onClose();
-        return;
+      } finally {
+        isSubmittingRef.current = false;
       }
-
-      if (!activeWorkspaceId) return;
-
-      const response = await createBoardColumn({
-        workspaceId: activeWorkspaceId,
-        name: trimmedName,
-        icon: selectedIcon,
-        ...(insertTarget ? { orderIndex: insertTarget.orderIndex } : {}),
-      });
-
-      if (!response.success) {
-        toast.error(response.error || t("toasts.createError"));
-        return;
-      }
-
-      soundEffects.playCreateSound();
-      toast.success(t("toasts.createSuccess", { name: trimmedName }), {
-        description: t("toasts.createSuccessDesc"),
-      });
-      const newCol: BoardColumn = {
-        id: response.data.id || `col-${Date.now()}`,
-        title: response.data.name || trimmedName,
-        order: response.data.orderIndex ?? insertTarget?.orderIndex ?? 0,
-        icon: response.data.icon || selectedIcon,
-        tasks: [],
-      };
-      onSuccess?.(newCol, false, insertTarget);
-      onClose();
     });
   };
 
@@ -143,6 +153,7 @@ export function CreateBoardColumnModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
+      onOpenAnimationEnd={() => inputRef.current?.focus()}
       headerIcon={<Columns3 size={20} />}
       title={isEditing ? t("editTitle") : t("createTitle")}
       description={isEditing ? t("editDescription") : t("createDescription")}

@@ -19,6 +19,7 @@ interface FocusSidebarRightProps {
   totalWeekMinutes: number;
   recentRecords: FocusRecord[];
   totalRecordsCount?: number;
+  isPartialTotalWindow?: boolean;
   hasMoreRecords?: boolean;
   isLoadingMoreRecords?: boolean;
   onShowMoreRecords?: () => void;
@@ -34,7 +35,7 @@ interface FocusSidebarRightProps {
   onDeleteRecord?: (
     recordId: string,
     deleteHistory: boolean,
-  ) => void | Promise<void>;
+  ) => Promise<boolean> | boolean | undefined;
   onRecordUpdated?: (updatedRecord: FocusRecord) => void;
   selectedActivityName?: string | null;
   onClearSelectedActivity?: () => void;
@@ -50,6 +51,7 @@ export function FocusSidebarRight({
   totalWeekMinutes,
   recentRecords,
   totalRecordsCount,
+  isPartialTotalWindow = false,
   hasMoreRecords = false,
   isLoadingMoreRecords = false,
   onShowMoreRecords,
@@ -109,7 +111,8 @@ export function FocusSidebarRight({
         todayProductiveMinutes={todayProductiveMinutes}
         todayRewardableMinutes={todayRewardableMinutes}
         dailyFocusGoalMinutes={dailyFocusGoalMinutes}
-        totalRecordsCount={totalRecordsCount}
+        isPartialTotalWindow={isPartialTotalWindow}
+        isFilteredByActivity={Boolean(selectedActivityName)}
       />
 
       <div className="h-px w-full bg-neutral-700 dark:bg-white/10 shrink-0" />
@@ -140,6 +143,8 @@ export function FocusSidebarRight({
         onEditRecord={onEditRecord}
         onDeleteRecord={onDeleteRecord}
         onRecordUpdated={onRecordUpdated}
+        selectedActivityName={selectedActivityName}
+        onClearSelectedActivity={onClearSelectedActivity}
       />
     </aside>
   );

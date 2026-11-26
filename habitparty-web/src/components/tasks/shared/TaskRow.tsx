@@ -9,8 +9,6 @@ import {
   GripVertical,
   Loader2,
   MoreHorizontal,
-  Pause,
-  Play,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type CSSProperties, memo, useMemo } from "react";
@@ -19,10 +17,12 @@ import {
   TaskChecklistBadge,
   TaskDescriptionBadge,
   TaskEventBadge,
+  TaskFocusActionButton,
   TaskFocusTimeBadge,
   TaskHabitScoreBadge,
   TaskHardcoreBadge,
   TaskPriorityBadge,
+  TaskReminderBadge,
   TaskRewardBadges,
   TaskTagBadges,
   TaskTypeBadge,
@@ -30,15 +30,10 @@ import {
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
-import {
-  useDeferredSingleClick,
-  useTaskItemMeta,
-} from "@/hooks/useTaskCardItem";
-import { useFocusTimerStore } from "@/store/focusTimerStore";
-import type { Task } from "@/types/task";
+import { useTaskItemMeta } from "@/hooks/useTaskCardItem";
 import type { TaskRowProps } from "@/types/task-ui";
 import { cn } from "@/utils";
-import { getClickAnchorRect } from "@/utils/dom";
+import { getClickAnchorRect, STOP_DRAG_PROPAGATION_PROPS } from "@/utils/dom";
 
 interface TaskRowContentProps extends TaskRowProps {
   setNodeRef?: (node: HTMLElement | null) => void;
@@ -113,84 +108,9 @@ function TaskRowScheduleLabel({
   );
 }
 
-function TaskRowFocusButton({
-  task,
-  isHabit,
-  isDone,
-  onStartFocus,
-}: {
-  task: Task;
-  isHabit: boolean;
-  isDone: boolean;
-  onStartFocus: (task: Task) => void;
-}) {
-  const t = useTranslations("dashboard.taskShared.actions");
-  const focusStatus = useFocusTimerStore((s) => {
-    if (s.target?.taskId !== task.id || !s.isActive) return "none";
-    return s.isPaused ? "paused" : "running";
-  });
-
-  const isActiveTarget = focusStatus !== "none";
-  const isTimerRunning = focusStatus === "running";
-
-  if (isHabit || (isDone && !isActiveTarget)) {
-    return null;
-  }
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (isActiveTarget) {
-      useFocusTimerStore.getState().toggleTimer();
-      return;
-    }
-    onStartFocus(task);
-  };
-
-  return (
-    <button
-      type="button"
-      onPointerDown={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
-      onClick={handleClick}
-      aria-label={
-        isActiveTarget
-          ? isTimerRunning
-            ? t("pauseFocusAria", { title: task.title })
-            : t("resumeFocusAria", { title: task.title })
-          : t("startFocusAria", { title: task.title })
-      }
-      title={
-        isActiveTarget
-          ? isTimerRunning
-            ? t("pauseFocusTitle")
-            : t("resumeFocusTitle")
-          : t("startFocusTitle")
-      }
-      className={cn(
-        "flex items-center justify-center rounded-lg border transition-colors cursor-pointer shrink-0 w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9",
-        isActiveTarget
-          ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
-          : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
-      )}
-    >
-      {isActiveTarget && isTimerRunning ? (
-        <Pause size={14} className="fill-on-gold" />
-      ) : (
-        <Play
-          size={14}
-          className={
-            isActiveTarget ? "fill-on-gold ml-0.5" : "fill-current ml-0.5"
-          }
-        />
-      )}
-    </button>
-  );
-}
-
 const TaskRowContent = memo(function TaskRowContent({
   task,
+  className,
   isSelected = false,
   columnId = task.columnId,
   columnTitle = task.category,
@@ -206,7 +126,6 @@ const TaskRowContent = memo(function TaskRowContent({
   onHabitChange,
   onContextMenu,
   onOpenDetails,
-  onEditTask,
   onStartFocus,
   setNodeRef,
   style,
@@ -216,7 +135,6 @@ const TaskRowContent = memo(function TaskRowContent({
 }: TaskRowContentProps) {
   const t = useTranslations("dashboard.taskShared");
   const effectiveToggle = onToggleCompleted || onToggle;
-  const { triggerSingleClick, clearPendingClick } = useDeferredSingleClick();
 
   const {
     completed,
@@ -256,22 +174,14 @@ const TaskRowContent = memo(function TaskRowContent({
         : t("badges.eventInProgressAllDayTitle")
       : undefined;
 
+  const canDragRow = isSortable && !isReadOnly;
+
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    if (isDragging) return;
+    if (isDragging || isDeleteChecking) return;
     e.stopPropagation();
     if (onOpenDetails) {
-      const anchor = getClickAnchorRect(e);
-      triggerSingleClick(e.detail, Boolean(onEditTask), () => {
-        onOpenDetails(task, anchor, columnId);
-      });
+      onOpenDetails(task, getClickAnchorRect(e), columnId);
     }
-  };
-
-  const handleDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
-    if (isDragging || !onEditTask) return;
-    e.stopPropagation();
-    clearPendingClick();
-    onEditTask(task, columnId);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -282,22 +192,49 @@ const TaskRowContent = memo(function TaskRowContent({
     }
   };
 
+  const { role: _dndRole, ...sortableButtonAttrs } = attributes ?? {};
+  const pointerDragListeners = useMemo(() => {
+    if (!canDragRow || !listeners) return undefined;
+    const { onKeyDown: _omitKeyDown, ...pointerOnly } = listeners;
+    return pointerOnly;
+  }, [canDragRow, listeners]);
+
+  const handleTitleButtonKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    if (e.key === "Enter") {
+      if (onOpenDetails && !isDragging && !isOverlay && !isDeleteChecking) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rowEl = e.currentTarget.closest<HTMLElement>("[data-task-row]");
+        onOpenDetails(
+          task,
+          (rowEl ?? e.currentTarget).getBoundingClientRect(),
+          columnId,
+        );
+      }
+      return;
+    }
+    if (canDragRow && !isOverlay && !isDeleteChecking) {
+      listeners?.onKeyDown?.(e);
+    }
+  };
+
   const ElementTag = isSortable ? "li" : "div";
 
   return (
     <ElementTag
       ref={setNodeRef as React.Ref<never>}
+      data-task-row={task.id}
       style={style}
       aria-busy={isDeleteChecking || undefined}
-      {...(isSortable ? attributes : {})}
-      {...(isSortable ? listeners : {})}
+      {...pointerDragListeners}
       onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       className={cn(
         "relative grid items-center rounded-xl border transition-[background-color,border-color,opacity] duration-150 select-none group overflow-hidden",
         TASK_TABLE_GRID_COLS,
-        isSortable
+        canDragRow
           ? cn(
               "cursor-grab active:cursor-grabbing touch-manipulation",
               isDragging && "touch-none",
@@ -319,11 +256,12 @@ const TaskRowContent = memo(function TaskRowContent({
           "transition-none! opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
         isOverlay &&
           "transition-none! shadow-card-active border-y-gold/70 border-r-gold/70 bg-surface/90 scale-102 cursor-grabbing z-50",
+        !isDragging && !isOverlay && className,
       )}
     >
       {/* Coluna 1: [Grip opcional] + Ação + Título + Metadados (Streak, Recompensas e Saldo) */}
       <div className="flex items-center gap-2.5 min-w-0">
-        {isSortable && (
+        {canDragRow && (
           <div
             className="w-5 h-5 flex items-center justify-center shrink-0 text-neutral-400 group-hover:text-primary dark:group-hover:text-gold transition-colors p-0.5 pointer-events-none"
             aria-hidden="true"
@@ -344,6 +282,7 @@ const TaskRowContent = memo(function TaskRowContent({
             isHabit={isHabit}
             isDaily={isDaily}
             completed={completed}
+            disabled={isReadOnly}
             onToggle={toggleCompleted}
             onDelta={changeHabit}
           />
@@ -351,15 +290,41 @@ const TaskRowContent = memo(function TaskRowContent({
 
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-            <span
-              className={cn(
-                "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors text-sm",
-                isDone && "line-through text-neutral-400",
-              )}
-              title={task.title}
-            >
-              {task.title}
-            </span>
+            {isOverlay || !onOpenDetails ? (
+              <span
+                className={cn(
+                  "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors text-sm",
+                  isDone && "line-through text-neutral-400",
+                )}
+                title={task.title}
+              >
+                {task.title}
+              </span>
+            ) : (
+              <button
+                type="button"
+                {...(canDragRow ? sortableButtonAttrs : {})}
+                onKeyDown={handleTitleButtonKeyDown}
+                onClick={(e) => {
+                  if (isDragging || isDeleteChecking) return;
+                  e.stopPropagation();
+                  const rowEl =
+                    e.currentTarget.closest<HTMLElement>("[data-task-row]");
+                  onOpenDetails(
+                    task,
+                    (rowEl ?? e.currentTarget).getBoundingClientRect(),
+                    columnId,
+                  );
+                }}
+                className={cn(
+                  "text-left font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors text-sm cursor-pointer bg-transparent border-0 p-0 rounded max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 dark:focus-visible:ring-gold/75",
+                  isDone && "line-through text-neutral-400",
+                )}
+                title={task.title}
+              >
+                {task.title}
+              </button>
+            )}
 
             {!isHabit && (
               <TaskFocusTimeBadge
@@ -383,6 +348,14 @@ const TaskRowContent = memo(function TaskRowContent({
             )}
 
             {task.description && <TaskDescriptionBadge />}
+
+            {isTodo && (
+              <TaskReminderBadge
+                reminderType={task.reminderType}
+                sendEmailReminder={task.sendEmailReminder}
+                emailReminderSent={task.emailReminderSent}
+              />
+            )}
           </div>
 
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-label-g text-neutral-400 mt-0.5">
@@ -412,6 +385,16 @@ const TaskRowContent = memo(function TaskRowContent({
                   inProgressTitle={inProgressTitle}
                   variant="mobile"
                 />
+              ) : isHabit ? (
+                <span className="text-tiny px-1.5 py-0.5 rounded bg-surface/80 dark:bg-white/5 border border-neutral-700/60 dark:border-white/10 text-neutral-400 font-medium">
+                  {task.resetCounter === "DAILY"
+                    ? t("resetCounters.DAILY")
+                    : task.resetCounter === "WEEKLY"
+                      ? t("resetCounters.WEEKLY")
+                      : task.resetCounter === "MONTHLY"
+                        ? t("resetCounters.MONTHLY")
+                        : t("resetCounters.CONTINUOUS")}
+                </span>
               ) : null}
             </span>
             {(priorityMeta || workspaceName || columnTitle || displayTag) && (
@@ -433,6 +416,14 @@ const TaskRowContent = memo(function TaskRowContent({
                     {columnTitle || displayTag}
                   </span>
                 )}
+                {columnTitle && task.tags && task.tags.length > 0 && (
+                  <span
+                    className="text-tiny px-1 py-0.5 rounded bg-surface/80 dark:bg-white/5 border border-neutral-700/60 dark:border-white/10 text-neutral-400 shrink-0"
+                    title={task.tags.join(", ")}
+                  >
+                    +{task.tags.length}
+                  </span>
+                )}
               </span>
             )}
           </div>
@@ -450,9 +441,17 @@ const TaskRowContent = memo(function TaskRowContent({
           primaryLabel={columnTitle || displayTag}
           primaryTitle={columnTitle || displayTagTitle}
           fallbackLabel={workspaceName ? undefined : "-"}
-          hasExtraTags={hasExtraTags}
-          extraTagsCount={extraTagsCount}
-          extraTagsTitle={task.tags?.slice(1).join(", ")}
+          hasExtraTags={
+            columnTitle
+              ? Boolean(task.tags && task.tags.length > 0)
+              : hasExtraTags
+          }
+          extraTagsCount={
+            columnTitle ? (task.tags?.length ?? 0) : extraTagsCount
+          }
+          extraTagsTitle={
+            columnTitle ? task.tags?.join(", ") : task.tags?.slice(1).join(", ")
+          }
           variant="row"
         />
       </div>
@@ -520,20 +519,18 @@ const TaskRowContent = memo(function TaskRowContent({
           </output>
         ) : (
           <>
-            {onStartFocus && (
-              <TaskRowFocusButton
+            {onStartFocus && !isReadOnly && (
+              <TaskFocusActionButton
                 task={task}
                 isHabit={isHabit}
                 isDone={isDone}
+                variant="row"
                 onStartFocus={onStartFocus}
               />
             )}
             <button
               type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => e.stopPropagation()}
+              {...STOP_DRAG_PROPAGATION_PROPS}
               onClick={(e) => {
                 e.stopPropagation();
                 if (onContextMenu) {
@@ -542,9 +539,9 @@ const TaskRowContent = memo(function TaskRowContent({
               }}
               aria-label={t("actions.taskOptionsAria", { title: task.title })}
               title={t("actions.taskOptionsTitle")}
-              className="p-1.5 sm:p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:text-gold-ink! dark:hover:text-gold! hover:bg-surface-hover! dark:hover:bg-white/10! focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60 transition-colors cursor-pointer"
+              className="p-1.5 sm:p-1 pointer-coarse:min-w-9 pointer-coarse:min-h-9 inline-flex items-center justify-center rounded text-neutral-400 group-hover:text-neutral-200 hover:text-gold-ink! dark:hover:text-gold! hover:bg-surface-hover! dark:hover:bg-white/10! focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors cursor-pointer"
             >
-              <MoreHorizontal size={16} />
+              <MoreHorizontal size={16} aria-hidden="true" />
             </button>
           </>
         )}
@@ -554,7 +551,12 @@ const TaskRowContent = memo(function TaskRowContent({
 });
 
 function SortableTaskRow(props: TaskRowProps) {
-  const { task, columnId = task.columnId, isOverlay = false } = props;
+  const {
+    task,
+    columnId = task.columnId,
+    isOverlay = false,
+    isReadOnly = false,
+  } = props;
   const sortableData = useMemo(
     () => ({
       type: "Task" as const,
@@ -573,13 +575,18 @@ function SortableTaskRow(props: TaskRowProps) {
   } = useSortable({
     id: task.id,
     data: sortableData,
-    disabled: isOverlay,
+    disabled: isOverlay || isReadOnly,
   });
 
-  const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? undefined : transition,
-  };
+  const transformStr = CSS.Translate.toString(transform);
+  const resolvedTransition = isDragging ? undefined : transition;
+  const style: CSSProperties = useMemo(
+    () => ({
+      transform: transformStr,
+      transition: resolvedTransition,
+    }),
+    [transformStr, resolvedTransition],
+  );
 
   return (
     <TaskRowContent

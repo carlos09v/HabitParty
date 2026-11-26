@@ -16,6 +16,7 @@ import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useChecklist } from "@/hooks/useChecklist";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useTaskOptimisticAutoSave } from "@/hooks/useTaskOptimisticAutoSave";
 import { useUserStore } from "@/store/userStore";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
@@ -39,6 +40,7 @@ export function useTaskDetailsPopover({
   onHabitChange,
   onEdit,
   onDuplicate,
+  isReadOnly = false,
   onOpenFocusHistory,
 }: Omit<TaskDetailsPopoverProps, "columnTitle">) {
   const t = useTranslations("tasks.hooks");
@@ -49,6 +51,8 @@ export function useTaskDetailsPopover({
   const titleRef = useRef(task?.title || "");
   const descRef = useRef(task?.description || "");
   const descriptionFlushRef = useRef<(() => string) | null>(null);
+  const newTagTextRef = useRef("");
+  const tagsRef = useRef<string[]>(task?.tags || []);
   const newItemRef = useRef("");
   const newItemRewardedRef = useRef(false);
   const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
@@ -102,18 +106,7 @@ export function useTaskDetailsPopover({
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemText, setNewItemText] = useState("");
   const [isNewItemRewarded, setIsNewItemRewarded] = useState(false);
-  const [isMobileScreen, setIsMobileScreen] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth < 640 : false,
-  );
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobileScreen(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobileScreen = useMediaQuery("(max-width: 639px)", false);
 
   const popoverPosition = useAnchoredPopoverPosition(
     isOpen,
@@ -162,7 +155,9 @@ export function useTaskDetailsPopover({
         setPriority(sourceTask.priority || "NONE");
       }
       if (checkField("tags")) {
-        setTags(sourceTask.tags || []);
+        const nextTags = sourceTask.tags || [];
+        setTags(nextTags);
+        tagsRef.current = nextTags;
       }
       if (checkField("checklist") && fieldsToSync && sourceTask.checklist) {
         resetChecklist(sourceTask.checklist);
@@ -179,6 +174,8 @@ export function useTaskDetailsPopover({
       checklistRef.current = initialChecklist;
       setIsAddingTag(false);
       setNewTagText("");
+      newTagTextRef.current = "";
+      tagsRef.current = newTask.tags || [];
       setIsAddingItem(false);
       setNewItemText("");
       newItemRef.current = "";
@@ -215,6 +212,7 @@ export function useTaskDetailsPopover({
   const isTodo = taskType === "todo";
 
   const flushPendingChanges = useCallback(() => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     if (!currentTask) return;
 
@@ -233,19 +231,36 @@ export function useTaskDetailsPopover({
       trimmedTitle !== "" && trimmedTitle !== currentTask.title;
     const descChanged = trimmedDesc !== originalDesc;
 
-    if (titleChanged || descChanged) {
+    let flushedTags: string[] | undefined;
+    const pendingTagInput = newTagTextRef.current.trim();
+    if (pendingTagInput) {
+      newTagTextRef.current = "";
+      const { nextTags, addedAny } = mergeTaskTagsWithLimit(
+        tagsRef.current,
+        parseTaskTags(pendingTagInput),
+        MAX_TASK_TAGS,
+      );
+      if (addedAny) {
+        flushedTags = nextTags;
+        tagsRef.current = nextTags;
+        setTags(nextTags);
+      }
+    }
+
+    if (titleChanged || descChanged || flushedTags) {
       saveTaskField({
         ...(titleChanged ? { title: trimmedTitle } : {}),
         ...(descChanged ? { description: trimmedDesc || undefined } : {}),
+        ...(flushedTags ? { tags: flushedTags } : {}),
       });
     }
 
     const pendingItem = newItemRef.current.trim();
     if (pendingItem) {
-      const currentTask = getCurrentTask();
+      const currentTaskForItem = getCurrentTask();
       const canMarkRewarded =
-        supportsRewardedChecklistSteps(currentTask) &&
-        !currentTask?.completed &&
+        supportsRewardedChecklistSteps(currentTaskForItem) &&
+        !currentTaskForItem?.completed &&
         newItemRewardedRef.current &&
         countRewardedChecklistItems(checklistRef.current) <
           MAX_REWARDED_SUBTASKS;
@@ -253,20 +268,91 @@ export function useTaskDetailsPopover({
       newItemRewardedRef.current = false;
       addChecklistItem(pendingItem, canMarkRewarded);
     }
-  }, [getCurrentTask, saveTaskField, addChecklistItem]);
+  }, [isReadOnly, getCurrentTask, saveTaskField, addChecklistItem]);
 
   const handleCloseWithSave = useCallback(() => {
     flushPendingChanges();
     onClose();
   }, [flushPendingChanges, onClose]);
 
-  useClickOutside(popoverRef, handleCloseWithSave, { enabled: isOpen });
+  useClickOutside(popoverRef, handleCloseWithSave, {
+    enabled: isOpen,
+    onEscape: handleCloseWithSave,
+  });
+
+  // Foco ao abrir + restauração de foco ao fechar (WCAG 2.4.3 / 2.1.2)
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(document.activeElement)
+      ) {
+        popoverRef.current.focus({ preventScroll: true });
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      if (
+        previousFocus?.isConnected &&
+        (!document.activeElement ||
+          document.activeElement === document.body ||
+          popoverRef.current?.contains(document.activeElement))
+      ) {
+        previousFocus.focus({ preventScroll: true });
+      }
+    };
+  }, [isOpen, mounted]);
+
+  // Em mobile (< sm), trava rolagem do body e contém o foco via Tab dentro do bottom sheet modal
+  useEffect(() => {
+    if (!isOpen || !mounted || !isMobileScreen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleTrapTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !popoverRef.current) return;
+      const focusables = popoverRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (
+          document.activeElement === first ||
+          document.activeElement === popoverRef.current
+        ) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleTrapTab);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleTrapTab);
+    };
+  }, [isOpen, mounted, isMobileScreen]);
 
   const handleToggleTask = () => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     if (!currentTask) return;
     const next = !completed;
-    if (onToggleComplete?.(currentTask.id, next) === false) return;
+    if (onToggleComplete) {
+      if (onToggleComplete(currentTask.id, next) === false) return;
+    }
     setCompleted(next);
     const nextChecklist =
       next && !isHabit && checklistRef.current.length > 0
@@ -279,16 +365,25 @@ export function useTaskDetailsPopover({
     const updatedTask = {
       ...currentTask,
       completed: next,
+      hasClaimedReward: next ? true : currentTask.hasClaimedReward,
+      lastCompletedAt: next
+        ? new Date().toISOString()
+        : currentTask.lastCompletedAt,
       checklist: nextChecklist,
     };
     setLatestTaskDraft(updatedTask);
-    onTaskUpdate?.(updatedTask);
+    if (!onToggleComplete) {
+      onTaskUpdate?.(updatedTask);
+    }
   };
 
   const handleHabitDelta = (delta: number) => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     if (!currentTask) return;
-    if (onHabitChange?.(currentTask.id, delta) === false) return;
+    if (onHabitChange) {
+      if (onHabitChange(currentTask.id, delta) === false) return;
+    }
     const nextFields = computeOptimisticHabitDelta(
       currentTask,
       delta,
@@ -296,19 +391,23 @@ export function useTaskDetailsPopover({
     );
     const updatedTask = { ...currentTask, ...nextFields };
     setLatestTaskDraft(updatedTask);
-    onTaskUpdate?.(updatedTask);
+    if (!onHabitChange) {
+      onTaskUpdate?.(updatedTask);
+    }
   };
 
   const handleTitleBlur = () => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     if (!currentTask) return;
-    const trimmed = title.trim().slice(0, TASK_TITLE_MAX_LENGTH);
+    const currentTitleValue = titleRef.current;
+    const trimmed = currentTitleValue.trim().slice(0, TASK_TITLE_MAX_LENGTH);
     if (!trimmed) {
       setTitle(currentTask.title);
       titleRef.current = currentTask.title;
       return;
     }
-    if (trimmed !== title) {
+    if (trimmed !== currentTitleValue) {
       setTitle(trimmed);
       titleRef.current = trimmed;
     }
@@ -324,6 +423,7 @@ export function useTaskDetailsPopover({
   };
 
   const handleDescriptionBlur = () => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     if (!currentTask) return;
     const trimmed = descRef.current.trim();
@@ -333,6 +433,7 @@ export function useTaskDetailsPopover({
   };
 
   const handleDateChange = (newDate: string) => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     if (
       !currentTask ||
@@ -363,6 +464,7 @@ export function useTaskDetailsPopover({
   };
 
   const handleEventScheduleChange = (patch: DatePickerEventSchedulePatch) => {
+    if (isReadOnly) return;
     const currentTask = getCurrentTask();
     const userTimeZone = useUserStore.getState().user?.timezone;
     if (
@@ -378,6 +480,28 @@ export function useTaskDetailsPopover({
       userTimeZone,
     );
 
+    const nextIsAllDay =
+      normalized.isAllDay !== undefined
+        ? normalized.isAllDay
+        : Boolean(currentTask.isAllDay);
+    const nextStart =
+      (normalized.startTime !== undefined
+        ? normalized.startTime
+        : currentTask.startTime) ||
+      (normalized.dueTime !== undefined
+        ? normalized.dueTime
+        : currentTask.dueTime) ||
+      "";
+    const nextEnd =
+      normalized.dueEndTime !== undefined
+        ? normalized.dueEndTime
+        : currentTask.dueEndTime || "";
+
+    if (!nextIsAllDay && nextEnd && (!nextStart || nextEnd <= nextStart)) {
+      toast.error(t("dueEndTimeAfterStartError"));
+      return;
+    }
+
     if (normalized.dueDate !== undefined) setDueDate(normalized.dueDate);
     if (normalized.dueTime !== undefined) setDueTime(normalized.dueTime);
     if (normalized.startTime !== undefined) setStartTime(normalized.startTime);
@@ -390,15 +514,19 @@ export function useTaskDetailsPopover({
   };
 
   const handlePrioritySelect = (p: TaskPriorityOption) => {
+    if (isReadOnly) return;
     setPriority(p);
     saveTaskField({ priority: p });
   };
 
   const handleAddTag = (explicitTagInput?: string) => {
+    if (isReadOnly) return;
     const rawInput =
-      typeof explicitTagInput === "string" ? explicitTagInput : newTagText;
+      typeof explicitTagInput === "string"
+        ? explicitTagInput
+        : newTagTextRef.current;
     const { nextTags, addedAny, errorKey } = mergeTaskTagsWithLimit(
-      tags,
+      tagsRef.current,
       parseTaskTags(rawInput),
       MAX_TASK_TAGS,
     );
@@ -410,22 +538,27 @@ export function useTaskDetailsPopover({
     }
 
     if (addedAny) {
+      tagsRef.current = nextTags;
       setTags(nextTags);
       saveTaskField({ tags: nextTags });
     }
+    newTagTextRef.current = "";
     setNewTagText("");
     setIsAddingTag(false);
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    const nextTags = tags.filter((t) => t !== tagToRemove);
+    if (isReadOnly) return;
+    const nextTags = tagsRef.current.filter((item) => item !== tagToRemove);
+    tagsRef.current = nextTags;
     setTags(nextTags);
     saveTaskField({ tags: nextTags });
   };
 
   const handleUpdateTag = (oldTag: string, newTag: string) => {
+    if (isReadOnly) return;
     const { nextTags, updated, errorKey } = replaceTaskTag(
-      tags,
+      tagsRef.current,
       oldTag,
       newTag,
     );
@@ -434,12 +567,14 @@ export function useTaskDetailsPopover({
       return;
     }
     if (updated) {
+      tagsRef.current = nextTags;
       setTags(nextTags);
       saveTaskField({ tags: nextTags });
     }
   };
 
   const handleAddCheckItem = async () => {
+    if (isReadOnly) return;
     const trimmed = newItemText.trim();
     if (!trimmed) return;
     const shouldReward =
@@ -451,48 +586,108 @@ export function useTaskDetailsPopover({
     newItemRef.current = "";
     setIsNewItemRewarded(false);
     newItemRewardedRef.current = false;
-    setIsAddingItem(false);
     await addChecklistItem(trimmed, shouldReward);
   };
 
+  const handleToggleCheckItem = useCallback(
+    (itemId?: string) => {
+      if (isReadOnly) return;
+      void toggleChecklistItem(itemId);
+    },
+    [isReadOnly, toggleChecklistItem],
+  );
+
+  const handleToggleCheckItemReward = useCallback(
+    (itemId?: string) => {
+      if (isReadOnly) return;
+      void toggleChecklistItemReward(itemId);
+    },
+    [isReadOnly, toggleChecklistItemReward],
+  );
+
+  const handleUpdateCheckItem = useCallback(
+    (itemId?: string, newName?: string) => {
+      if (isReadOnly) return;
+      void updateChecklistItem(itemId, newName);
+    },
+    [isReadOnly, updateChecklistItem],
+  );
+
+  const handleDeleteCheckItem = useCallback(
+    (itemId?: string) => {
+      if (isReadOnly) return;
+      void deleteChecklistItem(itemId);
+    },
+    [isReadOnly, deleteChecklistItem],
+  );
+
+  const buildCurrentTaskSnapshot = useCallback((): Task | null => {
+    const baseTask = getCurrentTask() ?? task;
+    if (!baseTask) return null;
+
+    const flushedDesc = descriptionFlushRef.current?.();
+    if (flushedDesc !== undefined) {
+      descRef.current = flushedDesc;
+    }
+
+    const trimmedTitle = titleRef.current
+      .trim()
+      .slice(0, TASK_TITLE_MAX_LENGTH);
+    const trimmedDesc = descRef.current.trim();
+
+    return {
+      ...baseTask,
+      title: trimmedTitle || baseTask.title,
+      description: trimmedDesc || undefined,
+      dueDate: dueDate || undefined,
+      dueTime: dueTime || undefined,
+      startTime: startTime || undefined,
+      dueEndTime: dueEndTime || undefined,
+      isAllDay,
+      priority: priority as TaskPriorityOption,
+      tags: tagsRef.current,
+      checklist: checklistRef.current,
+    };
+  }, [
+    dueDate,
+    dueEndTime,
+    dueTime,
+    getCurrentTask,
+    isAllDay,
+    priority,
+    startTime,
+    task,
+  ]);
+
   const handleDeleteTask = () => {
-    if (!task) return;
+    if (isReadOnly || !task) return;
     onDelete?.(task.id);
-    onClose();
   };
 
   const handleDuplicateTask = () => {
-    if (task) {
-      flushPendingChanges();
-      const currentTask: Task = {
-        ...task,
-        title: titleRef.current.trim() || task.title,
-        description: descRef.current.trim() || task.description,
-        tags,
-        checklist:
-          checklistRef.current.length > 0
-            ? checklistRef.current
-            : task.checklist,
-      };
-      onDuplicate?.(currentTask);
-      onClose();
-    }
+    if (isReadOnly || !task) return;
+    flushPendingChanges();
+    const currentTask = buildCurrentTaskSnapshot();
+    if (!currentTask) return;
+    onDuplicate?.(currentTask);
+    onClose();
   };
 
   const handleOpenFullModal = () => {
-    if (task) {
-      flushPendingChanges();
-      onEdit?.(task);
-      onClose();
-    }
+    if (isReadOnly || !task) return;
+    flushPendingChanges();
+    const snapshot = buildCurrentTaskSnapshot();
+    if (!snapshot) return;
+    onEdit?.(snapshot);
+    onClose();
   };
 
   const handleOpenFocusHistory = () => {
-    if (task) {
-      flushPendingChanges();
-      onOpenFocusHistory?.(task);
-      onClose();
-    }
+    if (!task) return;
+    flushPendingChanges();
+    const snapshot = buildCurrentTaskSnapshot();
+    onOpenFocusHistory?.(snapshot ?? task);
+    onClose();
   };
 
   return {
@@ -524,10 +719,14 @@ export function useTaskDetailsPopover({
     isAddingTag,
     setIsAddingTag,
     newTagText,
-    setNewTagText,
+    setNewTagText: (val: string) => {
+      setNewTagText(val);
+      newTagTextRef.current = val;
+    },
     cancelAddTag: () => {
       setIsAddingTag(false);
       setNewTagText("");
+      newTagTextRef.current = "";
     },
     checklist,
     isAddingItem,
@@ -565,10 +764,10 @@ export function useTaskDetailsPopover({
     handleRemoveTag,
     handleUpdateTag,
     handleAddCheckItem,
-    handleToggleCheckItem: toggleChecklistItem,
-    handleToggleCheckItemReward: toggleChecklistItemReward,
-    handleUpdateCheckItem: updateChecklistItem,
-    handleDeleteCheckItem: deleteChecklistItem,
+    handleToggleCheckItem,
+    handleToggleCheckItemReward,
+    handleUpdateCheckItem,
+    handleDeleteCheckItem,
     handleDeleteTask,
     handleDuplicateTask,
     handleOpenFullModal,

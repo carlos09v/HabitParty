@@ -1,35 +1,21 @@
 "use client";
 
-import {
-  BarChart3,
-  Check,
-  Flame,
-  Gem,
-  Lock,
-  Search,
-  Sparkles,
-  Trophy,
-  X,
-} from "lucide-react";
+import { Gem, Search, Sparkles, Trophy, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  type ReactNode,
-  useCallback,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateMyHighlightsAction } from "@/actions/showcaseActions";
-import { AchievementIcon } from "@/components/showcase/AchievementIcon";
 import { HighlightSlotSelectorBar } from "@/components/showcase/HighlightSlotSelectorBar";
+import { PickerBadgesSection } from "@/components/showcase/picker/PickerBadgesSection";
+import {
+  type PickerGridItem,
+  PickerItemGrid,
+} from "@/components/showcase/picker/PickerItemGrid";
+import { PickerMetricsSection } from "@/components/showcase/picker/PickerMetricsSection";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { Input } from "@/components/ui/Input";
-import { Pagination } from "@/components/ui/Pagination";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
-  ACCOUNT_BADGE_DEFINITIONS,
-  getRarityTheme,
   HIGHLIGHT_MODAL_ITEMS_PER_PAGE,
   MAX_SHOWCASE_HIGHLIGHTS,
 } from "@/constants/achievements";
@@ -46,16 +32,12 @@ import type {
   TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
+import { resolveUserLevelState } from "@/utils/levels";
 import {
-  cn,
-  isAccountBadgeUnlocked,
-  resolveAccountBadgeCopy,
   resolveAchievementCopy,
   resolveArtifactCopy,
   resolveHighlightSlotCard,
-  resolveUserLevelState,
-  STAT_METRIC_KEYS,
-} from "@/utils";
+} from "@/utils/showcaseUtils";
 import { soundEffects } from "@/utils/soundEffects";
 
 export type PickerTab = "achievements" | "artifacts" | "badges" | "metrics";
@@ -81,12 +63,16 @@ interface ShowcaseHighlightPickerModalProps {
   onSaved: (updated: ProfileHighlightResponseDTO[]) => void;
 }
 
+type DraftHighlightSlot = HighlightSlotInputDTO & {
+  taskStreak?: TaskStreakHighlightDTO | null;
+};
+
 function buildInitialDraftSlots(
   highlights: ProfileHighlightResponseDTO[],
   initialSlotIndex: number,
   initialPendingItem?: PickerPendingItem | null,
-): (HighlightSlotInputDTO | null)[] {
-  const nextSlots: (HighlightSlotInputDTO | null)[] = [null, null, null, null];
+): (DraftHighlightSlot | null)[] {
+  const nextSlots: (DraftHighlightSlot | null)[] = [null, null, null, null];
   for (const h of highlights) {
     if (h.displayOrder >= 0 && h.displayOrder < MAX_SHOWCASE_HIGHLIGHTS) {
       nextSlots[h.displayOrder] = {
@@ -94,6 +80,7 @@ function buildInitialDraftSlots(
         highlightType: h.highlightType,
         referenceId: h.referenceId,
         highlightKey: h.highlightKey,
+        taskStreak: h.taskStreak ?? null,
       };
     }
   }
@@ -125,148 +112,6 @@ function buildInitialDraftSlots(
   return nextSlots;
 }
 
-interface PickerCatalogCardEntry {
-  key: string;
-  itemType: "ACHIEVEMENT" | "ARTIFACT";
-  referenceId: string | null;
-  highlightKey: string;
-  iconKey: string;
-  iconFallback: "trophy" | "sparkles";
-  title: string;
-  titleWraps?: boolean;
-  subtitle: string;
-  rarity: AchievementItemResponseDTO["rarity"];
-  rarityLabel: string;
-  equippedSlot: number;
-}
-
-function HighlightCatalogGrid({
-  totalUnlockedCount,
-  filteredCount,
-  entries,
-  emptyUnlockedMessage,
-  emptySearchMessage,
-  emptyIcon,
-  safePage,
-  totalPages,
-  alreadyEquippedLabel,
-  onSelectEntry,
-  onPageChange,
-}: {
-  totalUnlockedCount: number;
-  filteredCount: number;
-  entries: PickerCatalogCardEntry[];
-  emptyUnlockedMessage: string;
-  emptySearchMessage: string;
-  emptyIcon: ReactNode;
-  safePage: number;
-  totalPages: number;
-  alreadyEquippedLabel: (slot: number) => string;
-  onSelectEntry: (entry: PickerCatalogCardEntry) => void;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalUnlockedCount === 0 || filteredCount === 0) {
-    return (
-      <div className="rounded-xl border border-neutral-700 bg-surface/50 dark:border-primary/20 dark:bg-surface/40 p-8 text-center">
-        {emptyIcon}
-        <p className="text-body-s text-neutral-300 max-w-md mx-auto">
-          {totalUnlockedCount === 0 ? emptyUnlockedMessage : emptySearchMessage}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {entries.map((entry) => {
-          const theme = getRarityTheme(entry.rarity);
-          const isEquipped = entry.equippedSlot !== -1;
-
-          return (
-            <button
-              key={entry.key}
-              type="button"
-              aria-pressed={isEquipped}
-              onClick={() => onSelectEntry(entry)}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
-                isEquipped
-                  ? "border-gold bg-gold/15"
-                  : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
-              )}
-            >
-              <div
-                className={cn(
-                  "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
-                  theme.iconBg,
-                  theme.iconText,
-                )}
-              >
-                <AchievementIcon
-                  iconKey={entry.iconKey}
-                  size={20}
-                  fallback={entry.iconFallback}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div
-                  className={cn(
-                    "flex items-center gap-1.5",
-                    entry.titleWraps && "flex-wrap",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "text-xs font-bold text-neutral-100",
-                      entry.titleWraps ? "break-words" : "truncate",
-                    )}
-                  >
-                    {entry.title}
-                  </span>
-                  <span
-                    className={cn(
-                      "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
-                      theme.badgeBg,
-                      theme.badgeText,
-                      theme.badgeBorder,
-                    )}
-                  >
-                    {entry.rarityLabel}
-                  </span>
-                </div>
-                <p className="text-[11px] text-neutral-400 truncate mt-0.5">
-                  {isEquipped
-                    ? alreadyEquippedLabel(entry.equippedSlot + 1)
-                    : entry.subtitle}
-                </p>
-              </div>
-              {isEquipped && (
-                <Check
-                  size={16}
-                  className="text-amber-800 dark:text-gold shrink-0"
-                  aria-hidden="true"
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={safePage}
-          totalPages={totalPages}
-          totalItems={filteredCount}
-          itemsPerPage={HIGHLIGHT_MODAL_ITEMS_PER_PAGE}
-          isCompact
-          onPageChange={onPageChange}
-        />
-      )}
-    </div>
-  );
-}
-
 export function ShowcaseHighlightPickerModal({
   isOpen,
   initialSlotIndex,
@@ -296,12 +141,24 @@ export function ShowcaseHighlightPickerModal({
   const [activeTab, setActiveTab] = useState<PickerTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [draftSlots, setDraftSlots] = useState<
-    (HighlightSlotInputDTO | null)[]
-  >(() =>
-    buildInitialDraftSlots(highlights, initialSlotIndex, initialPendingItem),
+  const [draftSlots, setDraftSlots] = useState<(DraftHighlightSlot | null)[]>(
+    () =>
+      buildInitialDraftSlots(highlights, initialSlotIndex, initialPendingItem),
   );
   const [isPending, startTransition] = useTransition();
+
+  const mergedTaskStreaks = useMemo(() => {
+    const byId = new Map<string, TaskStreakHighlightDTO>();
+    for (const streak of taskStreaks) {
+      byId.set(streak.id, streak);
+    }
+    for (const h of highlights) {
+      if (h.taskStreak && !byId.has(h.taskStreak.id)) {
+        byId.set(h.taskStreak.id, h.taskStreak);
+      }
+    }
+    return Array.from(byId.values());
+  }, [taskStreaks, highlights]);
 
   const { currentXp, levelTitle } = resolveUserLevelState(
     user,
@@ -314,10 +171,13 @@ export function ShowcaseHighlightPickerModal({
     () => achievements.filter((a) => a.unlocked),
     [achievements],
   );
-
   const unlockedArtifacts = useMemo(
     () => artifacts.filter((a) => a.unlocked),
     [artifacts],
+  );
+  const activeTaskStreaks = useMemo(
+    () => taskStreaks.filter((task) => (task.currentStreak ?? 0) > 0),
+    [taskStreaks],
   );
 
   const filteredUnlockedAchievements = useMemo(() => {
@@ -353,11 +213,6 @@ export function ShowcaseHighlightPickerModal({
     });
   }, [unlockedArtifacts, searchQuery, isGamified, tArtifacts]);
 
-  const activeTaskStreaks = useMemo(
-    () => taskStreaks.filter((task) => (task.currentStreak ?? 0) > 0),
-    [taskStreaks],
-  );
-
   const activeListLength =
     activeTab === "artifacts"
       ? filteredUnlockedArtifacts.length
@@ -368,6 +223,7 @@ export function ShowcaseHighlightPickerModal({
     Math.ceil(activeListLength / HIGHLIGHT_MODAL_ITEMS_PER_PAGE),
   );
   const safePage = Math.min(currentPage, totalPages);
+
   const paginatedUnlockedAchievements = useMemo(
     () =>
       filteredUnlockedAchievements.slice(
@@ -376,6 +232,7 @@ export function ShowcaseHighlightPickerModal({
       ),
     [filteredUnlockedAchievements, safePage],
   );
+
   const paginatedUnlockedArtifacts = useMemo(
     () =>
       filteredUnlockedArtifacts.slice(
@@ -391,7 +248,7 @@ export function ShowcaseHighlightPickerModal({
         const resolved = resolveHighlightSlotCard(slotItem, {
           achievements,
           artifacts,
-          taskStreaks,
+          taskStreaks: mergedTaskStreaks,
           stats,
           isGamified,
           levelTitle,
@@ -407,7 +264,7 @@ export function ShowcaseHighlightPickerModal({
       draftSlots,
       achievements,
       artifacts,
-      taskStreaks,
+      mergedTaskStreaks,
       stats,
       isGamified,
       levelTitle,
@@ -435,8 +292,9 @@ export function ShowcaseHighlightPickerModal({
     draftSlots.forEach((s, idx) => {
       if (!s) return;
       if (s.highlightType === "ACHIEVEMENT" || s.highlightType === "ARTIFACT") {
-        if (s.referenceId)
+        if (s.referenceId) {
           map.set(`${s.highlightType}:ID:${s.referenceId}`, idx);
+        }
         if (s.highlightKey) {
           map.set(`${s.highlightType}:KEY:${s.highlightKey}`, idx);
         }
@@ -472,39 +330,38 @@ export function ShowcaseHighlightPickerModal({
     highlightKey: string | null,
   ) => {
     soundEffects.playCreateSound();
-    setDraftSlots((prev) => {
-      const updated = [...prev];
-      const existingIdx = updated.findIndex((s) => {
-        if (!s || s.highlightType !== type) return false;
-        if (type === "ACHIEVEMENT" || type === "ARTIFACT") {
-          return (
-            (Boolean(referenceId) && s.referenceId === referenceId) ||
-            (Boolean(highlightKey) && s.highlightKey === highlightKey)
-          );
-        }
-        return s.highlightKey === highlightKey;
-      });
+    const updated = [...draftSlots];
+    const existingIdx = findEquippedSlotIndex(type, referenceId, highlightKey);
 
-      if (existingIdx !== -1 && existingIdx !== activeSlot) {
-        updated[existingIdx] = null;
-      }
+    // Toggle: clicar novamente no item já equipado no slot ativo remove-o do destaque
+    if (existingIdx === activeSlot) {
+      updated[activeSlot] = null;
+      setDraftSlots(updated);
+      return;
+    }
 
-      updated[activeSlot] = {
-        displayOrder: activeSlot,
-        highlightType: type,
-        referenceId,
-        highlightKey,
-      };
+    if (existingIdx !== -1) {
+      updated[existingIdx] = null;
+    }
 
-      const nextEmpty = updated.findIndex(
-        (s, idx) => s === null && idx !== activeSlot,
-      );
-      if (nextEmpty !== -1) {
-        setActiveSlot(nextEmpty);
-      }
+    updated[activeSlot] = {
+      displayOrder: activeSlot,
+      highlightType: type,
+      referenceId,
+      highlightKey,
+      taskStreak:
+        type === "TASK_STREAK" && highlightKey
+          ? (mergedTaskStreaks.find((item) => item.id === highlightKey) ?? null)
+          : null,
+    };
 
-      return updated;
-    });
+    const nextEmpty = updated.findIndex(
+      (s, idx) => s === null && idx !== activeSlot,
+    );
+    setDraftSlots(updated);
+    if (nextEmpty !== -1) {
+      setActiveSlot(nextEmpty);
+    }
   };
 
   const handleClearSlot = (slotIdx: number) => {
@@ -516,6 +373,7 @@ export function ShowcaseHighlightPickerModal({
   };
 
   const handleSave = () => {
+    if (isPending) return;
     const validItems: HighlightSlotInputDTO[] = [];
     draftSlots.forEach((item, idx) => {
       if (item) {
@@ -569,11 +427,66 @@ export function ShowcaseHighlightPickerModal({
   const showSearch =
     (activeTab === "achievements" && unlockedAchievements.length > 0) ||
     (activeTab === "artifacts" && unlockedArtifacts.length > 0);
+  const allSlotsOccupied = draftSlots.every(Boolean);
+  const alreadyEquippedLabel = (slot: number) => t("alreadyEquipped", { slot });
+
+  const achievementGridItems: PickerGridItem[] =
+    paginatedUnlockedAchievements.map((ach) => {
+      const { title, description } = resolveAchievementCopy(
+        ach,
+        isGamified,
+        tCatalog,
+      );
+      return {
+        key: ach.code,
+        iconKey: ach.iconName,
+        iconFallback: "trophy",
+        title,
+        subtitle: description,
+        rarity: ach.rarity,
+        rarityLabel: tRarities(ach.rarity),
+        equippedSlot: findEquippedSlotIndex("ACHIEVEMENT", ach.id, ach.code),
+        onSelect: () => handleAssignItem("ACHIEVEMENT", ach.id, ach.code),
+      };
+    });
+
+  const artifactGridItems: PickerGridItem[] = paginatedUnlockedArtifacts.map(
+    (artifact) => {
+      const { name, lore } = resolveArtifactCopy(
+        artifact,
+        isGamified,
+        tArtifacts,
+      );
+      const originKey = (artifact.obtainedSource ||
+        artifact.sourceType) as never;
+      const originLabel = tArtifactSource.has(originKey)
+        ? tArtifactSource(originKey)
+        : "";
+      return {
+        key: artifact.code,
+        iconKey: artifact.iconName,
+        iconFallback: "sparkles",
+        title: name,
+        titleWraps: true,
+        subtitle: originLabel || lore,
+        rarity: artifact.rarity,
+        rarityLabel: tRarities(artifact.rarity),
+        equippedSlot: findEquippedSlotIndex(
+          "ARTIFACT",
+          artifact.id,
+          artifact.code,
+        ),
+        onSelect: () =>
+          handleAssignItem("ARTIFACT", artifact.id, artifact.code),
+      };
+    },
+  );
 
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
+      preventClose={isPending}
       maxWidth="max-w-3xl"
       borderColor="border-gold/30"
       headerIcon={<Sparkles size={18} />}
@@ -591,6 +504,12 @@ export function ShowcaseHighlightPickerModal({
           getSlotTitle={getSlotTitle}
         />
 
+        {allSlotsOccupied && (
+          <p className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
+            {t("replaceSlotNotice", { slot: activeSlot + 1 })}
+          </p>
+        )}
+
         {/* ABAS DE CATEGORIA + BUSCA */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-neutral-700 dark:border-primary/15">
           <SegmentedControl
@@ -598,6 +517,7 @@ export function ShowcaseHighlightPickerModal({
             value={activeTab}
             onChange={(val) => {
               setActiveTab(val);
+              setSearchQuery("");
               setCurrentPage(1);
             }}
             size="sm"
@@ -605,10 +525,13 @@ export function ShowcaseHighlightPickerModal({
           />
 
           {showSearch && (
-            <div className="w-full sm:w-64">
+            <search className="w-full sm:w-64">
               <Input
                 type="search"
                 compact
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 icon={<Search size={14} aria-hidden="true" />}
                 value={searchQuery}
                 onChange={(e) => {
@@ -616,6 +539,11 @@ export function ShowcaseHighlightPickerModal({
                   setCurrentPage(1);
                 }}
                 placeholder={
+                  activeTab === "artifacts"
+                    ? t("searchPlaceholderArtifacts")
+                    : tGallery("searchPlaceholder")
+                }
+                aria-label={
                   activeTab === "artifacts"
                     ? t("searchPlaceholderArtifacts")
                     : tGallery("searchPlaceholder")
@@ -637,429 +565,88 @@ export function ShowcaseHighlightPickerModal({
                   ) : undefined
                 }
               />
-            </div>
+            </search>
           )}
         </div>
 
         {/* LISTA DE OPÇÕES */}
         <div className="min-h-[260px]">
           {activeTab === "achievements" && (
-            <HighlightCatalogGrid
-              totalUnlockedCount={unlockedAchievements.length}
-              filteredCount={filteredUnlockedAchievements.length}
-              entries={paginatedUnlockedAchievements.map((ach) => {
-                const { title, description } = resolveAchievementCopy(
-                  ach,
-                  isGamified,
-                  tCatalog,
-                );
-                return {
-                  key: ach.code,
-                  itemType: "ACHIEVEMENT",
-                  referenceId: ach.id,
-                  highlightKey: ach.code,
-                  iconKey: ach.iconName,
-                  iconFallback: "trophy",
-                  title,
-                  subtitle: description,
-                  rarity: ach.rarity,
-                  rarityLabel: tRarities(ach.rarity),
-                  equippedSlot: findEquippedSlotIndex(
-                    "ACHIEVEMENT",
-                    ach.id,
-                    ach.code,
-                  ),
-                };
-              })}
-              emptyUnlockedMessage={t("noUnlockedAchievements")}
-              emptySearchMessage={tGallery("emptySearch")}
-              emptyIcon={
-                <Trophy
-                  size={28}
-                  className="mx-auto text-neutral-400 mb-2 opacity-60"
-                  aria-hidden="true"
-                />
-              }
-              safePage={safePage}
-              totalPages={totalPages}
-              alreadyEquippedLabel={(slot) => t("alreadyEquipped", { slot })}
-              onSelectEntry={(entry) =>
-                handleAssignItem(
-                  entry.itemType,
-                  entry.referenceId,
-                  entry.highlightKey,
-                )
-              }
-              onPageChange={setCurrentPage}
+            <PickerItemGrid
+              items={achievementGridItems}
+              alreadyEquippedLabel={alreadyEquippedLabel}
+              emptyState={{
+                icon: (
+                  <Trophy
+                    size={28}
+                    className="mx-auto text-neutral-400 mb-2 opacity-60"
+                    aria-hidden="true"
+                  />
+                ),
+                message:
+                  unlockedAchievements.length === 0
+                    ? t("noUnlockedAchievements")
+                    : tGallery("emptySearch"),
+              }}
+              pagination={{
+                currentPage: safePage,
+                totalPages,
+                totalItems: filteredUnlockedAchievements.length,
+                onPageChange: setCurrentPage,
+              }}
             />
           )}
 
           {activeTab === "artifacts" && (
-            <HighlightCatalogGrid
-              totalUnlockedCount={unlockedArtifacts.length}
-              filteredCount={filteredUnlockedArtifacts.length}
-              entries={paginatedUnlockedArtifacts.map((artifact) => {
-                const { name, lore } = resolveArtifactCopy(
-                  artifact,
-                  isGamified,
-                  tArtifacts,
-                );
-                const originKey = (artifact.obtainedSource ||
-                  artifact.sourceType) as never;
-                const originLabel = tArtifactSource.has(originKey)
-                  ? tArtifactSource(originKey)
-                  : "";
-                return {
-                  key: artifact.code,
-                  itemType: "ARTIFACT",
-                  referenceId: artifact.id,
-                  highlightKey: artifact.code,
-                  iconKey: artifact.iconName,
-                  iconFallback: "sparkles",
-                  title: name,
-                  titleWraps: true,
-                  subtitle: originLabel || lore,
-                  rarity: artifact.rarity,
-                  rarityLabel: tRarities(artifact.rarity),
-                  equippedSlot: findEquippedSlotIndex(
-                    "ARTIFACT",
-                    artifact.id,
-                    artifact.code,
-                  ),
-                };
-              })}
-              emptyUnlockedMessage={t("noUnlockedArtifacts")}
-              emptySearchMessage={tGallery("emptySearch")}
-              emptyIcon={
-                <Gem
-                  size={28}
-                  className="mx-auto text-neutral-400 mb-2 opacity-60"
-                  aria-hidden="true"
-                />
-              }
-              safePage={safePage}
-              totalPages={totalPages}
-              alreadyEquippedLabel={(slot) => t("alreadyEquipped", { slot })}
-              onSelectEntry={(entry) =>
-                handleAssignItem(
-                  entry.itemType,
-                  entry.referenceId,
-                  entry.highlightKey,
-                )
-              }
-              onPageChange={setCurrentPage}
+            <PickerItemGrid
+              items={artifactGridItems}
+              alreadyEquippedLabel={alreadyEquippedLabel}
+              emptyState={{
+                icon: (
+                  <Gem
+                    size={28}
+                    className="mx-auto text-neutral-400 mb-2 opacity-60"
+                    aria-hidden="true"
+                  />
+                ),
+                message:
+                  unlockedArtifacts.length === 0
+                    ? t("noUnlockedArtifacts")
+                    : tGallery("emptySearch"),
+              }}
+              pagination={{
+                currentPage: safePage,
+                totalPages,
+                totalItems: filteredUnlockedArtifacts.length,
+                onPageChange: setCurrentPage,
+              }}
             />
           )}
 
           {activeTab === "badges" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {ACCOUNT_BADGE_DEFINITIONS.map((badge) => {
-                const unlocked = isAccountBadgeUnlocked(badge.id, user);
-                const theme = getRarityTheme(badge.rarity);
-                const equippedSlot = findEquippedSlotIndex(
-                  "ACCOUNT_BADGE",
-                  null,
-                  badge.id,
-                );
-                const isEquipped = equippedSlot !== -1;
-                const { title, description } = resolveAccountBadgeCopy(
-                  badge.id,
-                  isGamified,
-                  levelTitle,
-                  currentXp,
-                  tBadges,
-                );
-
-                return (
-                  <button
-                    key={badge.id}
-                    type="button"
-                    disabled={!unlocked}
-                    aria-pressed={isEquipped}
-                    onClick={() =>
-                      unlocked &&
-                      handleAssignItem("ACCOUNT_BADGE", null, badge.id)
-                    }
-                    className={cn(
-                      "flex items-center gap-3 p-3.5 rounded-xl border text-left transition-colors",
-                      !unlocked
-                        ? "border-neutral-700 bg-surface/50 dark:border-primary/15 dark:bg-surface/20 opacity-55 cursor-not-allowed"
-                        : isEquipped
-                          ? "border-gold bg-gold/15 cursor-pointer"
-                          : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50 cursor-pointer",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
-                        theme.iconBg,
-                        theme.iconText,
-                      )}
-                    >
-                      <AchievementIcon iconKey={badge.iconKey} size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-neutral-100 block truncate">
-                        {title}
-                      </span>
-                      <p className="text-[11px] text-neutral-400 line-clamp-2 mt-0.5">
-                        {!unlocked
-                          ? tBadges(`${badge.id}.lockedHint` as const)
-                          : isEquipped
-                            ? t("alreadyEquipped", { slot: equippedSlot + 1 })
-                            : description}
-                      </p>
-                    </div>
-                    {!unlocked ? (
-                      <Lock size={14} className="text-neutral-400 shrink-0" />
-                    ) : isEquipped ? (
-                      <Check
-                        size={16}
-                        className="text-amber-800 dark:text-gold shrink-0"
-                      />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
+            <PickerBadgesSection
+              user={user}
+              isGamified={isGamified}
+              levelTitle={levelTitle}
+              currentXp={currentXp}
+              findEquippedSlotIndex={findEquippedSlotIndex}
+              onAssign={handleAssignItem}
+            />
           )}
 
           {activeTab === "metrics" && (
-            <div className="flex flex-col gap-5">
-              {/* SEÇÃO 1: MÉTRICAS DO PERFIL (INCLUINDO MAIOR STREAK DE TAREFA) */}
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-neutral-300">
-                  <BarChart3
-                    size={14}
-                    className="text-sky-400"
-                    aria-hidden="true"
-                  />
-                  <span>{t("metricsSectionTitle")}</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {STAT_METRIC_KEYS.filter(
-                    (metricKey) =>
-                      metricKey !== "HIGHEST_TASK_STREAK" ||
-                      (stats?.highestTaskStreak ?? 0) > 0 ||
-                      findEquippedSlotIndex(
-                        "STAT_METRIC",
-                        null,
-                        "HIGHEST_TASK_STREAK",
-                      ) !== -1,
-                  ).map((metricKey) => {
-                    const resolved = resolveHighlightSlotCard(
-                      {
-                        highlightType: "STAT_METRIC",
-                        referenceId: null,
-                        highlightKey: metricKey,
-                      },
-                      {
-                        achievements,
-                        artifacts,
-                        taskStreaks,
-                        stats,
-                        isGamified,
-                        levelTitle,
-                        currentXp,
-                        tCatalog,
-                        tBadges,
-                        tArtifacts,
-                        tHighlights,
-                      },
-                    );
-                    if (!resolved) return null;
-                    const theme = getRarityTheme(resolved.rarity);
-                    const equippedSlot = findEquippedSlotIndex(
-                      "STAT_METRIC",
-                      null,
-                      metricKey,
-                    );
-                    const isEquipped = equippedSlot !== -1;
-
-                    return (
-                      <button
-                        key={metricKey}
-                        type="button"
-                        aria-pressed={isEquipped}
-                        onClick={() =>
-                          handleAssignItem("STAT_METRIC", null, metricKey)
-                        }
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
-                          isEquipped
-                            ? "border-gold bg-gold/15 ring-1 ring-gold/50"
-                            : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
-                            theme.iconBg,
-                            theme.iconText,
-                          )}
-                        >
-                          <AchievementIcon
-                            iconKey={resolved.iconKey}
-                            size={20}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-neutral-100 truncate">
-                              {resolved.title}
-                            </span>
-                            <span
-                              className={cn(
-                                "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
-                                theme.badgeBg,
-                                theme.badgeText,
-                                theme.badgeBorder,
-                              )}
-                            >
-                              {tRarities(resolved.rarity)}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-neutral-400 truncate mt-0.5">
-                            {isEquipped
-                              ? t("alreadyEquipped", {
-                                  slot: equippedSlot + 1,
-                                })
-                              : resolved.subtitle}
-                          </p>
-                        </div>
-                        {isEquipped && (
-                          <Check
-                            size={16}
-                            className="text-amber-800 dark:text-gold shrink-0"
-                            aria-hidden="true"
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* SEÇÃO 2: OFENSIVAS ATIVAS DE MAIOR STREAK (ATÉ 1 DIÁRIA E 1 HÁBITO) */}
-              {activeTaskStreaks.length > 0 && (
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-neutral-300">
-                      <Flame
-                        size={14}
-                        className="text-warning-500"
-                        aria-hidden="true"
-                      />
-                      <span>{t("tasksSectionTitle")}</span>
-                    </div>
-                    <span className="text-[11px] font-semibold text-neutral-400 tabular-nums">
-                      {activeTaskStreaks.length}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {activeTaskStreaks.map((taskStreak) => {
-                      const resolved = resolveHighlightSlotCard(
-                        {
-                          highlightType: "TASK_STREAK",
-                          referenceId: null,
-                          highlightKey: taskStreak.id,
-                          taskStreak,
-                        },
-                        {
-                          achievements,
-                          artifacts,
-                          taskStreaks,
-                          stats,
-                          isGamified,
-                          levelTitle,
-                          currentXp,
-                          tCatalog,
-                          tBadges,
-                          tArtifacts,
-                          tHighlights,
-                        },
-                      );
-                      if (!resolved) return null;
-                      const theme = getRarityTheme(resolved.rarity);
-                      const equippedSlot = findEquippedSlotIndex(
-                        "TASK_STREAK",
-                        null,
-                        taskStreak.id,
-                      );
-                      const isEquipped = equippedSlot !== -1;
-
-                      return (
-                        <button
-                          key={taskStreak.id}
-                          type="button"
-                          aria-pressed={isEquipped}
-                          onClick={() =>
-                            handleAssignItem("TASK_STREAK", null, taskStreak.id)
-                          }
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
-                            isEquipped
-                              ? "border-gold bg-gold/15 ring-1 ring-gold/50"
-                              : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
-                              theme.iconBg,
-                              theme.iconText,
-                            )}
-                          >
-                            <AchievementIcon
-                              iconKey={resolved.iconKey}
-                              size={20}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-neutral-100 truncate">
-                                {resolved.title}
-                              </span>
-                              <span
-                                className={cn(
-                                  "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
-                                  theme.badgeBg,
-                                  theme.badgeText,
-                                  theme.badgeBorder,
-                                )}
-                              >
-                                {tRarities(resolved.rarity)}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-neutral-400 truncate mt-0.5">
-                              {isEquipped
-                                ? t("alreadyEquipped", {
-                                    slot: equippedSlot + 1,
-                                  })
-                                : resolved.subtitle}
-                            </p>
-                          </div>
-                          {resolved.extraBadge && (
-                            <span className="px-2 py-0.5 rounded-md bg-warning-500/15 border border-warning-500/35 text-warning-400 text-[11px] font-extrabold tabular-nums shrink-0">
-                              {resolved.extraBadge}
-                            </span>
-                          )}
-                          {isEquipped && (
-                            <Check
-                              size={16}
-                              className="text-amber-800 dark:text-gold shrink-0"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            <PickerMetricsSection
+              stats={stats}
+              achievements={achievements}
+              artifacts={artifacts}
+              taskStreaks={taskStreaks}
+              activeTaskStreaks={activeTaskStreaks}
+              isGamified={isGamified}
+              levelTitle={levelTitle}
+              currentXp={currentXp}
+              findEquippedSlotIndex={findEquippedSlotIndex}
+              onAssign={handleAssignItem}
+            />
           )}
         </div>
 

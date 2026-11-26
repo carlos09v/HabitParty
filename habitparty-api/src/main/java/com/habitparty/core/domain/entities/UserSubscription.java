@@ -119,6 +119,19 @@ public class UserSubscription {
     return this.subscriptionEndsAt == null || this.subscriptionEndsAt.isAfter(LocalDateTime.now());
   }
 
+  /**
+   * Indica se existe uma assinatura recorrente no Stripe que ainda pode gerar cobranças ou retentativas
+   * (inclui ACTIVE, cancelAtPeriodEnd e PAST_DUE), devendo ser cancelada antes de excluir a conta ou bloqueada
+   * contra assinatura duplicada no cartão.
+   */
+  public boolean hasCancelableStripeSubscription() {
+    if (this.stripeSubscriptionId == null || this.stripeSubscriptionId.isBlank()) {
+      return false;
+    }
+    return this.subscriptionStatus != SubscriptionStatus.CANCELED
+        && this.subscriptionStatus != SubscriptionStatus.FREE;
+  }
+
   public void upgradeToPremium() {
     this.isPremium = true;
     if (this.subscriptionStatus == null || this.subscriptionStatus == SubscriptionStatus.FREE) {
@@ -175,6 +188,10 @@ public class UserSubscription {
       throw new DomainValidationException("O período a ser adicionado deve ser maior que zero.");
     }
     LocalDateTime now = LocalDateTime.now();
+    boolean hasRecurringStripeCycle = this.stripeSubscriptionId != null
+        && !this.stripeSubscriptionId.isBlank()
+        && this.subscriptionStatus == SubscriptionStatus.ACTIVE;
+
     LocalDateTime baseDate = now;
     if (this.subscriptionEndsAt != null && this.subscriptionEndsAt.isAfter(baseDate)) {
       baseDate = this.subscriptionEndsAt;
@@ -184,7 +201,18 @@ public class UserSubscription {
     }
     LocalDateTime newEndsAt = baseDate.plusDays(days);
     this.subscriptionEndsAt = newEndsAt;
-    this.prepaidEndsAt = newEndsAt;
+
+    // Se já houver ciclo recorrente Stripe em aberto, o saldo pré-pago Pix protege APENAS os dias
+    // efetivamente pagos via Pix — nunca converte o ciclo recorrente em saldo pré-pago irrevogável.
+    if (hasRecurringStripeCycle) {
+      LocalDateTime prepaidBase = (this.prepaidEndsAt != null && this.prepaidEndsAt.isAfter(now))
+          ? this.prepaidEndsAt
+          : now;
+      this.prepaidEndsAt = prepaidBase.plusDays(days);
+    } else {
+      this.prepaidEndsAt = newEndsAt;
+    }
+
     this.subscriptionStatus = SubscriptionStatus.ACTIVE;
     if (!hasActiveRecurringSubscription()) {
       this.cancelAtPeriodEnd = false;

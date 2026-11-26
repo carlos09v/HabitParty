@@ -1,14 +1,46 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  clearAmbientPausedByTimer,
+  startAmbientAudio,
+  stopAmbientAudio,
+  syncAmbientOnMount,
+  useFocusAmbientSyncStore,
+} from "@/store/focus/focusAmbientSync";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUserStore } from "@/store/userStore";
 import type { AmbientSoundType } from "@/types/settings";
 import { soundEffects } from "@/utils/soundEffects";
 
+const AMBIENT_VOLUME_PERSIST_DEBOUNCE_MS = 150;
+
+const soundPrefActions = {
+  toggleUiSounds: () => useSoundPreferencesStore.getState().toggleUiSounds(),
+  toggleTimerSounds: () =>
+    useSoundPreferencesStore.getState().toggleTimerSounds(),
+  setTimerVolume: (vol: number) =>
+    useSoundPreferencesStore.getState().setTimerVolume(vol),
+  setTimerSoundType: (
+    type: Parameters<
+      ReturnType<typeof useSoundPreferencesStore.getState>["setTimerSoundType"]
+    >[0],
+  ) => useSoundPreferencesStore.getState().setTimerSoundType(type),
+  setBrowserNotificationsEnabled: (enabled: boolean) =>
+    useSoundPreferencesStore.getState().setBrowserNotificationsEnabled(enabled),
+  setAmbientSoundType: (type: AmbientSoundType) =>
+    useSoundPreferencesStore.getState().setAmbientSoundType(type),
+  setAmbientVolume: (vol: number) =>
+    useSoundPreferencesStore.getState().setAmbientVolume(vol),
+  setIsAmbientPlaying: (playing: boolean) =>
+    useSoundPreferencesStore.getState().setIsAmbientPlaying(playing),
+};
+
 interface UseFocusAudioControlsOptions {
+  initialIsPremium?: boolean;
   onRequirePremiumUpgrade?: () => void;
   restoreAmbientOnMount?: boolean;
 }
@@ -18,11 +50,15 @@ interface UseFocusAudioControlsOptions {
  * Elimina a duplicação entre FocusStageAudioControls e SoundNotificationSettings.
  */
 export function useFocusAudioControls({
+  initialIsPremium = false,
   onRequirePremiumUpgrade,
   restoreAmbientOnMount = false,
 }: UseFocusAudioControlsOptions = {}) {
   const t = useTranslations("focus.audio.toasts");
-  const isPremium = useUserStore((s) => s.is_Premium);
+  const hasHydratedUser = useUserStore((s) => s.user !== null);
+  const storeIsPremium = useUserStore((s) => s.is_Premium);
+  const isPremium = hasHydratedUser ? storeIsPremium : initialIsPremium;
+
   const uiSoundsEnabled = useSoundPreferencesStore((s) => s.uiSoundsEnabled);
   const timerSoundsEnabled = useSoundPreferencesStore(
     (s) => s.timerSoundsEnabled,
@@ -33,30 +69,51 @@ export function useFocusAudioControls({
     (s) => s.browserNotificationsEnabled,
   );
   const ambientSoundType = useSoundPreferencesStore((s) => s.ambientSoundType);
-  const ambientVolume = useSoundPreferencesStore((s) => s.ambientVolume);
-  const isAmbientPlaying = useSoundPreferencesStore((s) => s.isAmbientPlaying);
-  const toggleUiSounds = useSoundPreferencesStore((s) => s.toggleUiSounds);
-  const toggleTimerSounds = useSoundPreferencesStore(
-    (s) => s.toggleTimerSounds,
+  const storedAmbientVolume = useSoundPreferencesStore((s) => s.ambientVolume);
+  const storedIsAmbientPlaying = useSoundPreferencesStore(
+    (s) => s.isAmbientPlaying,
   );
-  const setTimerVolume = useSoundPreferencesStore((s) => s.setTimerVolume);
-  const setTimerSoundType = useSoundPreferencesStore(
-    (s) => s.setTimerSoundType,
+  const isAmbientPausedByTimer = useFocusAmbientSyncStore(
+    (s) => s.isPausedByTimer,
   );
-  const setBrowserNotificationsEnabled = useSoundPreferencesStore(
-    (s) => s.setBrowserNotificationsEnabled,
+  const isAmbientAudioActive = useFocusAmbientSyncStore((s) => s.isAudioActive);
+  const isAmbientPlaying =
+    storedIsAmbientPlaying &&
+    !isAmbientPausedByTimer &&
+    isAmbientAudioActive &&
+    ambientSoundType !== "none";
+
+  const [liveAmbientVolume, setLiveAmbientVolume] =
+    useState<number>(storedAmbientVolume);
+  const pendingVolumePersistRef = useRef<number | null>(null);
+  const volumeDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
   );
-  const setAmbientSoundType = useSoundPreferencesStore(
-    (s) => s.setAmbientSoundType,
-  );
-  const setAmbientVolume = useSoundPreferencesStore((s) => s.setAmbientVolume);
-  const setIsAmbientPlaying = useSoundPreferencesStore(
-    (s) => s.setIsAmbientPlaying,
-  );
+
+  // Sincroniza volume caso alterado por outro componente (ex.: Configurações)
+  useEffect(() => {
+    if (pendingVolumePersistRef.current === null) {
+      setLiveAmbientVolume(storedAmbientVolume);
+    }
+  }, [storedAmbientVolume]);
+
+  useEffect(() => {
+    return () => {
+      if (volumeDebounceTimerRef.current !== null) {
+        clearTimeout(volumeDebounceTimerRef.current);
+        volumeDebounceTimerRef.current = null;
+      }
+      if (pendingVolumePersistRef.current !== null) {
+        soundPrefActions.setAmbientVolume(pendingVolumePersistRef.current);
+        pendingVolumePersistRef.current = null;
+      }
+    };
+  }, []);
 
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("default");
   const [mounted, setMounted] = useState(false);
+  const hasSyncedOnMountRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -65,24 +122,29 @@ export function useFocusAudioControls({
     }
   }, []);
 
-  // Restaura o som ambiente caso a página seja recarregada com isAmbientPlaying ativo
+  // Se o plano Premium expirar enquanto o som ambiente estava marcado como ativo, encerra e limpa o estado.
+  // Aguarda a hidratação do userStore para não apagar a preferência salva de usuários Pro no reload.
   useEffect(() => {
-    if (
-      restoreAmbientOnMount &&
-      isPremium &&
-      isAmbientPlaying &&
-      ambientSoundType !== "none" &&
-      soundEffects.getActiveAmbientType() === "none"
-    ) {
-      soundEffects.startAmbientSound(ambientSoundType, ambientVolume);
+    if (!hasHydratedUser) return;
+    if (!storeIsPremium && storedIsAmbientPlaying) {
+      stopAmbientAudio();
+      clearAmbientPausedByTimer();
+      soundPrefActions.setIsAmbientPlaying(false);
     }
-  }, [
-    restoreAmbientOnMount,
-    isPremium,
-    isAmbientPlaying,
-    ambientSoundType,
-    ambientVolume,
-  ]);
+  }, [hasHydratedUser, storeIsPremium, storedIsAmbientPlaying]);
+
+  // Restaura o som ambiente caso a página seja recarregada com isAmbientPlaying ativo,
+  // respeitando a preferência de sincronizar o som ambiente com o estado do timer
+  useEffect(() => {
+    if (hasSyncedOnMountRef.current) return;
+    if (restoreAmbientOnMount && !hasHydratedUser) return;
+    syncAmbientOnMount({
+      isPremium,
+      restoreAmbient: restoreAmbientOnMount,
+      timerState: useFocusTimerStore.getState(),
+    });
+    hasSyncedOnMountRef.current = true;
+  }, [restoreAmbientOnMount, hasHydratedUser, isPremium]);
 
   const hasNotificationPermission = notificationPermission === "granted";
 
@@ -102,21 +164,21 @@ export function useFocusAudioControls({
             );
 
       if (!targetEnabled) {
-        setBrowserNotificationsEnabled(false);
+        soundPrefActions.setBrowserNotificationsEnabled(false);
         toast.info(t("notificationsMuted"));
         return;
       }
 
       if (Notification.permission === "granted") {
         setNotificationPermission("granted");
-        setBrowserNotificationsEnabled(true);
+        soundPrefActions.setBrowserNotificationsEnabled(true);
         toast.success(t("notificationsEnabled"));
         return;
       }
 
       if (Notification.permission === "denied") {
         setNotificationPermission("denied");
-        setBrowserNotificationsEnabled(false);
+        soundPrefActions.setBrowserNotificationsEnabled(false);
         toast.error(t("notificationsBlocked"));
         return;
       }
@@ -126,10 +188,10 @@ export function useFocusAudioControls({
         setNotificationPermission(permission);
 
         if (permission === "granted") {
-          setBrowserNotificationsEnabled(true);
+          soundPrefActions.setBrowserNotificationsEnabled(true);
           toast.success(t("notificationsGranted"));
         } else {
-          setBrowserNotificationsEnabled(false);
+          soundPrefActions.setBrowserNotificationsEnabled(false);
           if (permission === "denied") {
             toast.error(t("notificationsDenied"));
           }
@@ -138,7 +200,7 @@ export function useFocusAudioControls({
         toast.error(t("notificationsRequestError"));
       }
     },
-    [browserNotificationsEnabled, setBrowserNotificationsEnabled, t],
+    [browserNotificationsEnabled, t],
   );
 
   const selectAmbientSound = useCallback(
@@ -149,34 +211,84 @@ export function useFocusAudioControls({
         return;
       }
 
+      hasSyncedOnMountRef.current = true;
+
       if (type === "none") {
-        soundEffects.stopAmbientSound();
-        setAmbientSoundType("none");
-        setIsAmbientPlaying(false);
+        stopAmbientAudio();
+        clearAmbientPausedByTimer();
+        soundPrefActions.setAmbientSoundType("none");
+        soundPrefActions.setIsAmbientPlaying(false);
         return;
       }
 
-      setAmbientSoundType(type);
-      setIsAmbientPlaying(true);
-      soundEffects.startAmbientSound(type, ambientVolume);
+      // Clicar novamente no mesmo som ambiente em reprodução pausa a prévia
+      if (type === ambientSoundType && isAmbientPlaying) {
+        stopAmbientAudio();
+        clearAmbientPausedByTimer();
+        soundPrefActions.setIsAmbientPlaying(false);
+        return;
+      }
+
+      clearAmbientPausedByTimer();
+      soundPrefActions.setAmbientSoundType(type);
+      soundPrefActions.setIsAmbientPlaying(true);
+      startAmbientAudio(type, liveAmbientVolume);
     },
     [
       isPremium,
-      ambientVolume,
+      ambientSoundType,
+      isAmbientPlaying,
+      liveAmbientVolume,
       onRequirePremiumUpgrade,
-      setAmbientSoundType,
-      setIsAmbientPlaying,
       t,
     ],
   );
 
-  const changeAmbientVolume = useCallback(
-    (newVol: number) => {
-      setAmbientVolume(newVol);
-      soundEffects.setAmbientVolume(newVol);
-    },
-    [setAmbientVolume],
-  );
+  const toggleAmbientPlayback = useCallback(() => {
+    if (ambientSoundType === "none") return;
+    if (!isPremium) {
+      toast.info(t("ambientPremiumRequired"));
+      onRequirePremiumUpgrade?.();
+      return;
+    }
+
+    hasSyncedOnMountRef.current = true;
+
+    if (isAmbientPlaying) {
+      stopAmbientAudio();
+      clearAmbientPausedByTimer();
+      soundPrefActions.setIsAmbientPlaying(false);
+    } else {
+      clearAmbientPausedByTimer();
+      soundPrefActions.setIsAmbientPlaying(true);
+      startAmbientAudio(ambientSoundType, liveAmbientVolume);
+    }
+  }, [
+    ambientSoundType,
+    isPremium,
+    isAmbientPlaying,
+    liveAmbientVolume,
+    onRequirePremiumUpgrade,
+    t,
+  ]);
+
+  const changeAmbientVolume = useCallback((newVol: number) => {
+    setLiveAmbientVolume(newVol);
+    soundEffects.setAmbientVolume(newVol);
+    pendingVolumePersistRef.current = newVol;
+
+    if (volumeDebounceTimerRef.current !== null) {
+      clearTimeout(volumeDebounceTimerRef.current);
+    }
+    volumeDebounceTimerRef.current = setTimeout(() => {
+      volumeDebounceTimerRef.current = null;
+      const toPersist = pendingVolumePersistRef.current;
+      pendingVolumePersistRef.current = null;
+      if (toPersist !== null) {
+        soundPrefActions.setAmbientVolume(toPersist);
+      }
+    }, AMBIENT_VOLUME_PERSIST_DEBOUNCE_MS);
+  }, []);
 
   return {
     mounted,
@@ -189,14 +301,15 @@ export function useFocusAudioControls({
     notificationPermission,
     hasNotificationPermission,
     ambientSoundType,
-    ambientVolume,
+    ambientVolume: liveAmbientVolume,
     isAmbientPlaying,
-    toggleUiSounds,
-    toggleTimerSounds,
-    setTimerVolume,
-    setTimerSoundType,
+    toggleUiSounds: soundPrefActions.toggleUiSounds,
+    toggleTimerSounds: soundPrefActions.toggleTimerSounds,
+    setTimerVolume: soundPrefActions.setTimerVolume,
+    setTimerSoundType: soundPrefActions.setTimerSoundType,
     toggleBrowserNotifications,
     selectAmbientSound,
+    toggleAmbientPlayback,
     changeAmbientVolume,
   };
 }

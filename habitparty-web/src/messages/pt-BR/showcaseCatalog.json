@@ -1,0 +1,524 @@
+{
+  "catalog": {
+    "TASK_FIRST": {
+      "title": "Primeira Missão",
+      "essentialTitle": "Primeira Entrega",
+      "description": "Conclua sua primeira tarefa na plataforma.",
+      "essentialDescription": "Conclua sua primeira tarefa no quadro de atividades."
+    },
+    "TASK_10": {
+      "title": "Ritmo de Caçada",
+      "essentialTitle": "Ritmo Inicial (10)",
+      "description": "Conclua 10 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 10 tarefas."
+    },
+    "TASK_50": {
+      "title": "Exterminador de Pendências",
+      "essentialTitle": "Executor Consistente (50)",
+      "description": "Conclua 50 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 50 tarefas."
+    },
+    "TASK_250": {
+      "title": "Veterano de Batalha",
+      "essentialTitle": "Marco de 250 Tarefas",
+      "description": "Conclua 250 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 250 tarefas."
+    },
+    "TASK_1000": {
+      "title": "Imparável",
+      "essentialTitle": "Mestre da Execução (1.000)",
+      "description": "Conclua 1.000 tarefas acumuladas na sua jornada.",
+      "essentialDescription": "Conclua um total de 1.000 tarefas."
+    },
+    "TASK_HARD_25": {
+      "title": "Caçador de Chefões",
+      "essentialTitle": "25 Entregas Complexas",
+      "description": "Conclua 25 tarefas de dificuldade Difícil.",
+      "essentialDescription": "Conclua 25 tarefas de alta complexidade (Difícil)."
+    },
+    "STREAK_3": {
+      "title": "Faísca Acesa",
+      "essentialTitle": "Sequência de 3 Dias",
+      "description": "Alcance uma ofensiva de 3 dias consecutivos.",
+      "essentialDescription": "Mantenha 3 dias consecutivos de atividade."
+    },
+    "STREAK_7": {
+      "title": "Chama Semanal",
+      "essentialTitle": "Semana Completa (7 Dias)",
+      "description": "Alcance uma ofensiva de 7 dias consecutivos.",
+      "essentialDescription": "Mantenha 7 dias consecutivos de atividade."
+    },
+    "STREAK_21": {
+      "title": "Hábito Forjado",
+      "essentialTitle": "Hábito Consolidado (21 Dias)",
+      "description": "Alcance 21 dias consecutivos de ofensiva (marco de consolidação cerebral).",
+      "essentialDescription": "Mantenha 21 dias consecutivos de atividade consistente."
+    },
+    "STREAK_30": {
+      "title": "Guardião do Mês",
+      "essentialTitle": "Mês de Consistência (30 Dias)",
+      "description": "Alcance uma ofensiva de 30 dias consecutivos.",
+      "essentialDescription": "Mantenha 30 dias consecutivos de atividade."
+    },
+    "STREAK_90": {
+      "title": "Vontade de Ferro",
+      "essentialTitle": "Trimestre Impecável (90 Dias)",
+      "description": "Alcance uma ofensiva de 90 dias consecutivos.",
+      "essentialDescription": "Mantenha 90 dias consecutivos de atividade."
+    },
+    "STREAK_365": {
+      "title": "Chama Imortal",
+      "essentialTitle": "Ano Ininterrupto (365 Dias)",
+      "description": "Alcance uma ofensiva histórica de 365 dias consecutivos.",
+      "essentialDescription": "Mantenha 365 dias consecutivos de atividade."
+    },
+    "FOCUS_FIRST": {
+      "title": "Mente Presente",
+      "essentialTitle": "Primeira Sessão de Foco",
+      "description": "Conclua sua primeira sessão produtiva no Palco de Foco.",
+      "essentialDescription": "Finalize sua primeira sessão produtiva no Timer de Foco."
+    },
+    "FOCUS_DEEP_WORK": {
+      "title": "Mergulho Profundo",
+      "essentialTitle": "Sessão Deep Work (45m)",
+      "description": "Conclua uma sessão contínua de foco com pelo menos 45 minutos.",
+      "essentialDescription": "Finalize uma sessão contínua de foco de 45 minutos ou mais."
+    },
+    "FOCUS_POMO_25": {
+      "title": "Mestre do Relógio",
+      "essentialTitle": "25 Ciclos Pomodoro",
+      "description": "Complete 25 ciclos de Pomodoro.",
+      "essentialDescription": "Conclua um total de 25 ciclos de Pomodoro."
+    },
+    "FOCUS_HOURS_10": {
+      "title": "Aprendiz do Templo",
+      "essentialTitle": "10 Horas de Foco",
+      "description": "Acumule 10 horas (600 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 600 minutos totais de foco."
+    },
+    "FOCUS_HOURS_50": {
+      "title": "Monge da Concentração",
+      "essentialTitle": "50 Horas de Foco",
+      "description": "Acumule 50 horas (3.000 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 3.000 minutos totais de foco."
+    },
+    "FOCUS_HOURS_200": {
+      "title": "Senhor do Tempo",
+      "essentialTitle": "200 Horas de Foco Profundo",
+      "description": "Acumule 200 horas (12.000 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 12.000 minutos totais de foco."
+    },
+    "GOLD_100": {
+      "title": "Bolsa de Moedas",
+      "essentialTitle": "100 Créditos Acumulados",
+      "description": "Acumule 100 moedas/créditos ganhos através do seu esforço.",
+      "essentialDescription": "Acumule um total de 100 créditos ganhos."
+    },
+    "GOLD_1000": {
+      "title": "Tesouro da Guilda",
+      "essentialTitle": "1.000 Créditos Acumulados",
+      "description": "Acumule 1.000 moedas/créditos ganhos na carreira.",
+      "essentialDescription": "Acumule um total de 1.000 créditos ganhos."
+    },
+    "GOLD_5000": {
+      "title": "Magnata Cósmico",
+      "essentialTitle": "5.000 Créditos Acumulados",
+      "description": "Acumule 5.000 moedas/créditos ganhos na carreira.",
+      "essentialDescription": "Acumule um total de 5.000 créditos ganhos."
+    },
+    "REWARD_FIRST": {
+      "title": "Descanso Merecido",
+      "essentialTitle": "Primeira Recompensa Resgatada",
+      "description": "Resgate sua primeira recompensa na Loja.",
+      "essentialDescription": "Realize o resgate da sua primeira recompensa pessoal."
+    },
+    "REWARD_25": {
+      "title": "Vida Equilibrada",
+      "essentialTitle": "25 Recompensas Resgatadas",
+      "description": "Resgate 25 recompensas na Loja para celebrar suas entregas.",
+      "essentialDescription": "Realize o resgate de 25 recompensas pessoais."
+    },
+    "LEVEL_ADVENTURER": {
+      "title": "Jornada Iniciada",
+      "essentialTitle": "Marco de 300 XP",
+      "description": "Alcance 300 XP/pts (Nível Aventureiro / Consistente).",
+      "essentialDescription": "Alcance 300 pontos de evolução (Nível Consistente)."
+    },
+    "LEVEL_PROFESSIONAL": {
+      "title": "Força Reconhecida",
+      "essentialTitle": "Marco de 3.000 XP",
+      "description": "Alcance 3.000 XP/pts (Nível Profissional / Produtivo).",
+      "essentialDescription": "Alcance 3.000 pontos de evolução (Nível Produtivo)."
+    },
+    "LEVEL_MASTER": {
+      "title": "Grão-Mestre",
+      "essentialTitle": "Marco de 25.000 XP",
+      "description": "Alcance 25.000 XP/pts (Nível Mestre / Executivo).",
+      "essentialDescription": "Alcance 25.000 pontos de evolução (Nível Executivo)."
+    },
+    "LEVEL_LEGEND": {
+      "title": "Lenda Viva",
+      "essentialTitle": "Alta Performance (60.000 XP)",
+      "description": "Alcance o patamar supremo de 60.000 XP/pts (Nível Lenda / Alta Performance).",
+      "essentialDescription": "Alcance o patamar máximo de 60.000 pontos de evolução."
+    },
+    "HARDCORE_SURVIVOR": {
+      "title": "Sangue Frio",
+      "essentialTitle": "10 Entregas em Prazo Rígido",
+      "description": "Conclua 10 tarefas com Modo Hardcore / Prazo Rígido ativado.",
+      "essentialDescription": "Conclua 10 tarefas com Prazo Rígido (Hardcore) ativado."
+    },
+    "MYSTERY_BOX_LUCK": {
+      "title": "Aposta do Destino",
+      "essentialTitle": "5 Caixas Misteriosas Abertas",
+      "description": "Abra 5 Caixas Misteriosas na sua Mochila.",
+      "essentialDescription": "Abra um total de 5 Caixas Misteriosas no seu inventário."
+    },
+    "SHOWCASE_CURATOR": {
+      "title": "Identidade Forjada",
+      "essentialTitle": "Vitrine Personalizada",
+      "description": "Personalize sua Vitrine de Destaques ou ostente a Insígnia de Fundador.",
+      "essentialDescription": "Personalize sua Vitrine de Perfil com destaques, bio ou moldura."
+    },
+    "TASK_100": {
+      "title": "Centurião da Rotina",
+      "essentialTitle": "Marco de 100 Tarefas",
+      "description": "Conclua 100 tarefas acumuladas na sua jornada.",
+      "essentialDescription": "Conclua um total de 100 tarefas."
+    },
+    "TASK_500": {
+      "title": "Conquistador de Reinos",
+      "essentialTitle": "Marco de 500 Tarefas",
+      "description": "Conclua 500 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 500 tarefas."
+    },
+    "TASK_HARD_5": {
+      "title": "Primeira Provação",
+      "essentialTitle": "5 Entregas Complexas",
+      "description": "Conclua 5 tarefas de dificuldade Difícil.",
+      "essentialDescription": "Conclua 5 tarefas de alta complexidade (Difícil)."
+    },
+    "TASK_HARD_100": {
+      "title": "Domador de Titãs",
+      "essentialTitle": "100 Entregas Complexas",
+      "description": "Conclua 100 tarefas de dificuldade Difícil.",
+      "essentialDescription": "Conclua 100 tarefas de alta complexidade (Difícil)."
+    },
+    "CHECKLIST_PERFECTIONIST": {
+      "title": "Checklist Impecável",
+      "essentialTitle": "50 Checklists Completos",
+      "description": "Conclua 50 tarefas com todos os itens do checklist marcados.",
+      "essentialDescription": "Conclua 50 tarefas com 100% dos subitens do checklist concluídos."
+    },
+    "STREAK_14": {
+      "title": "Quinzena Inabalável",
+      "essentialTitle": "Duas Semanas (14 Dias)",
+      "description": "Mantenha sua chama acesa por 14 dias consecutivos.",
+      "essentialDescription": "Mantenha 14 dias consecutivos de atividade."
+    },
+    "STREAK_60": {
+      "title": "Disciplina Blindada",
+      "essentialTitle": "Bimestre Consistente (60 Dias)",
+      "description": "Alcance uma ofensiva de 60 dias consecutivos.",
+      "essentialDescription": "Mantenha 60 dias consecutivos de atividade."
+    },
+    "STREAK_180": {
+      "title": "Guardião do Solstício",
+      "essentialTitle": "Semestre de Consistência (180 Dias)",
+      "description": "Alcance meio ano (180 dias) de ofensiva ininterrupta.",
+      "essentialDescription": "Mantenha 180 dias consecutivos de atividade."
+    },
+    "FOCUS_SESSIONS_10": {
+      "title": "Ritual de Concentração",
+      "essentialTitle": "10 Sessões de Foco",
+      "description": "Conclua 10 sessões produtivas no Palco de Foco.",
+      "essentialDescription": "Finalize 10 sessões produtivas no Timer de Foco."
+    },
+    "FOCUS_MARATHON_90": {
+      "title": "Estado de Fluxo",
+      "essentialTitle": "Imersão Extrema (90m)",
+      "description": "Conclua uma única sessão contínua de pelo menos 90 minutos.",
+      "essentialDescription": "Finalize uma sessão contínua de foco de 90 minutos ou mais."
+    },
+    "FOCUS_POMO_100": {
+      "title": "Arquiteto do Tempo",
+      "essentialTitle": "100 Ciclos Pomodoro",
+      "description": "Complete 100 ciclos de Pomodoro acumulados.",
+      "essentialDescription": "Conclua um total de 100 ciclos de Pomodoro."
+    },
+    "FOCUS_HOURS_100": {
+      "title": "Sábio da Imersão",
+      "essentialTitle": "100 Horas de Foco",
+      "description": "Acumule 100 horas (6.000 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 6.000 minutos totais de foco."
+    },
+    "GOLD_500": {
+      "title": "Cofre Cheio",
+      "essentialTitle": "500 Créditos Acumulados",
+      "description": "Acumule 500 moedas/créditos ganhos pelo seu esforço.",
+      "essentialDescription": "Acumule um total de 500 créditos ganhos."
+    },
+    "WALLET_SAVER_500": {
+      "title": "Dragão Guardião",
+      "essentialTitle": "Reserva de 500 Créditos",
+      "description": "Mantenha um saldo disponível de 500 moedas na carteira sem gastar.",
+      "essentialDescription": "Acumule um saldo simultâneo de 500 créditos disponíveis."
+    },
+    "COUPON_MASTER": {
+      "title": "Alquimista do Tempo",
+      "essentialTitle": "5 Cupons de Tempo Esgotados",
+      "description": "Esgote 5 cupons de tempo da Mochila até o fim no Palco de Foco.",
+      "essentialDescription": "Utilize integralmente 5 recompensas de tempo cronometrado no Timer de Foco."
+    },
+    "REWARD_100": {
+      "title": "Mestre do Equilíbrio",
+      "essentialTitle": "100 Recompensas Resgatadas",
+      "description": "Resgate 100 recompensas na Loja.",
+      "essentialDescription": "Realize o resgate de 100 recompensas pessoais."
+    },
+    "GOLD_15000": {
+      "title": "Imperador Dourado",
+      "essentialTitle": "15.000 Créditos Acumulados",
+      "description": "Acumule 15.000 moedas/créditos ganhos na sua jornada.",
+      "essentialDescription": "Acumule um total de 15.000 créditos ganhos."
+    },
+    "LEVEL_APPRENTICE": {
+      "title": "Primeiros Passos",
+      "essentialTitle": "Marco de 100 XP",
+      "description": "Alcance 100 XP (Patente Aprendiz).",
+      "essentialDescription": "Alcance 100 pontos de evolução."
+    },
+    "LEVEL_CHALLENGER": {
+      "title": "Espírito Desafiante",
+      "essentialTitle": "Marco de 750 XP",
+      "description": "Alcance 750 XP (Patente Desafiante).",
+      "essentialDescription": "Alcance 750 pontos de evolução."
+    },
+    "LEVEL_EXPERT": {
+      "title": "Mestre de Ofício",
+      "essentialTitle": "Marco de 6.000 XP",
+      "description": "Alcance 6.000 XP (Patente Especialista).",
+      "essentialDescription": "Alcance 6.000 pontos de evolução."
+    },
+    "LEVEL_VETERAN": {
+      "title": "Veterano de Guerra",
+      "essentialTitle": "Marco de 12.000 XP",
+      "description": "Alcance 12.000 XP (Patente Veterano).",
+      "essentialDescription": "Alcance 12.000 pontos de evolução."
+    },
+    "WORKSPACE_ARCHITECT": {
+      "title": "Arquiteto de Mundos",
+      "essentialTitle": "Múltiplos Ambientes",
+      "description": "Crie 2 ambientes (Workspaces) para separar suas áreas de vida.",
+      "essentialDescription": "Crie 2 ambientes de trabalho (Workspaces) para organizar seus contextos."
+    },
+    "TROPHY_HUNTER_1000": {
+      "title": "Colecionador de Glórias",
+      "essentialTitle": "1.000 Pontos de Conquista",
+      "description": "Acumule 1.000 Pontos de Conquista desbloqueando medalhas.",
+      "essentialDescription": "Acumule 1.000 Pontos de Conquista no seu perfil."
+    },
+    "HARDCORE_FIRST": {
+      "title": "Sem Margem para Erro",
+      "essentialTitle": "Primeira Entrega em Prazo Rígido",
+      "description": "Conclua sua primeira tarefa com Modo Hardcore ativado.",
+      "essentialDescription": "Conclua 1 tarefa com Prazo Rígido (Hardcore) ativado."
+    },
+    "HARDCORE_MASTER_50": {
+      "title": "Imune ao Caos",
+      "essentialTitle": "50 Entregas em Prazo Rígido",
+      "description": "Conclua 50 tarefas com Modo Hardcore ativado.",
+      "essentialDescription": "Conclua 50 tarefas com Prazo Rígido (Hardcore) ativado."
+    },
+    "MYSTERY_BOX_FIRST": {
+      "title": "Curiosidade Premiada",
+      "essentialTitle": "Primeira Caixa Misteriosa",
+      "description": "Abra sua primeira Caixa Misteriosa na Mochila.",
+      "essentialDescription": "Abra sua primeira Caixa Misteriosa no inventário."
+    },
+    "MYSTERY_BOX_25": {
+      "title": "Senhor da Fortuna",
+      "essentialTitle": "25 Caixas Misteriosas Abertas",
+      "description": "Abra 25 Caixas Misteriosas na Mochila.",
+      "essentialDescription": "Abra um total de 25 Caixas Misteriosas no inventário."
+    },
+    "NIGHT_OWL": {
+      "title": "Coruja da Meia-Noite",
+      "essentialTitle": "Foco Noturno (5 Sessões)",
+      "description": "Conclua 5 sessões de foco (10+ min) terminando entre 23h e 5h.",
+      "essentialDescription": "Finalize 5 sessões de foco de 10+ minutos encerradas entre 23h e 5h."
+    },
+    "EARLY_BIRD": {
+      "title": "Madrugador",
+      "essentialTitle": "Foco Matinal (5 Sessões)",
+      "description": "Conclua 5 sessões de foco (10+ min) iniciadas entre 5h e 7h.",
+      "essentialDescription": "Finalize 5 sessões de foco de 10+ minutos iniciadas entre 5h e 7h."
+    },
+    "PUNCTUAL_EXECUTOR_20": {
+      "title": "Pontualidade Real",
+      "essentialTitle": "20 Entregas no Prazo",
+      "description": "Conclua 20 Afazeres com data de vencimento dentro do prazo.",
+      "essentialDescription": "Conclua 20 afazeres (To-Dos) com prazo definido antes do vencimento."
+    },
+    "IMPULSE_CONTROL_7": {
+      "title": "Domínio do Impulso",
+      "essentialTitle": "Controle de Impulsos (7 Ciclos)",
+      "description": "Complete 7 ciclos em Hábitos Negativos ou Mistos sem registrar recaídas.",
+      "essentialDescription": "Complete 7 ciclos em hábitos com controle negativo sem ocorrências negativas."
+    },
+    "FOCUS_ACTIVITY_GOAL_10": {
+      "title": "Mira Certeira",
+      "essentialTitle": "10 Metas de Atividade Batidas",
+      "description": "Atinja a meta de tempo configurada em uma Atividade de Foco em 10 sessões.",
+      "essentialDescription": "Atinja o tempo-alvo configurado de uma Atividade de Foco em 10 sessões."
+    },
+    "SHOWCASE_FULL_SLOTS": {
+      "title": "Estante Real Completa",
+      "essentialTitle": "Vitrine Completa (4 Destaques)",
+      "description": "Preencha todos os 4 espaços de destaque na sua Vitrine de Perfil.",
+      "essentialDescription": "Configure todos os 4 espaços de destaque na sua Vitrine de Perfil."
+    }
+  },
+  "artifactItems": {
+    "ASTRO_COMPASS": {
+      "name": "Bússola do Norte",
+      "essentialName": "Bússola de Consistência",
+      "lore": "Mantém seu norte firme através de trinta alvoradas consecutivas.",
+      "essentialLore": "Marco simbólico de 30 dias seguidos de constância.",
+      "sourceHint": "Conquista: Guardião do Mês (30 dias de ofensiva)"
+    },
+    "QUARTZ_HOURGLASS": {
+      "name": "Ampulheta de Quartzo",
+      "essentialName": "Ampulheta de Imersão",
+      "lore": "Areia cristalina que marca suas primeiras dez horas de foco profundo.",
+      "essentialLore": "Troféu executivo pelas primeiras 10 horas de concentração.",
+      "sourceHint": "Conquista: Aprendiz do Templo (10h de foco)"
+    },
+    "CENTURION_SCROLL": {
+      "name": "Pergaminho do Centurião",
+      "essentialName": "Registro do Centurião",
+      "lore": "Crônica selada com duzentas e cinquenta missões executadas.",
+      "essentialLore": "Distintivo por 250 entregas concluídas com sucesso.",
+      "sourceHint": "Conquista: Veterano de Batalha (250 tarefas)"
+    },
+    "GUILD_SAPPHIRE": {
+      "name": "Safira da Guilda",
+      "essentialName": "Safira de Equilíbrio",
+      "lore": "Gema lapidada pelas primeiras mil moedas conquistadas com esforço real.",
+      "essentialLore": "Reconhecimento pelos primeiros 1.000 créditos acumulados.",
+      "sourceHint": "Conquista: Tesouro da Guilda (1.000 moedas/créditos)"
+    },
+    "CITADEL_SEAL": {
+      "name": "Selo da Cidadela",
+      "essentialName": "Selo de Alta Execução",
+      "lore": "Insígnia de bronze e ouro reservada a quem ergueu quinhentas entregas.",
+      "essentialLore": "Insígnia corporativa por atingir 500 tarefas concluídas.",
+      "sourceHint": "Conquista: Conquistador de Reinos (500 tarefas)"
+    },
+    "SOLSTICE_LANTERN": {
+      "name": "Lanterna do Solstício",
+      "essentialName": "Lanterna Semestral",
+      "lore": "Uma chama serena que atravessou meio ano sem jamais se apagar.",
+      "essentialLore": "Emblema de 180 dias contínuos de presença e disciplina.",
+      "sourceHint": "Conquista: Guardião do Solstício (180 dias de ofensiva)"
+    },
+    "IMMERSION_ASTROLABE": {
+      "name": "Astrolábio da Imersão",
+      "essentialName": "Astrolábio de Foco Profundo",
+      "lore": "Instrumento estelar calibrado ao longo de cem horas de silêncio produtivo.",
+      "essentialLore": "Peça de gabinete por ultrapassar 100 horas de foco produtivo.",
+      "sourceHint": "Conquista: Sábio da Imersão (100h de foco)"
+    },
+    "ALCHEMIST_SCALE": {
+      "name": "Balança do Alquimista",
+      "essentialName": "Balança de Sustentabilidade",
+      "lore": "Simboliza o equilíbrio perfeito entre trabalho árduo e descanso sem culpa.",
+      "essentialLore": "Distintivo por manter o equilíbrio em 100 recompensas resgatadas.",
+      "sourceHint": "Conquista: Mestre do Equilíbrio (100 resgates)"
+    },
+    "GRANDMASTER_CODEX": {
+      "name": "Grimório do Grão-Mestre",
+      "essentialName": "Compêndio Executivo",
+      "lore": "Tomo encadernado em ébano reservado a quem alcançou o título de Mestre.",
+      "essentialLore": "Volume simbólico concedido ao atingir o nível Executivo (25.000 pts).",
+      "sourceHint": "Conquista: Grão-Mestre (25.000 XP/pts)"
+    },
+    "OBSIDIAN_AEGIS": {
+      "name": "Égide de Obsidiana",
+      "essentialName": "Escudo de Pontualidade Crítica",
+      "lore": "Forjada sob pressão extrema sem recuar diante de cinquenta prazos rígidos.",
+      "essentialLore": "Concedida por cumprir 50 entregas com Prazo Rígido ativo.",
+      "sourceHint": "Conquista: Imune ao Caos (50 tarefas Hardcore)"
+    },
+    "UNSTOPPABLE_CROWN": {
+      "name": "Coroa do Imparável",
+      "essentialName": "Coroa de Mil Entregas",
+      "lore": "Relíquia lendária erguida após mil missões cumpridas com honra.",
+      "essentialLore": "Marco máximo de execução ao completar 1.000 tarefas.",
+      "sourceHint": "Conquista: Imparável (1.000 tarefas)"
+    },
+    "TITAN_CORE": {
+      "name": "Núcleo do Titã",
+      "essentialName": "Núcleo de Alta Complexidade",
+      "lore": "Energia condensada de cem desafios de dificuldade máxima vencidos.",
+      "essentialLore": "Troféu lendário por concluir 100 tarefas Difíceis.",
+      "sourceHint": "Conquista: Domador de Titãs (100 tarefas Difíceis)"
+    },
+    "ETERNAL_SUNFLAME": {
+      "name": "Chama Solar Eterna",
+      "essentialName": "Emblema da Disciplina Anual",
+      "lore": "Um sol incandescente sustentado por um ano inteiro de disciplina diária.",
+      "essentialLore": "Honraria suprema por 365 dias consecutivos de constância.",
+      "sourceHint": "Conquista: Chama Imortal (365 dias de ofensiva)"
+    },
+    "INFINITY_CHRONOMETER": {
+      "name": "Cronômetro do Infinito",
+      "essentialName": "Cronômetro de Maestria (200h)",
+      "lore": "Mecanismo perpétuo conquistado após duzentas horas de imersão absoluta.",
+      "essentialLore": "Peça lendária de acervo por alcançar 200 horas de foco.",
+      "sourceHint": "Conquista: Senhor do Tempo (200h de foco)"
+    },
+    "EMPEROR_CHALICE": {
+      "name": "Cálice do Imperador",
+      "essentialName": "Troféu de Prosperidade",
+      "lore": "Cálice dourado forjado com quinze mil moedas de mérito legítimo.",
+      "essentialLore": "Prêmio máximo por acumular 15.000 créditos de esforço.",
+      "sourceHint": "Conquista: Imperador Dourado (15.000 moedas/créditos)"
+    },
+    "LEGEND_PHILOSOPHER_STONE": {
+      "name": "Pedra Filosofal da Lenda",
+      "essentialName": "Prisma da Alta Performance",
+      "lore": "O artefato supremo daqueles que atingiram o ápice da jornada.",
+      "essentialLore": "Símbolo definitivo do nível Alta Performance (60.000 pts).",
+      "sourceHint": "Conquista: Lenda Viva (60.000 XP/pts)"
+    },
+    "FATE_DICE": {
+      "name": "Dado do Destino",
+      "essentialName": "Dado do Destino",
+      "lore": "Um poliedro encantado encontrado no fundo de baús de exploração.",
+      "essentialLore": "Item colecionável exclusivo das Caixas Misteriosas do Modo Aventura.",
+      "sourceHint": "Caixa Misteriosa (Básica ou Premium)"
+    },
+    "HORIZON_KEY": {
+      "name": "Chave do Horizonte",
+      "essentialName": "Chave do Horizonte",
+      "lore": "Abre portas simbólicas para novos ciclos de descanso e recompensa.",
+      "essentialLore": "Item colecionável raro das Caixas Misteriosas do Modo Aventura.",
+      "sourceHint": "Caixa Misteriosa (Premium, Épica ou Lendária)"
+    },
+    "AETHER_PRISM": {
+      "name": "Prisma do Éter",
+      "essentialName": "Prisma do Éter",
+      "lore": "Refrata luz estelar capturada nas raras fendas de uma Caixa Épica ou Lendária.",
+      "essentialLore": "Item colecionável épico das Caixas Misteriosas do Modo Aventura.",
+      "sourceHint": "Caixa Misteriosa (Épica ou Lendária)"
+    },
+    "ASTRAL_RELIQUARY": {
+      "name": "Relicário Astral",
+      "essentialName": "Relicário Astral",
+      "lore": "A joia mais cobiçada do Modo Aventura, guardada apenas nos baús mais raros.",
+      "essentialLore": "Item colecionável lendário das Caixas Misteriosas do Modo Aventura.",
+      "sourceHint": "Caixa Misteriosa (Épica ou Lendária)"
+    }
+  }
+}

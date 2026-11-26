@@ -1,16 +1,12 @@
-"use client";
-
 import { Check, HelpCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { createPortal } from "react-dom";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { MYSTERY_BOX_TIERS } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useFloatingPopover } from "@/hooks/useFloatingPopover";
+import { useMysteryBoxItemPopover } from "@/hooks/useMysteryBoxItemPopover";
 import type { AppLocale } from "@/i18n/config";
 import type { MysteryBoxTier, PackageLevel } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
-import { MysteryBoxTierPopover } from "./MysteryBoxTierPopover";
 
 interface MysteryBoxSelectorProps {
   selectedLevel?: PackageLevel;
@@ -29,7 +25,6 @@ interface MysteryBoxTierCardProps {
 }
 
 const TIER_POPOVER_ESTIMATED_HEIGHT = 310;
-const TIER_POPOVER_ESTIMATED_WIDTH = 288;
 
 function MysteryBoxTierCard({
   tier,
@@ -46,24 +41,25 @@ function MysteryBoxTierCard({
   const { isGamified } = useExperienceMode();
 
   const {
-    containerRef,
-    triggerRef,
-    popoverRef,
+    popoverId,
+    tierContainerRef,
+    tierTriggerRef,
     isOpen,
-    open,
-    close,
-    toggle,
-    coords,
-    shouldRenderPortal,
-    floatingStyle,
-  } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLElement>({
+    isPinned,
+    openFromHover,
+    closeFromHover,
+    openFromFocus,
+    closeFromBlur,
+    togglePinned,
+    portalNode,
+  } = useMysteryBoxItemPopover({
+    mysteryTier: tier,
+    disabled,
     align,
     estimatedHeight: TIER_POPOVER_ESTIMATED_HEIGHT,
-    estimatedWidth: TIER_POPOVER_ESTIMATED_WIDTH,
     offset: 10,
-    margin: 12,
     zIndex: 160,
-    disabled,
+    isGamified,
   });
 
   const TierIcon = tier.icon;
@@ -73,32 +69,32 @@ function MysteryBoxTierCard({
 
   return (
     <div
-      ref={containerRef}
+      ref={tierContainerRef as React.RefObject<HTMLDivElement | null>}
       onPointerEnter={(e) => {
         if (e.pointerType === "mouse") {
-          open();
+          openFromHover();
         }
       }}
       onPointerLeave={(e) => {
         if (e.pointerType === "mouse") {
-          close();
+          closeFromHover();
         }
       }}
       className="relative flex flex-col items-center h-full w-full"
     >
       {/* Card Interativo da Caixa */}
       <button
-        ref={triggerRef}
+        ref={tierTriggerRef as React.RefObject<HTMLButtonElement | null>}
         type="button"
         aria-pressed={selected}
         disabled={disabled}
         onClick={() => onSelect(tier)}
         onFocus={(e) => {
           if (e.currentTarget.matches(":focus-visible")) {
-            open();
+            openFromFocus();
           }
         }}
-        onBlur={close}
+        onBlur={(e) => closeFromBlur(e.relatedTarget)}
         className={cn(
           "relative w-full flex flex-col items-center justify-between p-2 rounded-xl border transition-[transform,translate,scale,border-color,background-color,box-shadow] duration-200 cursor-pointer select-none text-left group overflow-hidden",
           layout === "2x2" ? "h-[116px]" : "h-[136px]",
@@ -191,39 +187,29 @@ function MysteryBoxTierCard({
         </div>
       </button>
 
-      {/* Botão tátil e de teclado para abrir as probabilidades sem hover */}
+      {/* Botão tátil e de teclado para fixar/fechar as probabilidades sem conflitar com hover */}
       <button
         type="button"
         disabled={disabled}
         onClick={(e) => {
           e.stopPropagation();
-          toggle();
+          togglePinned();
         }}
         aria-expanded={isOpen}
+        aria-controls={isOpen ? popoverId : undefined}
         aria-label={tTierPopover("detailsAria", { name: tierName })}
         title={tTierPopover("detailsAria", { name: tierName })}
         className={cn(
           "absolute top-1 left-1 z-10 inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+          isPinned && "text-gold bg-white/10",
           disabled && "opacity-50 cursor-not-allowed",
         )}
       >
         <HelpCircle size={13} aria-hidden="true" />
       </button>
 
-      {/* Popover via Portal (position: fixed) para sobrepor o modal sem expandir scroll */}
-      {shouldRenderPortal &&
-        isOpen &&
-        !disabled &&
-        coords &&
-        createPortal(
-          <MysteryBoxTierPopover
-            tier={tier}
-            isGamified={isGamified}
-            popoverRef={popoverRef}
-            style={floatingStyle}
-          />,
-          document.body,
-        )}
+      {/* Popover via Portal compartilhado por useMysteryBoxItemPopover */}
+      {portalNode}
     </div>
   );
 }
@@ -270,12 +256,11 @@ export function MysteryBoxSelector({
         </span>
       </div>
 
-      <div
+      <fieldset
         id="mystery-box-grid"
-        role="radiogroup"
         aria-labelledby="mystery-box-grid-label"
         className={cn(
-          "grid grid-cols-2 gap-2.5 w-full items-stretch relative",
+          "border-0 p-0 m-0 grid grid-cols-2 gap-2.5 w-full items-stretch relative",
           layout === "4-col" && "sm:grid-cols-4",
         )}
       >
@@ -303,7 +288,7 @@ export function MysteryBoxSelector({
             />
           );
         })}
-      </div>
+      </fieldset>
     </div>
   );
 }

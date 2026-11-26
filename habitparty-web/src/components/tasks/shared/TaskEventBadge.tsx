@@ -37,8 +37,8 @@ export function TaskEventBadge({
           ? "text-emerald-700 bg-emerald-500/15 border-emerald-500/40 dark:text-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-400/40"
           : "text-sky-700 bg-sky-500/15 border-sky-500/40 dark:text-info dark:bg-info/15 dark:border-info/40",
         isCompact
-          ? "px-1.5 py-0.5 text-label-s tracking-normal leading-tight"
-          : "px-2 py-0.5 text-label-m tracking-wide shadow-2xs",
+          ? "h-[18px] px-1.5 text-label-s tracking-normal"
+          : "h-[20px] px-2 text-label-m tracking-wide shadow-2xs",
         className,
       )}
       title={title}

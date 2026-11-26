@@ -1,9 +1,11 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.adapters.out.persistence.entities.ProfileHighlightJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.ProfileHighlightMapper;
@@ -30,6 +32,7 @@ public class ProfileHighlightAdapter implements ProfileHighlightRepository {
   }
 
   @Override
+  @Transactional
   public List<ProfileHighlight> replaceAllForUser(UUID userId, List<ProfileHighlight> highlights) {
     repository.deleteAllByUserId(userId);
     repository.flush();
@@ -63,5 +66,23 @@ public class ProfileHighlightAdapter implements ProfileHighlightRepository {
       return;
     }
     repository.deleteByUserIdAndHighlightTypeAndHighlightKey(userId, highlightType, highlightKey.trim());
+  }
+
+  @Override
+  public void deleteByUserIdAndHighlightTypeAndHighlightKeys(
+      UUID userId,
+      HighlightType highlightType,
+      Collection<String> highlightKeys) {
+    if (userId == null || highlightType == null || highlightKeys == null || highlightKeys.isEmpty()) {
+      return;
+    }
+    List<String> sanitized = highlightKeys.stream()
+        .filter(k -> k != null && !k.isBlank())
+        .map(String::trim)
+        .distinct()
+        .toList();
+    if (!sanitized.isEmpty()) {
+      repository.deleteByUserIdAndHighlightTypeAndHighlightKeyIn(userId, highlightType, sanitized);
+    }
   }
 }

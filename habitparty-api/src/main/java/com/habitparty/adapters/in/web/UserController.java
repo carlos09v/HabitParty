@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,6 +17,7 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.ResetAccountDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
+import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserLayoutSummaryResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.application.usecases.social.RegenerateFriendCodeUseCase;
@@ -78,12 +80,15 @@ public class UserController implements UserApi {
 
   @Override
   public ResponseEntity<UserLayoutSummaryResponseDTO> getLayoutSummary(AuthenticatedUser usuarioLogado) {
-    return ResponseEntity.ok(getUserLayoutSummaryUseCase.execute(usuarioLogado.id()));
+    var summary = getUserLayoutSummaryUseCase.execute(usuarioLogado.id());
+    return ResponseEntity.ok(
+        new UserLayoutSummaryResponseDTO(summary.lastTaskCompletionAt(), summary.todayFocusMinutes()));
   }
 
   @Override
-  public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
-    List<User> users = findAllUsersUseCase.execute();
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<List<UserResponseDTO>> getAllUsers(int page, int size) {
+    List<User> users = findAllUsersUseCase.execute(page, size);
     List<UserResponseDTO> responseList = users.stream()
         .map(UserResponseDTO::fromDomain)
         .toList();
@@ -108,11 +113,14 @@ public class UserController implements UserApi {
   }
 
   @Override
-  public ResponseEntity<Void> updatePassword(
+  public ResponseEntity<SignInResponseDTO> updatePassword(
       AuthenticatedUser usuarioLogado,
       UpdateUserPasswordDTO dto) {
     UUID userId = usuarioLogado.id();
-    updateUserPasswordUseCase.execute(userId, dto.currentPassword(), dto.newPassword());
+    var rotatedTokens = updateUserPasswordUseCase.executeAndRotateSession(userId, dto.currentPassword(), dto.newPassword());
+    if (rotatedTokens != null) {
+      return ResponseEntity.ok(SignInResponseDTO.fromDomain(rotatedTokens));
+    }
     return ResponseEntity.noContent().build();
   }
 
@@ -152,9 +160,9 @@ public class UserController implements UserApi {
       AuthenticatedUser usuarioLogado,
       MultipartFile photoFile) {
     UUID userId = usuarioLogado.id();
-    try {
+    try (var inputStream = photoFile.getInputStream()) {
       User updatedUser = updateProfilePhotoUseCase.execute(
-          userId, photoFile.getInputStream(), photoFile.getOriginalFilename(), photoFile.getSize());
+          userId, inputStream, photoFile.getOriginalFilename(), photoFile.getSize());
       var wrapped = effectiveStreakResolver.wrap(updatedUser);
       return ResponseEntity.ok(UserResponseDTO.fromDomain(wrapped.user(), wrapped.effectiveStreak()));
     } catch (IOException e) {

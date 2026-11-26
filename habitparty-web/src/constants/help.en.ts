@@ -1,14 +1,11 @@
-import { HELP_TABLES_EN } from "@/constants/helpTables";
 import type { HelpFaqItem } from "@/types/help";
 import { formatCoins } from "@/utils";
 
 /**
- * Conteúdo extenso da Central de Ajuda em inglês (FAQ e tabelas de referência).
+ * Conteúdo extenso da Central de Ajuda em inglês (FAQ).
  * As tabelas de referência são geradas por `constants/helpTables.ts` para manter
  * uma única fonte de verdade matemática entre PT-BR e EN.
  */
-export { HELP_TABLES_EN };
-
 const coins = (value: number) => formatCoins(value, { locale: "en" });
 
 export const HELP_FAQS_EN: HelpFaqItem[] = [
@@ -428,9 +425,9 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     id: "friends-privacy-network",
     category: "OVERVIEW",
     question:
-      "How do the Friend Network (/friends), HP-XXXXXX Friend Codes, and Privacy controls work?",
+      "How do the Friend Network (/profile?tab=friends), HP-XXXXXX Friend Codes, and Privacy controls work?",
     answer:
-      "On the Friends page (/friends), you can connect with others while keeping full control over what stays visible and never exposing private task lists or transaction ledgers:",
+      "In the Friends tab of your Profile (/profile?tab=friends), you can connect with others while keeping full control over what stays visible and never exposing private task lists or transaction ledgers:",
     bullets: [
       "Search & Unique Code: Find people by @username, name, or unique Friend Code (HP-XXXXXX). You also control in Settings who can send requests (Everyone, Friend Code Only, or Nobody).",
       "Real-Time Social Alerts: Incoming friend requests, acceptances, and social milestones appear in the Sidebar notification bell.",
@@ -447,7 +444,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "notifications",
     ],
     highlightBadge: "New • 1.4",
-    actionLink: { label: "Open Friends Network", href: "/friends" },
+    actionLink: { label: "Open Friends Network", href: "/profile?tab=friends" },
   },
   {
     id: "retrospective-and-customization",

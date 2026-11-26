@@ -1,7 +1,8 @@
 package com.habitparty.adapters.in.web.api;
 
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +15,7 @@ import com.habitparty.adapters.in.web.dtos.request.SignInRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.VerifyEmailRequestDTO;
 import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
-import com.habitparty.infrastructure.security.AuthenticatedUser;
+import com.habitparty.infrastructure.security.CurrentUserId;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,7 +38,7 @@ public interface AuthApi {
     @PostMapping("/logout")
     ResponseEntity<Void> logout(
         @RequestBody @Valid RefreshTokenRequestDTO dto,
-        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+        @Parameter(hidden = true) @CurrentUserId UUID userId
     );
 
     @Operation(summary = "Solicitar Recuperação de Senha", description = "Envia um e-mail com link e token temporário para redefinir a senha.")
@@ -55,7 +56,7 @@ public interface AuthApi {
     @Operation(summary = "Reenviar E-mail de Confirmação", description = "Reenvia o link de confirmação de e-mail para o usuário autenticado.")
     @PostMapping("/resend-verification")
     ResponseEntity<Void> resendVerification(
-        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+        @Parameter(hidden = true) @CurrentUserId UUID userId
     );
 
     @Operation(summary = "Login com Google", description = "Autentica ou cadastra o usuário via Google OAuth 2.0 através do código retornado pelo consentimento.")

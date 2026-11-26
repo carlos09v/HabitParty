@@ -3,6 +3,10 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { ListCardProps } from "@/types/ui";
 import { cn } from "@/utils";
 
+interface ExtendedListCardProps extends ListCardProps {
+  reserveFilterSpace?: boolean;
+}
+
 export function ListCard({
   title,
   count,
@@ -12,10 +16,11 @@ export function ListCard({
   disabled,
   as = "button",
   reserveMenuSpace = false,
+  reserveFilterSpace = false,
   onClick,
   onContextMenu,
   className,
-}: ListCardProps) {
+}: ExtendedListCardProps) {
   const t = useTranslations("ui.listCard");
 
   // Extrai progresso caso `count` esteja no formato "concluídas/total"
@@ -50,7 +55,7 @@ export function ListCard({
         className={cn(
           "flex items-center w-full gap-2",
           isAdd ? "justify-center" : "justify-between",
-          reserveMenuSpace && !isAdd && "pr-7",
+          reserveMenuSpace && !isAdd && (reserveFilterSpace ? "pr-14" : "pr-7"),
         )}
       >
         {icon && (

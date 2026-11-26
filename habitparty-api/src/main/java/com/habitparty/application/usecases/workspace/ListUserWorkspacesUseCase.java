@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
@@ -11,6 +12,7 @@ import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional(readOnly = true)
 public class ListUserWorkspacesUseCase {
   private final WorkspaceRepository workspacePort;
   private final UserRepository userPort;

@@ -95,18 +95,19 @@ class ResetUserAccountAchievementIntegrationTest {
 
     Achievement workspaceArchitect = achievementRepository.findByCode(AchievementCode.WORKSPACE_ARCHITECT.name())
         .orElseGet(() -> {
-          achievementJpaRepository.save(new AchievementJpaEntity(
-              UUID.randomUUID(),
-              AchievementCode.WORKSPACE_ARCHITECT.name(),
-              "Arquiteto de Ambientes",
-              "Crie 2 ambientes de trabalho.",
-              "layers",
-              25,
-              AchievementCategory.PROGRESSION,
-              AchievementRarity.RARE,
-              2,
-              40,
-              false));
+          achievementJpaRepository.save(AchievementJpaEntity.builder()
+              .id(UUID.randomUUID())
+              .code(AchievementCode.WORKSPACE_ARCHITECT.name())
+              .title("Arquiteto de Ambientes")
+              .description("Crie 2 ambientes de trabalho.")
+              .iconName("layers")
+              .points(25)
+              .category(AchievementCategory.PROGRESSION)
+              .rarity(AchievementRarity.RARE)
+              .targetValue(2)
+              .displayOrder(40)
+              .secret(false)
+              .build());
           return achievementRepository.findByCode(AchievementCode.WORKSPACE_ARCHITECT.name()).orElseThrow();
         });
 

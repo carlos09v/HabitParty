@@ -3,9 +3,9 @@
 import { Timer, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useFocusTimerStore } from "@/store/focusTimerStore";
+import { useTaskFocusStatus } from "@/hooks/useTaskFocusStatus";
 import { cn } from "@/utils";
-import { formatDurationMinutes } from "@/utils/focusFormatters";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 export function TaskHardcoreBadge({
   isHardcoreOverdue,
@@ -45,24 +45,27 @@ export function TaskFocusTimeBadge({
   totalFocusMinutes = 0,
   focusCyclesCount = 0,
   isCompact = false,
+  variant = "row",
 }: {
   taskId: string;
   totalFocusMinutes?: number;
   focusCyclesCount?: number;
   isCompact?: boolean;
+  variant?: "card" | "row";
 }) {
   const t = useTranslations("dashboard.taskShared.badges");
-  const focusState = useFocusTimerStore((s) => {
-    if (s.target?.taskId !== taskId || !s.isActive) return "none";
-    return s.isPaused ? "paused" : "running";
-  });
+  const focusState = useTaskFocusStatus(taskId);
 
   if (focusState === "none" && totalFocusMinutes <= 0) {
     return null;
   }
 
   const formattedTime =
-    totalFocusMinutes > 0 ? formatDurationMinutes(totalFocusMinutes) : null;
+    totalFocusMinutes > 0 ? formatFocusMinutes(totalFocusMinutes) : null;
+  const displayTime =
+    formattedTime && variant === "card"
+      ? formattedTime.replace(/\s+/g, "")
+      : formattedTime;
 
   return (
     <span
@@ -75,8 +78,14 @@ export function TaskFocusTimeBadge({
             })
       }
       className={cn(
-        "inline-flex items-center gap-1 font-medium rounded-md border px-1.5 py-0.5 shrink-0 transition-colors",
-        isCompact ? "text-label-s leading-none" : "text-tiny",
+        "inline-flex items-center font-medium rounded-md border shrink-0 transition-colors leading-none tabular-nums whitespace-nowrap",
+        variant === "card"
+          ? isCompact
+            ? "h-[17px] gap-0.5 px-1 text-label-s"
+            : "h-[19px] gap-0.5 px-1.5 text-tiny"
+          : isCompact
+            ? "gap-1 px-1.5 py-0.5 text-label-s"
+            : "gap-1 px-1.5 py-0.5 text-tiny",
         focusState === "running"
           ? "text-amber-800 bg-amber-500/15 border-amber-500/45 dark:text-gold dark:bg-gold/15 dark:border-gold/50 animate-pulse font-semibold"
           : focusState !== "none"
@@ -85,7 +94,7 @@ export function TaskFocusTimeBadge({
       )}
     >
       <Timer
-        size={isCompact ? 9 : 11}
+        size={isCompact ? 9 : 10}
         className={cn(
           "shrink-0",
           focusState !== "none"
@@ -93,7 +102,7 @@ export function TaskFocusTimeBadge({
             : "text-primary dark:text-primary-light",
         )}
       />
-      <span>{formattedTime || t("focusActiveShort")}</span>
+      <span>{displayTime || t("focusActiveShort")}</span>
     </span>
   );
 }

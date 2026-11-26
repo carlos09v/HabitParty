@@ -81,7 +81,7 @@ export async function updateShowcaseProfileAction(
       };
     }
 
-    invalidateShowcaseDomainTags(true);
+    invalidateShowcaseDomainTags(true, true);
     return {
       success: true,
       data: data as unknown as UserResponseDTO,
@@ -106,36 +106,51 @@ export async function fetchUnseenAchievementsAction(): Promise<
 }
 
 /**
- * Marca todas as conquistas recém-desbloqueadas como vistas no servidor.
- * Não invalida a tag `showcase` por padrão para evitar re-renderização imediata da página `/profile` no mount.
+ * Marca todas as conquistas recém-desbloqueadas como vistas no servidor e invalida o cache da vitrine.
  */
 export async function markAchievementsSeenAction(): Promise<ActionState<void>> {
+  const t = await getTranslations("showcase.actions");
   try {
     const token = await getServerAuthToken();
     if (!token) {
       return { success: true, data: undefined };
     }
 
-    await serverApi.POST("/showcase/achievements/seen");
+    const { error } = await serverApi.POST("/showcase/achievements/seen");
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("markSeenError")),
+      };
+    }
+    invalidateShowcaseDomainTags(false);
     return { success: true, data: undefined };
   } catch {
-    return { success: false, error: "Failed to mark achievements seen" };
+    return { success: false, error: t("networkError") };
   }
 }
 
 /**
- * Marca todos os artefatos recém-desbloqueados como vistos no servidor.
+ * Marca todos os artefatos recém-desbloqueados como vistos no servidor e invalida o cache da vitrine.
  */
 export async function markArtifactsSeenAction(): Promise<ActionState<void>> {
+  const t = await getTranslations("showcase.actions");
   try {
     const token = await getServerAuthToken();
     if (!token) {
       return { success: true, data: undefined };
     }
 
-    await serverApi.POST("/showcase/artifacts/seen");
+    const { error } = await serverApi.POST("/showcase/artifacts/seen");
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("markSeenError")),
+      };
+    }
+    invalidateShowcaseDomainTags(false);
     return { success: true, data: undefined };
   } catch {
-    return { success: false, error: "Failed to mark artifacts seen" };
+    return { success: false, error: t("networkError") };
   }
 }

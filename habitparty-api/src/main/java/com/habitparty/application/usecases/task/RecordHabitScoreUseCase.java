@@ -74,7 +74,7 @@ public class RecordHabitScoreUseCase {
     this.dailyResetUseCase = dailyResetUseCase;
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }

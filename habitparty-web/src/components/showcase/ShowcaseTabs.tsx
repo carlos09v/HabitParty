@@ -1,8 +1,7 @@
-"use client";
-
 import type { LucideIcon } from "lucide-react";
 import { Loading } from "@/components/ui/Loading";
-import { cn, handleTabListKeyDown } from "@/utils";
+import { cn } from "@/utils/cn";
+import { handleTabListKeyDown } from "@/utils/showcaseUtils";
 
 export function ShowcaseTabPanelFallback() {
   return (
@@ -67,14 +66,16 @@ export function ShowcaseTabs<T extends string = string>({
             aria-selected={isSelected}
             aria-controls={panelId}
             tabIndex={isSelected ? 0 : -1}
-            onKeyDown={handleTabListKeyDown}
+            onKeyDown={(e) =>
+              handleTabListKeyDown(e, { activateOnFocus: false })
+            }
             onClick={() => onSelectTab(tab.id)}
             onMouseEnter={tab.onPreload}
             onFocus={tab.onPreload}
             className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+              "relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               isSelected
-                ? "bg-gold text-on-gold shadow-glow-gold-xs"
+                ? "bg-gold text-on-gold shadow-glow-gold-xs after:content-[''] after:absolute after:inset-x-3 after:bottom-1 after:h-0.5 after:rounded-full after:bg-on-gold/70 forced-colors:outline-2 forced-colors:outline-solid forced-colors:outline-[Highlight]"
                 : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
             )}
           >
@@ -86,7 +87,7 @@ export function ShowcaseTabs<T extends string = string>({
                   "px-2 py-0.5 rounded-full text-[10px] font-extrabold",
                   isSelected
                     ? "bg-black/20 text-on-gold"
-                    : "bg-amber-500/20 text-amber-300 border border-amber-500/40",
+                    : "bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40",
                 )}
               >
                 {tab.badge}

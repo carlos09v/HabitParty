@@ -1,54 +1,17 @@
-"use client";
-
-import {
-  BatteryLow,
-  Brain,
-  Briefcase,
-  CalendarCheck,
-  Clock,
-  Coffee,
-  Compass,
-  Flame,
-  GraduationCap,
-  Kanban,
-  type LucideIcon,
-  Moon,
-  Repeat,
-  ShieldCheck,
-  Smartphone,
-  Sparkles,
-  Sun,
-  Target,
-  Timer,
-  User,
-  Zap,
-} from "lucide-react";
 import type { ReactNode } from "react";
+import { ONBOARDING_ICON_MAP } from "@/constants/onboardingIcons";
 import type { OnboardingIconKey } from "@/types/onboarding";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
+import {
+  ONBOARDING_CARD_IDLE,
+  ONBOARDING_CARD_MUTED,
+  ONBOARDING_CARD_SELECTED,
+  ONBOARDING_CHIP_IDLE,
+  ONBOARDING_CHIP_SELECTED,
+  ONBOARDING_FOCUS_RING,
+} from "./onboardingStyles";
 
-export const ONBOARDING_ICON_MAP: Record<OnboardingIconKey, LucideIcon> = {
-  Target,
-  Sparkles,
-  User,
-  GraduationCap,
-  Briefcase,
-  Timer,
-  Flame,
-  Kanban,
-  CalendarCheck,
-  Coffee,
-  Clock,
-  Smartphone,
-  Repeat,
-  BatteryLow,
-  Zap,
-  Brain,
-  Sun,
-  Compass,
-  Moon,
-  ShieldCheck,
-};
+export { ONBOARDING_ICON_MAP };
 
 interface OnboardingSelectableCardProps {
   iconName: OnboardingIconKey;
@@ -75,7 +38,8 @@ export function OnboardingSelectableCard({
   className,
   children,
 }: OnboardingSelectableCardProps) {
-  const IconComponent = ONBOARDING_ICON_MAP[iconName] ?? Target;
+  const IconComponent =
+    ONBOARDING_ICON_MAP[iconName] ?? ONBOARDING_ICON_MAP.Target;
 
   if (variant === "chip") {
     return (
@@ -84,10 +48,9 @@ export function OnboardingSelectableCard({
         onClick={onSelect}
         aria-pressed={selected}
         className={cn(
-          "flex items-center justify-center gap-2 px-3 py-2.5 min-h-[48px] rounded-xl border text-xs font-bold transition-[background-color,border-color,color] duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold",
-          selected
-            ? "bg-amber-500/15 border-amber-500/80 text-amber-800 dark:bg-gold/15 dark:border-gold dark:text-gold"
-            : "bg-card/80 border-neutral-700/80 text-neutral-200 hover:border-primary/50 hover:bg-surface/70 dark:bg-surface/55 dark:border-primary/25 dark:hover:border-primary/50",
+          "flex items-center justify-center gap-2 px-3 py-2.5 min-h-[48px] rounded-xl border text-xs font-bold transition-[background-color,border-color,color] duration-150 cursor-pointer",
+          ONBOARDING_FOCUS_RING,
+          selected ? ONBOARDING_CHIP_SELECTED : ONBOARDING_CHIP_IDLE,
           className,
         )}
       >
@@ -104,10 +67,9 @@ export function OnboardingSelectableCard({
         onClick={onSelect}
         aria-pressed={selected}
         className={cn(
-          "flex flex-col items-start gap-1 p-3 min-h-[56px] rounded-xl border text-left transition-[background-color,border-color,box-shadow] duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold",
-          selected
-            ? "bg-primary/15 border-amber-500/80 dark:bg-primary/25 dark:border-gold shadow-xs dark:shadow-glow-gold-xs"
-            : "bg-card/80 border-neutral-700/80 hover:border-primary/50 hover:bg-surface/70 dark:bg-surface/55 dark:border-primary/25 dark:hover:border-primary/50",
+          "flex flex-col items-start gap-1 p-3 min-h-[56px] rounded-xl border text-left transition-[background-color,border-color,box-shadow] duration-150 cursor-pointer",
+          ONBOARDING_FOCUS_RING,
+          selected ? ONBOARDING_CARD_SELECTED : ONBOARDING_CARD_IDLE,
           className,
         )}
       >
@@ -117,7 +79,7 @@ export function OnboardingSelectableCard({
             aria-hidden="true"
             className={cn(
               "shrink-0",
-              selected ? "text-amber-700 dark:text-gold" : "text-neutral-300",
+              selected ? "text-gold-ink dark:text-gold" : "text-neutral-300",
             )}
           />
           <span>{label}</span>
@@ -139,13 +101,14 @@ export function OnboardingSelectableCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex flex-col gap-2.5 min-h-[56px] rounded-xl border text-left transition-[background-color,border-color,box-shadow,opacity] duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold",
+        "flex flex-col gap-2.5 min-h-[56px] rounded-xl border text-left transition-[background-color,border-color,box-shadow] duration-150 cursor-pointer",
+        ONBOARDING_FOCUS_RING,
         isLarge ? "p-3.5 sm:p-4" : "p-3",
         selected
-          ? "bg-primary/15 border-amber-500/80 dark:bg-primary/25 dark:border-gold shadow-xs dark:shadow-glow-gold-xs"
+          ? ONBOARDING_CARD_SELECTED
           : dimmed
-            ? "bg-card/50 border-neutral-700/50 opacity-60 hover:opacity-85"
-            : "bg-card/85 border-neutral-700/80 hover:border-primary/50 hover:bg-surface/70 dark:bg-surface/55 dark:border-primary/25 dark:hover:border-primary/50",
+            ? ONBOARDING_CARD_MUTED
+            : ONBOARDING_CARD_IDLE,
         className,
       )}
     >
@@ -155,7 +118,7 @@ export function OnboardingSelectableCard({
             "flex items-center justify-center rounded-lg border shrink-0 transition-colors",
             isLarge ? "w-9 h-9" : "w-8 h-8",
             selected
-              ? "bg-amber-500/15 text-amber-700 border-amber-500/35 dark:bg-gold/15 dark:text-gold dark:border-gold/35"
+              ? "bg-amber-500/15 text-gold-ink border-amber-500/35 dark:bg-gold/15 dark:text-gold dark:border-gold/35"
               : "bg-surface text-neutral-300 border-neutral-700 dark:bg-surface/80 dark:border-primary/20",
           )}
         >
@@ -165,7 +128,8 @@ export function OnboardingSelectableCard({
         <span className="flex flex-col min-w-0">
           <span
             className={cn(
-              "font-bold text-neutral-100 leading-tight",
+              "font-bold leading-tight",
+              dimmed && !selected ? "text-neutral-300" : "text-neutral-100",
               isLarge ? "text-body-s" : "text-xs",
             )}
           >
@@ -174,7 +138,8 @@ export function OnboardingSelectableCard({
           {description && (
             <span
               className={cn(
-                "text-neutral-300 leading-snug mt-0.5",
+                "leading-snug mt-0.5",
+                dimmed && !selected ? "text-neutral-400" : "text-neutral-300",
                 isLarge ? "text-label-g" : "text-[11px]",
               )}
             >

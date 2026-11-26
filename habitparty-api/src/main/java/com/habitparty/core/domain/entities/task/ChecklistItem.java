@@ -2,10 +2,10 @@ package com.habitparty.core.domain.entities.task;
 
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.OwnedByUser;
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class ChecklistItem {
+public class ChecklistItem implements OwnedByUser {
   public static final int MAX_REWARDED_ITEMS_PER_TASK = 4;
 
   private UUID id;
@@ -74,12 +74,6 @@ public class ChecklistItem {
 
   public void setRewarded(boolean rewarded) {
     this.isRewarded = rewarded;
-  }
-
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
   }
 
   public void updateName(String newName) {

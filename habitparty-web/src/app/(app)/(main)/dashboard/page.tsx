@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
-import { Suspense } from "react";
 import { DashboardEmptyWorkspace } from "@/components/dashboard/DashboardEmptyWorkspace";
 import { DashboardMain } from "@/components/dashboard/DashboardMain";
 import { DashboardSidebarRight } from "@/components/dashboard/DashboardSidebarRight";
-import { Loading } from "@/components/ui/Loading";
 import {
   MAX_COLUMNS_PREMIUM,
   MAX_VISIBLE_COLUMNS,
@@ -13,31 +11,7 @@ import {
 } from "@/constants/routine";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getDashboardData } from "@/services/dashboardService";
-import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
-import {
-  getVisibleColumnsCookieName,
-  parseVisibleColumnsCookie,
-} from "@/utils/columnVisibility";
-
-function toWeeklyCalendarTaskSummary(
-  task: import("@/types/task").Task,
-): WeeklyCalendarTaskSummary {
-  return {
-    id: task.id,
-    type: task.type,
-    taskType: task.taskType,
-    habitType: task.habitType,
-    resetCounter: task.resetCounter,
-    completed: task.completed,
-    dueDate: task.dueDate,
-    startDate: task.startDate,
-    repeatType: task.repeatType,
-    repeatEvery: task.repeatEvery,
-    daysOfWeek: task.daysOfWeek,
-    monthlyOption: task.monthlyOption,
-    lastCompletedAt: task.lastCompletedAt,
-  };
-}
+import { readVisibleColumnsFromCookieStore } from "@/utils/columnVisibility";
 
 type PageProps = {
   searchParams: Promise<{ workspaceId?: string }>;
@@ -54,10 +28,9 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Página Principal do Dashboard (Server Component).
  * Orquestra a renderização do painel principal e da sidebar direita,
- * consumindo os dados via dashboardService.
+ * consumindo os dados paralelizados via dashboardService (zero waterfall).
  */
 export default async function DashboardPage({ searchParams }: PageProps) {
-  const t = await getTranslations("dashboard");
   const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
 
@@ -80,6 +53,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     workspaces,
     activeWorkspaceId,
     initialTasks,
+    calendarTasks,
     initialColumns,
     initialAllColumns,
     transactions,
@@ -87,60 +61,54 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     weeklyEarnings,
     weeklySpent,
     bars,
+    rewardsBridge,
     focusActivities,
     focusRecords,
+    friendsOverview,
     user,
   } = dashboardData;
 
   const isPremium = user?.isPremium ?? false;
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
 
-  const activeCookieVal = activeWorkspaceId
-    ? cookieStore.get(getVisibleColumnsCookieName(activeWorkspaceId))?.value
-    : undefined;
-  const savedActiveIds = parseVisibleColumnsCookie(activeCookieVal);
+  const savedActiveIds = readVisibleColumnsFromCookieStore(
+    cookieStore,
+    activeWorkspaceId,
+  );
   const initialVisibleColumnIds = resolveDashboardVisibleColumnIds(
     initialColumns,
     savedActiveIds,
     maxAllowed,
   );
 
-  // Colunas ocultas no drawer Kanban continuam compondo o Dashboard (tarefas, metas e calendário)
-  const calendarTasks = initialTasks.map(toWeeklyCalendarTaskSummary);
-
   return (
     <ScopedIntlProvider scope="dashboard">
       <div className="flex h-full w-full overflow-hidden">
-        <Suspense
-          fallback={
-            <div className="flex-1 flex items-center justify-center p-8">
-              <Loading size="lg" label={t("loading")} />
-            </div>
-          }
-        >
-          <DashboardMain
-            initialTasks={initialTasks}
-            workspaces={workspaces}
-            activeWorkspaceId={activeWorkspaceId}
-            initialColumns={initialColumns}
-            initialAllColumns={initialAllColumns}
-            initialVisibleColumnIds={initialVisibleColumnIds}
-            transactions={transactions}
-            focusRecords={focusRecords}
-            user={user}
-          />
-        </Suspense>
+        <DashboardMain
+          initialTasks={initialTasks}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          initialAllColumns={initialAllColumns}
+          initialVisibleColumnIds={initialVisibleColumnIds}
+          transactions={transactions}
+          focusRecords={focusRecords}
+          user={user}
+        />
 
         <DashboardSidebarRight
           experienceMode={user?.experienceMode}
+          isPremium={isPremium}
+          timeZone={user?.timezone}
           balance={userBalance}
           weeklyEarnings={weeklyEarnings}
           weeklySpent={weeklySpent}
           bars={bars}
+          rewardsBridge={rewardsBridge}
           transactions={transactions}
           tasks={calendarTasks}
           activities={focusActivities}
           records={focusRecords}
+          friendsOverview={friendsOverview}
         />
       </div>
     </ScopedIntlProvider>

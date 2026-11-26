@@ -2,9 +2,9 @@
 
 import { Database, Loader2, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
 import { StorageUsageBar } from "@/components/admin/StorageUsageBar";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterTabStrip } from "@/components/ui/FilterTabStrip";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { Pagination } from "@/components/ui/Pagination";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -34,20 +34,12 @@ type AdminTableTranslator = ReturnType<
 function UserIdentityCell({
   user,
   t,
-  maxWidthClass,
-  nameClassName,
-  metaClassName,
-  alignItemsClass = "items-center",
 }: {
   user: AdminUserSummaryDTO;
   t: AdminTableTranslator;
-  maxWidthClass?: string;
-  nameClassName: string;
-  metaClassName?: string;
-  alignItemsClass?: string;
 }) {
   return (
-    <div className={cn("flex gap-3 min-w-0", alignItemsClass, maxWidthClass)}>
+    <div className="flex items-center gap-3 min-w-0 @4xl:max-w-[260px]">
       <UserAvatar
         src={user.profilePhotoUrl}
         name={user.fullName}
@@ -57,12 +49,7 @@ function UserIdentityCell({
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <p
-            className={cn(
-              "font-bold text-neutral-50 dark:text-neutral-100 truncate",
-              nameClassName,
-            )}
-          >
+          <p className="font-bold text-neutral-50 dark:text-neutral-100 truncate">
             {user.fullName}
           </p>
           <UserVerifiedBadge
@@ -76,12 +63,7 @@ function UserIdentityCell({
             }
           />
         </div>
-        <p
-          className={cn(
-            "text-label-g text-neutral-400 truncate font-normal",
-            metaClassName,
-          )}
-        >
+        <p className="text-label-g text-neutral-400 truncate font-normal">
           @{user.username} • {user.email}
         </p>
       </div>
@@ -89,15 +71,13 @@ function UserIdentityCell({
   );
 }
 
-/** Renderiza o selo de plano (Fundador ou Padrão) nos formatos compacto em coluna ou em linha. */
+/** Renderiza o selo de plano (Fundador ou Padrão). */
 function UserPlanBadgeCell({
   user,
   t,
-  stackedFounder = false,
 }: {
   user: AdminUserSummaryDTO;
   t: AdminTableTranslator;
-  stackedFounder?: boolean;
 }) {
   if (!user.isFounder) {
     return (
@@ -110,20 +90,12 @@ function UserPlanBadgeCell({
   }
 
   return (
-    <div
-      className={
-        stackedFounder
-          ? "flex flex-col gap-1 items-start"
-          : "inline-flex items-center gap-1.5 flex-wrap"
-      }
-    >
+    <div className="inline-flex @4xl:flex @4xl:flex-col items-center @4xl:items-start gap-1.5 @4xl:gap-1 flex-wrap">
       <FounderBadge size="sm" />
       <span
         className={cn(
           "text-tiny font-semibold whitespace-nowrap",
-          user.isPremium
-            ? "text-emerald-700 dark:text-emerald-400"
-            : "text-neutral-400",
+          user.isPremium ? "text-success-400" : "text-neutral-400",
         )}
       >
         {user.isPremium ? t("plans.premiumActive") : t("plans.freeAccess")}
@@ -136,24 +108,23 @@ function UserPlanBadgeCell({
 function UserEmailMetricsCell({
   user,
   t,
-  reminderMarginClass,
 }: {
   user: AdminUserSummaryDTO;
   t: AdminTableTranslator;
-  reminderMarginClass?: string;
 }) {
   const isFree = !user.isPremium;
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col items-end @4xl:items-start">
       <div className="flex items-center gap-1.5 font-mono">
         <Mail
           size={13}
-          className="text-amber-800 dark:text-amber-400 shrink-0"
+          aria-hidden="true"
+          className="text-gold-ink dark:text-amber-400 shrink-0"
         />
         <span className="font-bold text-neutral-100 dark:text-neutral-200">
           {user.emailsSentThisMonth}
         </span>
-        <span className="text-label-g text-neutral-400 dark:text-neutral-500 font-normal">
+        <span className="text-label-g text-neutral-400 font-normal">
           {t("emails.monthlyQuota", {
             limit: isFree
               ? FREE_USER_EMAIL_MONTHLY_LIMIT
@@ -162,12 +133,7 @@ function UserEmailMetricsCell({
         </span>
       </div>
       {user.activeEmailReminders > 0 && (
-        <span
-          className={cn(
-            "text-tiny text-amber-700 dark:text-amber-400",
-            reminderMarginClass,
-          )}
-        >
+        <span className="text-tiny text-gold-ink dark:text-amber-400 mt-0.5">
           {t("emails.activeReminders", {
             active: user.activeEmailReminders,
             max: isFree
@@ -193,7 +159,7 @@ function UserTasksMetricCell({
       <span className="font-bold text-neutral-100 dark:text-neutral-200">
         {user.activeTasksCount}
       </span>
-      <span className="text-neutral-400 dark:text-neutral-500 text-label-g font-normal">
+      <span className="text-neutral-400 text-label-g font-normal">
         {" "}
         {t("tasks.totalSuffix", {
           total: user.totalTasksCount,
@@ -203,49 +169,42 @@ function UserTasksMetricCell({
   );
 }
 
-/** Botões de ação (Detalhes / Promover ou Rebaixar) reutilizados entre card mobile e tabela desktop. */
+/** Botões de ação (Detalhes / Promover ou Rebaixar) com proteção de auto-rebaixamento. */
 function UserActionButtons({
   user,
   t,
+  isCurrentAdmin,
   isLoadingDetail,
   onSelectUser,
   onToggleRole,
-  variant = "table",
 }: {
   user: AdminUserSummaryDTO;
   t: AdminTableTranslator;
+  isCurrentAdmin: boolean;
   isLoadingDetail: boolean;
   onSelectUser: (user: AdminUserSummaryDTO) => void;
   onToggleRole: (user: AdminUserSummaryDTO) => void;
-  variant?: "card" | "table";
 }) {
   const isAdmin = user.role === "ADMIN";
-  const isCard = variant === "card";
+  const isSelfDemoteDisabled = isCurrentAdmin && isAdmin;
 
   return (
-    <div
-      className={
-        isCard
-          ? "flex flex-wrap items-center justify-end gap-2"
-          : "inline-flex items-center gap-2"
-      }
-    >
+    <div className="flex @4xl:inline-flex flex-wrap items-center justify-end gap-2 w-full @4xl:w-auto">
       <button
         type="button"
         onClick={() => onSelectUser(user)}
         disabled={isLoadingDetail}
-        className={cn(
-          "rounded-lg bg-surface hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 dark:hover:text-white transition-colors text-xs font-semibold flex items-center cursor-pointer disabled:opacity-60 whitespace-nowrap",
-          isCard
-            ? "flex-1 min-[420px]:flex-initial px-3 py-1.5 justify-center gap-1.5"
-            : "px-2.5 py-1 gap-1",
-        )}
+        className="flex-1 min-[420px]:flex-initial @4xl:flex-initial px-3 py-1.5 @4xl:px-2.5 @4xl:py-1 rounded-lg bg-surface hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 dark:hover:text-white transition-colors text-xs font-semibold flex items-center justify-center gap-1.5 @4xl:gap-1 cursor-pointer disabled:opacity-60 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         title={t("actions.detailsTitle")}
       >
         {isLoadingDetail ? (
-          <Loader2 size={13} className="animate-spin text-gold shrink-0" />
+          <Loader2
+            size={13}
+            aria-hidden="true"
+            className="animate-spin text-gold-ink dark:text-gold shrink-0"
+          />
         ) : (
-          <Database size={13} className="shrink-0" />
+          <Database size={13} aria-hidden="true" className="shrink-0" />
         )}
         {t("actions.details")}
       </button>
@@ -253,16 +212,22 @@ function UserActionButtons({
       <button
         type="button"
         onClick={() => onToggleRole(user)}
+        disabled={isSelfDemoteDisabled}
         className={cn(
-          "rounded-lg transition-colors text-xs font-semibold cursor-pointer border whitespace-nowrap",
-          isCard
-            ? "flex-1 min-[420px]:flex-initial px-3 py-1.5 text-center"
-            : "px-2.5 py-1",
-          isAdmin
-            ? "bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 border-purple-500/35 dark:bg-purple-500/10 dark:hover:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30"
-            : "bg-surface hover:bg-surface-hover text-neutral-200 border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300 dark:border-white/10",
+          "flex-1 min-[420px]:flex-initial @4xl:flex-initial px-3 py-1.5 @4xl:px-2.5 @4xl:py-1 rounded-lg transition-colors text-xs font-semibold border whitespace-nowrap text-center outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+          isSelfDemoteDisabled
+            ? "opacity-50 cursor-not-allowed bg-surface text-neutral-400 border-neutral-700 dark:bg-neutral-800 dark:border-white/10"
+            : isAdmin
+              ? "cursor-pointer bg-magenta/15 hover:bg-magenta/25 text-magenta dark:text-fuchsia-300 border-magenta/35"
+              : "cursor-pointer bg-surface hover:bg-surface-hover text-neutral-200 border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300 dark:border-white/10",
         )}
-        title={isAdmin ? t("actions.demoteTitle") : t("actions.promoteTitle")}
+        title={
+          isSelfDemoteDisabled
+            ? t("actions.selfDemoteDisabledTitle")
+            : isAdmin
+              ? t("actions.demoteTitle")
+              : t("actions.promoteTitle")
+        }
       >
         {isAdmin ? t("actions.makeUser") : t("actions.makeAdmin")}
       </button>
@@ -271,6 +236,7 @@ function UserActionButtons({
 }
 
 interface AdminUsersTableProps {
+  currentAdminId: string;
   users: AdminUserSummaryDTO[];
   totalPages: number;
   currentPage: number;
@@ -281,12 +247,13 @@ interface AdminUsersTableProps {
   loadingUserId: string | null;
   buildPageHref: (page1Based: number) => string;
   onSearchChange: (search: string) => void;
-  onFilterChange: (filter: string) => void;
+  onFilterChange: (filter: string, currentSearch?: string) => void;
   onSelectUser: (user: AdminUserSummaryDTO) => void;
   onToggleRole: (user: AdminUserSummaryDTO) => void;
 }
 
 export function AdminUsersTable({
+  currentAdminId,
   users,
   totalPages,
   currentPage,
@@ -302,22 +269,28 @@ export function AdminUsersTable({
   onToggleRole,
 }: AdminUsersTableProps) {
   const t = useTranslations("admin.usersTable");
-  const { searchInput, setSearchInput } = useDebouncedUrlSearch({
+  const { searchInput, setSearchInput, cancel } = useDebouncedUrlSearch({
     currentSearch: search,
     onDebouncedChange: onSearchChange,
   });
 
-  const usersWithStorage = useMemo(
-    () =>
-      users.map((user) => ({
-        user,
-        storagePct: calculateStoragePercentage(
-          user.estimatedStorageBytes,
-          user.isPremium,
-        ),
-      })),
-    [users],
-  );
+  const filterTabOptions = ADMIN_USER_FILTER_TABS.map((tab) => ({
+    id: tab.id,
+    label: t(`filterTabs.${tab.id}`),
+  }));
+
+  const handleTabChange = (nextFilter: string) => {
+    cancel();
+    onFilterChange(nextFilter, searchInput.trim());
+  };
+
+  const usersWithStorage = users.map((user) => ({
+    user,
+    storagePct: calculateStoragePercentage(
+      user.estimatedStorageBytes,
+      user.isPremium,
+    ),
+  }));
 
   return (
     <div className="@container flex flex-col gap-4">
@@ -329,160 +302,68 @@ export function AdminUsersTable({
           placeholder: t("searchPlaceholder"),
         }}
         leftActions={
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/80 border border-neutral-700 dark:border-white/10 overflow-x-auto custom-scrollbar max-w-full w-full sm:w-auto">
-            {ADMIN_USER_FILTER_TABS.map((tab) => {
-              const isActive = filter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => onFilterChange(tab.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer",
-                    isActive
-                      ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-sm"
-                      : "text-neutral-300 hover:text-neutral-50 hover:bg-card/70 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/5",
-                  )}
-                >
-                  {t(`filterTabs.${tab.id}`)}
-                </button>
-              );
-            })}
-          </div>
+          <FilterTabStrip
+            options={filterTabOptions}
+            value={filter}
+            onChange={handleTabChange}
+            ariaLabel={t("filterTabsAriaLabel")}
+            className="w-full sm:w-auto"
+          />
         }
       />
 
-      {/* TABELA / CARDS */}
+      {/* TABELA ÚNICA (1× DOM) ADAPTATIVA VIA CSS PURO (@container) */}
       <div className="rounded-2xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-surface/80 shadow-xs dark:shadow-none overflow-hidden relative">
         {isLoading && (
-          <div className="absolute inset-0 bg-card/85 dark:bg-background/70 flex items-center justify-center z-10">
-            <span className="text-xs font-semibold text-amber-700 dark:text-gold animate-pulse">
+          <output
+            aria-live="polite"
+            className="absolute inset-0 bg-card/85 dark:bg-background/70 flex items-center justify-center z-10"
+          >
+            <span className="text-xs font-semibold text-gold-ink dark:text-gold motion-safe:animate-pulse">
               {t("loading")}
             </span>
-          </div>
+          </output>
         )}
 
-        {/* VISÃO EM CARDS PARA MOBILE / CONTAINERS MÉDIOS */}
-        <div className="@4xl:hidden divide-y divide-neutral-700 dark:divide-white/5">
-          {users.length === 0 ? (
-            <div className="py-12 px-4 text-center text-neutral-400 text-xs">
-              {t("empty")}
-            </div>
-          ) : (
-            usersWithStorage.map(({ user, storagePct }) => {
-              const isLoadingDetail = loadingUserId === user.id;
-
-              return (
-                <article
-                  key={`card-${user.id}`}
-                  className="p-4 flex flex-col gap-3.5 hover:bg-surface/40 dark:hover:bg-white/[0.02] transition-colors"
-                >
-                  {/* Identidade + Badges */}
-                  <div className="flex flex-col gap-2.5 min-w-0">
-                    <UserIdentityCell
-                      user={user}
-                      t={t}
-                      alignItemsClass="items-start"
-                      nameClassName="text-sm max-w-full"
-                      metaClassName="mt-0.5"
-                    />
-
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <UserRoleBadge
-                        role={user.role}
-                        adminLabel={t("roles.admin")}
-                        userLabel={t("roles.user")}
-                        showUserRole
-                      />
-                      <UserPlanBadgeCell user={user} t={t} />
-                    </div>
-                  </div>
-
-                  {/* Métricas */}
-                  <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2.5 rounded-xl bg-surface/50 dark:bg-white/[0.02] border border-neutral-700/70 dark:border-white/10 p-3 text-xs">
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-label-m uppercase tracking-wider text-neutral-400 font-semibold">
-                        {t("headers.emails")}
-                      </span>
-                      <UserEmailMetricsCell user={user} t={t} />
-                    </div>
-
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-label-m uppercase tracking-wider text-neutral-400 font-semibold">
-                        {t("headers.tasks")}
-                      </span>
-                      <UserTasksMetricCell user={user} t={t} />
-                    </div>
-
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <span className="text-label-m uppercase tracking-wider text-neutral-400 font-semibold">
-                        {t("headers.storage")}
-                      </span>
-                      <div className="font-mono">
-                        <StorageUsageBar
-                          bytesUsed={user.estimatedStorageBytes}
-                          usedFormatted={user.estimatedStorageFormatted}
-                          isPremium={user.isPremium}
-                          percentage={storagePct}
-                          quotaLabel={t("storage.quotaPercentage", {
-                            percentage: storagePct,
-                            tier: user.isPremium
-                              ? t("storage.tierVip")
-                              : t("storage.tierFree"),
-                          })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Ações */}
-                  <UserActionButtons
-                    user={user}
-                    t={t}
-                    isLoadingDetail={isLoadingDetail}
-                    onSelectUser={onSelectUser}
-                    onToggleRole={onToggleRole}
-                    variant="card"
-                  />
-                </article>
-              );
-            })
-          )}
-        </div>
-
-        {/* TABELA DESKTOP PARA CONTAINERS AMPLOS */}
-        <section
-          // biome-ignore lint/a11y/noNoninteractiveTabindex: Região rolável acessível por teclado para tabela ampla
-          tabIndex={0}
-          aria-label={t("headers.user")}
-          className="hidden @4xl:block overflow-x-auto [scrollbar-width:thin] custom-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
-        >
-          <table className="w-full min-w-[860px] text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-neutral-700 dark:border-white/10 bg-surface/70 dark:bg-white/[0.03] text-neutral-400 uppercase tracking-wider text-label-g font-semibold whitespace-nowrap">
-                <th className="py-3.5 px-4">{t("headers.user")}</th>
-                <th className="py-3.5 px-4">{t("headers.role")}</th>
-                <th className="py-3.5 px-4">{t("headers.plan")}</th>
-                <th className="py-3.5 px-4">{t("headers.emails")}</th>
-                <th className="py-3.5 px-4">{t("headers.tasks")}</th>
-                <th className="py-3.5 px-4">{t("headers.storage")}</th>
-                <th className="py-3.5 px-4 text-right">
-                  {t("headers.actions")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-700 dark:divide-white/5">
-              {users.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="py-12 text-center text-neutral-400 text-xs"
-                  >
-                    {t("empty")}
-                  </td>
+        {users.length === 0 ? (
+          <div className="py-12 px-4 text-center text-neutral-400 text-xs">
+            {t("empty")}
+          </div>
+        ) : (
+          <section
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: Região rolável acessível por teclado para tabela ampla
+            tabIndex={0}
+            aria-label={t("tableAriaLabel")}
+            className="overflow-x-auto [scrollbar-width:thin] custom-scrollbar @max-4xl:p-3 @max-4xl:overflow-visible outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <table className="responsive-table-4xl w-full @4xl:min-w-[860px] text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-700 dark:border-white/10 bg-surface/70 dark:bg-white/[0.03] text-neutral-400 uppercase tracking-wider text-label-g font-semibold whitespace-nowrap">
+                  <th scope="col" className="py-3.5 px-4">
+                    {t("headers.user")}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4">
+                    {t("headers.role")}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4">
+                    {t("headers.plan")}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4">
+                    {t("headers.emails")}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4">
+                    {t("headers.tasks")}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4">
+                    {t("headers.storage")}
+                  </th>
+                  <th scope="col" className="py-3.5 px-4 text-right">
+                    {t("headers.actions")}
+                  </th>
                 </tr>
-              ) : (
-                usersWithStorage.map(({ user, storagePct }) => {
+              </thead>
+              <tbody className="divide-y divide-neutral-700 dark:divide-white/5 @max-4xl:divide-y-0">
+                {usersWithStorage.map(({ user, storagePct }) => {
                   const isLoadingDetail = loadingUserId === user.id;
 
                   return (
@@ -491,17 +372,15 @@ export function AdminUsersTable({
                       className="hover:bg-surface/60 dark:hover:bg-white/[0.03] transition-colors"
                     >
                       {/* USUÁRIO */}
-                      <td className="py-3.5 px-4">
-                        <UserIdentityCell
-                          user={user}
-                          t={t}
-                          maxWidthClass="max-w-[260px]"
-                          nameClassName=""
-                        />
-                      </td>
+                      <th scope="row" className="py-3.5 px-4 font-normal">
+                        <UserIdentityCell user={user} t={t} />
+                      </th>
 
                       {/* CARGO */}
-                      <td className="py-3.5 px-4">
+                      <td
+                        data-label={t("headers.role")}
+                        className="py-3.5 px-4"
+                      >
                         <UserRoleBadge
                           role={user.role}
                           adminLabel={t("roles.admin")}
@@ -511,26 +390,35 @@ export function AdminUsersTable({
                       </td>
 
                       {/* PLANO */}
-                      <td className="py-3.5 px-4">
-                        <UserPlanBadgeCell user={user} t={t} stackedFounder />
+                      <td
+                        data-label={t("headers.plan")}
+                        className="py-3.5 px-4"
+                      >
+                        <UserPlanBadgeCell user={user} t={t} />
                       </td>
 
                       {/* LEMBRETES E-MAIL */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <UserEmailMetricsCell
-                          user={user}
-                          t={t}
-                          reminderMarginClass="mt-0.5"
-                        />
+                      <td
+                        data-label={t("headers.emails")}
+                        className="py-3.5 px-4 whitespace-nowrap"
+                      >
+                        <UserEmailMetricsCell user={user} t={t} />
                       </td>
 
                       {/* TAREFAS */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td
+                        data-label={t("headers.tasks")}
+                        className="py-3.5 px-4 whitespace-nowrap"
+                      >
                         <UserTasksMetricCell user={user} t={t} />
                       </td>
 
                       {/* ESPAÇO NO BANCO & COTA */}
-                      <td className="py-3.5 px-4 font-mono">
+                      <td
+                        data-label={t("headers.storage")}
+                        data-stack-block="true"
+                        className="py-3.5 px-4 font-mono"
+                      >
                         <StorageUsageBar
                           bytesUsed={user.estimatedStorageBytes}
                           usedFormatted={user.estimatedStorageFormatted}
@@ -546,23 +434,26 @@ export function AdminUsersTable({
                       </td>
 
                       {/* AÇÕES */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <td
+                        data-stack-actions="true"
+                        className="py-3.5 px-4 text-right whitespace-nowrap"
+                      >
                         <UserActionButtons
                           user={user}
                           t={t}
+                          isCurrentAdmin={user.id === currentAdminId}
                           isLoadingDetail={isLoadingDetail}
                           onSelectUser={onSelectUser}
                           onToggleRole={onToggleRole}
-                          variant="table"
                         />
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </section>
+                })}
+              </tbody>
+            </table>
+          </section>
+        )}
 
         {/* PAGINAÇÃO */}
         {totalPages > 1 ? (

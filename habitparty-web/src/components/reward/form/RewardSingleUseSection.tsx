@@ -18,12 +18,14 @@ import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
   adjustSuggestedPriceForCategory,
+  parseLocalizedPrice,
   type RewardPriceAnalysis,
 } from "@/utils/rewardEconomy";
 import { toPackageMessageKey } from "@/utils/rewardMapper";
 
 interface RewardSingleUseSectionProps {
   isDebtCategory: boolean;
+  isDebtToggleDisabled?: boolean;
   category: RewardCategory;
   isGamified: boolean;
   isPending: boolean;
@@ -44,6 +46,7 @@ interface RewardSingleUseSectionProps {
 
 export function RewardSingleUseSection({
   isDebtCategory,
+  isDebtToggleDisabled = false,
   category,
   isGamified,
   isPending,
@@ -60,6 +63,7 @@ export function RewardSingleUseSection({
 }: RewardSingleUseSectionProps) {
   const t = useTranslations("rewards.formModal");
   const tOptions = useTranslations("rewards.options");
+  const parsedPrice = parseLocalizedPrice(price) || 0;
 
   return (
     <>
@@ -96,8 +100,6 @@ export function RewardSingleUseSection({
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {DEBT_UNIT_PRICE_PRESETS.map((preset) => {
-                const parsedPrice =
-                  Number.parseFloat(price.replace(",", ".")) || 0;
                 const isSelected = parsedPrice === preset.price;
 
                 return (
@@ -308,7 +310,7 @@ export function RewardSingleUseSection({
           id="rewardDebtToggle"
           checked={isDebtCategory}
           onCheckedChange={onDebtToggleChange}
-          disabled={isPending}
+          disabled={isPending || isDebtToggleDisabled}
           aria-label={t("debtToggleAria")}
         />
       </div>

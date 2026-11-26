@@ -8,10 +8,12 @@ import {
   Pizza,
   Sparkles,
 } from "lucide-react";
+import type { AppLocale } from "@/i18n/config";
 import type {
   MysteryBoxDropRate,
   MysteryBoxLootItem,
   MysteryBoxPreset,
+  MysteryBoxPresetId,
   MysteryBoxTier,
   RouletteItem,
 } from "@/types/reward";
@@ -131,7 +133,7 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
     dropRates: [
       {
         percentage: 50,
-        label: "Lazer Padrão (35m)",
+        label: "Sessão de Videogame (35m)",
         description: "Partida rápida ou 1 episódio de série/anime.",
         badgeVariant: "emerald",
       },
@@ -225,7 +227,7 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
       },
       {
         percentage: 30,
-        label: "Day-Off Estendido (360m)",
+        label: "Day-Off Integral (360m)",
         description:
           "6 horas de folga para descanso, lazer ou projeto pessoal.",
         badgeVariant: "amber",
@@ -269,10 +271,45 @@ export const DEFAULT_MYSTERY_BOX_LOOT: Record<
   ],
   Lendário: [
     { name: "Day-Off Parcial de Elite", icon: "party", minutes: 180 },
-    { name: "Day-Off Estendido", icon: "sparkles", minutes: 360 },
+    { name: "Day-Off Integral", icon: "sparkles", minutes: 360 },
     { name: "Celebração Absoluta", icon: "gift", minutes: null },
   ],
 };
+
+export const DEFAULT_MYSTERY_BOX_LOOT_EN: Record<
+  "Básico" | "Premium" | "Épico" | "Lendário",
+  readonly [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
+> = {
+  Básico: [
+    { name: "Refreshing Break", icon: "coffee", minutes: 10 },
+    { name: "Medium Leisure Coupon", icon: "music", minutes: 20 },
+    { name: "Focused Hobby Session", icon: "book", minutes: 40 },
+  ],
+  Premium: [
+    { name: "Gaming Session", icon: "gamepad", minutes: 35 },
+    { name: "Extended Leisure Pass", icon: "pizza", minutes: 60 },
+    { name: "Gamer / Movie Night", icon: "clapperboard", minutes: 100 },
+  ],
+  Épico: [
+    { name: "Extended Leisure Block", icon: "gamepad", minutes: 90 },
+    { name: "Full Free Evening", icon: "ticket", minutes: 150 },
+    { name: "Unplug Afternoon", icon: "sparkles", minutes: 240 },
+  ],
+  Lendário: [
+    { name: "Elite Half-Day Off", icon: "party", minutes: 180 },
+    { name: "Full Day Off", icon: "sparkles", minutes: 360 },
+    { name: "Ultimate Celebration", icon: "gift", minutes: null },
+  ],
+};
+
+export function getLocalizedDefaultMysteryBoxLoot(
+  tierId: "Básico" | "Premium" | "Épico" | "Lendário",
+  locale: AppLocale = "pt-BR",
+): readonly [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem] {
+  const table =
+    locale === "en" ? DEFAULT_MYSTERY_BOX_LOOT_EN : DEFAULT_MYSTERY_BOX_LOOT;
+  return table[tierId] || table.Básico;
+}
 
 /**
  * Pool padrão da roleta derivado diretamente de `DEFAULT_MYSTERY_BOX_LOOT` e `MYSTERY_BOX_TIERS`,
@@ -420,3 +457,119 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
     },
   },
 ] as const;
+
+const MYSTERY_BOX_PRESETS_EN: Record<
+  MysteryBoxPresetId,
+  Record<
+    "Básico" | "Premium" | "Épico" | "Lendário",
+    readonly [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
+  >
+> = {
+  gamer: {
+    Básico: [
+      { name: "Gameplay Video", icon: "tv", minutes: 10 },
+      { name: "Casual Match", icon: "gamepad", minutes: 20 },
+      { name: "Ranked Session", icon: "sparkles", minutes: 45 },
+    ],
+    Premium: [
+      {
+        name: "1 Episode of Series / Anime",
+        icon: "clapperboard",
+        minutes: 40,
+      },
+      { name: "Co-op with Friends", icon: "gamepad", minutes: 70 },
+      { name: "Gaming / Movie Marathon", icon: "tv", minutes: 110 },
+    ],
+    Épico: [
+      { name: "Extended Co-op Session", icon: "gamepad", minutes: 90 },
+      { name: "Series Binge Session", icon: "clapperboard", minutes: 150 },
+      { name: "Free Gamer Night", icon: "party", minutes: 240 },
+    ],
+    Lendário: [
+      { name: "Full Gamer Afternoon", icon: "gamepad", minutes: 180 },
+      { name: "Release Day Off", icon: "sparkles", minutes: 360 },
+      { name: "New Game on Sale", icon: "shopping", minutes: null },
+    ],
+  },
+  relax: {
+    Básico: [
+      { name: "Specialty Coffee or Tea", icon: "coffee", minutes: null },
+      { name: "Music / Meditation Break", icon: "headphones", minutes: 20 },
+      { name: "Power Nap", icon: "sparkles", minutes: 40 },
+    ],
+    Premium: [
+      { name: "Relaxing Bath & Skincare", icon: "sparkles", minutes: null },
+      { name: "Outdoor Walk", icon: "headphones", minutes: 60 },
+      { name: "Couch Movie Session", icon: "tv", minutes: 100 },
+    ],
+    Épico: [
+      { name: "Unhurried Morning/Afternoon", icon: "coffee", minutes: 90 },
+      { name: "At-Home Spa Day", icon: "sparkles", minutes: 150 },
+      { name: "Full Digital Detox", icon: "book", minutes: 240 },
+    ],
+    Lendário: [
+      { name: "Half Day Completely Off", icon: "party", minutes: 180 },
+      { name: "Full Rest Day Off", icon: "sparkles", minutes: 360 },
+      { name: "Massage or Special Outing", icon: "gift", minutes: null },
+    ],
+  },
+  gastronomy: {
+    Básico: [
+      { name: "Favorite Sweet or Chocolate", icon: "gift", minutes: null },
+      { name: "Iced Coffee / Cappuccino", icon: "coffee", minutes: null },
+      { name: "Special Afternoon Snack", icon: "pizza", minutes: 30 },
+    ],
+    Premium: [
+      { name: "Dessert or Acai Bowl", icon: "sparkles", minutes: null },
+      { name: "Order Favorite Delivery", icon: "pizza", minutes: null },
+      { name: "Dinner + Special Movie", icon: "utensils", minutes: 100 },
+    ],
+    Épico: [
+      { name: "Pizza / Burger Night", icon: "pizza", minutes: null },
+      { name: "Cafe or Bar Outing", icon: "beer", minutes: 150 },
+      { name: "Celebration Dinner", icon: "utensils", minutes: null },
+    ],
+    Lendário: [
+      { name: "Special Brunch or Lunch", icon: "utensils", minutes: 180 },
+      { name: "Dream Restaurant Visit", icon: "sparkles", minutes: null },
+      { name: "VIP Dining Experience", icon: "gift", minutes: null },
+    ],
+  },
+  hobbies: {
+    Básico: [
+      { name: "Listen to Album / Podcast", icon: "music", minutes: 15 },
+      { name: "Book / Manga Chapter", icon: "book", minutes: 25 },
+      { name: "Instrument / Art Practice", icon: "sparkles", minutes: 45 },
+    ],
+    Premium: [
+      { name: "Immersive Reading", icon: "book", minutes: 45 },
+      { name: "Creative Side Project", icon: "sparkles", minutes: 75 },
+      { name: "Music / Painting Session", icon: "music", minutes: 110 },
+    ],
+    Épico: [
+      { name: "Favorite Hobby Deep Dive", icon: "book", minutes: 90 },
+      { name: "Free Creative Afternoon", icon: "sparkles", minutes: 150 },
+      { name: "Buy Book or Supplies", icon: "shopping", minutes: null },
+    ],
+    Lendário: [
+      { name: "Hobby Marathon (3h)", icon: "book", minutes: 180 },
+      { name: "Full Day for Projects", icon: "sparkles", minutes: 360 },
+      { name: "Collector Item / Course", icon: "gift", minutes: null },
+    ],
+  },
+};
+
+export function getLocalizedMysteryBoxPresetSlots(
+  presetId: MysteryBoxPresetId,
+  tierId: "Básico" | "Premium" | "Épico" | "Lendário",
+  locale: AppLocale = "pt-BR",
+):
+  | readonly [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
+  | null {
+  if (locale === "en") {
+    const enPreset = MYSTERY_BOX_PRESETS_EN[presetId];
+    return enPreset ? enPreset[tierId] || enPreset.Básico : null;
+  }
+  const ptPreset = MYSTERY_BOX_PRESETS.find((p) => p.id === presetId);
+  return ptPreset ? ptPreset.tiers[tierId] || ptPreset.tiers.Básico : null;
+}

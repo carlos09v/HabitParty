@@ -69,7 +69,9 @@ public interface FriendshipJpaRepository extends JpaRepository<FriendshipJpaEnti
       """)
   long countByUserIdAndStatus(@Param("userId") UUID userId, @Param("status") FriendshipStatus status);
 
-  @Modifying
+  long countByAddresseeIdAndStatus(UUID addresseeId, FriendshipStatus status);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("DELETE FROM FriendshipJpaEntity f WHERE f.requesterId = :userId OR f.addresseeId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
 }

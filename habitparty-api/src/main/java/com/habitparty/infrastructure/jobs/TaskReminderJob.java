@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import com.habitparty.application.usecases.task.SendTaskRemindersUseCase;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 @Component
 public class TaskReminderJob {
   private static final Logger logger = LoggerFactory.getLogger(TaskReminderJob.class);
@@ -16,8 +18,9 @@ public class TaskReminderJob {
     this.sendTaskRemindersUseCase = sendTaskRemindersUseCase;
   }
 
-  // Roda a cada 15 minutos checando lembretes pendentes
+  // Roda a cada 15 minutos em UTC com lock distribuído (evita e-mails duplicados em múltiplas réplicas)
   @Scheduled(cron = "0 */15 * * * *", zone = "UTC")
+  @SchedulerLock(name = "taskReminderJob", lockAtMostFor = "PT14M", lockAtLeastFor = "PT30S")
   public void runTaskReminders() {
     try {
       int sentCount = sendTaskRemindersUseCase.execute();

@@ -10,6 +10,7 @@ import type {
   FocusActivityDeletionSummaryResponseDTO,
   FocusActivityResponseDTO,
   FocusRecordResponseDTO,
+  FocusSummaryData,
   UpdateFocusActivityDTO,
   UpdateFocusActivityOrderDTO,
   UpdateFocusRecordDTO,
@@ -18,6 +19,7 @@ import {
   type FocusRecordsPageResult,
   mapFocusActivities,
   normalizeFocusRecordsPage,
+  normalizeFocusSummary,
 } from "@/utils/focusMapper";
 import { invalidateFocusDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
@@ -264,7 +266,7 @@ export async function updateFocusRecord(
     invalidateFocusDomainTags({
       records: true,
       rewardsAndInventory: hasFullPayload,
-      tasks: true,
+      tasks: hasFullPayload,
     });
     return { success: true, data: data as FocusRecordResponseDTO };
   } catch (err) {
@@ -344,13 +346,14 @@ export async function getTaskFocusRecords(
       };
     }
 
+    const normalized = normalizeFocusRecordsPage(data, page);
     return {
       success: true,
       data: {
-        records: data?.content || [],
-        totalPages: data?.totalPages || 0,
-        totalElements: data?.totalElements || 0,
-        currentPage: data?.number !== undefined ? data.number : page,
+        records: normalized.records,
+        totalPages: normalized.totalPages,
+        totalElements: normalized.totalElements,
+        currentPage: normalized.currentPage,
       },
     };
   } catch (err) {
@@ -463,6 +466,42 @@ export async function getFocusActivityRecordsPage(
     };
   } catch (err) {
     console.error("[FocusAction:GetActivityRecordsPage]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+/**
+ * Busca o resumo agregado completo de métricas de foco (global ou filtrado por atividade).
+ */
+export async function getFocusSummary(
+  activityId?: string | null,
+): Promise<ActionState<FocusSummaryData>> {
+  const t = await getTranslations("focus.actions");
+  try {
+    const normalizedActivityId = activityId?.trim() || undefined;
+    const { data, error } = await serverApi.GET("/focus-records/summary", {
+      params: normalizedActivityId
+        ? { query: { activityId: normalizedActivityId } }
+        : undefined,
+    });
+
+    const normalized = normalizeFocusSummary(data);
+    if (error || !normalized) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("communicationError")),
+      };
+    }
+
+    return {
+      success: true,
+      data: normalized,
+    };
+  } catch (err) {
+    console.error("[FocusAction:GetSummary]", err);
     return {
       success: false,
       error: t("communicationError"),

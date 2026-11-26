@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { DEFAULT_MAX_ACHIEVEMENT_POINTS } from "@/constants/achievements";
 import type { ShowcaseStatsResponseDTO } from "@/types/showcase";
+import { formatFocusHours } from "@/utils/showcaseUtils";
 import {
   type ShowcaseStatCardData,
   ShowcaseStatsGridView,
@@ -8,19 +9,19 @@ import {
 
 interface ShowcaseStatsGridProps {
   stats: ShowcaseStatsResponseDTO;
-  isGamified?: boolean;
+  canViewAchievements?: boolean;
 }
 
 export async function ShowcaseStatsGrid({
   stats,
-  isGamified = false,
+  canViewAchievements = true,
 }: ShowcaseStatsGridProps) {
   const [t, format] = await Promise.all([
     getTranslations("showcase.statsGrid"),
     getFormatter(),
   ]);
 
-  const focusHours = Math.round((stats.totalFocusMinutes / 60) * 10) / 10;
+  const focusHours = formatFocusHours(stats.totalFocusMinutes);
   const masteryPercent =
     stats.totalAchievementsCount > 0
       ? Math.round(
@@ -84,7 +85,10 @@ export async function ShowcaseStatsGrid({
         minutes: format.number(stats.totalFocusMinutes),
       }),
     },
-    {
+  ];
+
+  if (canViewAchievements) {
+    cards.push({
       id: "achievementsProgress",
       iconKey: "trophy",
       iconClass: "bg-gold/15 border-gold/40 text-amber-700 dark:text-gold",
@@ -97,15 +101,14 @@ export async function ShowcaseStatsGrid({
           stats.maxAchievementPoints || DEFAULT_MAX_ACHIEVEMENT_POINTS,
         ),
       }),
-    },
-  ];
+    });
+  }
 
   return (
     <ShowcaseStatsGridView
       sectionTitleGamified={t("sectionTitleGamified")}
       sectionTitleEssential={t("sectionTitleEssential")}
       cards={cards}
-      initialIsGamified={isGamified}
     />
   );
 }

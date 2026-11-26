@@ -8,15 +8,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
-import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { useCustomerPortal } from "@/hooks/useCustomerPortal";
 import { useDateFormat } from "@/hooks/useDateFormat";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
 import type { AppLocale } from "@/i18n/config";
-import { useUserStore } from "@/store/userStore";
+import { useUIStore } from "@/store/uiStore";
 import type { UserResponseDTO } from "@/types/user";
-import { cn, formatShortDate } from "@/utils";
+import { cn } from "@/utils/cn";
+import { formatShortDate } from "@/utils/date";
 
 interface SubscriptionSettingsCardProps {
   initialUser?: UserResponseDTO | null;
@@ -29,9 +29,8 @@ export function SubscriptionSettingsCard({
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
 
-  const storeUser = useUserStore((s) => s.user);
-  const user = storeUser ?? initialUser;
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const user = useResolvedUser(initialUser);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
   const { isPendingPortal, openCustomerPortal: handleOpenPortal } =
     useCustomerPortal({
       redirecting: t("redirectingPortal"),
@@ -43,6 +42,9 @@ export function SubscriptionSettingsCard({
   const isPremium = Boolean(user?.isPremium);
   const isFounder = Boolean(user?.isFounder);
   const isCancelScheduled = Boolean(user?.cancelAtPeriodEnd);
+  const hasRecurringStripe = Boolean(user?.hasActiveRecurringSubscription);
+  const canOpenStripePortal =
+    isPremium && (hasRecurringStripe || isCancelScheduled);
 
   // Formata data de expiração se disponível (formatShortDate converte UTC -> fuso local automaticamente)
   const endsAtFormatted = user?.subscriptionEndsAt
@@ -56,140 +58,144 @@ export function SubscriptionSettingsCard({
     : null;
 
   return (
-    <>
-      <div className="flex flex-col gap-4">
-        {/* BLOCO DE STATUS DO PLANO */}
-        <div
-          className={cn(
-            "rounded-xl border p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors",
-            isPremium
-              ? "bg-linear-to-r from-gold/10 via-card dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
-              : "bg-surface/40 border-neutral-700 dark:border-neutral-700/60",
-          )}
-        >
-          <div className="flex items-start gap-3.5">
-            <div
-              className={cn(
-                "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border",
-                isPremium
-                  ? "bg-gold/20 border-gold/40 text-gold shadow-glow-gold-xs"
-                  : "bg-surface border-neutral-700 text-neutral-400",
-              )}
-            >
-              {isPremium ? (
-                <Crown size={22} className="fill-gold" />
-              ) : (
-                <Sparkles size={20} />
-              )}
-            </div>
-
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-base sm:text-lg font-bold text-neutral-50">
-                  {isFounder
-                    ? isPremium
-                      ? t("founderActiveTitle")
-                      : t("founderExpiredTitle")
-                    : isPremium
-                      ? t("guardianTitle")
-                      : t("adventurerTitle")}
-                </h4>
-                {isFounder && <FounderBadge size="sm" />}
-                {isPremium && !isFounder && (
-                  <span className="px-2 py-0.5 rounded-full text-tiny font-bold uppercase tracking-wider bg-gold text-on-gold dark:text-neutral-950">
-                    {t("vipActiveBadge")}
-                  </span>
-                )}
-                {isCancelScheduled && (
-                  <span className="px-2 py-0.5 rounded-full text-tiny font-bold uppercase tracking-wider bg-warning/20 text-warning border border-warning/30">
-                    {t("cancelScheduledBadge")}
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs sm:text-sm text-neutral-300 mt-1">
-                {isPremium
-                  ? t("premiumAccessDesc")
-                  : isFounder
-                    ? t("founderExpiredDesc")
-                    : t("freeAccessDesc")}
-              </p>
-
-              {endsAtFormatted && (
-                <div className="flex items-center gap-1.5 text-xs text-neutral-300 mt-2 font-medium">
-                  <Calendar size={13} className="text-gold" />
-                  <span>
-                    {isCancelScheduled
-                      ? t("cancelScheduledUntil", { date: endsAtFormatted })
-                      : t("validUntil", { date: endsAtFormatted })}
-                  </span>
-                </div>
-              )}
-            </div>
+    <div className="flex flex-col gap-4">
+      {/* BLOCO DE STATUS DO PLANO */}
+      <div
+        className={cn(
+          "rounded-xl border p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors",
+          isPremium
+            ? "bg-linear-to-r from-gold/10 via-card dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
+            : "bg-surface/40 border-neutral-700 dark:border-neutral-700/60",
+        )}
+      >
+        <div className="flex items-start gap-3.5">
+          <div
+            className={cn(
+              "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border",
+              isPremium
+                ? "bg-gold/20 border-gold/40 text-gold shadow-glow-gold-xs"
+                : "bg-surface border-neutral-700 text-neutral-400",
+            )}
+          >
+            {isPremium ? (
+              <Crown size={22} className="fill-gold" />
+            ) : (
+              <Sparkles size={20} />
+            )}
           </div>
 
-          {/* BOTÕES DE AÇÃO */}
-          <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
-            {isPremium ? (
-              <>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-bold text-neutral-50">
+                {isFounder
+                  ? isPremium
+                    ? t("founderActiveTitle")
+                    : t("founderExpiredTitle")
+                  : isPremium
+                    ? t("guardianTitle")
+                    : t("adventurerTitle")}
+              </h3>
+              {isFounder && <FounderBadge size="sm" />}
+              {isPremium && !isFounder && (
+                <span className="px-2 py-0.5 rounded-full text-tiny font-bold uppercase tracking-wider bg-gold text-on-gold dark:text-neutral-950">
+                  {t("vipActiveBadge")}
+                </span>
+              )}
+              {isPremium && !hasRecurringStripe && !isCancelScheduled && (
+                <span className="px-2 py-0.5 rounded-full text-tiny font-bold uppercase tracking-wider bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/35">
+                  {t("oneTimePlanBadge")}
+                </span>
+              )}
+              {isCancelScheduled && (
+                <span className="px-2 py-0.5 rounded-full text-tiny font-bold uppercase tracking-wider bg-warning/20 text-warning border border-warning/30">
+                  {t("cancelScheduledBadge")}
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs sm:text-sm text-neutral-300 mt-1">
+              {isPremium
+                ? t("premiumAccessDesc")
+                : isFounder
+                  ? t("founderExpiredDesc")
+                  : t("freeAccessDesc")}
+            </p>
+
+            {endsAtFormatted && (
+              <div className="flex items-center gap-1.5 text-xs text-neutral-300 mt-2 font-medium">
+                <Calendar size={13} className="text-gold" />
+                <span>
+                  {isCancelScheduled
+                    ? t("cancelScheduledUntil", { date: endsAtFormatted })
+                    : t("validUntil", { date: endsAtFormatted })}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* BOTÕES DE AÇÃO */}
+        <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+          {isPremium ? (
+            <>
+              {canOpenStripePortal ? (
                 <button
                   type="button"
                   disabled={isPendingPortal}
                   onClick={handleOpenPortal}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl border border-gold/40 bg-gold/15 text-xs sm:text-sm font-bold text-gold hover:bg-gold/25 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs",
+                    "px-4 py-2.5 rounded-xl border border-gold/40 bg-gold/15 text-xs sm:text-sm font-bold text-amber-800 dark:text-gold hover:bg-gold/25 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs",
                     "disabled:opacity-60 disabled:cursor-not-allowed",
                   )}
                   title={t("portalTooltip")}
                 >
-                  <ExternalLink size={14} />
+                  <ExternalLink size={14} aria-hidden="true" />
                   <span>
                     {isPendingPortal ? t("openingStripe") : t("manageOrCancel")}
                   </span>
                 </button>
-
+              ) : (
                 <button
                   type="button"
-                  onClick={() => setIsUpgradeModalOpen(true)}
-                  className="px-3.5 py-2.5 rounded-xl border border-neutral-700 bg-card hover:bg-surface-hover dark:border-white/10 dark:bg-surface text-xs font-semibold text-neutral-200 transition-colors text-center cursor-pointer"
+                  onClick={openUpgradeModal}
+                  className="px-4 py-2.5 rounded-xl border border-gold/40 bg-gold/15 text-xs sm:text-sm font-bold text-amber-800 dark:text-gold hover:bg-gold/25 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
-                  {t("viewPerks")}
+                  <Crown size={14} aria-hidden="true" />
+                  <span>{t("renewOrExtend")}</span>
                 </button>
-              </>
-            ) : (
+              )}
+
               <button
                 type="button"
-                onClick={() => setIsUpgradeModalOpen(true)}
-                className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold dark:text-neutral-950 text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-colors shadow-glow-gold flex items-center justify-center gap-2 cursor-pointer"
+                onClick={openUpgradeModal}
+                className="px-3.5 py-2.5 rounded-xl border border-neutral-700 bg-card hover:bg-surface-hover dark:border-white/10 dark:bg-surface text-xs font-semibold text-neutral-200 transition-colors text-center cursor-pointer"
               >
-                <Crown
-                  size={15}
-                  className="fill-on-gold dark:fill-neutral-950"
-                />
-                <span>{isFounder ? t("renewPlan") : t("upgradePlan")}</span>
+                {t("viewPerks")}
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* NOTA TRANSPARENTE SOBRE PAGAMENTOS */}
-        <div className="p-3.5 rounded-xl bg-surface/45 border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-tiny text-neutral-300 leading-relaxed flex items-start gap-2.5">
-          <CheckCircle2 size={15} className="text-gold shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-neutral-200">
-              {t("transparentNoteTitle")}
-            </span>{" "}
-            {t("transparentNoteDesc")}
-          </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={openUpgradeModal}
+              className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold dark:text-neutral-950 text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-colors shadow-glow-gold flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Crown size={15} className="fill-on-gold dark:fill-neutral-950" />
+              <span>{isFounder ? t("renewPlan") : t("upgradePlan")}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {isUpgradeModalOpen && (
-        <LazyUpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      )}
-    </>
+      {/* NOTA TRANSPARENTE SOBRE PAGAMENTOS */}
+      <div className="p-3.5 rounded-xl bg-surface/45 border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-tiny text-neutral-300 leading-relaxed flex items-start gap-2.5">
+        <CheckCircle2 size={15} className="text-gold shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold text-neutral-200">
+            {t("transparentNoteTitle")}
+          </span>{" "}
+          {t("transparentNoteDesc")}
+        </div>
+      </div>
+    </div>
   );
 }

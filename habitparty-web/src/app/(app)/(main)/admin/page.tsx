@@ -13,6 +13,7 @@ import {
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getAdminOverview, getAdminUsers } from "@/services/adminService";
 import { getCurrentUser } from "@/services/userService";
+import { buildAdminUsersUrl } from "@/utils/adminUtils";
 import { getDateFormat } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -67,12 +68,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const totalElements = usersPage?.totalElements ?? 0;
 
   if (totalPages > 0 && page0Based >= totalPages) {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (filter && filter !== "ALL") params.set("filter", filter);
-    if (totalPages > 1) params.set("page", String(totalPages));
-    const qs = params.toString();
-    redirect(qs ? `/admin?${qs}` : "/admin");
+    redirect(
+      buildAdminUsersUrl({
+        search,
+        filter,
+        page: totalPages,
+      }),
+    );
   }
 
   return (
@@ -82,8 +84,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           {/* HEADER ESTÁTICO NO SERVIDOR + BOTÃO CLIENT DE REFRESH */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
-                <ShieldCheck size={14} />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-magenta/15 border border-magenta/35 text-magenta dark:text-fuchsia-300 text-xs font-bold uppercase tracking-wider mb-2">
+                <ShieldCheck size={14} aria-hidden="true" />
                 {tDashboard("badge")}
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-neutral-50 tracking-tight">
@@ -98,6 +100,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
 
           <AdminDashboardView
+            currentAdminId={user.id ?? ""}
             overviewCards={
               overview ? (
                 <AdminOverviewCards

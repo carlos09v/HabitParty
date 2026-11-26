@@ -17,6 +17,7 @@ import {
  */
 export const FREE_USER_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024; // 5 MB (~5.000 tarefas / afazeres)
 export const PREMIUM_USER_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB (~50.000 tarefas / registros)
+export const ADMIN_DATABASE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1 GB (plano inicial Railway)
 
 export const FREE_USER_EMAIL_MONTHLY_LIMIT = 20;
 export const PREMIUM_USER_EMAIL_MONTHLY_LIMIT = 100;
@@ -56,8 +57,7 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
   {
     key: "checklists",
     icon: CheckSquare,
-    color:
-      "text-emerald-700 dark:text-success-500 bg-success-500/10 border-success-500/30",
+    color: "text-success-400 bg-success-500/10 border-success-500/30",
   },
   {
     key: "workspaces",
@@ -68,7 +68,7 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
   {
     key: "history",
     icon: History,
-    color: "text-amber-700 dark:text-gold bg-gold/10 border-gold/30",
+    color: "text-gold-ink dark:text-gold bg-gold/10 border-gold/30",
   },
   {
     key: "inventory",
@@ -87,3 +87,6 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
       "text-neutral-300 bg-surface border-neutral-700 dark:border-white/10",
   },
 ] as const;
+
+export type AdminStorageBreakdownKey =
+  (typeof ADMIN_STORAGE_BREAKDOWN_CONFIG)[number]["key"];

@@ -10,6 +10,7 @@ import { getDatePartsInTimeZone } from "@/utils/date";
 interface WeekDaysIndicatorProps {
   daysOfWeek?: DailyDaysOfWeek[] | null;
   isCompact?: boolean;
+  variant?: "card" | "row";
   className?: string;
 }
 
@@ -20,6 +21,7 @@ interface WeekDaysIndicatorProps {
 export function WeekDaysIndicator({
   daysOfWeek,
   isCompact = false,
+  variant = "row",
   className,
 }: WeekDaysIndicatorProps) {
   const t = useTranslations("dashboard.taskShared.weekDays");
@@ -30,7 +32,15 @@ export function WeekDaysIndicator({
 
   return (
     <div
-      className={cn("flex items-center gap-0.5", className)}
+      className={cn(
+        "flex items-center shrink-0",
+        variant === "card"
+          ? isCompact
+            ? "gap-[1.5px]"
+            : "gap-[2px]"
+          : "gap-0.5",
+        className,
+      )}
       title={t("activeDaysTitle")}
     >
       {WEEK_DAYS.map((day, index) => {
@@ -44,10 +54,14 @@ export function WeekDaysIndicator({
             key={day.enumValue}
             title={`${fullName}${isToday ? t("todaySuffix") : ""}: ${isActive ? t("activeStatus") : t("inactiveStatus")}`}
             className={cn(
-              "rounded-full flex items-center justify-center font-bold transition-colors shrink-0",
-              isCompact
-                ? "w-3.5 h-3.5 text-label-s"
-                : "w-4.5 h-4.5 text-label-m",
+              "rounded-full flex items-center justify-center font-bold transition-colors shrink-0 leading-none",
+              variant === "card"
+                ? isCompact
+                  ? "w-[13px] h-[13px] text-label-s"
+                  : "w-4 h-4 text-label-m"
+                : isCompact
+                  ? "w-3.5 h-3.5 text-label-s"
+                  : "w-4.5 h-4.5 text-label-m",
               isActive &&
                 isToday &&
                 "bg-primary dark:bg-magenta text-white dark:text-neutral-950 ring-2 ring-primary/25 dark:ring-1 dark:ring-white/40 dark:shadow-glow-magenta font-extrabold",

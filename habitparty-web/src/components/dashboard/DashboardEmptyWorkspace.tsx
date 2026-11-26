@@ -26,9 +26,9 @@ export async function DashboardEmptyWorkspace() {
 
         {/* Textos Acolhedores */}
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-neutral-50 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-50 tracking-tight">
             {isGamified ? t("titleGamified") : t("titleProductivity")}
-          </h2>
+          </h1>
           <p className="text-body-s sm:text-body-m text-neutral-300 leading-relaxed max-w-md">
             {isGamified
               ? t("descriptionPrefixGamified")

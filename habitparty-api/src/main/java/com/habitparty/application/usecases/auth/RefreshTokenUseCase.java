@@ -1,6 +1,11 @@
 package com.habitparty.application.usecases.auth;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.application.ports.TokenPort;
@@ -8,6 +13,7 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.AuthTokens;
 import com.habitparty.core.domain.entities.RefreshToken;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.UserToken;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -24,6 +30,7 @@ public class RefreshTokenUseCase {
     this.tokenPort = tokenPort;
   }
 
+  @Transactional
   public AuthTokens execute(String rawRefreshToken) {
     RefreshToken tokenDomain = refreshTokenRepository.findByToken(rawRefreshToken)
         .orElseThrow(() -> new DomainValidationException("Refresh Token inválido ou não encontrado."));
@@ -35,8 +42,21 @@ public class RefreshTokenUseCase {
     User user = userRepository.findById(tokenDomain.getUserId())
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
-    String newAccessToken = tokenPort.generateToken(user);
+    // Rotação de Refresh Token: revoga o token antigo e emite um novo token hasheado em SHA-256
+    tokenDomain.revoke();
+    refreshTokenRepository.save(tokenDomain);
 
-    return new AuthTokens(newAccessToken, tokenDomain.getToken());
+    String newAccessToken = tokenPort.generateToken(user);
+    String newRawRefreshToken = UUID.randomUUID().toString();
+    RefreshToken rotatedToken = new RefreshToken(
+        UUID.randomUUID(),
+        user.getId(),
+        UserToken.hashToken(newRawRefreshToken),
+        Instant.now().plus(AuthSessionIssuer.REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS),
+        false
+    );
+    refreshTokenRepository.save(rotatedToken);
+
+    return new AuthTokens(newAccessToken, newRawRefreshToken);
   }
 }

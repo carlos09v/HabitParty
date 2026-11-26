@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import { REMINDER_OFFSET_DAYS } from "@/constants/task";
 import { DEFAULT_LOCALE, isValidLocale, toIntlLocale } from "@/i18n/config";
 import { getDashboardTransactions } from "@/services/dashboardService";

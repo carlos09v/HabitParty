@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -13,6 +14,7 @@ import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional(readOnly = true)
 public class ListUserInventoryUseCase {
   private final InventoryItemRepository port;
   private final UserRepository userPort;

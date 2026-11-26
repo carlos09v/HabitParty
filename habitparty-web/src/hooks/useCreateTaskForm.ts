@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createTask, saveTaskWithDetails } from "@/actions/taskActions";
 import {
@@ -16,6 +16,7 @@ import { useChecklist } from "@/hooks/useChecklist";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import type {
   DailyDaysOfWeek,
   DailyRepeatMonthlyOption,
@@ -154,7 +155,6 @@ function buildInitialTaskFormValues({
 }
 
 export function useCreateTaskForm({
-  isOpen,
   columns,
   defaultColumnId,
   defaultTaskType,
@@ -231,6 +231,8 @@ export function useCreateTaskForm({
       setStartTime("");
       setDueEndTime("");
       setIsAllDay(false);
+      setReminderType("NONE");
+      setSendEmailReminder(false);
       if (taskType === "TODO") {
         setIsHardcore(false);
       }
@@ -246,8 +248,12 @@ export function useCreateTaskForm({
 
     if (normalized.dueDate !== undefined) {
       setDueDate(normalized.dueDate);
-      if (!normalized.dueDate && taskType === "TODO") {
-        setIsHardcore(false);
+      if (!normalized.dueDate) {
+        setReminderType("NONE");
+        setSendEmailReminder(false);
+        if (taskType === "TODO") {
+          setIsHardcore(false);
+        }
       }
     }
     if (normalized.dueTime !== undefined) setDueTime(normalized.dueTime);
@@ -275,11 +281,12 @@ export function useCreateTaskForm({
     taskType,
     difficulty,
   );
+  const isTaskCompleted = Boolean(taskToEdit?.completed);
+  const isSubmittingRef = useRef(false);
 
   // Checklist de subtarefas gerenciado pelo hook central useChecklist
   const {
     checklist,
-    resetChecklist,
     addItem: addChecklistItem,
     toggleItem: toggleChecklistItem,
     toggleItemReward: toggleChecklistItemReward,
@@ -292,6 +299,7 @@ export function useCreateTaskForm({
     // Subtarefas só são persistidas ao clicar em Salvar (cancelar descarta as alterações)
     deferPersistence: true,
     canRewardItems: canRewardChecklistItems,
+    isRewardLocked: isTaskCompleted,
   });
   const [newChecklistText, setNewChecklistText] = useState("");
   const [isNewChecklistRewarded, setIsNewChecklistRewarded] = useState(false);
@@ -326,111 +334,22 @@ export function useCreateTaskForm({
     }
   };
 
-  const sessionKey = isOpen
-    ? `${taskToEdit?.id ?? "new"}:${defaultColumnId ?? ""}:${defaultTaskType ?? ""}:${initialTitle ?? ""}`
-    : "closed";
-  const activeSessionKeyRef = useRef(sessionKey);
-
   // Foco diferido para o término da animação CSS de entrada (150ms), evitando layout thrash no meio do zoom-in
   const handleModalAnimationEnd = useCallback(() => {
     nameInputRef.current?.focus({ preventScroll: true });
   }, []);
-
-  // Sincroniza apenas caso o modal permaneça montado e troque de sessão/tarefa (no mount inicial: zero setState)
-  useEffect(() => {
-    if (!isOpen) {
-      activeSessionKeyRef.current = "closed";
-      return;
-    }
-
-    if (activeSessionKeyRef.current === sessionKey) return;
-    activeSessionKeyRef.current = sessionKey;
-
-    const next = buildInitialTaskFormValues({
-      columns,
-      defaultColumnId,
-      defaultTaskType,
-      initialTitle,
-      initialValues,
-      taskToEdit,
-    });
-
-    setTaskType(next.taskType);
-    setColumnId(next.columnId);
-    setName(next.name);
-    setDescription(next.description);
-    setTagsInput(next.tagsInput);
-    setIsHardcore(next.isHardcore);
-    setHabitType(next.habitType);
-    setResetCounter(next.resetCounter);
-    setImportanceType(next.importanceType);
-    setDifficulty(next.difficulty);
-    setPriority(next.priority);
-    setDueDate(next.dueDate);
-    setDueTime(next.dueTime);
-    setStartTime(next.startTime);
-    setDueEndTime(next.dueEndTime);
-    setIsAllDay(next.isAllDay);
-    setReminderType(next.reminderType);
-    setSendEmailReminder(next.sendEmailReminder);
-    setStartDate(next.startDate);
-    setRepeatType(next.repeatType);
-    setRepeatEvery(next.repeatEvery);
-    setSelectedDays(next.selectedDays);
-    setMonthlyOption(next.monthlyOption);
-    resetChecklist(next.checklist);
-    setNewChecklistText("");
-    setIsNewChecklistRewarded(false);
-  }, [
-    isOpen,
-    sessionKey,
-    taskToEdit,
-    defaultColumnId,
-    defaultTaskType,
-    initialTitle,
-    initialValues,
-    columns,
-    resetChecklist,
-  ]);
 
   const handleAddChecklistItem = async () => {
     const trimmed = newChecklistText.trim();
     if (!trimmed) return;
     const shouldReward =
       canRewardChecklistItems &&
+      !isTaskCompleted &&
       isNewChecklistRewarded &&
       countRewardedChecklistItems(checklist) < MAX_REWARDED_SUBTASKS;
     await addChecklistItem(trimmed, shouldReward);
     setNewChecklistText("");
     setIsNewChecklistRewarded(false);
-  };
-
-  const handleRemoveChecklistItem = (index: number) => {
-    const target = checklist[index];
-    if (target?.id) {
-      deleteChecklistItem(target.id);
-    }
-  };
-
-  const handleToggleChecklistItem = (index: number) => {
-    const target = checklist[index];
-    if (target?.id) {
-      toggleChecklistItem(target.id);
-    }
-  };
-
-  const handleToggleChecklistItemReward = (index: number) => {
-    const target = checklist[index];
-    if (target?.id) {
-      toggleChecklistItemReward(target.id);
-    }
-  };
-
-  const handleUpdateChecklistItem = (index: number, newName: string) => {
-    const target = checklist[index];
-    if (target?.id) {
-      updateChecklistItem(target.id, newName);
-    }
   };
 
   const toggleDayOfWeek = (day: DailyDaysOfWeek) => {
@@ -445,6 +364,7 @@ export function useCreateTaskForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     const trimmedName = name.trim();
 
     if (!trimmedName) {
@@ -491,200 +411,295 @@ export function useCreateTaskForm({
       }
     }
 
+    isSubmittingRef.current = true;
+    const pendingChecklistName = newChecklistText.trim();
+    const effectiveChecklist = pendingChecklistName
+      ? [
+          ...checklist,
+          {
+            id: `temp-chk-${Date.now()}`,
+            name: pendingChecklistName,
+            isCompleted: false,
+            isRewarded:
+              canRewardChecklistItems &&
+              !isTaskCompleted &&
+              isNewChecklistRewarded &&
+              countRewardedChecklistItems(checklist) < MAX_REWARDED_SUBTASKS,
+          },
+        ]
+      : checklist;
+    if (pendingChecklistName) {
+      setNewChecklistText("");
+      setIsNewChecklistRewarded(false);
+    }
+
     startTransition(async () => {
-      const calculatedRewards = calculateTaskReward({
-        taskType,
-        difficulty,
-        importanceType,
-        resetCounter,
-        repeatType,
-        currentStreak: isEditing ? (taskToEdit?.streak ?? 0) : 0,
-        isHardcoreModeEnabled: isHardcore,
-        dueDate: dueDate || undefined,
-        isPenaltyApplied: taskToEdit?.isPenaltyApplied,
-        checklist,
-        locale,
-        timeZone: useUserStore.getState().user?.timezone,
-        isGamified,
-      });
-
-      const latestDescription = descriptionFlushRef.current?.() ?? description;
-
-      const draftTask: Task = {
-        ...(taskToEdit || {}),
-        id: taskToEdit?.id || `tsk-${Date.now()}`,
-        title: trimmedName,
-        description: latestDescription.trim() || undefined,
-        category:
-          tags[0] ||
-          (taskToEdit?.category !== "Geral" ? taskToEdit?.category : undefined),
-        tags,
-        type: (taskType.toLowerCase() as TaskType) || "todo",
-        difficulty,
-        importance: importanceType.toLowerCase() as HabitImportance,
-        importanceType,
-        priority,
-        habitType,
-        resetCounter,
-        rewardXp: calculatedRewards.xp,
-        rewardGold: calculatedRewards.gold,
-        completed: taskToEdit?.completed ?? false,
-        streak: taskToEdit?.streak ?? 0,
-        positiveCount: taskToEdit?.positiveCount ?? 0,
-        negativeCount: taskToEdit?.negativeCount ?? 0,
-        dueDate:
-          dueDate ||
-          (dueTime || startTime || isAllDay
-            ? getTodayDateString(
-                new Date(),
-                useUserStore.getState().user?.timezone,
-              )
-            : undefined) ||
-          undefined,
-        dueTime: !isAllDay && !startTime && dueTime ? dueTime : undefined,
-        startTime: !isAllDay && startTime ? startTime : undefined,
-        dueEndTime:
-          !isAllDay && (startTime || dueTime) && dueEndTime
-            ? dueEndTime
-            : undefined,
-        isAllDay: Boolean(isAllDay),
-        columnId,
-        order: taskToEdit?.order ?? 0,
-        daysOfWeek:
-          taskType === "DAILY" && repeatType === "WEEKLY"
-            ? selectedDays
-            : undefined,
-        monthlyOption:
-          taskType === "DAILY" && repeatType === "MONTHLY"
-            ? monthlyOption
-            : undefined,
-        repeatType: taskType === "DAILY" ? repeatType : undefined,
-        repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
-        startDate: taskType === "DAILY" ? startDate : undefined,
-        isHardcoreModeEnabled: isHardcore,
-        reminderType,
-        sendEmailReminder: reminderType !== "NONE" ? sendEmailReminder : false,
-        checklist,
-      };
-
-      if (isEditing && taskToEdit) {
-        const updatePayload = buildUpdateTaskPayload(
-          draftTask,
-          undefined,
-          useUserStore.getState().user?.timezone,
-        );
-        const originalColumnId = taskToEdit.columnId || defaultColumnId;
-        const response = await saveTaskWithDetails({
-          taskId: taskToEdit.id,
-          payload: updatePayload,
-          initialChecklist: taskToEdit.checklist || [],
-          currentChecklist: checklist,
-          originalColumnId,
-          targetColumnId: columnId,
-        });
-
-        if (!response.success) {
-          toast.error(response.error || t("updateTaskError"));
-          return;
-        }
-
-        const {
-          checklist: finalChecklist,
-          checklistFailedCount,
-          moveError,
-        } = response.data;
-        const syncedRewards = calculateTaskReward({
+      try {
+        const currentStreakForReward = isEditing
+          ? (taskToEdit?.currentStreak ??
+            taskToEdit?.streak ??
+            taskToEdit?.positiveCount ??
+            0)
+          : 0;
+        const calculatedRewards = calculateTaskReward({
           taskType,
           difficulty,
           importanceType,
           resetCounter,
           repeatType,
-          currentStreak: isEditing ? (taskToEdit?.streak ?? 0) : 0,
+          currentStreak: currentStreakForReward,
           isHardcoreModeEnabled: isHardcore,
           dueDate: dueDate || undefined,
           isPenaltyApplied: taskToEdit?.isPenaltyApplied,
-          checklist: finalChecklist,
+          checklist: effectiveChecklist,
           locale,
           timeZone: useUserStore.getState().user?.timezone,
           isGamified,
         });
-        const syncedDraftTask: Task = {
-          ...draftTask,
-          checklist: finalChecklist,
-          rewardXp: syncedRewards.xp,
-          rewardGold: syncedRewards.gold,
+
+        const latestDescription =
+          descriptionFlushRef.current?.() ?? description;
+
+        const resolvedReminderType =
+          taskType === "TODO" && !dueDate ? "NONE" : reminderType;
+
+        const draftTask: Task = {
+          ...(taskToEdit || {}),
+          id: taskToEdit?.id || `tsk-${Date.now()}`,
+          title: trimmedName,
+          description: latestDescription.trim() || undefined,
+          category:
+            tags[0] ||
+            (taskToEdit?.category !== "Geral"
+              ? taskToEdit?.category
+              : undefined),
+          tags,
+          type: (taskType.toLowerCase() as TaskType) || "todo",
+          difficulty,
+          importance: importanceType.toLowerCase() as HabitImportance,
+          importanceType,
+          priority,
+          habitType,
+          resetCounter,
+          rewardXp: calculatedRewards.xp,
+          rewardGold: calculatedRewards.gold,
+          completed: taskToEdit?.completed ?? false,
+          streak: taskToEdit?.streak ?? 0,
+          positiveCount: taskToEdit?.positiveCount ?? 0,
+          negativeCount: taskToEdit?.negativeCount ?? 0,
+          dueDate:
+            dueDate ||
+            (dueTime || startTime || isAllDay
+              ? getTodayDateString(
+                  new Date(),
+                  useUserStore.getState().user?.timezone,
+                )
+              : undefined) ||
+            undefined,
+          dueTime: !isAllDay && !startTime && dueTime ? dueTime : undefined,
+          startTime: !isAllDay && startTime ? startTime : undefined,
+          dueEndTime:
+            !isAllDay && (startTime || dueTime) && dueEndTime
+              ? dueEndTime
+              : undefined,
+          isAllDay: Boolean(isAllDay),
+          columnId,
+          order: taskToEdit?.order ?? 0,
+          daysOfWeek:
+            taskType === "DAILY" && repeatType === "WEEKLY"
+              ? selectedDays
+              : undefined,
+          monthlyOption:
+            taskType === "DAILY" && repeatType === "MONTHLY"
+              ? monthlyOption
+              : undefined,
+          repeatType: taskType === "DAILY" ? repeatType : undefined,
+          repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
+          startDate: taskType === "DAILY" ? startDate : undefined,
+          isHardcoreModeEnabled: isHardcore,
+          reminderType: resolvedReminderType,
+          sendEmailReminder:
+            resolvedReminderType !== "NONE" ? sendEmailReminder : false,
+          checklist: effectiveChecklist,
         };
-        if (checklistFailedCount > 0) {
-          toast.error(t("checklistSyncError"));
-        }
-        if (moveError) {
-          toast.error(moveError || t("moveTaskColumnError"));
-          onSuccess?.(
-            {
-              ...syncedDraftTask,
-              columnId: originalColumnId || columnId,
-            },
-            originalColumnId || columnId,
+
+        if (isEditing && taskToEdit) {
+          const updatePayload = buildUpdateTaskPayload(
+            draftTask,
+            undefined,
+            useUserStore.getState().user?.timezone,
           );
+          const originalColumnId = taskToEdit.columnId || defaultColumnId;
+          const response = await saveTaskWithDetails({
+            taskId: taskToEdit.id,
+            payload: updatePayload,
+            initialChecklist: taskToEdit.checklist || [],
+            currentChecklist: effectiveChecklist,
+            originalColumnId,
+            targetColumnId: columnId,
+          });
+
+          if (!response.success) {
+            toast.error(response.error || t("updateTaskError"));
+            return;
+          }
+
+          const {
+            task: serverTaskDto,
+            checklist: finalChecklist,
+            checklistFailedCount,
+            moveError,
+          } = response.data;
+          const userTimeZone = useUserStore.getState().user?.timezone;
+          const resolvedColumnId = moveError
+            ? originalColumnId || columnId
+            : columnId;
+          const workspaceMeta =
+            taskToEdit.workspaceId || taskToEdit.workspaceName
+              ? { id: taskToEdit.workspaceId, name: taskToEdit.workspaceName }
+              : undefined;
+          const mappedServerTask = serverTaskDto
+            ? mapTaskResponseToTask(
+                serverTaskDto,
+                resolvedColumnId,
+                userTimeZone,
+                workspaceMeta,
+              )
+            : draftTask;
+          const syncedRewards = calculateTaskReward({
+            ...mappedServerTask,
+            taskType,
+            difficulty,
+            importanceType,
+            resetCounter,
+            repeatType,
+            currentStreak:
+              mappedServerTask.currentStreak ??
+              mappedServerTask.streak ??
+              currentStreakForReward,
+            isHardcoreModeEnabled: isHardcore,
+            dueDate: mappedServerTask.dueDate ?? (dueDate || undefined),
+            isPenaltyApplied:
+              mappedServerTask.isPenaltyApplied ?? taskToEdit.isPenaltyApplied,
+            checklist: finalChecklist,
+            locale,
+            timeZone: userTimeZone,
+            isGamified,
+          });
+          const syncedTask: Task = {
+            ...mappedServerTask,
+            columnId: resolvedColumnId,
+            checklist: finalChecklist,
+            rewardXp: syncedRewards.xp,
+            rewardGold: syncedRewards.gold,
+            totalFocusMinutes:
+              mappedServerTask.totalFocusMinutes ??
+              taskToEdit.totalFocusMinutes,
+            focusCyclesCount:
+              mappedServerTask.focusCyclesCount ?? taskToEdit.focusCyclesCount,
+          };
+          if (checklistFailedCount > 0) {
+            toast.error(t("checklistSyncError"));
+          }
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("habitparty:tasks-changed"));
+          }
+          if (moveError) {
+            toast.error(moveError || t("moveTaskColumnError"));
+            onSuccess?.(syncedTask, resolvedColumnId);
+            onClose();
+            return;
+          }
+
+          toast.success(t("updateTaskSuccess"));
+          onSuccess?.(syncedTask, resolvedColumnId);
           onClose();
           return;
         }
 
-        toast.success(t("updateTaskSuccess"));
-        onSuccess?.(syncedDraftTask, columnId);
-        onClose();
-        return;
-      }
+        // MODO CRIAÇÃO
+        const userTimeZone = useUserStore.getState().user?.timezone;
+        const payload = buildCreateTaskPayloadFromTask(draftTask, userTimeZone);
+        const response = await createTask(
+          columnId,
+          payload,
+          effectiveChecklist,
+        );
 
-      // MODO CRIAÇÃO
-      const userTimeZone = useUserStore.getState().user?.timezone;
-      const payload = buildCreateTaskPayloadFromTask(draftTask, userTimeZone);
-      const response = await createTask(columnId, payload, checklist);
+        if (!response.success) {
+          toast.error(response.error || t("createTaskError"));
+          return;
+        }
 
-      if (!response.success) {
-        toast.error(response.error || t("createTaskError"));
-        return;
-      }
+        const createdTaskData = response.data;
+        const createdTaskId = createdTaskData?.id;
+        const hasRequestedChecklist = effectiveChecklist.some((item) =>
+          Boolean(item.name?.trim()),
+        );
+        const serverChecklist = createdTaskData?.checklist ?? [];
+        if (hasRequestedChecklist && serverChecklist.length === 0) {
+          toast.error(t("checklistSyncError"));
+        }
+        const finalChecklist = serverChecklist;
 
-      const createdTaskData = response.data;
-      const createdTaskId = createdTaskData?.id;
-      const finalChecklist =
-        createdTaskData?.checklist && createdTaskData.checklist.length > 0
-          ? createdTaskData.checklist
-          : checklist;
+        const { activeWorkspaceId, workspaces } = useWorkspaceStore.getState();
+        const activeWorkspace = activeWorkspaceId
+          ? workspaces.find((ws) => ws.id === activeWorkspaceId)
+          : undefined;
+        const createWorkspaceMeta = activeWorkspace?.id
+          ? { id: activeWorkspace.id, name: activeWorkspace.name }
+          : undefined;
 
-      const mappedTask: Task = createdTaskData
-        ? {
-            ...mapTaskResponseToTask(createdTaskData, columnId, userTimeZone),
-            checklist: finalChecklist,
-          }
-        : {
-            ...draftTask,
-            id: createdTaskId || draftTask.id,
-            checklist: finalChecklist,
-          };
+        const mappedTask: Task = createdTaskData
+          ? {
+              ...mapTaskResponseToTask(
+                createdTaskData,
+                columnId,
+                userTimeZone,
+                createWorkspaceMeta,
+              ),
+              checklist: finalChecklist,
+            }
+          : {
+              ...draftTask,
+              id: createdTaskId || draftTask.id,
+              workspaceId: createWorkspaceMeta?.id ?? draftTask.workspaceId,
+              workspaceName:
+                createWorkspaceMeta?.name ?? draftTask.workspaceName,
+              checklist: finalChecklist,
+            };
 
-      const typeLabel = t(`typeLabels.${taskType}`);
-      soundEffects.playCreateSound();
-      toast.success(t("createTaskSuccess", { typeLabel, title: trimmedName }), {
-        description: t(
-          isGamified
-            ? "createTaskRewardDesc"
-            : "createTaskRewardDescProductivity",
+        const typeLabel = t(`typeLabels.${taskType}`);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("habitparty:tasks-changed"));
+        }
+        soundEffects.playCreateSound();
+        toast.success(
+          t("createTaskSuccess", { typeLabel, title: trimmedName }),
           {
-            xp: calculatedRewards.xp,
-            gold: formatCoins(calculatedRewards.gold, { locale }),
+            description: t(
+              isGamified
+                ? "createTaskRewardDesc"
+                : "createTaskRewardDescProductivity",
+              {
+                xp: calculatedRewards.xp,
+                gold: formatCoins(calculatedRewards.gold, { locale }),
+              },
+            ),
           },
-        ),
-      });
-      onSuccess?.(mappedTask, columnId);
-      onClose();
+        );
+        onSuccess?.(mappedTask, columnId);
+        onClose();
+      } finally {
+        isSubmittingRef.current = false;
+      }
     });
   };
 
   return {
     isPending,
     isEditing,
+    isTaskCompleted,
     taskType,
     setTaskType: handleTaskTypeChange,
     columnId,
@@ -738,10 +753,10 @@ export function useCreateTaskForm({
     nameInputRef,
     handleModalAnimationEnd,
     handleAddChecklistItem,
-    handleRemoveChecklistItem,
-    handleToggleChecklistItem,
-    handleToggleChecklistItemReward,
-    handleUpdateChecklistItem,
+    handleRemoveChecklistItem: deleteChecklistItem,
+    handleToggleChecklistItem: toggleChecklistItem,
+    handleToggleChecklistItemReward: toggleChecklistItemReward,
+    handleUpdateChecklistItem: updateChecklistItem,
     taskToEdit,
     handleSubmit,
   };

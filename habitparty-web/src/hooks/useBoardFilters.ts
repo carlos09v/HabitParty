@@ -1,6 +1,13 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   DEFAULT_BOARD_FILTERS,
   normalizeTaskDifficulty,
@@ -22,10 +29,31 @@ export function useBoardFilters(
   initialSearchQuery = "",
 ) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const prevInitialSearchRef = useRef(initialSearchQuery);
+  useEffect(() => {
+    if (prevInitialSearchRef.current !== initialSearchQuery) {
+      prevInitialSearchRef.current = initialSearchQuery;
+      setSearchQuery(initialSearchQuery);
+    }
+  }, [initialSearchQuery]);
+
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [filters, setFilters] = useState<BoardFilterState>(
     DEFAULT_BOARD_FILTERS,
   );
+
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    filters.taskType !== "all" ||
+    filters.difficulty !== "all" ||
+    filters.priority !== "all" ||
+    filters.status !== "all" ||
+    filters.tag !== null;
+
+  const clearAllFilters = useCallback(() => {
+    setSearchQuery("");
+    setFilters(DEFAULT_BOARD_FILTERS);
+  }, []);
 
   // Lista de tags únicas presentes nas tarefas atuais (com ancestrais hierárquicos expostos para filtro)
   const allTasks = useMemo(
@@ -64,13 +92,15 @@ export function useBoardFilters(
 
     return columns.map((col) => {
       const nextTasks = col.tasks.filter((task) => {
-        // 1. Busca textual
+        // 1. Busca textual (título, descrição ou tags — alinhado com o Dashboard)
         if (q) {
           const matchesTitle = task.title.toLowerCase().includes(q);
           const matchesDesc = (task.description || "")
             .toLowerCase()
             .includes(q);
-          if (!matchesTitle && !matchesDesc) return false;
+          const matchesTags =
+            task.tags?.some((tag) => tag.toLowerCase().includes(q)) ?? false;
+          if (!matchesTitle && !matchesDesc && !matchesTags) return false;
         }
 
         const resolvedType = normalizeTaskType(task);
@@ -134,6 +164,8 @@ export function useBoardFilters(
     setSearchQuery,
     filters,
     setFilters,
+    hasActiveFilters,
+    clearAllFilters,
     availableTags,
     tagCounts,
     filteredColumns,

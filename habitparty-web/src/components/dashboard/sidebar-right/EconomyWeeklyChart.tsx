@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import type { AppLocale } from "@/i18n/config";
 import type { EconomyBarData } from "@/types/dashboard";
@@ -21,7 +21,8 @@ export function EconomyWeeklyChart({
   const t = useTranslations("dashboard.sidebarRight.economyWidget");
   const locale = useLocale() as AppLocale;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLElement>(null);
+  const tooltipBaseId = useId();
 
   useEffect(() => {
     if (hoveredIndex === null) return;
@@ -33,12 +34,37 @@ export function EconomyWeeklyChart({
         setHoveredIndex(null);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setHoveredIndex(null);
+      }
+    };
     window.addEventListener("pointerdown", handlePointerDown);
-    return () => window.removeEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [hoveredIndex]);
 
   const activeHoveredBar =
     hoveredIndex !== null ? displayBars[hoveredIndex] : null;
+  const hasAnyMovement = displayBars.some(
+    (bar) => bar.gold > 0 || (bar.spent ?? 0) > 0,
+  );
+
+  if (!hasAnyMovement) {
+    return (
+      <div className="rounded-lg border border-dashed border-neutral-700 dark:border-primary/30 bg-card/70 dark:bg-primary-dark/15 p-3.5 text-center flex flex-col items-center gap-1">
+        <span className="text-xs font-semibold text-neutral-300">
+          {t("emptyTitle")}
+        </span>
+        <span className="text-tiny text-neutral-400 leading-relaxed">
+          {t("emptyHint")}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-primary-dark/20 shadow-2xs dark:shadow-none flex flex-col p-3 gap-3">
@@ -71,14 +97,14 @@ export function EconomyWeeklyChart({
       </div>
 
       {/* Barras do gráfico com barras duplas (Ganhos vs Gastos) e tooltip flutuante */}
-      <div
+      <figure
         ref={chartContainerRef}
-        className="w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-neutral-700 dark:border-white/10 relative h-16"
-        role="img"
+        className="w-full m-0 flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-neutral-700 dark:border-white/10 relative h-16"
         aria-label={t("chartAriaLabel")}
       >
         {displayBars.map((bar, index) => {
           const isHovered = hoveredIndex === index;
+          const tooltipId = `${tooltipBaseId}-bar-${index}`;
           const fullLabel = bar.periodLabel
             ? `${bar.label} (${bar.periodLabel})`
             : bar.label;
@@ -110,14 +136,16 @@ export function EconomyWeeklyChart({
               onMouseLeave={() => setHoveredIndex(null)}
               onFocus={() => setHoveredIndex(index)}
               onBlur={() => setHoveredIndex(null)}
-              className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar relative cursor-pointer bg-transparent border-0 p-0 focus:outline-none touch-manipulation"
+              className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar relative cursor-pointer bg-transparent border-0 p-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold touch-manipulation"
               title={barSummary}
               aria-label={barSummary}
-              aria-expanded={isHovered}
+              aria-describedby={isHovered ? tooltipId : undefined}
             >
               {/* Balãozinho flutuante detalhado no hover/toque */}
               {isHovered && (
                 <div
+                  id={tooltipId}
+                  role="tooltip"
                   className={cn(
                     "tooltip-dark absolute bottom-full mb-2 px-2.5 py-1.5 rounded-lg border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 flex flex-col gap-0.5 text-tiny",
                     tooltipPositionClass,
@@ -197,7 +225,7 @@ export function EconomyWeeklyChart({
             </button>
           );
         })}
-      </div>
+      </figure>
 
       {/* Legenda Informativa */}
       <div className="flex items-center justify-center gap-4 pt-0.5 text-label-g text-neutral-400">

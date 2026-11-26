@@ -6,44 +6,16 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { invalidateSessionCacheTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
+import { clearAuthCookies, setAuthCookies } from "@/api/authCookies";
 import { getServerAuthToken, serverApi } from "@/api/server";
-import {
-  DEFAULT_THEME_ID,
-  getThemePolarity,
-  isValidThemeId,
-  LIGHT_THEME_ID,
-  resolveAllowedTheme,
-} from "@/constants/themes";
+import { getThemePolarity, isValidThemeId } from "@/constants/themes";
 import type { CreateUserDTO, UserResponseDTO } from "@/types/user";
 import { isValidIanaTimeZone, TIMEZONE_COOKIE } from "@/utils/date";
-
-/**
- * Salva os tokens JWT seguros nos cookies HTTP-only.
- */
-async function setAuthCookies(accessToken: string, refreshToken: string) {
-  const cookieStore = await cookies();
-  const isProduction = process.env.NODE_ENV === "production";
-
-  // Salva o access token (2 horas)
-  cookieStore.set("habitparty_token", accessToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 2,
-  });
-
-  // Salva o refresh token (7 dias)
-  cookieStore.set("habitparty_refresh_token", refreshToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-}
-
-const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+import {
+  clearCustomThemeCookies,
+  PREFERENCE_COOKIE_OPTIONS,
+  writeThemePreferenceCookies,
+} from "@/utils/themeCookies";
 
 /**
  * Persiste o fuso horário IANA do usuário no cookie de sessão.
@@ -51,11 +23,7 @@ const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 async function setTimezoneCookieIfValid(timezone?: string | null) {
   if (!isValidIanaTimeZone(timezone)) return;
   const cookieStore = await cookies();
-  cookieStore.set(TIMEZONE_COOKIE, timezone, {
-    path: "/",
-    maxAge: PREFERENCE_COOKIE_MAX_AGE,
-    sameSite: "lax",
-  });
+  cookieStore.set(TIMEZONE_COOKIE, timezone, PREFERENCE_COOKIE_OPTIONS);
 }
 
 /**
@@ -64,42 +32,20 @@ async function setTimezoneCookieIfValid(timezone?: string | null) {
 async function setThemeCookiesFromUser(user?: UserResponseDTO) {
   if (!user) return;
   const cookieStore = await cookies();
-  const cookieOptions = {
-    path: "/",
-    maxAge: PREFERENCE_COOKIE_MAX_AGE,
-    sameSite: "lax" as const,
-  };
+  const applied = writeThemePreferenceCookies(cookieStore, user.theme, {
+    isPremium: Boolean(user.isPremium),
+    resetOppositePolarity: true,
+  });
 
-  if (!user.theme || !isValidThemeId(user.theme)) {
-    cookieStore.delete("theme");
-    cookieStore.delete("lastDarkTheme");
-    cookieStore.delete("lastLightTheme");
-    return;
+  if (!applied) {
+    clearCustomThemeCookies(cookieStore);
   }
-
-  const resolvedTheme = resolveAllowedTheme(
-    user.theme,
-    Boolean(user.isPremium),
-  );
-  const polarity = getThemePolarity(resolvedTheme);
-
-  cookieStore.set("theme", resolvedTheme, cookieOptions);
-  cookieStore.set("sitePolarity", polarity, cookieOptions);
-  cookieStore.set(
-    "lastDarkTheme",
-    polarity === "dark" ? resolvedTheme : DEFAULT_THEME_ID,
-    cookieOptions,
-  );
-  cookieStore.set(
-    "lastLightTheme",
-    polarity === "light" ? resolvedTheme : LIGHT_THEME_ID,
-    cookieOptions,
-  );
 }
 
 /**
- * Finaliza a configuração de uma sessão autenticada (cookies de token,
- * sincronização de fuso horário e tema, checagem opcional de workspaces e invalidação de cache).
+ * Finaliza a configuração de uma sessão autenticada (validação opcional do perfil em /users/me,
+ * cookies de token, sincronização de fuso horário e tema, checagem opcional de workspaces
+ * e invalidação de cache).
  */
 async function finalizeAuthenticatedSession(
   accessToken: string,
@@ -108,15 +54,16 @@ async function finalizeAuthenticatedSession(
     checkWorkspaces?: boolean;
     initialIsNewUser?: boolean;
     useRouteRevalidation?: boolean;
+    requireVerifiedUser?: boolean;
   },
-): Promise<{ isNewUser: boolean }> {
-  await setAuthCookies(accessToken, refreshToken);
-
+): Promise<{ verified: boolean; isNewUser: boolean }> {
   const authHeaders = {
     Authorization: `Bearer ${accessToken}`,
   };
 
   let isNewUser = Boolean(options?.initialIsNewUser);
+  let meData: UserResponseDTO | undefined;
+  let userVerified = false;
 
   try {
     const shouldFetchWorkspaces = options?.checkWorkspaces && !isNewUser;
@@ -137,23 +84,43 @@ async function finalizeAuthenticatedSession(
       isNewUser = Array.isArray(wsResult.data) && wsResult.data.length === 0;
     }
 
-    const meData = meResult.data as UserResponseDTO | undefined;
-    await Promise.all([
-      setTimezoneCookieIfValid(meData?.timezone),
-      setThemeCookiesFromUser(meData),
-    ]);
+    const candidateUser = meResult.data as UserResponseDTO | undefined;
+    if (!meResult.error && meResult.response?.ok && candidateUser?.id) {
+      meData = candidateUser;
+      userVerified = true;
+    }
   } catch {
-    // Fallback silencioso caso o fuso ou tema sejam sincronizados posteriormente no cliente
+    userVerified = false;
+  }
+
+  if (options?.requireVerifiedUser && !userVerified) {
+    await clearAuthCookies();
+    return { verified: false, isNewUser: false };
+  }
+
+  await setAuthCookies(accessToken, refreshToken);
+
+  if (meData) {
+    try {
+      await Promise.all([
+        setTimezoneCookieIfValid(meData.timezone),
+        setThemeCookiesFromUser(meData),
+      ]);
+    } catch {
+      // Fallback silencioso caso o fuso ou tema sejam sincronizados posteriormente no cliente
+    }
   }
 
   invalidateSessionCacheTags(options?.useRouteRevalidation);
-  return { isNewUser };
+  return { verified: userVerified, isNewUser };
 }
 
 /**
  * Realiza autenticação do usuário e grava a sessão.
  */
-export async function signIn(formData: FormData): Promise<ActionState<void>> {
+export async function signIn(
+  formData: FormData,
+): Promise<ActionState<{ isNewUser: boolean }>> {
   const t = await getTranslations("auth.errors");
   const email = formData.get("email")?.toString().trim();
   const password = formData.get("password")?.toString();
@@ -177,9 +144,13 @@ export async function signIn(formData: FormData): Promise<ActionState<void>> {
       };
     }
 
-    await finalizeAuthenticatedSession(data.accessToken, data.refreshToken);
+    const { isNewUser } = await finalizeAuthenticatedSession(
+      data.accessToken,
+      data.refreshToken,
+      { checkWorkspaces: true },
+    );
 
-    return { success: true, data: undefined };
+    return { success: true, data: { isNewUser } };
   } catch (err) {
     console.error("[AuthAction:SignIn]", err);
     return {
@@ -195,7 +166,7 @@ export async function signIn(formData: FormData): Promise<ActionState<void>> {
 export async function signUpAction(
   payload: CreateUserDTO,
   botProtection?: { honeypot?: string; turnstileToken?: string },
-): Promise<ActionState<UserResponseDTO>> {
+): Promise<ActionState<{ user: UserResponseDTO; autoSignedIn: boolean }>> {
   const t = await getTranslations("auth.errors");
 
   if (botProtection?.honeypot) {
@@ -209,9 +180,6 @@ export async function signUpAction(
     const customHeaders: Record<string, string> = {};
     if (botProtection?.turnstileToken) {
       customHeaders["X-Turnstile-Token"] = botProtection.turnstileToken;
-    }
-    if (botProtection?.honeypot) {
-      customHeaders["X-HP-Trap"] = botProtection.honeypot;
     }
 
     const { data: createdUser, error: createError } = await serverApi.POST(
@@ -234,18 +202,27 @@ export async function signUpAction(
       body: { email: payload.email, password: payload.password },
     });
 
+    const newUser = createdUser as UserResponseDTO;
+    const autoSignedIn = Boolean(
+      authData?.accessToken && authData?.refreshToken,
+    );
     if (authData?.accessToken && authData?.refreshToken) {
       await setAuthCookies(authData.accessToken, authData.refreshToken);
+      const cookieStore = await cookies();
+      cookieStore.delete("activeWorkspaceId");
+      await setThemeCookiesFromUser(newUser);
     }
 
-    const userTimezone =
-      (createdUser as UserResponseDTO).timezone || payload.timezone;
+    const userTimezone = newUser.timezone || payload.timezone;
     await setTimezoneCookieIfValid(userTimezone);
     invalidateSessionCacheTags();
 
     return {
       success: true,
-      data: createdUser as UserResponseDTO,
+      data: {
+        user: newUser,
+        autoSignedIn,
+      },
     };
   } catch (err) {
     console.error("[AuthAction:SignUp]", err);
@@ -293,14 +270,8 @@ export async function signOut() {
       ? rawSitePolarity
       : "dark";
 
-  cookieStore.set("sitePolarity", polarityOnSignOut, {
-    path: "/",
-    maxAge: PREFERENCE_COOKIE_MAX_AGE,
-    sameSite: "lax",
-  });
-  cookieStore.delete("theme");
-  cookieStore.delete("lastDarkTheme");
-  cookieStore.delete("lastLightTheme");
+  cookieStore.set("sitePolarity", polarityOnSignOut, PREFERENCE_COOKIE_OPTIONS);
+  clearCustomThemeCookies(cookieStore);
   cookieStore.delete("habitparty_token");
   cookieStore.delete("habitparty_refresh_token");
   cookieStore.delete(TIMEZONE_COOKIE);
@@ -399,19 +370,27 @@ export async function completeOAuthLogin(
   options?: { useRouteRevalidation?: boolean },
 ): Promise<ActionState<{ isNewUser: boolean }>> {
   const t = await getTranslations("auth.errors");
+  const cleanAccessToken = accessToken?.trim();
+  const cleanRefreshToken = refreshToken?.trim();
 
-  if (!accessToken || !refreshToken) {
+  if (!cleanAccessToken || !cleanRefreshToken) {
+    await clearAuthCookies();
     return { success: false, error: t("invalidOAuthTokens") };
   }
 
-  const { isNewUser } = await finalizeAuthenticatedSession(
-    accessToken,
-    refreshToken,
+  const { verified, isNewUser } = await finalizeAuthenticatedSession(
+    cleanAccessToken,
+    cleanRefreshToken,
     {
       checkWorkspaces: true,
       useRouteRevalidation: options?.useRouteRevalidation,
+      requireVerifiedUser: true,
     },
   );
+
+  if (!verified) {
+    return { success: false, error: t("invalidOAuthTokens") };
+  }
 
   return { success: true, data: { isNewUser } };
 }

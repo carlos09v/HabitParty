@@ -1,20 +1,24 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.adapters.out.persistence.entities.BoardColumnJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.BoardColumnMapper;
 import com.habitparty.adapters.out.persistence.repository.BoardColumnJpaRepository;
 import com.habitparty.adapters.out.persistence.repository.BoardColumnJpaRepository.BoardColumnSummaryProjection;
 import com.habitparty.application.ports.BoardColumnRepository;
+import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 
@@ -29,22 +33,24 @@ public class BoardColumnAdapter implements BoardColumnRepository {
   }
 
   @Override
-  public BoardColumn save(BoardColumn board_Column) {
-    BoardColumnJpaEntity entity = boardColumnMapper.toEntity(board_Column);
+  public BoardColumn save(BoardColumn boardColumn) {
+    BoardColumnJpaEntity entity = repository.findById(boardColumn.getId())
+        .map(existing -> {
+          boardColumnMapper.updateEntityFromDomain(existing, boardColumn);
+          return existing;
+        })
+        .orElseGet(() -> boardColumnMapper.toEntity(boardColumn));
 
     BoardColumnJpaEntity savedEntity = repository.save(entity);
-
     return boardColumnMapper.toDomain(savedEntity);
   }
 
   @Override
   public List<BoardColumnSummaryDTO> getColumnSummaries(UUID workspaceId) {
-    // Busca a projeção no banco (passando o enum de COMPLETED para a query)
     List<BoardColumnSummaryProjection> projections = repository.findSummaryByWorkspaceId(
         workspaceId,
         TaskStatus.COMPLETED);
 
-    // Converte a Projeção nativa do Spring para o seu DTO limpo
     return projections.stream()
         .map(this::toSummaryDTO)
         .toList();
@@ -79,23 +85,30 @@ public class BoardColumnAdapter implements BoardColumnRepository {
 
   @Override
   public int countByWorkspaceId(UUID workspaceId) {
-    return repository.countByWorkspace_Id(workspaceId);
+    return repository.countByWorkspaceId(workspaceId);
   }
 
   @Override
   public Optional<BoardColumn> findById(UUID id) {
     return repository.findById(id)
-        .map(entity -> boardColumnMapper.toDomain(entity));
+        .map(boardColumnMapper::toDomain);
+  }
+
+  @Override
+  public Optional<List<BoardColumn>> findAllByIds(Collection<UUID> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return Optional.of(List.of());
+    }
+    return Optional.of(repository.findAllById(ids).stream()
+        .map(boardColumnMapper::toDomain)
+        .toList());
   }
 
   @Override
   public List<BoardColumn> findAllByWorkspaceId(UUID workspaceId) {
-    // 1. O JpaRepository vai no banco e traz a lista de entidades
-    List<BoardColumnJpaEntity> entities = repository.findByWorkspace_Id(workspaceId);
-
-    // 2. Converte a lista de entidades JPA para lista de Domínio
+    List<BoardColumnJpaEntity> entities = repository.findByWorkspaceIdOrderByOrderIndexAsc(workspaceId);
     return entities.stream()
-        .map(entity -> boardColumnMapper.toDomain(entity))
+        .map(boardColumnMapper::toDomain)
         .toList();
   }
 
@@ -104,28 +117,43 @@ public class BoardColumnAdapter implements BoardColumnRepository {
     if (workspaceIds == null || workspaceIds.isEmpty()) {
       return List.of();
     }
-    return repository.findByWorkspace_IdInOrderByOrderIndexAsc(workspaceIds).stream()
+    return repository.findByWorkspaceIdInOrderByOrderIndexAsc(workspaceIds).stream()
         .map(boardColumnMapper::toDomain)
         .toList();
   }
 
   @Override
   public List<BoardColumn> findVisibleByWorkspaceId(UUID workspaceId) {
-
     List<BoardColumnJpaEntity> entities = repository
         .findByWorkspaceIdAndIsVisibleTrueOrderByOrderIndexAsc(workspaceId);
-
     return entities.stream()
-        .map(boardColumnMapper::toDomain) // Seu mapper já converte de JPA para Domínio
+        .map(boardColumnMapper::toDomain)
         .toList();
   }
 
   @Override
-  public void reorderAll(List<BoardColumn> board_Columns) {
-    // 1. Recebe o Domínio puro, converte cada item da lista para Entidade JPA
-    List<BoardColumnJpaEntity> entities = board_Columns.stream()
-        .map(domain -> boardColumnMapper.toEntity(domain))
+  @Transactional
+  public void reorderAll(List<BoardColumn> boardColumns) {
+    if (boardColumns == null || boardColumns.isEmpty()) {
+      return;
+    }
+    List<UUID> ids = boardColumns.stream()
+        .map(BoardColumn::getId)
+        .filter(Objects::nonNull)
         .toList();
+    Map<UUID, BoardColumnJpaEntity> existingById = repository.findAllById(ids).stream()
+        .collect(Collectors.toMap(BoardColumnJpaEntity::getId, Function.identity(), (a, b) -> a));
+
+    List<BoardColumnJpaEntity> entities = new ArrayList<>(boardColumns.size());
+    for (BoardColumn domain : boardColumns) {
+      BoardColumnJpaEntity entity = existingById.get(domain.getId());
+      if (entity != null) {
+        boardColumnMapper.updateEntityFromDomain(entity, domain);
+      } else {
+        entity = boardColumnMapper.toEntity(domain);
+      }
+      entities.add(entity);
+    }
 
     repository.saveAll(entities);
   }

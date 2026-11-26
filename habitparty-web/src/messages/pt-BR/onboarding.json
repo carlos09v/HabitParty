@@ -6,6 +6,8 @@
   "layout": {
     "headerBadge": "Configuração Inicial",
     "quickSetupHint": "~45 seg • Editável depois",
+    "signOut": "Sair",
+    "signOutAria": "Sair da conta atual",
     "copyright": "HabitParty © {year}"
   },
   "wizard": {
@@ -72,6 +74,7 @@
   "profileContext": {
     "goalsLegend": "Escolha até 2 objetivos principais ({count}/{max})",
     "goalsHint": "Ajuda a equilibrar seus hábitos, tarefas no Kanban e pausas.",
+    "maxGoalsReplaceHint": "Limite de 2 atingido — clicar em outro substitui a seleção mais antiga.",
     "goals": {
       "focus": {
         "label": "Foco profundo",
@@ -182,11 +185,12 @@
         "descriptionProductivity": "Afazer prioritário inicia com Prazo Rígido"
       }
     },
+    "personalizationHeading": "Personalização rápida",
     "themeLegend": "Escolha seu visual inicial (prévia imediata)",
     "themes": {
       "dark": "Cósmico Escuro",
-      "light": "Cósmico Claro",
-      "dark-knight": "Cavaleiro Noturno",
+      "light": "Cosmic Daylight",
+      "dark-knight": "Cavaleiro das Trevas",
       "solar-parchment": "Pergaminho Solar"
     },
     "soundEffectsLabel": "Efeitos sonoros sutis na interface",
@@ -211,7 +215,11 @@
     "calibratedPrefix": "Calibrado para:",
     "modeRecommended": "Usar Starter Pack Recomendado",
     "modeBlank": "Começar do zero (quadro vazio)",
-    "ratioHint": "Proporção calibrada 4:1 (1 moeda/crédito ≈ 4 min de lazer merecido)",
+    "blankStateTitle": "Quadro totalmente em branco",
+    "blankStateNote": "Criaremos apenas o workspace vazio para você montar suas próprias colunas, tarefas, atividades de foco e recompensas do zero.",
+    "allUncheckedNotice": "Nenhum item marcado — seu workspace será criado em branco.",
+    "tasksRequireColumnsHint": "Requer colunas iniciais ativadas",
+    "ratioHint": "Preços calibrados para equilibrar foco produtivo e lazer merecido",
     "currencyGamified": "Moedas",
     "currencyProductivity": "Créditos",
     "badgeDailyFocus": "Ciclos de {minutes}m",

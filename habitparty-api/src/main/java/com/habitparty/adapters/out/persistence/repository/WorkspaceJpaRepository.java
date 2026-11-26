@@ -10,16 +10,13 @@ import org.springframework.data.repository.query.Param;
 
 import com.habitparty.adapters.out.persistence.entities.WorkspaceJpaEntity;
 
-// Herda métodos da lib JpaRepository como save, delete, etc.
 public interface WorkspaceJpaRepository extends JpaRepository<WorkspaceJpaEntity, UUID> {
-  // O Spring cria o comando SQL "SELECT COUNT(*) FROM workspaces WHERE user_id = ?"!
-  int countByUser_Id(UUID userId);
-  
-  List<WorkspaceJpaEntity> findByUser_Id(UUID userId);
 
-  List<WorkspaceJpaEntity> findByUser_IdOrderByCreatedAtAsc(UUID userId);
+  int countByUserId(UUID userId);
 
-  @Modifying
-  @Query("DELETE FROM WorkspaceJpaEntity w WHERE w.user.id = :userId")
+  List<WorkspaceJpaEntity> findByUserIdOrderByCreatedAtAsc(UUID userId);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM WorkspaceJpaEntity w WHERE w.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
 }

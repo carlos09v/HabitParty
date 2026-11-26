@@ -29,6 +29,9 @@
     "defaultWorkspaceName": "Workspace",
     "readOnlyCreateColumnToast": "This workspace is in read-only mode (Locked). Reactivate Premium to create new lists!",
     "readOnlyCreateTaskToast": "This workspace is in read-only mode (Locked). Reactivate Premium to create new tasks!",
+    "readOnlyModifyTaskToast": "This workspace is in read-only mode (Locked). Reactivate Premium to modify tasks!",
+    "readOnlyReorderToast": "This workspace is in read-only mode (Locked). Reactivate Premium to reorder tasks and columns!",
+    "readOnlyColumnActionToast": "This workspace is in read-only mode (Locked). Reactivate Premium to edit or delete columns!",
     "readOnlyMoveSourceToast": "This workspace is in read-only mode (Locked). Reactivate Premium to move lists from it!",
     "readOnlyMoveTargetToast": "The \"{workspace}\" workspace is in read-only mode (Locked). Reactivate Premium to move lists into it!",
     "readOnlyTitle": "Workspace in Read-Only Mode (Locked 👑)",
@@ -57,11 +60,19 @@
     "storeDragging": "Store",
     "columnsLabel": "Columns",
     "visibleCountBadge": "{count} visible",
+    "surplusTotalBadge": "{total} in workspace",
     "newColumnFreeLimitTitle": "Limit of {max} lists reached (Free plan)",
     "newColumnMaxReachedTitle": "Limit of {max} lists reached",
+    "newColumnReadOnlyTitle": "Workspace in read-only mode (reactivate Premium)",
     "newColumnCreateTitle": "Create new column",
     "newColumnButton": "Create column",
     "newTaskButton": "Add Task",
+    "newTaskCreateTitle": "Add new task",
+    "newTaskNoColumnsTitle": "Create a list first to add tasks",
+    "newTaskReadOnlyTitle": "Workspace in read-only mode",
+    "activeFiltersAria": "Active filters",
+    "removeFilterAria": "Remove filter {label}: {value}",
+    "clearAllFilters": "Clear all",
     "alignment": {
       "ariaLabel": "Board columns alignment",
       "prefixLabel": "Align",
@@ -128,6 +139,7 @@
     "maxColumnsReachedTitle": "Maximum limit of {max} columns reached",
     "newColumnButton": "New Column",
     "unlockMoreColumnsButton": "Unlock more columns",
+    "readOnlyUnlockButton": "Read-only • VIP",
     "emptyState": "No columns registered in this workspace.",
     "createFirstColumnButton": "Create first column",
     "taskSingular": "task",
@@ -157,7 +169,19 @@
     "noColumnsDescription": "Create your first column (e.g., To Do, In Progress, Routines) to start organizing your tasks and stay focused.",
     "createFirstColumnButton": "Create First Column",
     "allHiddenTitle": "All columns are hidden",
-    "allHiddenDescription": "Open the column manager in the filter bar to show them on the board again."
+    "allHiddenDescription": "Open the column manager in the filter bar to show them on the board again.",
+    "mobileColumnsNavAria": "Jump between lists"
+  },
+  "dnd": {
+    "instructions": "To pick up a draggable item, press Space. Use the arrow keys to move it, Space to drop, or Escape to cancel.",
+    "dragStart": "Picked up item \"{item}\".",
+    "dragOver": "Moving \"{item}\" over \"{target}\".",
+    "dragOverNone": "\"{item}\" is no longer over a droppable area.",
+    "dragEnd": "Dropped \"{item}\" onto \"{target}\".",
+    "dragEndUnchanged": "Dropped \"{item}\" in its current position.",
+    "dragCancel": "Dragging \"{item}\" was cancelled.",
+    "storeColumnTarget": "store column",
+    "dragColumnHandleAria": "Drag column {title} to reorder"
   },
   "column": {
     "optionsAria": "Options for column {title}",
@@ -170,6 +194,8 @@
     "loadArchivedCompletedError": "Could not load older completed tasks.",
     "emptyState": "No tasks here",
     "emptyStateCta": "Click to create your first task",
+    "allDoneEmptyTitle": "All tasks completed!",
+    "allDoneEmptyCta": "+ New task",
     "addTaskFooterButton": "Add task"
   },
   "quickAdd": {
@@ -183,6 +209,7 @@
     "habitPlaceholder": "Which habit to build? (Enter)",
     "dailyPlaceholder": "What is your routine? (Enter)",
     "todoPlaceholder": "What needs to be done? (Enter)",
+    "titleInputAria": "New task title",
     "dueLabel": "Due:",
     "dueNoDate": "No date",
     "dueToday": "Today",
@@ -401,6 +428,7 @@
       "singleDueTimeHint": "A single time acts as a deadline. For an event with duration, also set the End Time.",
       "eventTimeRangeHint": "Event from {start} to {end} — stays \"In progress\" during that window and only becomes overdue after {end}.",
       "reminderLabel": "Reminder",
+      "reminderRequiresDueDate": "Set a due date first to enable reminders",
       "inAppReminderAlertInfo": "You will receive an alert in your in-app notifications ({when}). If you also want an email reminder, toggle the option below.",
       "reminders": {
         "NONE": "No reminder",
@@ -483,7 +511,10 @@
   },
   "detailsPopover": {
     "dialogAria": "Quick task details",
+    "readOnlyNotice": "Workspace in read-only mode — view only.",
+    "readOnlyUpgradeCta": "Unlock",
     "titlePlaceholder": "Task title...",
+    "titleInputAria": "Task title",
     "descriptionLabel": "Description",
     "descriptionPlaceholder": "Add a description or notes...",
     "doneEditing": "Done",
@@ -508,6 +539,7 @@
       "closeAria": "Close",
       "closeTitle": "Close",
       "dateFrozenTitle": "Date frozen: deadline expired in Hardcore Mode",
+      "dateReadOnlyTitle": "Workspace in read-only mode",
       "noDueDate": "No due date",
       "dueTimeBadge": "Time",
       "clearDueTime": "No time",
@@ -574,6 +606,8 @@
       "deleteHistoryHint": "Also removes this session entry from the general statement. XP and coin reversal respects your level floor and never makes your balance negative.",
       "deleteRecordSuccess": "Focus record removed successfully!",
       "deleteRecordError": "Error deleting focus record.",
+      "loadErrorTitle": "Could not load focus history.",
+      "retryButton": "Try again",
       "paginationItemLabel": "sessions"
     },
     "footer": {
@@ -597,6 +631,8 @@
       "editFull": "Full edit",
       "duplicate": "Duplicate",
       "deleteTask": "Delete task",
+      "openLinkButton": "Open link",
+      "maxLengthToast": "Character limit of {max} reached. Extra content was not applied.",
       "rewardsLabelProductivity": "Yield"
     }
   },

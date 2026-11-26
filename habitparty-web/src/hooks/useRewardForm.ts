@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,8 @@ import {
 } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardPrefillDraft } from "@/hooks/useRewardCatalogActions";
+import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type {
   MysteryBoxLootItem,
   PackageLevel,
@@ -26,10 +28,13 @@ import type {
   RewardGroupContext,
   RewardType,
 } from "@/types/reward";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
   adjustSuggestedPriceForCategory,
   calculateSuggestedCouponPrice,
   calculateSuggestedSingleUsePrice,
+  parseLocalizedPrice,
+  resolveSuggestedPackagePrice,
 } from "@/utils/rewardEconomy";
 import {
   buildBatchCouponPayloads,
@@ -38,6 +43,7 @@ import {
   buildSingleRewardFormInput,
   createDefaultLootTuple,
   type LootTuple,
+  MAX_REWARD_TITLE_LENGTH,
 } from "@/utils/rewardFormHelpers";
 import {
   extractRewardGroupBaseTitle,
@@ -62,15 +68,115 @@ const DEFAULT_BATCH_PACKAGES: readonly PackageLevel[] = [
   "Épico",
 ];
 
+function resolvePrefillPackageTitle(
+  baseTitle: string,
+  durationMinutes?: number | null,
+): string {
+  const cleanBase = baseTitle.trim().replace(/\s+/g, " ");
+  if (!cleanBase) return "";
+  if (!durationMinutes || durationMinutes <= 0) {
+    return buildPrefillPackageTitle(cleanBase, durationMinutes);
+  }
+  const suffix = ` (${formatFocusMinutes(durationMinutes)})`;
+  if (cleanBase.toLowerCase().endsWith(suffix.toLowerCase())) {
+    return cleanBase.slice(0, MAX_REWARD_TITLE_LENGTH).trim();
+  }
+  return buildPrefillPackageTitle(cleanBase, durationMinutes);
+}
+
 interface UseRewardFormProps {
   isOpen: boolean;
   rewardToEdit?: Reward | null;
   groupToEdit?: (RewardGroupContext & { activeVariantId?: string }) | null;
   prefillDraft?: RewardPrefillDraft | null;
   existingRewards?: Reward[];
+  restrictToDebtOnly?: boolean;
   onSuccess?: (reward: Reward | Reward[]) => void;
   onGroupSuccess?: (sourceIds: string[], savedRewards: Reward[]) => void;
   onClose: () => void;
+}
+
+interface RewardFormSnapshot {
+  title: string;
+  description: string;
+  price: string;
+  type: RewardType;
+  category: RewardCategory;
+  packageLevel: PackageLevel;
+  baseDurationMinutes: string;
+  selectedIcon: string;
+  lootItems: LootTuple;
+  createMultiplePackages: boolean;
+  selectedBatchPackages: PackageLevel[];
+  groupVariants: EditableGroupVariant[];
+}
+
+function areLootTuplesEqual(a: LootTuple, b: LootTuple): boolean {
+  for (let i = 0; i < 3; i++) {
+    const slotA = a[i];
+    const slotB = b[i];
+    if (
+      slotA.name !== slotB.name ||
+      slotA.icon !== slotB.icon ||
+      slotA.minutes !== slotB.minutes ||
+      slotA.category !== slotB.category ||
+      slotA.description !== slotB.description
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function areGroupVariantsEqual(
+  a: EditableGroupVariant[],
+  b: EditableGroupVariant[],
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const itemA = a[i];
+    const itemB = b[i];
+    if (
+      itemA.localKey !== itemB.localKey ||
+      itemA.id !== itemB.id ||
+      itemA.packageLevel !== itemB.packageLevel ||
+      itemA.durationMinutes !== itemB.durationMinutes ||
+      itemA.price !== itemB.price ||
+      itemA.originalSuffix !== itemB.originalSuffix
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function areRewardFormSnapshotsEqual(
+  a: RewardFormSnapshot,
+  b: RewardFormSnapshot,
+): boolean {
+  if (
+    a.title !== b.title ||
+    a.description !== b.description ||
+    a.price !== b.price ||
+    a.type !== b.type ||
+    a.category !== b.category ||
+    a.packageLevel !== b.packageLevel ||
+    a.baseDurationMinutes !== b.baseDurationMinutes ||
+    a.selectedIcon !== b.selectedIcon ||
+    a.createMultiplePackages !== b.createMultiplePackages ||
+    a.selectedBatchPackages.length !== b.selectedBatchPackages.length
+  ) {
+    return false;
+  }
+  for (let i = 0; i < a.selectedBatchPackages.length; i++) {
+    if (a.selectedBatchPackages[i] !== b.selectedBatchPackages[i]) {
+      return false;
+    }
+  }
+  return (
+    areLootTuplesEqual(a.lootItems, b.lootItems) &&
+    areGroupVariantsEqual(a.groupVariants, b.groupVariants)
+  );
 }
 
 export function useRewardForm({
@@ -79,12 +185,16 @@ export function useRewardForm({
   groupToEdit,
   prefillDraft,
   existingRewards = [],
+  restrictToDebtOnly = false,
   onSuccess,
   onGroupSuccess,
   onClose,
 }: UseRewardFormProps) {
   const t = useTranslations("rewards.hook");
   const tMystery = useTranslations("rewards.mysteryBox");
+  const tOptions = useTranslations("rewards.options");
+  const locale = useLocale() as AppLocale;
+  const isPremium = useUserStore((s) => s.is_Premium);
   const { isGamified } = useExperienceMode();
   const isEditingGroup = Boolean(
     groupToEdit && groupToEdit.variants.length > 1,
@@ -106,7 +216,7 @@ export function useRewardForm({
   const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
   const [hasManuallyEditedPrice, setHasManuallyEditedPrice] = useState(false);
   const [lootItems, setLootItems] = useState<LootTuple>(() =>
-    createDefaultLootTuple(),
+    createDefaultLootTuple("Básico", locale),
   );
   const [hasCustomizedLoot, setHasCustomizedLoot] = useState(false);
   const [createMultiplePackages, setCreateMultiplePackages] = useState(false);
@@ -116,6 +226,11 @@ export function useRewardForm({
   const [groupVariants, setGroupVariants] = useState<EditableGroupVariant[]>(
     [],
   );
+  const [initialSnapshot, setInitialSnapshot] =
+    useState<RewardFormSnapshot | null>(null);
+  const [hydrationTick, setHydrationTick] = useState(0);
+  const needsSnapshotCaptureRef = useRef(false);
+  const targetHydrationTickRef = useRef(0);
 
   const groupTierUsage = useMemo(
     () =>
@@ -128,6 +243,52 @@ export function useRewardForm({
     [existingRewards, title, type, category, rewardToEdit?.id],
   );
 
+  const availableBatchPackageLevels = useMemo(
+    () =>
+      COUPON_PACKAGE_OPTIONS.filter((opt) => {
+        const k = toPackageMessageKey(opt.id);
+        return k !== "NONE" && !groupTierUsage.usedPackageKeys.has(k);
+      }).map((opt) => opt.id),
+    [groupTierUsage.usedPackageKeys],
+  );
+
+  const remainingGroupPackageSlots = Math.max(
+    0,
+    MAX_REWARD_PACKAGES_PER_CARD - groupTierUsage.matchingCount,
+  );
+  const canCreateMultiplePackages =
+    availableBatchPackageLevels.length >= 2 && remainingGroupPackageSlots >= 2;
+
+  useEffect(() => {
+    if (!createMultiplePackages) return;
+    if (!canCreateMultiplePackages) {
+      setCreateMultiplePackages(false);
+      return;
+    }
+    setSelectedBatchPackages((prev) => {
+      const valid = prev.filter((pkg) => {
+        const k = toPackageMessageKey(pkg);
+        return k !== "NONE" && !groupTierUsage.usedPackageKeys.has(k);
+      });
+      if (valid.length > 0 && valid.length === prev.length) {
+        return prev;
+      }
+      if (valid.length > 0) {
+        return valid;
+      }
+      return availableBatchPackageLevels.slice(
+        0,
+        Math.min(remainingGroupPackageSlots, 3),
+      );
+    });
+  }, [
+    createMultiplePackages,
+    canCreateMultiplePackages,
+    availableBatchPackageLevels,
+    remainingGroupPackageSlots,
+    groupTierUsage.usedPackageKeys,
+  ]);
+
   useEffect(() => {
     if (!isOpen || isEditingGroup || isEditing) return;
     const currentPkgKey = toPackageMessageKey(packageLevel);
@@ -138,7 +299,9 @@ export function useRewardForm({
       return;
     }
 
+    let didAdjustPackage = false;
     if (toRewardTypeMessageKey(type) === "TimeBased") {
+      didAdjustPackage = true;
       const nextAvailable = COUPON_PACKAGE_OPTIONS.find((opt) => {
         const k = toPackageMessageKey(opt.id);
         return k !== "NONE" && !groupTierUsage.usedPackageKeys.has(k);
@@ -150,28 +313,40 @@ export function useRewardForm({
             setBaseDurationMinutes(String(nextAvailable.suggestedMinutes));
             if (prefillDraft && !hasManuallyEditedTitleRef.current) {
               setTitle(
-                buildPrefillPackageTitle(
+                resolvePrefillPackageTitle(
                   prefillDraft.title,
                   nextAvailable.suggestedMinutes,
                 ),
               );
             }
           }
-          if (typeof nextAvailable.suggestedPrice === "number") {
-            setPrice(String(nextAvailable.suggestedPrice));
+          if (
+            nextAvailable.suggestedMinutes ||
+            typeof nextAvailable.suggestedPrice === "number"
+          ) {
+            setPrice(
+              String(resolveSuggestedPackagePrice(nextAvailable, category)),
+            );
           }
         }
       } else {
         setPackageLevel("Nenhum");
       }
     } else if (toRewardTypeMessageKey(type) === "SingleUse") {
+      didAdjustPackage = true;
       setPackageLevel("Nenhum");
+    }
+
+    if (didAdjustPackage && needsSnapshotCaptureRef.current) {
+      targetHydrationTickRef.current += 1;
+      setHydrationTick(targetHydrationTickRef.current);
     }
   }, [
     isOpen,
     isEditingGroup,
     isEditing,
     type,
+    category,
     packageLevel,
     hasManuallyEditedPrice,
     groupTierUsage.usedPackageKeys,
@@ -180,6 +355,11 @@ export function useRewardForm({
 
   useEffect(() => {
     if (!isOpen) return;
+
+    needsSnapshotCaptureRef.current = true;
+    targetHydrationTickRef.current += 1;
+    setHydrationTick(targetHydrationTickRef.current);
+    setInitialSnapshot(null);
 
     setHasManuallyChangedIcon(false);
     setHasManuallyEditedPrice(false);
@@ -229,7 +409,7 @@ export function useRewardForm({
           };
         }),
       );
-      setLootItems(createDefaultLootTuple());
+      setLootItems(createDefaultLootTuple("Básico", locale));
       setHasCustomizedLoot(false);
       return;
     }
@@ -273,7 +453,7 @@ export function useRewardForm({
         ]);
         setHasCustomizedLoot(true);
       } else {
-        setLootItems(createDefaultLootTuple(tierObj.id));
+        setLootItems(createDefaultLootTuple(tierObj.id, locale));
         setHasCustomizedLoot(false);
       }
       return;
@@ -293,30 +473,80 @@ export function useRewardForm({
         wasSingleUseDebtRef.current = true;
         setPackageLevel("Nenhum");
         setBaseDurationMinutes("30");
-        setPrice(String(DEBT_DEFAULT_UNIT_PRICE));
-        setSelectedIcon(prefillDraft.icon || "flame");
-        setLootItems(createDefaultLootTuple());
+        setPrice(String(prefillDraft.price ?? DEBT_DEFAULT_UNIT_PRICE));
+        setSelectedIcon(prefillDraft.icon || "receipt");
+        setLootItems(createDefaultLootTuple("Básico", locale));
         setHasCustomizedLoot(false);
         return;
       }
 
+      if (prefillDraft.type === "MysteryBox") {
+        const draftTier = getMysteryBoxTier(
+          prefillDraft.suggestedPackageLevel || "Básico",
+        );
+        setTitle(prefillDraft.title);
+        setDescription(prefillDraft.description || "");
+        setType("MysteryBox");
+        setCategory(draftIsDebt ? "Sorte" : draftCat);
+        lastRegularCategoryRef.current = draftIsDebt ? "Sorte" : draftCat;
+        wasSingleUseDebtRef.current = false;
+        setPackageLevel(draftTier.id);
+        setBaseDurationMinutes("30");
+        setPrice(String(prefillDraft.price ?? draftTier.recommendedPrice));
+        setSelectedIcon(prefillDraft.icon || "mystery_box");
+        setLootItems(createDefaultLootTuple(draftTier.id, locale));
+        setHasCustomizedLoot(false);
+        return;
+      }
+
+      if (prefillDraft.type === "SingleUse") {
+        const safeCat = draftIsDebt ? "Nenhum" : draftCat;
+        const suggestedSinglePkg =
+          prefillDraft.suggestedPackageLevel || "Nenhum";
+        const suggestedSinglePrice =
+          prefillDraft.price ??
+          calculateSuggestedSingleUsePrice(suggestedSinglePkg, safeCat) ??
+          4;
+        setTitle(prefillDraft.title);
+        setDescription(prefillDraft.description || "");
+        setType("SingleUse");
+        setCategory(safeCat);
+        lastRegularCategoryRef.current = safeCat;
+        wasSingleUseDebtRef.current = false;
+        setPackageLevel(suggestedSinglePkg);
+        setBaseDurationMinutes("30");
+        setPrice(String(suggestedSinglePrice));
+        setSelectedIcon(prefillDraft.icon || "gamepad");
+        setLootItems(createDefaultLootTuple("Básico", locale));
+        setHasCustomizedLoot(false);
+        return;
+      }
+
+      const safeDraftCat = draftIsDebt ? "Nenhum" : draftCat;
       const draftPkg =
         COUPON_PACKAGE_OPTIONS.find(
           (opt) => opt.id === (prefillDraft.suggestedPackageLevel || "Premium"),
         ) ?? COUPON_PACKAGE_OPTIONS[2];
+      const resolvedDuration =
+        prefillDraft.baseDurationMinutes ?? draftPkg.suggestedMinutes ?? 60;
       setTitle(
-        buildPrefillPackageTitle(prefillDraft.title, draftPkg.suggestedMinutes),
+        resolvePrefillPackageTitle(prefillDraft.title, resolvedDuration),
       );
       setDescription(prefillDraft.description || "");
-      setType(prefillDraft.type || "TimeBased");
-      setCategory(draftIsDebt ? "Nenhum" : draftCat);
-      lastRegularCategoryRef.current = draftIsDebt ? "Nenhum" : draftCat;
+      setType("TimeBased");
+      setCategory(safeDraftCat);
+      lastRegularCategoryRef.current = safeDraftCat;
       wasSingleUseDebtRef.current = false;
       setPackageLevel(draftPkg.id);
-      setBaseDurationMinutes(String(draftPkg.suggestedMinutes ?? 60));
-      setPrice(String(draftPkg.suggestedPrice ?? 15));
+      setBaseDurationMinutes(String(resolvedDuration));
+      setPrice(
+        String(
+          prefillDraft.price ??
+            calculateSuggestedCouponPrice(resolvedDuration, safeDraftCat),
+        ),
+      );
       setSelectedIcon(prefillDraft.icon || "gamepad");
-      setLootItems(createDefaultLootTuple());
+      setLootItems(createDefaultLootTuple("Básico", locale));
       setHasCustomizedLoot(false);
       return;
     }
@@ -333,9 +563,9 @@ export function useRewardForm({
     setPackageLevel("Nenhum");
     setBaseDurationMinutes("30");
     setSelectedIcon("gamepad");
-    setLootItems(createDefaultLootTuple());
+    setLootItems(createDefaultLootTuple("Básico", locale));
     setHasCustomizedLoot(false);
-  }, [isOpen, rewardToEdit, groupToEdit, prefillDraft]);
+  }, [isOpen, rewardToEdit, groupToEdit, prefillDraft, locale]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,6 +584,7 @@ export function useRewardForm({
         selectedIcon,
         type,
         category,
+        formatPackageLabel: (pkgKey) => tOptions(`packages.${pkgKey}`),
       });
       if (!built.ok) {
         toast.error(t(built.errorKey));
@@ -436,7 +667,7 @@ export function useRewardForm({
       return;
     }
 
-    const numericPrice = Number.parseFloat(price.replace(",", "."));
+    const numericPrice = parseLocalizedPrice(price);
     if (Number.isNaN(numericPrice) || numericPrice <= 0) {
       toast.error(t("invalidPrice"));
       return;
@@ -478,6 +709,7 @@ export function useRewardForm({
         baseDurationMinutes,
         selectedIcon,
         lootItems,
+        locale,
       });
 
       if (isEditing && rewardToEdit) {
@@ -556,7 +788,11 @@ export function useRewardForm({
   };
 
   const handleTypeChange = (newType: RewardType) => {
-    if (newType !== "SingleUse" && type === "SingleUse") {
+    if (restrictToDebtOnly && newType !== "SingleUse") {
+      return;
+    }
+    const previousType = type;
+    if (newType !== "SingleUse" && previousType === "SingleUse") {
       wasSingleUseDebtRef.current = toCategoryMessageKey(category) === "DEBT";
     }
     setType(newType);
@@ -572,24 +808,36 @@ export function useRewardForm({
         packageLevel === "Nenhum" || packageLevel === "NONE"
           ? "Básico"
           : packageLevel;
+      const tierObj = getMysteryBoxTier(targetLevel);
       setPackageLevel(targetLevel);
       if (!isEditing) {
-        const tierObj = getMysteryBoxTier(targetLevel);
         setPrice(String(tierObj.recommendedPrice));
       } else if (price === "" || price === "0") {
-        setPrice("5");
+        setPrice(String(tierObj.recommendedPrice));
       }
-      setSelectedIcon("mystery_box");
+      if (!hasCustomizedLoot) {
+        setLootItems(createDefaultLootTuple(tierObj.id, locale));
+      }
+      if (!hasManuallyChangedIcon) {
+        setSelectedIcon("mystery_box");
+      }
       if (isDefaultBoxTitle(title)) {
+        const tierKey = tierObj.backendPackageLevel;
+        const tierNamespace = isGamified ? "tiers" : "tiersProductivity";
         setTitle(
-          t(
-            isGamified
-              ? "defaultMysteryBoxTitle"
-              : "defaultMysteryBoxTitleProductivity",
-          ),
+          targetLevel === "Básico"
+            ? t(
+                isGamified
+                  ? "defaultMysteryBoxTitle"
+                  : "defaultMysteryBoxTitleProductivity",
+              )
+            : tMystery(`${tierNamespace}.${tierKey}.name`),
         );
       }
     } else if (newType === "SingleUse") {
+      if (previousType === "MysteryBox" && isDefaultBoxTitle(title)) {
+        setTitle("");
+      }
       if (wasSingleUseDebtRef.current) {
         setCategory("Dívida");
         setPackageLevel("Nenhum");
@@ -600,11 +848,14 @@ export function useRewardForm({
         setPackageLevel("Nenhum");
         setPrice("4");
       }
-      if (selectedIcon === "mystery_box") {
+      if (!hasManuallyChangedIcon && selectedIcon === "mystery_box") {
         setSelectedIcon("gamepad");
       }
     } else if (newType === "TimeBased") {
-      if (selectedIcon === "mystery_box") {
+      if (previousType === "MysteryBox" && isDefaultBoxTitle(title)) {
+        setTitle("");
+      }
+      if (!hasManuallyChangedIcon && selectedIcon === "mystery_box") {
         setSelectedIcon("gamepad");
       }
       if (!isEditing) {
@@ -636,7 +887,7 @@ export function useRewardForm({
       toPackageMessageKey(packageLevel) ===
         toPackageMessageKey(tierPackageLevel) &&
       (typeof suggestedPrice !== "number" ||
-        Number.parseFloat(price.replace(",", ".")) === suggestedPrice);
+        parseLocalizedPrice(price) === suggestedPrice);
 
     if (isAlreadySelected) {
       setPackageLevel("Nenhum");
@@ -655,7 +906,11 @@ export function useRewardForm({
     setSelectedBatchPackages((prev) => {
       const exists = prev.some((item) => toPackageMessageKey(item) === key);
       if (exists) {
-        if (prev.length <= 1) return prev;
+        const availableSelected = prev.filter(
+          (item) =>
+            !groupTierUsage.usedPackageKeys.has(toPackageMessageKey(item)),
+        );
+        if (availableSelected.length <= 1) return prev;
         return prev.filter((item) => toPackageMessageKey(item) !== key);
       }
       return [...prev, pkgLevel];
@@ -670,10 +925,12 @@ export function useRewardForm({
     setPackageLevel(tierId);
     setPrice(String(recommendedPrice));
     setHasManuallyEditedPrice(false);
-    setSelectedIcon("mystery_box");
+    if (!hasManuallyChangedIcon) {
+      setSelectedIcon("mystery_box");
+    }
     const tierObj = getMysteryBoxTier(tierId);
     if (!hasCustomizedLoot) {
-      setLootItems(createDefaultLootTuple(tierObj.id));
+      setLootItems(createDefaultLootTuple(tierObj.id, locale));
     } else {
       setLootItems((prev) => [
         {
@@ -701,8 +958,11 @@ export function useRewardForm({
     }
     if (isDefaultBoxTitle(title)) {
       const key = toPackageMessageKey(tierId);
+      const tierNamespace = isGamified ? "tiers" : "tiersProductivity";
       const fallbackTierName =
-        key !== "NONE" ? tMystery(`tiers.${key}.name`) : `Caixa ${tierId}`;
+        key !== "NONE"
+          ? tMystery(`${tierNamespace}.${key}.name`)
+          : `Caixa ${tierId}`;
       setTitle(tierName || fallbackTierName);
     }
   };
@@ -734,7 +994,7 @@ export function useRewardForm({
     hasManuallyEditedTitleRef.current = true;
     setTitle(newTitle);
     if (!hasManuallyChangedIcon && type !== "MysteryBox") {
-      const suggested = suggestRewardIconFromTitle(newTitle);
+      const suggested = suggestRewardIconFromTitle(newTitle, isPremium);
       if (suggested) {
         setSelectedIcon(suggested);
       }
@@ -761,7 +1021,7 @@ export function useRewardForm({
     ) {
       const parsed = Number.parseInt(newDuration, 10);
       setTitle(
-        buildPrefillPackageTitle(
+        resolvePrefillPackageTitle(
           prefillDraft.title,
           Number.isFinite(parsed) && parsed >= 5 ? parsed : null,
         ),
@@ -805,6 +1065,9 @@ export function useRewardForm({
   };
 
   const handleDebtToggleChange = (isDebt: boolean) => {
+    if (restrictToDebtOnly && !isDebt) {
+      return;
+    }
     wasSingleUseDebtRef.current = isDebt;
     if (isDebt) {
       if (toCategoryMessageKey(category) !== "DEBT") {
@@ -908,11 +1171,71 @@ export function useRewardForm({
       ).length
     : 0;
 
+  const currentSnapshot = useMemo<RewardFormSnapshot>(
+    () => ({
+      title,
+      description,
+      price,
+      type,
+      category,
+      packageLevel,
+      baseDurationMinutes,
+      selectedIcon,
+      lootItems,
+      createMultiplePackages,
+      selectedBatchPackages,
+      groupVariants,
+    }),
+    [
+      title,
+      description,
+      price,
+      type,
+      category,
+      packageLevel,
+      baseDurationMinutes,
+      selectedIcon,
+      lootItems,
+      createMultiplePackages,
+      selectedBatchPackages,
+      groupVariants,
+    ],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      needsSnapshotCaptureRef.current = false;
+      setInitialSnapshot(null);
+      return;
+    }
+    if (
+      needsSnapshotCaptureRef.current &&
+      hydrationTick === targetHydrationTickRef.current
+    ) {
+      needsSnapshotCaptureRef.current = false;
+      setInitialSnapshot(currentSnapshot);
+    }
+  }, [isOpen, hydrationTick, currentSnapshot]);
+
+  const isDirty =
+    isOpen &&
+    initialSnapshot !== null &&
+    !areRewardFormSnapshotsEqual(initialSnapshot, currentSnapshot);
+
+  const handleCreateMultiplePackagesChange = (checked: boolean) => {
+    if (checked && !canCreateMultiplePackages) {
+      return;
+    }
+    setCreateMultiplePackages(checked);
+  };
+
   return {
     isEditing,
     isEditingGroup,
     isPending,
+    isDirty,
     groupTierUsage,
+    canCreateMultiplePackages,
     groupVariants,
     removedGroupVariantsCount,
     handleAddGroupVariant,
@@ -938,7 +1261,7 @@ export function useRewardForm({
     setBaseDurationMinutes: syncDurationAndPrefillTitle,
     handleBaseDurationChange,
     createMultiplePackages,
-    setCreateMultiplePackages,
+    setCreateMultiplePackages: handleCreateMultiplePackagesChange,
     selectedBatchPackages,
     toggleBatchPackage,
     selectedIcon,

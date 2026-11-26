@@ -32,18 +32,20 @@ export function useProfilePhotoUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
+  const activePreviewBlobRef = useRef<string | null>(null);
   const committedBlobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     return () => {
+      const currentBlob = activePreviewBlobRef.current;
       if (
-        previewUrl?.startsWith("blob:") &&
-        previewUrl !== committedBlobUrlRef.current
+        currentBlob?.startsWith("blob:") &&
+        currentBlob !== committedBlobUrlRef.current
       ) {
-        URL.revokeObjectURL(previewUrl);
+        URL.revokeObjectURL(currentBlob);
       }
     };
-  }, [previewUrl]);
+  }, []);
 
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -56,13 +58,17 @@ export function useProfilePhotoUpload({
       return;
     }
 
+    const previousBlob = activePreviewBlobRef.current;
+    if (
+      previousBlob?.startsWith("blob:") &&
+      previousBlob !== committedBlobUrlRef.current
+    ) {
+      URL.revokeObjectURL(previousBlob);
+    }
+
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl((prev) => {
-      if (prev?.startsWith("blob:") && prev !== committedBlobUrlRef.current) {
-        URL.revokeObjectURL(prev);
-      }
-      return objectUrl;
-    });
+    activePreviewBlobRef.current = objectUrl;
+    setPreviewUrl(objectUrl);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -81,19 +87,28 @@ export function useProfilePhotoUpload({
         const serverPhotoUrl = res.data?.profilePhotoUrl;
         const resolvedPhotoUrl = serverPhotoUrl ?? objectUrl;
         committedBlobUrlRef.current = serverPhotoUrl ? null : objectUrl;
-        setPreviewUrl(resolvedPhotoUrl);
 
         const hadPreset = Boolean(useUserStore.getState().user?.avatarPreset);
         updateUserPartial({
           profilePhotoUrl: resolvedPhotoUrl,
           ...(hadPreset ? { avatarPreset: null } : {}),
         });
+
+        // Limpa previewUrl assim que a URL definitiva é gravada no store,
+        // evitando mascarar presets simbólicos equipados logo em seguida.
         if (serverPhotoUrl) {
+          activePreviewBlobRef.current = null;
+          setPreviewUrl(null);
           URL.revokeObjectURL(objectUrl);
+        } else {
+          setPreviewUrl(objectUrl);
         }
       } else {
         toast.error(res.error || messages.photoErrorToast);
         URL.revokeObjectURL(objectUrl);
+        if (activePreviewBlobRef.current === objectUrl) {
+          activePreviewBlobRef.current = null;
+        }
         setPreviewUrl(null);
       }
     });
@@ -155,9 +170,5 @@ export function useProfilePhotoUpload({
     isDraggingOver,
     fileInputProps,
     dropzoneHandlers,
-    handleFileChange,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
   };
 }

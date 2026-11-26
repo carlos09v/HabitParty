@@ -8,6 +8,10 @@ spring:
     username: sa
     password: ""
 
+  sql:
+    init:
+      mode: always
+
   jpa:
     open-in-view: false
     database-platform: org.hibernate.dialect.H2Dialect
@@ -16,8 +20,10 @@ spring:
     show-sql: false
     properties:
       hibernate:
+        default_batch_fetch_size: 50
         jdbc:
           batch_size: 50
+          time_zone: UTC
         order_inserts: true
         order_updates: true
 

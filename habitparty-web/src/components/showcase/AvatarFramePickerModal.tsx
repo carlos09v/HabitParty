@@ -10,10 +10,16 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useMemo, useState, useTransition } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { updateShowcaseProfileAction } from "@/actions/showcaseActions";
-import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
@@ -27,25 +33,25 @@ import {
   AVATAR_PRESETS,
   type AvatarPresetId,
   isAvatarPresetUnlocked,
+  resolveAvatarPreset,
+} from "@/constants/avatarPresets";
+import {
   isProfileTitleUnlocked,
   PROFILE_TITLES,
   type ProfileTitleCode,
-  resolveAvatarPreset,
   resolveProfileTitleLabel,
 } from "@/constants/cosmetics";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import {
-  useActiveAvatarFrame,
-  useAvatarFrameStore,
-} from "@/store/avatarFrameStore";
-import { useUserStore } from "@/store/userStore";
+import { useUIStore } from "@/store/uiStore";
+import { useActiveAvatarFrame, useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
   ShowcaseStatsResponseDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
-import { cn, handleTabListKeyDown } from "@/utils";
+import { cn } from "@/utils/cn";
+import { handleTabListKeyDown } from "@/utils/showcaseUtils";
 import { soundEffects } from "@/utils/soundEffects";
 
 type IdentityTab = "frames" | "titles" | "avatars";
@@ -89,25 +95,23 @@ function CosmeticSelectionIndicator({
 interface AvatarFramePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
-  description?: string;
-  onFrameChanged?: (frameId: AvatarFrameId) => void;
   achievements?: AchievementItemResponseDTO[];
   stats?: ShowcaseStatsResponseDTO;
   unlockedArtifactsCount?: number;
   retrospective?: UserRetrospectiveData | null;
+  eligibleRetroArchetypes?: readonly string[];
+  onRequestRetrospective?: () => void;
 }
 
 export function AvatarFramePickerModal({
   isOpen,
   onClose,
-  title,
-  description,
-  onFrameChanged,
   achievements = [],
   stats,
   unlockedArtifactsCount,
   retrospective = null,
+  eligibleRetroArchetypes,
+  onRequestRetrospective,
 }: AvatarFramePickerModalProps) {
   const tIdentity = useTranslations("showcase.identityModal");
   const tFrames = useTranslations("showcase.avatarFrames");
@@ -118,20 +122,43 @@ export function AvatarFramePickerModal({
   const user = useUserStore((s) => s.user);
   const isPremium = useUserStore((s) => s.is_Premium);
   const resolvedCurrentFrame = useActiveAvatarFrame();
-  const currentFrameId = useAvatarFrameStore((s) => s.frameId);
-  const setFrameId = useAvatarFrameStore((s) => s.setFrameId);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
 
   const [activeTab, setActiveTab] = useState<IdentityTab>("frames");
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [nowMs] = useState(() => Date.now());
   const [isPending, startTransition] = useTransition();
   const tabBaseId = useId();
+  const retroRequestedRef = useRef(false);
 
-  const resolvedTotalXp = stats?.totalXp ?? user?.totalXp ?? 0;
+  useEffect(() => {
+    if (!isOpen || activeTab !== "titles") {
+      retroRequestedRef.current = false;
+      return;
+    }
+    if (
+      eligibleRetroArchetypes === undefined &&
+      !retrospective &&
+      !retroRequestedRef.current
+    ) {
+      retroRequestedRef.current = true;
+      onRequestRetrospective?.();
+    }
+  }, [
+    isOpen,
+    activeTab,
+    eligibleRetroArchetypes,
+    retrospective,
+    onRequestRetrospective,
+  ]);
+
+  const resolvedTotalXp = user?.totalXp ?? stats?.totalXp ?? 0;
   const resolvedArtifactsCount =
     unlockedArtifactsCount ?? stats?.unlockedArtifactsCount ?? 0;
   const isFounder = Boolean(user?.isFounder);
   const displayName = user?.fullName || user?.username || "HabitParty";
   const displayPhoto = user?.profilePhotoUrl;
+  const activeEquippedTitle = user?.equippedTitle?.toUpperCase() ?? null;
+  const activeAvatarPreset = user?.avatarPreset?.toLowerCase() ?? null;
 
   const frameStatuses = useMemo(
     () =>
@@ -155,9 +182,18 @@ export function AvatarFramePickerModal({
           achievements,
           unlockedArtifactsCount: resolvedArtifactsCount,
           retrospective,
+          eligibleRetroArchetypes,
+          nowMs,
         }),
       })).sort((a, b) => Number(b.unlocked) - Number(a.unlocked)),
-    [user, achievements, resolvedArtifactsCount, retrospective],
+    [
+      user,
+      achievements,
+      resolvedArtifactsCount,
+      retrospective,
+      eligibleRetroArchetypes,
+      nowMs,
+    ],
   );
 
   const presetStatuses = useMemo(
@@ -209,23 +245,20 @@ export function AvatarFramePickerModal({
     if (!unlocked) {
       if (frameMeta?.isPremium && !isPremium) {
         toast.info(tFrames("upgradeToast"));
-        setIsUpgradeModalOpen(true);
+        openUpgradeModal();
       } else {
         toast.info(tFrames("masteryLockedToast"));
       }
       return;
     }
 
-    const previousFrameId = currentFrameId;
+    const previousFrameId = resolvedCurrentFrame;
     runOptimisticCosmeticUpdate({
       payload: { avatarFrame: frameId },
       applyOptimistic: () => {
-        setFrameId(frameId);
         useUserStore.getState().updateUserPartial({ avatarFrame: frameId });
-        onFrameChanged?.(frameId);
       },
       rollback: () => {
-        setFrameId(previousFrameId);
         useUserStore
           .getState()
           .updateUserPartial({ avatarFrame: previousFrameId });
@@ -233,11 +266,9 @@ export function AvatarFramePickerModal({
       applyServerData: (data) => {
         if (data.avatarFrame) {
           const canonicalFrame = resolveAvatarFrameId(data.avatarFrame);
-          setFrameId(canonicalFrame);
           useUserStore
             .getState()
             .updateUserPartial({ avatarFrame: canonicalFrame });
-          onFrameChanged?.(canonicalFrame);
         }
       },
       successMessage: tFrames("successToast", {
@@ -299,7 +330,7 @@ export function AvatarFramePickerModal({
     if (!unlocked) {
       if (presetMeta?.unlockType === "PREMIUM" && !isPremium) {
         toast.info(tFrames("upgradeToast"));
-        setIsUpgradeModalOpen(true);
+        openUpgradeModal();
       } else {
         toast.info(tPresets("lockedToast"));
       }
@@ -337,8 +368,8 @@ export function AvatarFramePickerModal({
     });
   };
 
-  const resolvedTitle = title ?? tIdentity("title");
-  const resolvedDescription = description ?? tIdentity("subtitle");
+  const resolvedTitle = tIdentity("title");
+  const resolvedDescription = tIdentity("subtitle");
 
   const tabs = [
     {
@@ -367,69 +398,69 @@ export function AvatarFramePickerModal({
     },
   ];
 
-  const activeEquippedTitle = user?.equippedTitle?.toUpperCase() ?? null;
-  const activeAvatarPreset = user?.avatarPreset?.toLowerCase() ?? null;
-
   return (
-    <>
-      <BaseModal
-        isOpen={isOpen}
-        onClose={onClose}
-        maxWidth="max-w-3xl"
-        borderColor="border-gold/30"
-        headerIcon={<Paintbrush size={18} aria-hidden="true" />}
-        headerIconClassName="bg-gold/15 border-gold/30 text-amber-700 dark:text-gold"
-        title={resolvedTitle}
-        description={resolvedDescription}
-      >
-        <div className="flex flex-col gap-4">
-          {/* ABAS PRINCIPAIS DE IDENTIDADE VISUAL (Molduras | Títulos | Avatares) */}
-          <div
-            role="tablist"
-            aria-label={tIdentity("tabsNavAria")}
-            className="flex items-center gap-1 border-b border-neutral-700 dark:border-primary/20 overflow-x-auto custom-scrollbar"
-          >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isSelected = activeTab === tab.id;
-              const tabId = `${tabBaseId}-tab-${tab.id}`;
-              return (
-                <button
-                  key={tab.id}
-                  id={tabId}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSelected}
-                  tabIndex={isSelected ? 0 : -1}
-                  onKeyDown={handleTabListKeyDown}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "relative inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
-                    "after:content-[''] after:absolute after:inset-x-1 after:bottom-0 after:border-b-[3px] after:transition-opacity",
-                    isSelected
-                      ? "text-amber-700 dark:text-gold after:border-amber-600 dark:after:border-gold after:opacity-100"
-                      : "text-neutral-400 hover:text-neutral-100 after:border-transparent after:opacity-0",
-                  )}
-                >
-                  <Icon size={15} aria-hidden="true" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      preventClose={isPending}
+      maxWidth="max-w-3xl"
+      borderColor="border-gold/30"
+      headerIcon={<Paintbrush size={18} aria-hidden="true" />}
+      headerIconClassName="bg-gold/15 border-gold/30 text-amber-700 dark:text-gold"
+      title={resolvedTitle}
+      description={resolvedDescription}
+    >
+      <div className="flex flex-col gap-4">
+        {/* ABAS PRINCIPAIS DE IDENTIDADE VISUAL (Molduras | Títulos | Avatares) */}
+        <div
+          role="tablist"
+          aria-label={tIdentity("tabsNavAria")}
+          className="flex items-center gap-1 border-b border-neutral-700 dark:border-primary/20 overflow-x-auto custom-scrollbar"
+        >
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isSelected = activeTab === tab.id;
+            const tabId = `${tabBaseId}-tab-${tab.id}`;
+            const panelId = `${tabBaseId}-panel-${tab.id}`;
+            return (
+              <button
+                key={tab.id}
+                id={tabId}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-controls={panelId}
+                tabIndex={isSelected ? 0 : -1}
+                onKeyDown={handleTabListKeyDown}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "relative inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+                  "after:content-[''] after:absolute after:inset-x-1 after:bottom-0 after:border-b-[3px] after:transition-opacity",
+                  isSelected
+                    ? "text-amber-700 dark:text-gold after:border-amber-600 dark:after:border-gold after:opacity-100 forced-colors:outline-2 forced-colors:outline-solid forced-colors:outline-[Highlight]"
+                    : "text-neutral-400 hover:text-neutral-100 after:border-transparent after:opacity-0",
+                )}
+              >
+                <Icon size={15} aria-hidden="true" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* ABA 1: MOLDURAS DE AVATAR (VIP + MAESTRIA) */}
+        {/* ABA 1: MOLDURAS DE AVATAR (VIP + MAESTRIA) */}
+        {activeTab === "frames" && (
           <div
+            id={`${tabBaseId}-panel-frames`}
             role="tabpanel"
             aria-labelledby={`${tabBaseId}-tab-frames`}
-            hidden={activeTab !== "frames"}
           >
             <div className="flex flex-col gap-4 pt-1">
               {!isPremium && (
                 <div className="flex items-center justify-end">
                   <button
                     type="button"
-                    onClick={() => setIsUpgradeModalOpen(true)}
+                    onClick={openUpgradeModal}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-tiny font-bold bg-gold/15 text-amber-800 dark:text-gold border border-gold/40 hover:bg-gold/25 transition-colors cursor-pointer shrink-0"
                   >
                     <Crown size={12} className="stroke-2" aria-hidden="true" />
@@ -517,12 +548,14 @@ export function AvatarFramePickerModal({
               </div>
             </div>
           </div>
+        )}
 
-          {/* ABA 2: TÍTULOS EQUIPÁVEIS ABAIXO DO NOME */}
+        {/* ABA 2: TÍTULOS EQUIPÁVEIS ABAIXO DO NOME */}
+        {activeTab === "titles" && (
           <div
+            id={`${tabBaseId}-panel-titles`}
             role="tabpanel"
             aria-labelledby={`${tabBaseId}-tab-titles`}
-            hidden={activeTab !== "titles"}
           >
             <div className="flex flex-col gap-3 pt-1">
               <button
@@ -614,12 +647,14 @@ export function AvatarFramePickerModal({
               </div>
             </div>
           </div>
+        )}
 
-          {/* ABA 3: AVATARES SIMBÓLICOS POR PATENTE & STATUS */}
+        {/* ABA 3: AVATARES SIMBÓLICOS POR PATENTE & STATUS */}
+        {activeTab === "avatars" && (
           <div
+            id={`${tabBaseId}-panel-avatars`}
             role="tabpanel"
             aria-labelledby={`${tabBaseId}-tab-avatars`}
-            hidden={activeTab !== "avatars"}
           >
             <div className="flex flex-col gap-3 pt-1">
               <button
@@ -733,15 +768,8 @@ export function AvatarFramePickerModal({
               </div>
             </div>
           </div>
-        </div>
-      </BaseModal>
-
-      {isUpgradeModalOpen && (
-        <LazyUpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      )}
-    </>
+        )}
+      </div>
+    </BaseModal>
   );
 }

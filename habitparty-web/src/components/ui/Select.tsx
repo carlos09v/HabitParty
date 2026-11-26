@@ -6,20 +6,13 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { SelectItem, SelectOption, SelectProps } from "@/types/ui";
-import { cn } from "@/utils";
+import { cn, normalizeSearchText } from "@/utils";
 
 function normalizeOption(option: SelectItem): SelectOption {
   if (typeof option === "string") {
     return { value: option, label: option };
   }
   return option;
-}
-
-function normalizeSearchText(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
 }
 
 export function Select({
@@ -161,6 +154,7 @@ export function Select({
     toggle,
     coords,
     shouldRenderPortal,
+    portalContainer,
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align: align ?? (isInline ? "center" : "left"),
@@ -567,7 +561,7 @@ export function Select({
         aria-expanded={isOpen}
         aria-controls={isOpen ? listboxId : undefined}
         aria-label={ariaLabel}
-        aria-invalid={error ? true : undefined}
+        aria-invalid={Boolean(error)}
         aria-describedby={describedBy}
         className={cn(
           "transition-colors flex items-center cursor-pointer select-none",
@@ -590,12 +584,12 @@ export function Select({
               : cn(
                   "w-full rounded-lg text-left justify-between",
                   compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
-                  "bg-card border border-neutral-600 text-neutral-50 shadow-xs",
-                  "dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none",
-                  "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus-visible:ring-gold dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background",
+                  "bg-card border border-neutral-500/80 text-neutral-50 shadow-xs",
+                  "dark:bg-primary-dark/20 dark:border-primary-light/40 dark:shadow-none",
+                  "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background dark:focus-visible:ring-offset-2",
                   isOpen
                     ? "border-primary ring-2 ring-primary/15 dark:ring-0 dark:border-primary-light bg-card dark:bg-primary-dark/30 dark:shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary-light)_30%,transparent)]"
-                    : "hover:border-neutral-500 dark:hover:border-primary/50",
+                    : "hover:border-neutral-400 dark:hover:border-primary-light/60",
                   error && "border-danger-500/80",
                   currentOption ? "text-neutral-50" : "text-neutral-400",
                 ),
@@ -633,7 +627,9 @@ export function Select({
       {isOpen &&
         !disabled &&
         (shouldRenderPortal
-          ? coords && createPortal(dropdownMenu, document.body)
+          ? coords &&
+            portalContainer &&
+            createPortal(dropdownMenu, portalContainer)
           : dropdownMenu)}
 
       {error && !isAutoWidth && (

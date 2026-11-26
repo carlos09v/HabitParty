@@ -1,9 +1,8 @@
-"use client";
-
 import { useTranslations } from "next-intl";
 import type { AvatarFrameId } from "@/constants/avatarFrames";
 import type { FriendConnectionItem } from "@/types/social";
-import type { LevelProgress, UserLevelTier } from "@/utils";
+import type { LevelProgress } from "@/utils/levels";
+import type { UserLevelTier } from "@/utils/progression";
 import { PyramidTierRow } from "./PyramidTierRow";
 import { getTierStatus } from "./tierStatus";
 import { EMPTY_FRIENDS, type EraTierGroup } from "./useProgressionPyramid";

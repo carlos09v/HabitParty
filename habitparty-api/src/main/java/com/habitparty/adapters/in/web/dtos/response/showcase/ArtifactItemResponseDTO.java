@@ -2,11 +2,10 @@ package com.habitparty.adapters.in.web.dtos.response.showcase;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase.ArtifactProgressItem;
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
 import com.habitparty.core.domain.entities.achievement.Artifact;
 import com.habitparty.core.domain.entities.achievement.UserArtifact;
 import com.habitparty.core.domain.enums.AchievementRarity;
@@ -25,12 +24,6 @@ public record ArtifactItemResponseDTO(
     String obtainedSource,
     boolean seen) {
 
-  private static OffsetDateTime toUtcOffsetDateTime(LocalDateTime raw) {
-    return raw != null
-        ? raw.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
-        : null;
-  }
-
   public static ArtifactItemResponseDTO fromDomain(ArtifactProgressItem item) {
     Artifact a = item.artifact();
     return new ArtifactItemResponseDTO(
@@ -42,7 +35,7 @@ public record ArtifactItemResponseDTO(
         a.getRequiredAchievementCode(),
         a.getDisplayOrder(),
         item.unlocked(),
-        toUtcOffsetDateTime(item.unlockedAt()),
+        UtcDateTimeMapper.toUtcOffsetDateTime(item.unlockedAt()),
         item.obtainedSource(),
         item.seen());
   }
@@ -61,7 +54,7 @@ public record ArtifactItemResponseDTO(
         artifact.getRequiredAchievementCode(),
         artifact.getDisplayOrder(),
         true,
-        toUtcOffsetDateTime(rawUnlockedAt),
+        UtcDateTimeMapper.toUtcOffsetDateTime(rawUnlockedAt),
         userArtifact != null ? userArtifact.getObtainedSource() : artifact.getSourceType().name(),
         userArtifact != null && userArtifact.isSeen());
   }

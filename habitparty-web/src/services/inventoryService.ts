@@ -1,12 +1,15 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
-import { getRequestLocale } from "@/i18n/request";
 import { getRewardsData } from "@/services/rewardService";
 import type {
   InventoryItem,
   InventoryItemResponseDTO,
 } from "@/types/inventory";
-import { mapAndGroupInventory } from "@/utils/inventoryMapper";
+import {
+  createBuiltInDropDescriptionResolver,
+  mapAndGroupInventory,
+} from "@/utils/inventoryMapper";
 
 export interface InventoryPageData {
   items: InventoryItem[];
@@ -38,11 +41,15 @@ export async function getRawInventoryItems(): Promise<
  * enriquecendo metadados visuais (categoria e descrição) a partir do catálogo cacheado de recompensas.
  */
 export async function getInventoryData(): Promise<InventoryPageData> {
-  const [inventoryData, { rewards }, locale] = await Promise.all([
+  const [inventoryData, { rewards }, tTiers] = await Promise.all([
     getRawInventoryItems(),
     getRewardsData(),
-    getRequestLocale(),
+    getTranslations("rewards.mysteryBox.tiers"),
   ]);
-  const items = mapAndGroupInventory(inventoryData, rewards, locale);
+  const items = mapAndGroupInventory(
+    inventoryData,
+    rewards,
+    createBuiltInDropDescriptionResolver(tTiers),
+  );
   return { items };
 }

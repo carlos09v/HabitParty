@@ -8,6 +8,7 @@ interface TaskActionControlProps {
   isHabit: boolean;
   isDaily?: boolean;
   completed?: boolean;
+  disabled?: boolean;
   onToggle?: () => void;
   onDelta?: (delta: number) => void;
   isCompact?: boolean;
@@ -24,6 +25,7 @@ export function TaskActionControl({
   isHabit,
   isDaily: propIsDaily,
   completed = false,
+  disabled = false,
   onToggle,
   onDelta,
   isCompact = false,
@@ -44,18 +46,19 @@ export function TaskActionControl({
         {showPositive && (
           <button
             type="button"
+            disabled={disabled}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              onDelta?.(1);
+              if (!disabled) onDelta?.(1);
             }}
             title={t("positiveHabitTitle")}
             aria-label={t("positiveHabitAria")}
             className={cn(
-              "rounded-md bg-success-500/20 border border-success-500/50 text-success-500 hover:bg-success-500 hover:border-success-500 hover:text-on-gold hover:shadow-[0_0_10px_rgba(0,201,80,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90",
+              "rounded-md bg-success-500/20 border border-success-500/50 text-success-500 hover:bg-success-500 hover:border-success-500 hover:text-on-gold hover:shadow-[0_0_10px_rgba(0,201,80,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-success-500/20 disabled:hover:text-success-500 disabled:hover:shadow-none",
               isCompact
                 ? "w-5 h-5 text-label-m"
                 : "w-7 h-7 sm:w-6 sm:h-6 text-tiny",
@@ -67,18 +70,19 @@ export function TaskActionControl({
         {showNegative && (
           <button
             type="button"
+            disabled={disabled}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              onDelta?.(-1);
+              if (!disabled) onDelta?.(-1);
             }}
             title={t("negativeHabitTitle")}
             aria-label={t("negativeHabitAria")}
             className={cn(
-              "rounded-md bg-danger-500/20 border border-danger-500/50 text-danger-500 hover:bg-danger-500 hover:border-danger-500 hover:text-white hover:shadow-[0_0_10px_rgba(251,44,54,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90",
+              "rounded-md bg-danger-500/20 border border-danger-500/50 text-danger-500 hover:bg-danger-500 hover:border-danger-500 hover:text-white hover:shadow-[0_0_10px_rgba(251,44,54,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-danger-500/20 disabled:hover:text-danger-500 disabled:hover:shadow-none",
               isCompact
                 ? "w-5 h-5 text-label-m"
                 : "w-7 h-7 sm:w-6 sm:h-6 text-tiny",
@@ -100,17 +104,18 @@ export function TaskActionControl({
   return (
     <button
       type="button"
+      disabled={disabled}
       onPointerDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
-        onToggle?.();
+        if (!disabled) onToggle?.();
       }}
       aria-label={completed ? t("markPendingAria") : t("markCompletedAria")}
       className={cn(
-        "border-2 flex items-center justify-center transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shrink-0 active:scale-90",
+        "border-2 flex items-center justify-center transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shrink-0 active:scale-90 disabled:opacity-45 disabled:cursor-not-allowed",
         isDaily ? "rounded-full" : "rounded-md",
         isCompact ? "w-4 h-4" : "w-6 h-6 sm:w-5 sm:h-5",
         completed

@@ -1,4 +1,5 @@
-import { resolveAvatarPreset } from "@/constants/cosmetics";
+import { resolveAvatarPreset } from "@/constants/avatarPresets";
+import { downloadBlob } from "@/utils/download";
 import {
   drawCardBackdrop,
   drawCardFooter,
@@ -87,12 +88,5 @@ export async function exportCanvasToPngBlob(
 }
 
 export function triggerPngBlobDownload(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, filename, "image/png");
 }

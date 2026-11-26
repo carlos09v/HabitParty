@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.TransactionType;
@@ -37,10 +38,7 @@ public record TransactionHistoryResponseDTO(
   }
 
   public static TransactionHistoryResponseDTO fromDomain(TransactionHistory tx, ZoneId userZone) {
-    ZoneId effectiveZone = userZone != null ? userZone : ZoneId.systemDefault();
-    OffsetDateTime zonedCreatedAt = tx.getCreatedAt() != null
-        ? tx.getCreatedAt().atZone(ZoneId.systemDefault()).withZoneSameInstant(effectiveZone).toOffsetDateTime()
-        : null;
+    OffsetDateTime zonedCreatedAt = UtcDateTimeMapper.toUserOffsetDateTime(tx.getCreatedAt(), userZone);
     return new TransactionHistoryResponseDTO(
         tx.getId(),
         tx.getReferenceId().orElse(null),

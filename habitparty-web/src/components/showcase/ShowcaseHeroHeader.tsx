@@ -4,12 +4,15 @@ import {
   Calendar,
   Camera,
   Eye,
+  Globe,
+  Loader2,
   Settings,
   Share2,
   ShieldCheck,
   Sparkles,
   Swords,
   Target,
+  Users,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -24,16 +27,23 @@ import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import { resolveProfileTitleLabel } from "@/constants/cosmetics";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
 import type { AppLocale } from "@/i18n/config";
-import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
-import { useUserStore } from "@/store/userStore";
+import {
+  resolveUserAvatarFrame,
+  useActiveAvatarFrame,
+  useUserStore,
+} from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
   ShowcaseStatsResponseDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
-import { cn, formatMonthYear, resolveUserLevelState } from "@/utils";
+import { cn } from "@/utils/cn";
+import { formatMonthYear } from "@/utils/date";
+import { resolveUserLevelState } from "@/utils/levels";
+import type { VisitorAudience } from "@/utils/showcaseUtils";
 
 const preloadAvatarFramePickerModal = () =>
   import("@/components/showcase/AvatarFramePickerModal").then(
@@ -50,11 +60,17 @@ interface ShowcaseHeroHeaderProps {
   achievements?: AchievementItemResponseDTO[];
   unlockedArtifactsCount?: number;
   retrospective?: UserRetrospectiveData | null;
+  eligibleRetroArchetypes?: readonly string[];
   isVisitorMode: boolean;
+  visitorAudience?: VisitorAudience;
+  onVisitorAudienceChange?: (audience: VisitorAudience) => void;
   onToggleVisitorMode: () => void;
   isOtherUser?: boolean;
+  hideStats?: boolean;
+  hideAchievements?: boolean;
   onOpenPreviewCard?: () => void;
   onPreloadPreviewCard?: () => void;
+  onRequestRetrospective?: () => void;
   onOpenProgression?: () => void;
   extraHeaderActions?: ReactNode;
 }
@@ -65,11 +81,17 @@ export function ShowcaseHeroHeader({
   achievements = [],
   unlockedArtifactsCount,
   retrospective = null,
+  eligibleRetroArchetypes,
   isVisitorMode,
+  visitorAudience = "public",
+  onVisitorAudienceChange,
   onToggleVisitorMode,
   isOtherUser = false,
+  hideStats = false,
+  hideAchievements = false,
   onOpenPreviewCard,
   onPreloadPreviewCard,
+  onRequestRetrospective,
   onOpenProgression,
   extraHeaderActions,
 }: ShowcaseHeroHeaderProps) {
@@ -80,10 +102,13 @@ export function ShowcaseHeroHeader({
 
   const storeUser = useUserStore((s) => s.user);
   const storeFrameId = useActiveAvatarFrame();
-  const user = isOtherUser ? initialUser : storeUser || initialUser;
+  const resolvedOwnUser = useResolvedUser(initialUser);
+  const user = isOtherUser ? initialUser : resolvedOwnUser;
   const activeFrameId = isOtherUser
     ? resolveAvatarFrameId(initialUser.avatarFrame)
-    : storeFrameId;
+    : storeUser && storeUser.id === initialUser.id
+      ? storeFrameId
+      : resolveUserAvatarFrame(user?.avatarFrame, Boolean(user?.isPremium));
   const [isFramePickerOpen, setIsFramePickerOpen] = useState(false);
 
   const {
@@ -155,13 +180,13 @@ export function ShowcaseHeroHeader({
           <div className="flex items-center gap-2 flex-wrap">
             {extraHeaderActions}
 
-            {!isOtherUser && onOpenPreviewCard && (
+            {!isOtherUser && !isVisitorMode && onOpenPreviewCard && (
               <button
                 type="button"
                 onClick={onOpenPreviewCard}
                 onMouseEnter={onPreloadPreviewCard}
                 onFocus={onPreloadPreviewCard}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border bg-gold/15 hover:bg-gold/25 border-gold/40 text-amber-800 dark:text-gold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 shadow-glow-gold-xs transition-colors cursor-pointer"
               >
                 <Share2 size={13} aria-hidden="true" />
                 <span>{t("shareCardButton")}</span>
@@ -176,7 +201,11 @@ export function ShowcaseHeroHeader({
                 onFocus={preloadAvatarFramePickerModal}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border bg-surface/70 hover:bg-surface border-neutral-700 text-neutral-200 hover:border-gold/40 hover:text-neutral-50 dark:border-primary/25 transition-colors cursor-pointer"
               >
-                <Sparkles size={13} className="text-amber-700 dark:text-gold" />
+                <Sparkles
+                  size={13}
+                  className="text-amber-700 dark:text-gold"
+                  aria-hidden="true"
+                />
                 <span>{t("changeFrameButton")}</span>
               </button>
             )}
@@ -188,14 +217,15 @@ export function ShowcaseHeroHeader({
                   setIsFramePickerOpen(false);
                   onToggleVisitorMode();
                 }}
+                aria-pressed={isVisitorMode}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer",
                   isVisitorMode
-                    ? "bg-amber-500/15 dark:bg-gold/20 border-amber-500/40 dark:border-gold text-amber-700 dark:text-gold shadow-glow-gold-xs"
+                    ? "bg-amber-500/15 dark:bg-gold/20 border-amber-500/40 dark:border-gold text-amber-800 dark:text-gold shadow-glow-gold-xs"
                     : "bg-surface/70 hover:bg-surface border-neutral-700 text-neutral-200 hover:border-primary/45 hover:text-neutral-50 dark:border-primary/25",
                 )}
               >
-                <Eye size={13} />
+                <Eye size={13} aria-hidden="true" />
                 <span>
                   {isVisitorMode
                     ? t("ownerModeActive")
@@ -207,20 +237,58 @@ export function ShowcaseHeroHeader({
             {!isVisitorMode && !isOtherUser && (
               <Link
                 href="/settings?tab=profile"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-surface/70 hover:bg-surface border border-neutral-700 text-neutral-200 hover:border-primary/45 hover:text-neutral-50 dark:border-primary/25 transition-colors"
+                aria-label={t("settingsButton")}
+                title={t("settingsButton")}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-surface/70 hover:bg-surface border border-neutral-700 text-neutral-200 hover:border-primary/45 hover:text-neutral-50 dark:border-primary/25 transition-colors"
               >
-                <Settings size={13} />
-                <span>{t("settingsButton")}</span>
+                <Settings size={13} aria-hidden="true" />
+                <span className="hidden sm:inline">{t("settingsButton")}</span>
               </Link>
             )}
           </div>
         </div>
 
-        {/* AVISO DE MODO VISITANTE */}
+        {/* AVISO DE MODO VISITANTE COM SELETOR DE PÚBLICO */}
         {isVisitorMode && !isOtherUser && (
-          <div className="relative z-10 mb-5 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-medium text-amber-700 dark:text-gold">
-            <Eye size={14} className="shrink-0" />
-            <span>{t("visitorBanner")}</span>
+          <div className="relative z-10 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3.5 py-2.5 text-xs font-medium text-amber-800 dark:text-gold">
+            <div className="flex items-center gap-2">
+              <Eye size={14} className="shrink-0" aria-hidden="true" />
+              <span>{t("visitorBanner")}</span>
+            </div>
+
+            {onVisitorAudienceChange && (
+              <fieldset className="m-0 inline-flex items-center gap-1 p-0.5 rounded-lg bg-surface/80 border border-amber-500/35 shrink-0 self-start sm:self-auto">
+                <legend className="sr-only">{t("visitorAudienceAria")}</legend>
+                <button
+                  type="button"
+                  aria-pressed={visitorAudience === "public"}
+                  onClick={() => onVisitorAudienceChange("public")}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer",
+                    visitorAudience === "public"
+                      ? "bg-gold text-on-gold shadow-xs"
+                      : "text-neutral-300 hover:text-neutral-100",
+                  )}
+                >
+                  <Globe size={11} aria-hidden="true" />
+                  <span>{t("visitorAudiencePublic")}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={visitorAudience === "friend"}
+                  onClick={() => onVisitorAudienceChange("friend")}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer",
+                    visitorAudience === "friend"
+                      ? "bg-gold text-on-gold shadow-xs"
+                      : "text-neutral-300 hover:text-neutral-100",
+                  )}
+                >
+                  <Users size={11} aria-hidden="true" />
+                  <span>{t("visitorAudienceFriend")}</span>
+                </button>
+              </fieldset>
+            )}
           </div>
         )}
 
@@ -258,14 +326,19 @@ export function ShowcaseHeroHeader({
                           : "opacity-0 group-hover:opacity-100",
                       )}
                     >
-                      <Camera
-                        size={22}
-                        className={
-                          isPhotoPending
-                            ? "animate-spin text-amber-400 dark:text-gold"
-                            : "text-white drop-shadow-sm"
-                        }
-                      />
+                      {isPhotoPending ? (
+                        <Loader2
+                          size={22}
+                          className="animate-spin text-amber-400 dark:text-gold"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Camera
+                          size={22}
+                          className="text-white drop-shadow-sm"
+                          aria-hidden="true"
+                        />
+                      )}
                       <span className="text-label-m font-bold mt-1 text-white drop-shadow-sm">
                         {isPhotoPending
                           ? t("uploadingPhoto")
@@ -278,14 +351,14 @@ export function ShowcaseHeroHeader({
                       aria-hidden="true"
                       className="md:hidden absolute -bottom-0.5 -right-0.5 z-30 w-7 h-7 rounded-full bg-surface border border-neutral-600 dark:border-primary/40 text-neutral-100 shadow-md flex items-center justify-center"
                     >
-                      <Camera
-                        size={13}
-                        className={
-                          isPhotoPending
-                            ? "animate-spin text-amber-400 dark:text-gold"
-                            : undefined
-                        }
-                      />
+                      {isPhotoPending ? (
+                        <Loader2
+                          size={13}
+                          className="animate-spin text-amber-400 dark:text-gold"
+                        />
+                      ) : (
+                        <Camera size={13} />
+                      )}
                     </span>
                   </button>
 
@@ -376,6 +449,8 @@ export function ShowcaseHeroHeader({
             nextLevelTitle={nextLevelTitle}
             progress={progress}
             isGamified={isGamified}
+            hideStats={hideStats}
+            hideAchievements={hideAchievements}
             onOpenProgression={onOpenProgression}
           />
         </div>
@@ -389,6 +464,8 @@ export function ShowcaseHeroHeader({
           stats={stats}
           unlockedArtifactsCount={unlockedArtifactsCount}
           retrospective={retrospective}
+          eligibleRetroArchetypes={eligibleRetroArchetypes}
+          onRequestRetrospective={onRequestRetrospective}
         />
       )}
     </>

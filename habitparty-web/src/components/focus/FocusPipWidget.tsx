@@ -1,57 +1,135 @@
-"use client";
-
-import {
-  CheckCircle2,
-  Coffee,
-  ExternalLink,
-  FastForward,
-  ListTodo,
-  Loader2,
-  Pause,
-  Play,
-  X,
-} from "lucide-react";
+import { CheckCircle2, ExternalLink, ListTodo, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useFocusTimerDisplay } from "@/hooks/useFocusTimer";
-import { useFocusTimerStore } from "@/store/focusTimerStore";
-import { cn } from "@/utils";
+import {
+  useFocusTimerActions,
+  useFocusTimerControls,
+  useFocusTimerDisplay,
+} from "@/hooks/useFocusTimer";
+import { cn } from "@/utils/cn";
+import { resolveLinkedTask } from "@/utils/focusFormatters";
 import { closeFocusPip } from "@/utils/focusPip";
+import { FocusSessionCapBadgeView } from "./stage/FocusSessionCapBadge";
+import { FocusTimerActionButtons } from "./stage/FocusTimerActionButtons";
+
+/**
+ * Folha isolada a 1Hz para a barra de progresso do Document PiP.
+ */
+function FocusPipProgressStrip() {
+  const { progressPercent, isBreak, isOvertime } = useFocusTimerDisplay();
+
+  return (
+    <div className="w-full h-1.5 rounded-full bg-neutral-700 dark:bg-surface overflow-hidden shrink-0">
+      <div
+        className={cn(
+          "h-full origin-left transition-transform duration-500",
+          isBreak
+            ? "bg-emerald-600 dark:bg-emerald-500"
+            : isOvertime
+              ? "bg-cyan-600 dark:bg-cyan-400"
+              : "bg-amber-600 dark:bg-gold",
+        )}
+        style={{
+          transform: `scaleX(${Math.min(1, Math.max(0, progressPercent / 100))})`,
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Folha isolada a 1Hz para o relógio digital do Document PiP.
+ */
+function FocusPipClockDisplay() {
+  const {
+    formattedTime: displayTime,
+    isBreak,
+    isOvertime,
+    isRunning,
+  } = useFocusTimerDisplay();
+
+  const timerFontClass =
+    displayTime.length > 6
+      ? "text-[clamp(1.375rem,min(9.5vw,15dvh),2.25rem)]"
+      : "text-[clamp(1.5rem,min(11vw,16.5dvh),2.5rem)]";
+
+  return (
+    <span
+      role="timer"
+      aria-live="off"
+      className={cn(
+        "font-mono font-black tracking-tight tabular-nums leading-none",
+        timerFontClass,
+        isBreak
+          ? "text-emerald-700 dark:text-emerald-300"
+          : isOvertime
+            ? "text-cyan-700 dark:text-cyan-300"
+            : isRunning
+              ? "text-amber-700 dark:text-gold"
+              : "text-neutral-50",
+      )}
+    >
+      {displayTime}
+    </span>
+  );
+}
 
 export function FocusPipWidget() {
   const router = useRouter();
   const t = useTranslations("focusWidget.pip");
   const { isGamified } = useExperienceMode();
   const {
-    formattedTime: displayTime,
-    progressPercent,
+    isActive,
     isPaused,
     target,
     isRunning,
-    isBreak,
+    phase,
     isOvertime,
     canComplete,
     isPartialPomo,
     isSessionRewardCapped,
     nextBreakMinutes,
-  } = useFocusTimerDisplay();
+    isSavingSession,
+    isCompletingLinkedTask,
+  } = useFocusTimerControls();
+  const {
+    toggleTimer,
+    startBreak,
+    skipBreak,
+    completeSession,
+    completeLinkedTask,
+  } = useFocusTimerActions();
 
-  const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
-  const isCompletingLinkedTask = useFocusTimerStore(
-    (s) => s.isCompletingLinkedTask,
-  );
+  const [inlineNotice, setInlineNotice] = useState<string | null>(null);
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const toggleTimer = useFocusTimerStore((s) => s.toggleTimer);
-  const startBreak = useFocusTimerStore((s) => s.startBreak);
-  const skipBreak = useFocusTimerStore((s) => s.skipBreak);
-  const completeSession = useFocusTimerStore((s) => s.completeSession);
-  const completeLinkedTask = useFocusTimerStore((s) => s.completeLinkedTask);
+  const showInlineNotice = useCallback((message: string) => {
+    setInlineNotice(message);
+    if (noticeTimerRef.current !== null) {
+      clearTimeout(noticeTimerRef.current);
+    }
+    noticeTimerRef.current = setTimeout(() => {
+      noticeTimerRef.current = null;
+      setInlineNotice(null);
+    }, 3000);
+  }, []);
 
-  const linkedTaskId =
-    target?.taskId || (target?.type === "task" ? target.id : undefined);
-  const linkedTaskTitle =
-    target?.taskName || (target?.type === "task" ? target.name : undefined);
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current !== null) {
+        clearTimeout(noticeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
+  const { taskId: linkedTaskId, taskName: linkedTaskTitle } =
+    resolveLinkedTask(target);
+  const capBadgeLabel = isGamified
+    ? t("sessionCapBadge")
+    : t("sessionCapBadgeProductivity");
 
   const phaseLabel = isBreak
     ? t("phaseBreak")
@@ -71,27 +149,36 @@ export function FocusPipWidget() {
     window.focus();
   };
 
-  const timerFontClass =
-    displayTime.length > 6
-      ? "text-[clamp(1.375rem,min(9.5vw,15dvh),2.25rem)]"
-      : "text-[clamp(1.5rem,min(11vw,16.5dvh),2.5rem)]";
+  const handleComplete = async () => {
+    if (!canComplete) {
+      showInlineNotice(t("minDurationHint"));
+      return;
+    }
+    const ok = await completeSession();
+    if (!ok) {
+      showInlineNotice(t("actionFailed"));
+    }
+  };
+
+  const handleStartBreak = async () => {
+    const ok = await startBreak();
+    if (!ok) {
+      showInlineNotice(t("actionFailed"));
+    }
+  };
+
+  const handleCompleteLinkedTask = async () => {
+    if (!linkedTaskId) return;
+    const ok = await completeLinkedTask(linkedTaskId, linkedTaskTitle);
+    if (!ok) {
+      showInlineNotice(t("actionFailed"));
+    }
+  };
 
   return (
     <div className="w-full h-dvh min-h-0 overflow-hidden flex flex-col justify-between bg-background text-neutral-100 p-2.5 sm:p-3 gap-1.5 sm:gap-2 select-none">
-      {/* Top Progress Strip */}
-      <div className="w-full h-1.5 rounded-full bg-neutral-700 dark:bg-surface overflow-hidden shrink-0">
-        <div
-          className={cn(
-            "h-full transition-[width] duration-500",
-            isBreak
-              ? "bg-emerald-600 dark:bg-emerald-500"
-              : isOvertime
-                ? "bg-cyan-600 dark:bg-cyan-400"
-                : "bg-amber-600 dark:bg-gold",
-          )}
-          style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
-        />
-      </div>
+      {/* Top Progress Strip (1Hz isolado) */}
+      <FocusPipProgressStrip />
 
       {/* Header: Target + Phase + Utility */}
       <div className="flex items-start justify-between gap-2 min-w-0">
@@ -103,9 +190,9 @@ export function FocusPipWidget() {
                 isBreak
                   ? "bg-emerald-600 dark:bg-emerald-500"
                   : isOvertime
-                    ? "bg-cyan-600 dark:bg-cyan-400 animate-pulse"
+                    ? "bg-cyan-600 dark:bg-cyan-400 motion-safe:animate-pulse"
                     : isRunning
-                      ? "bg-amber-600 dark:bg-gold animate-pulse"
+                      ? "bg-amber-600 dark:bg-gold motion-safe:animate-pulse"
                       : "bg-neutral-500",
               )}
             />
@@ -128,13 +215,13 @@ export function FocusPipWidget() {
             >
               {phaseLabel}
             </span>
-            {isSessionRewardCapped && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:text-amber-300 leading-none">
-                {isGamified
-                  ? t("sessionCapBadge")
-                  : t("sessionCapBadgeProductivity")}
-              </span>
-            )}
+            <FocusSessionCapBadgeView
+              visible={isSessionRewardCapped}
+              label={capBadgeLabel}
+              title={capBadgeLabel}
+              isGamified={isGamified}
+              size="xs"
+            />
           </div>
         </div>
 
@@ -160,27 +247,26 @@ export function FocusPipWidget() {
         </div>
       </div>
 
-      {/* Main Digital Timer */}
+      {/* Main Digital Timer (1Hz isolado) */}
       <div className="flex flex-col items-center justify-center my-auto min-h-0">
-        <span
-          className={cn(
-            "font-mono font-black tracking-tight tabular-nums leading-none",
-            timerFontClass,
-            isBreak
-              ? "text-emerald-700 dark:text-emerald-300"
-              : isOvertime
-                ? "text-cyan-700 dark:text-cyan-300"
-                : isRunning
-                  ? "text-gold"
-                  : "text-neutral-50",
-          )}
-        >
-          {displayTime}
-        </span>
+        <FocusPipClockDisplay />
+
+        {inlineNotice && (
+          <output
+            aria-live="polite"
+            className="block mt-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-[10px] font-semibold text-amber-800 dark:text-amber-200 text-center max-w-full truncate"
+          >
+            {inlineNotice}
+          </output>
+        )}
 
         {linkedTaskId && linkedTaskTitle && (
           <div className="mt-1.5 flex items-center gap-1.5 max-w-[min(100%,19rem)] px-2 py-0.5 rounded-lg bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary/25 shadow-2xs dark:shadow-none">
-            <ListTodo size={11} className="text-gold shrink-0" />
+            <ListTodo
+              size={11}
+              className="text-amber-700 dark:text-gold shrink-0"
+              aria-hidden="true"
+            />
             <span className="text-[11px] font-medium text-neutral-100 truncate min-w-0 flex-1">
               {linkedTaskTitle}
             </span>
@@ -188,11 +274,9 @@ export function FocusPipWidget() {
               type="button"
               disabled={isCompletingLinkedTask}
               aria-busy={isCompletingLinkedTask}
-              onClick={() =>
-                void completeLinkedTask(linkedTaskId, linkedTaskTitle)
-              }
+              onClick={() => void handleCompleteLinkedTask()}
               title={t("completeTask")}
-              className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-0.5 shrink-0 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="min-h-6 px-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-0.5 shrink-0 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isCompletingLinkedTask ? (
                 <Loader2 size={10} className="animate-spin" />
@@ -205,91 +289,25 @@ export function FocusPipWidget() {
         )}
       </div>
 
-      {/* Primary Action Bar */}
-      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-        {!target ? (
-          <button
-            type="button"
-            onClick={handleReturnToFocus}
-            className="flex-1 min-w-0 py-1.5 sm:py-2 px-3 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-1.5 border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/80 hover:border-amber-500/50 dark:hover:border-gold/50 text-neutral-100 transition-colors cursor-pointer shadow-2xs dark:shadow-none"
-          >
-            <ExternalLink size={13} className="text-gold shrink-0" />
-            <span className="truncate">{t("selectActivityPrompt")}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={isSavingSession}
-            onClick={toggleTimer}
-            className={cn(
-              "flex-1 min-w-0 py-1.5 sm:py-2 px-3 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap",
-              isBreak
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-neutral-950"
-                : isRunning
-                  ? "bg-amber-500 hover:bg-amber-600 text-neutral-950"
-                  : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-xs",
-            )}
-          >
-            {isRunning ? (
-              <>
-                <Pause size={14} className="fill-current" />
-                <span>{t("pause")}</span>
-              </>
-            ) : (
-              <>
-                <Play size={14} className="fill-current" />
-                <span>{isPaused ? t("resume") : t("start")}</span>
-              </>
-            )}
-          </button>
-        )}
-
-        {isBreak && (
-          <button
-            type="button"
-            disabled={isSavingSession}
-            onClick={skipBreak}
-            className="py-1.5 sm:py-2 px-3 rounded-xl border border-emerald-600/40 dark:border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            <FastForward size={13} />
-            <span>{t("skipBreak")}</span>
-          </button>
-        )}
-
-        {isOvertime && !isBreak && (
-          <button
-            type="button"
-            disabled={isSavingSession}
-            aria-busy={isSavingSession}
-            onClick={() => void startBreak()}
-            className="py-1.5 sm:py-2 px-2.5 rounded-xl border border-cyan-600/45 dark:border-cyan-500/45 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {isSavingSession ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <Coffee size={13} />
-            )}
-            <span>{t("startBreak", { minutes: nextBreakMinutes })}</span>
-          </button>
-        )}
-
-        {canComplete && (
-          <button
-            type="button"
-            disabled={isSavingSession}
-            aria-busy={isSavingSession}
-            onClick={() => void completeSession()}
-            className="py-1.5 sm:py-2 px-3 rounded-xl border border-emerald-600/40 dark:border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {isSavingSession ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <CheckCircle2 size={13} />
-            )}
-            <span>{isPartialPomo ? t("savePartial") : t("complete")}</span>
-          </button>
-        )}
-      </div>
+      {/* Primary Action Bar Unificada */}
+      <FocusTimerActionButtons
+        variant="pip"
+        hasTarget={Boolean(target)}
+        isActive={isActive}
+        isPaused={isPaused}
+        isRunning={isRunning}
+        isBreak={isBreak}
+        isOvertime={isOvertime}
+        canComplete={canComplete}
+        isPartialPomo={isPartialPomo}
+        isSavingSession={isSavingSession}
+        nextBreakMinutes={nextBreakMinutes}
+        onToggleTimer={toggleTimer}
+        onStartBreak={() => void handleStartBreak()}
+        onComplete={() => void handleComplete()}
+        onSkipBreak={skipBreak}
+        onSelectTargetFallback={handleReturnToFocus}
+      />
     </div>
   );
 }

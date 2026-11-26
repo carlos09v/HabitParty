@@ -47,7 +47,7 @@ export function Pagination({
   const nextPageLabel = t("nextPage");
 
   const navBtnClass = cn(
-    "rounded-lg border border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gold flex items-center justify-center cursor-pointer",
+    "rounded-lg border border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring flex items-center justify-center cursor-pointer",
     isCompact
       ? "min-w-8 h-8 p-1.5 sm:min-w-7 sm:h-7 sm:p-1"
       : "min-w-9 h-9 p-2 sm:min-w-8 sm:h-8 sm:p-1.5",
@@ -133,7 +133,7 @@ export function Pagination({
           const isActive = page === currentPage;
           const pageAriaLabel = t("pageNumber", { page });
           const pageItemClass = cn(
-            "px-2 rounded-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background flex items-center justify-center cursor-pointer",
+            "px-2 rounded-lg font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background flex items-center justify-center cursor-pointer",
             isCompact
               ? "min-w-8 h-8 sm:min-w-7 sm:h-7 text-label-g"
               : "min-w-9 h-9 sm:min-w-8 sm:h-8 text-xs",

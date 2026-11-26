@@ -81,7 +81,7 @@ export async function discardInventoryItem(
       };
     }
 
-    invalidateInventoryDomainTags();
+    invalidateInventoryDomainTags(false, true);
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:Discard]", err);

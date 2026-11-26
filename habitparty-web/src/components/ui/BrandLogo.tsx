@@ -13,9 +13,13 @@ export function BrandLogo({
   width = 160,
   height = 36,
   alt = "HabitParty",
-  priority = false,
   className,
 }: BrandLogoProps) {
+  const sizes = `${width}px`;
+
+  // `loading="lazy"` em ambas as variantes evita que o navegador baixe o PNG oculto
+  // (`display: none` / `hidden`), carregando apenas o logo do tema ativo e mantendo
+  // elementos `<img>` reais compatíveis com Forced Colors Mode e impressão.
   return (
     <>
       <Image
@@ -23,7 +27,9 @@ export function BrandLogo({
         alt={alt}
         width={width}
         height={height}
-        priority={priority}
+        sizes={sizes}
+        loading="lazy"
+        decoding="async"
         className={cn("hidden dark:block object-contain", className)}
       />
       <Image
@@ -31,7 +37,9 @@ export function BrandLogo({
         alt={alt}
         width={width}
         height={height}
-        priority={priority}
+        sizes={sizes}
+        loading="lazy"
+        decoding="async"
         className={cn("block dark:hidden object-contain", className)}
       />
     </>

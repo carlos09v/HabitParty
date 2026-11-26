@@ -1,12 +1,11 @@
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { serverApi } from "@/api/server";
-import { getThemePolarity, isValidThemeId } from "@/constants/themes";
-
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+import { isValidThemeId } from "@/constants/themes";
+import { writeThemePreferenceCookies } from "@/utils/themeCookies";
 
 export async function PATCH(request: Request) {
-  let payload: { theme?: unknown };
+  let payload: unknown;
   try {
     payload = await request.json();
   } catch {
@@ -16,11 +15,18 @@ export async function PATCH(request: Request) {
     );
   }
 
-  if (!isValidThemeId(payload.theme)) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 },
+    );
+  }
+
+  const theme = (payload as { theme?: unknown }).theme;
+  if (!isValidThemeId(theme)) {
     return NextResponse.json({ error: "Invalid theme" }, { status: 400 });
   }
 
-  const theme = payload.theme;
   const { data, error, response } = await serverApi.PATCH("/users/theme", {
     body: { theme },
   });
@@ -38,25 +44,10 @@ export async function PATCH(request: Request) {
     data?.theme && isValidThemeId(data.theme) ? data.theme : theme;
   const nextRes = NextResponse.json({ ok: true, theme: persistedTheme });
 
-  nextRes.cookies.set("theme", persistedTheme, {
-    path: "/",
-    maxAge: ONE_YEAR_SECONDS,
-    sameSite: "lax",
+  writeThemePreferenceCookies(nextRes.cookies, persistedTheme, {
+    isPremium: Boolean(data?.isPremium ?? true),
+    resetOppositePolarity: false,
   });
-
-  if (getThemePolarity(persistedTheme) === "dark") {
-    nextRes.cookies.set("lastDarkTheme", persistedTheme, {
-      path: "/",
-      maxAge: ONE_YEAR_SECONDS,
-      sameSite: "lax",
-    });
-  } else {
-    nextRes.cookies.set("lastLightTheme", persistedTheme, {
-      path: "/",
-      maxAge: ONE_YEAR_SECONDS,
-      sameSite: "lax",
-    });
-  }
 
   revalidateTag("user", { expire: 0 });
   revalidateTag("showcase", { expire: 0 });

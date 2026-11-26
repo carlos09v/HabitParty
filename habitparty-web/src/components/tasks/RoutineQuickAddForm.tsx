@@ -25,6 +25,12 @@ import type {
 import { cn } from "@/utils";
 import { getOffsetDateString, getTodayDateString } from "@/utils/date";
 
+const QUICK_ADD_TYPE_OPTIONS = [
+  { id: "TODO" as const, icon: Target, titleKey: "todoTitle" as const },
+  { id: "HABIT" as const, icon: Repeat, titleKey: "habitTitle" as const },
+  { id: "DAILY" as const, icon: Calendar, titleKey: "dailyTitle" as const },
+];
+
 export function RoutineQuickAddForm({
   columnId,
   isColumnCompact = false,
@@ -69,56 +75,114 @@ export function RoutineQuickAddForm({
     inputRef.current?.focus();
   }, []);
 
+  /**
+   * Constrói os campos derivados do tipo selecionado em uma única fonte de verdade,
+   * usada tanto na criação rápida inline quanto na transição para o modal detalhado.
+   */
+  const buildQuickAddFields = (
+    trimmedTitle: string,
+  ): {
+    extraPayload: Partial<CreateTaskDTO>;
+    initialValues: InitialTaskFormData;
+  } => {
+    const timeZone = useUserStore.getState().user?.timezone;
+    const now = new Date();
+
+    if (taskType === "HABIT") {
+      return {
+        extraPayload: {
+          habitType,
+          resetCounter,
+          importanceType,
+          difficulty: "EASY",
+        },
+        initialValues: {
+          title: trimmedTitle,
+          taskType,
+          habitType,
+          importanceType,
+          resetCounter,
+        },
+      };
+    }
+
+    if (taskType === "DAILY") {
+      const startDate = getTodayDateString(now, timeZone);
+      const repeatType = dailyFreq === "WEEKDAYS" ? "WEEKLY" : "DAILY";
+      const daysOfWeek =
+        dailyFreq === "WEEKDAYS" ? [...WEEKDAYS_ONLY] : ALL_WEEK_DAYS;
+      return {
+        extraPayload: {
+          startDate,
+          repeatType,
+          repeatEvery: 1,
+          daysOfWeek,
+          difficulty,
+        },
+        initialValues: {
+          title: trimmedTitle,
+          taskType,
+          difficulty,
+          repeatType,
+          daysOfWeek,
+          startDate,
+          repeatEvery: 1,
+        },
+      };
+    }
+
+    const resolvedOffset = dueOffset !== null ? dueOffset : dueTime ? 0 : null;
+    const resolvedDueDate =
+      resolvedOffset !== null
+        ? getOffsetDateString(resolvedOffset, now, timeZone)
+        : undefined;
+
+    return {
+      extraPayload: {
+        difficulty,
+        ...(resolvedDueDate && { dueDate: resolvedDueDate }),
+        ...(dueTime && { dueTime }),
+      },
+      initialValues: {
+        title: trimmedTitle,
+        taskType,
+        difficulty,
+        dueDate: resolvedDueDate,
+        dueTime: dueTime || undefined,
+      },
+    };
+  };
+
   const handleSubmit = async () => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      let extraPayload: Partial<CreateTaskDTO> | undefined;
-      if (taskType === "HABIT") {
-        extraPayload = {
-          habitType,
-          resetCounter,
-          importanceType,
-          difficulty: "EASY",
-        };
-      } else if (taskType === "DAILY") {
-        extraPayload = {
-          startDate: getTodayDateString(
-            new Date(),
-            useUserStore.getState().user?.timezone,
-          ),
-          repeatType: dailyFreq === "WEEKDAYS" ? "WEEKLY" : "DAILY",
-          repeatEvery: 1,
-          daysOfWeek:
-            dailyFreq === "WEEKDAYS" ? [...WEEKDAYS_ONLY] : ALL_WEEK_DAYS,
-          difficulty,
-        };
-      } else {
-        const resolvedOffset =
-          dueOffset !== null ? dueOffset : dueTime ? 0 : null;
-        extraPayload = {
-          difficulty,
-          ...(resolvedOffset !== null && {
-            dueDate: getOffsetDateString(
-              resolvedOffset,
-              new Date(),
-              useUserStore.getState().user?.timezone,
-            ),
-          }),
-          ...(dueTime && {
-            dueTime,
-          }),
-        };
+      const { extraPayload } = buildQuickAddFields(trimmedTitle);
+      const created = await onQuickCreateTask?.(
+        trimmedTitle,
+        columnId,
+        taskType,
+        extraPayload,
+      );
+      if (created === false) {
+        return;
       }
-
-      await onQuickCreateTask?.(trimmedTitle, columnId, taskType, extraPayload);
       setTitle("");
-      onClose();
+      window.requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const getTypeLabel = (id: TaskTypeOption) => {
+    if (id === "TODO") {
+      return isColumnCompact ? t("todoCompact") : t("todoNormal");
+    }
+    return id === "HABIT" ? t("habitLabel") : t("dailyLabel");
   };
 
   return (
@@ -131,73 +195,39 @@ export function RoutineQuickAddForm({
     >
       {/* Seletor Compacto dos 3 Tipos: A Fazer (padrão), Hábito, Diária */}
       <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface border border-neutral-700 dark:bg-surface/80 dark:border-white/10 w-full">
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            setTaskType("TODO");
-            inputRef.current?.focus();
-          }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
-            isColumnCompact ? "text-tiny" : "text-label-g",
-            taskType === "TODO"
-              ? "bg-gold text-on-gold shadow-xs"
-              : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
-          )}
-          title={t("todoTitle")}
-        >
-          <Target size={isColumnCompact ? 11 : 12} className="shrink-0" />
-          <span className="truncate">
-            {isColumnCompact ? t("todoCompact") : t("todoNormal")}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            setTaskType("HABIT");
-            inputRef.current?.focus();
-          }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
-            isColumnCompact ? "text-tiny" : "text-label-g",
-            taskType === "HABIT"
-              ? "bg-gold text-on-gold shadow-xs"
-              : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
-          )}
-          title={t("habitTitle")}
-        >
-          <Repeat size={isColumnCompact ? 11 : 12} className="shrink-0" />
-          <span className="truncate">{t("habitLabel")}</span>
-        </button>
-
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            setTaskType("DAILY");
-            inputRef.current?.focus();
-          }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
-            isColumnCompact ? "text-tiny" : "text-label-g",
-            taskType === "DAILY"
-              ? "bg-gold text-on-gold shadow-xs"
-              : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
-          )}
-          title={t("dailyTitle")}
-        >
-          <Calendar size={isColumnCompact ? 11 : 12} className="shrink-0" />
-          <span className="truncate">{t("dailyLabel")}</span>
-        </button>
+        {QUICK_ADD_TYPE_OPTIONS.map(({ id, icon: Icon, titleKey }) => {
+          const isActive = taskType === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={isActive}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setTaskType(id);
+                inputRef.current?.focus();
+              }}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
+                isColumnCompact ? "text-tiny" : "text-label-g",
+                isActive
+                  ? "bg-gold text-on-gold shadow-xs"
+                  : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
+              )}
+              title={t(titleKey)}
+            >
+              <Icon size={isColumnCompact ? 11 : 12} className="shrink-0" />
+              <span className="truncate">{getTypeLabel(id)}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Input de Título com Placeholder Contextual */}
       <input
         ref={inputRef}
         type="text"
+        aria-label={t("titleInputAria")}
         placeholder={
           taskType === "HABIT"
             ? t("habitPlaceholder")
@@ -215,6 +245,8 @@ export function RoutineQuickAddForm({
             e.preventDefault();
             await handleSubmit();
           } else if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
             onClose();
           }
         }}
@@ -268,43 +300,7 @@ export function RoutineQuickAddForm({
           onClick={() => {
             onClose();
             const trimmedTitle = title.trim();
-            const initialValues: InitialTaskFormData = {
-              title: trimmedTitle,
-              taskType,
-              ...(taskType === "TODO" && {
-                difficulty,
-                dueDate:
-                  dueOffset !== null
-                    ? getOffsetDateString(
-                        dueOffset,
-                        new Date(),
-                        useUserStore.getState().user?.timezone,
-                      )
-                    : dueTime
-                      ? getTodayDateString(
-                          new Date(),
-                          useUserStore.getState().user?.timezone,
-                        )
-                      : undefined,
-                dueTime: dueTime || undefined,
-              }),
-              ...(taskType === "HABIT" && {
-                habitType,
-                importanceType,
-                resetCounter,
-              }),
-              ...(taskType === "DAILY" && {
-                difficulty,
-                repeatType: dailyFreq === "WEEKDAYS" ? "WEEKLY" : "DAILY",
-                daysOfWeek:
-                  dailyFreq === "WEEKDAYS" ? [...WEEKDAYS_ONLY] : ALL_WEEK_DAYS,
-                startDate: getTodayDateString(
-                  new Date(),
-                  useUserStore.getState().user?.timezone,
-                ),
-                repeatEvery: 1,
-              }),
-            };
+            const { initialValues } = buildQuickAddFields(trimmedTitle);
             onOpenDetailedForm?.(
               columnId,
               taskType,

@@ -184,6 +184,7 @@ export interface RewardCardProps {
   groupId?: string;
   displayTitle?: string;
   variants?: Reward[];
+  fullGroupContext?: RewardGroupContext;
   activeVariantId?: string;
   onSelectVariant?: (groupId: string, variantId: string) => void;
   onBuy?: (reward: Reward) => void;
@@ -195,6 +196,8 @@ export interface RewardCardProps {
   ) => void;
   canAfford?: boolean;
   currentCoins?: number;
+  ownedQuantity?: number;
+  isGamified?: boolean;
   isDeleteChecking?: boolean;
   isRedeeming?: boolean;
   isReorderDisabled?: boolean;
@@ -210,7 +213,6 @@ export interface RouletteItem {
 }
 
 export type {
-  ItemCatalogFilterState as RewardFilterState,
   ItemCatalogFilterState,
   SelectOption,
 } from "@/types/ui";

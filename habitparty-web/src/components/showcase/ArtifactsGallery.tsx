@@ -1,40 +1,50 @@
 "use client";
 
-import { Gem, Lock, Pin, Sparkles } from "lucide-react";
+import { Gem, Lock, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
+import { GalleryPinButton } from "@/components/showcase/GalleryPinButton";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
 import { ACHIEVEMENT_RARITIES, getRarityTheme } from "@/constants/achievements";
-import { DEFAULT_TOTAL_ARTIFACTS_COUNT } from "@/constants/artifacts";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import {
+  type ShowcaseRarityFilter,
+  useShowcaseGalleryFilter,
+} from "@/hooks/useShowcaseGalleryFilter";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
-  AchievementRarity,
   ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
 } from "@/types/showcase";
-import { cn, formatShortDate, resolveArtifactCopy } from "@/utils";
+import { cn } from "@/utils/cn";
+import { formatShortDate } from "@/utils/date";
+import { resolveArtifactCopy } from "@/utils/showcaseUtils";
 
 interface ArtifactsGalleryProps {
   artifacts: ArtifactItemResponseDTO[];
   highlights: ProfileHighlightResponseDTO[];
   isVisitorMode: boolean;
   onPinArtifact: (artifact: ArtifactItemResponseDTO) => void;
+  onUnpinArtifact?: (artifact: ArtifactItemResponseDTO) => void;
 }
 
 type ArtifactFilterMode = "ALL" | "UNLOCKED" | "MERIT" | "EXPLORATION";
-type RarityFilter = "ALL" | AchievementRarity;
+
+const ARTIFACT_RARITIES = ACHIEVEMENT_RARITIES.filter(
+  (rarity) => rarity === "RARE" || rarity === "EPIC" || rarity === "LEGENDARY",
+);
 
 export function ArtifactsGallery({
   artifacts,
   highlights,
   isVisitorMode,
   onPinArtifact,
+  onUnpinArtifact,
 }: ArtifactsGalleryProps) {
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
@@ -46,19 +56,20 @@ export function ArtifactsGallery({
   const { isGamified } = useExperienceMode();
 
   const [filterMode, setFilterMode] = useState<ArtifactFilterMode>("ALL");
-  const [rarityFilter, setRarityFilter] = useState<RarityFilter>("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const pinnedArtifactIdsOrCodes = useMemo(() => {
-    const set = new Set<string>();
-    for (const h of highlights) {
-      if (h.highlightType === "ARTIFACT") {
-        if (h.referenceId) set.add(h.referenceId);
-        if (h.highlightKey) set.add(h.highlightKey);
-      }
-    }
-    return set;
-  }, [highlights]);
+  const {
+    rarityFilter,
+    setRarityFilter,
+    searchQuery,
+    setSearchQuery,
+    isPinned,
+    rarityOptions,
+  } = useShowcaseGalleryFilter({
+    highlights,
+    highlightType: "ARTIFACT",
+    rarities: ARTIFACT_RARITIES,
+    rarityAllLabel: t("rarityFilterAll"),
+    getRarityLabel: (rarity) => tRarities(rarity),
+  });
 
   const resolvedArtifacts = useMemo(() => {
     return artifacts.map((artifact) => {
@@ -170,22 +181,6 @@ export function ArtifactsGallery({
     return base;
   }, [t, counts, isGamified, isVisitorMode]);
 
-  const rarityOptions = useMemo(
-    () => [
-      { value: "ALL", label: t("rarityFilterAll") },
-      ...ACHIEVEMENT_RARITIES.filter(
-        (rarity) =>
-          rarity === "RARE" || rarity === "EPIC" || rarity === "LEGENDARY",
-      ).map((rarity) => ({
-        value: rarity,
-        label: tRarities(rarity),
-      })),
-    ],
-    [t, tRarities],
-  );
-
-  const catalogTotal = artifacts.length || DEFAULT_TOTAL_ARTIFACTS_COUNT;
-
   return (
     <section className="@container flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -201,16 +196,6 @@ export function ArtifactsGallery({
           <p className="text-body-s text-neutral-300 mt-0.5">
             {isGamified ? t("subtitleGamified") : t("subtitleEssential")}
           </p>
-        </div>
-
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/15 border border-gold/40 text-xs font-extrabold text-amber-800 dark:text-gold shrink-0 self-start sm:self-auto tabular-nums">
-          <Sparkles size={13} aria-hidden="true" />
-          <span>
-            {t("collectionCountBadge", {
-              unlocked: counts.unlocked,
-              total: catalogTotal,
-            })}
-          </span>
         </div>
       </div>
 
@@ -245,7 +230,7 @@ export function ArtifactsGallery({
               options={rarityOptions}
               value={rarityFilter}
               onChange={(val) =>
-                setRarityFilter((val || "ALL") as RarityFilter)
+                setRarityFilter((val || "ALL") as ShowcaseRarityFilter)
               }
               aria-label={t("rarityFilterAll")}
             />
@@ -264,9 +249,7 @@ export function ArtifactsGallery({
           {filteredArtifacts.map(
             ({ artifact, name, lore, sourceHint, originLabel }) => {
               const theme = getRarityTheme(artifact.rarity);
-              const isPinned =
-                pinnedArtifactIdsOrCodes.has(artifact.id) ||
-                pinnedArtifactIdsOrCodes.has(artifact.code);
+              const isItemPinned = isPinned(artifact.id, artifact.code);
               const isNewRelic =
                 artifact.unlocked && !artifact.seen && !isVisitorMode;
               const formattedDate = artifact.unlockedAt
@@ -319,7 +302,7 @@ export function ArtifactsGallery({
                         className={
                           artifact.unlocked
                             ? undefined
-                            : "[filter:brightness(0)] opacity-35 dark:opacity-55"
+                            : "text-neutral-500 dark:text-neutral-400 opacity-55"
                         }
                       />
                     </div>
@@ -382,23 +365,18 @@ export function ArtifactsGallery({
                         </span>
 
                         {!isVisitorMode && (
-                          <button
-                            type="button"
-                            onClick={() => onPinArtifact(artifact)}
-                            className={cn(
-                              "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer whitespace-nowrap shrink-0",
-                              isPinned
-                                ? "bg-gold/20 border-gold text-amber-700 dark:text-gold"
-                                : "bg-surface/70 border-neutral-700 text-neutral-200 hover:border-gold/50 hover:text-amber-700 dark:border-primary/25 dark:text-neutral-300 dark:hover:text-gold",
-                            )}
-                          >
-                            <Pin size={11} aria-hidden="true" />
-                            <span>
-                              {isPinned
-                                ? t("pinnedInShowcase")
-                                : t("pinToShowcase")}
-                            </span>
-                          </button>
+                          <GalleryPinButton
+                            isPinned={isItemPinned}
+                            pinnedLabel={t("pinnedInShowcase")}
+                            pinLabel={t("pinToShowcase")}
+                            unpinLabel={t("unpinFromShowcase")}
+                            onPin={() => onPinArtifact(artifact)}
+                            onUnpin={
+                              onUnpinArtifact
+                                ? () => onUnpinArtifact(artifact)
+                                : undefined
+                            }
+                          />
                         )}
                       </>
                     ) : (

@@ -105,7 +105,8 @@ export function SidebarLink({
   onClick,
 }: SidebarLinkProps) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const hrefPathname = href.split("?")[0];
+  const isActive = pathname === hrefPathname;
   const numBadge = typeof badge === "number" ? badge : Number(badge);
   const showBadge =
     badge !== undefined && !Number.isNaN(numBadge) && numBadge > 0;

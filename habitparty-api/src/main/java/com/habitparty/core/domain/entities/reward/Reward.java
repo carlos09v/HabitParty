@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.OwnedByUser;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class Reward {
+public class Reward implements OwnedByUser {
   private UUID id;
   private UUID userId; // Chave estrangeira
   private String name;
@@ -66,12 +66,6 @@ public class Reward {
     }
   }
 
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
-  }
-
   public void updateDetails(String newName, String newDescription, BigDecimal newPrice, String newIcon,
       RewardCategory newCategory, List<String> newTags, RewardType newType,
       RewardPackageLevel newPackageLevel, Integer newBaseDurationMinutes) {
@@ -83,69 +77,69 @@ public class Reward {
       RewardCategory newCategory, List<String> newTags, RewardType newType,
       RewardPackageLevel newPackageLevel, Integer newBaseDurationMinutes,
       List<MysteryBoxLootItem> newLootItems) {
-    if (newName != null && !newName.trim().isEmpty()) {
-      this.name = newName;
-    }
+    String nextName = (newName != null && !newName.trim().isEmpty()) ? newName : this.name;
+    // Podem querer apagar a descrição mandando "", mas se mandar nulo, ignoramos
+    String nextDescription = newDescription != null ? newDescription : this.description;
 
-    if (newDescription != null) {
-      // Podem querer apagar a descrição mandando "", mas se mandar nulo, ignoramos
-      this.description = newDescription;
-    }
-
+    BigDecimal nextPrice = this.price;
     if (newPrice != null) {
       validatePrice(newPrice);
-      this.price = newPrice;
+      nextPrice = newPrice;
     }
 
-    if (newIcon != null && !newIcon.trim().isEmpty()) {
-      this.icon = newIcon;
-    }
+    String nextIcon = (newIcon != null && !newIcon.trim().isEmpty()) ? newIcon : this.icon;
+    RewardCategory nextCategory = newCategory != null ? newCategory : this.category;
+    List<String> nextTags = newTags != null ? newTags : this.tags;
+    RewardType nextType = newType != null ? newType : this.type;
+    RewardPackageLevel nextPackageLevel = this.packageLevel;
+    Integer nextBaseDurationMinutes = this.baseDurationMinutes;
+    List<MysteryBoxLootItem> nextLootItems = this.lootItems;
 
-    if (newCategory != null) {
-      this.category = newCategory;
-    }
-    if (newTags != null) {
-      this.tags = newTags;
-    }
-
-    // Atualiza o Tipo (se enviado)
-    if (newType != null) {
-      this.type = newType;
-    }
-
-    if (this.type == RewardType.SINGLE_USE) {
-      this.baseDurationMinutes = null;
-      this.lootItems = null;
+    if (nextType == RewardType.SINGLE_USE) {
+      nextBaseDurationMinutes = null;
+      nextLootItems = null;
       if (newPackageLevel != null) {
-        this.packageLevel = newPackageLevel;
+        nextPackageLevel = newPackageLevel;
       }
-    } else if (this.type == RewardType.TIME_BASED) {
-      this.lootItems = null;
+    } else if (nextType == RewardType.TIME_BASED) {
+      nextLootItems = null;
       if (newPackageLevel != null) {
-        this.packageLevel = newPackageLevel;
+        nextPackageLevel = newPackageLevel;
       }
       if (newBaseDurationMinutes != null) {
-        this.baseDurationMinutes = newBaseDurationMinutes;
+        nextBaseDurationMinutes = newBaseDurationMinutes;
       }
-    } else if (this.type == RewardType.MISTERY_BOX) {
-      this.baseDurationMinutes = null;
+    } else if (nextType == RewardType.MISTERY_BOX) {
+      nextBaseDurationMinutes = null;
       if (newPackageLevel != null) {
         if (newPackageLevel == RewardPackageLevel.NONE) {
           throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
         }
-        this.packageLevel = newPackageLevel;
+        nextPackageLevel = newPackageLevel;
       }
       if (newLootItems != null) {
-        this.lootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(this.packageLevel, newLootItems);
-      } else if (this.lootItems != null && newPackageLevel != null) {
-        this.lootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(this.packageLevel, this.lootItems);
+        nextLootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(nextPackageLevel, newLootItems);
+      } else if (nextLootItems != null && newPackageLevel != null) {
+        nextLootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(nextPackageLevel, nextLootItems);
       }
     }
 
-    validateCategoryAndType(this.category, this.type);
-    if (this.category == RewardCategory.DEBT) {
-      this.packageLevel = RewardPackageLevel.NONE;
+    validateCategoryAndType(nextCategory, nextType);
+    if (nextCategory == RewardCategory.DEBT) {
+      nextPackageLevel = RewardPackageLevel.NONE;
     }
+
+    // Mutação atômica somente após todas as validações passarem
+    this.name = nextName;
+    this.description = nextDescription;
+    this.price = nextPrice;
+    this.icon = nextIcon;
+    this.category = nextCategory;
+    this.tags = nextTags;
+    this.type = nextType;
+    this.packageLevel = nextPackageLevel;
+    this.baseDurationMinutes = nextBaseDurationMinutes;
+    this.lootItems = nextLootItems;
   }
 
   public void updateOrderIndex(int newOrderIndex) {

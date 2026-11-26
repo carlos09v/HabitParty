@@ -2,24 +2,42 @@
 
 import { useLocale } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
-import { calculateFocusMetrics } from "@/utils/focusMetrics";
+import type {
+  FocusActivity,
+  FocusMetrics,
+  FocusRecord,
+  FocusSummaryData,
+} from "@/types/focus";
+import {
+  aggregateFocusRecordsSinglePass,
+  buildWeeklyFocusChartData,
+  focusSummaryToMetrics,
+} from "@/utils/focusMetrics";
 
 interface UseFocusAnalyticsParams {
   initialActivities: FocusActivity[];
   initialRecords: FocusRecord[];
   selectedActivityId: string | null;
+  todayDateKey?: string;
+  initialTimeZone?: string | null;
+  activeSummary?: FocusSummaryData | null;
 }
 
 export function useFocusAnalytics({
   initialActivities,
   initialRecords,
   selectedActivityId,
+  todayDateKey,
+  initialTimeZone = null,
+  activeSummary = null,
 }: UseFocusAnalyticsParams) {
   const locale = useLocale() as AppLocale;
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
+  const { dateFormat } = useDateFormat();
+  const storeTimeZone = useUserStore((s) => s.user?.timezone);
+  const effectiveTimeZone = storeTimeZone ?? initialTimeZone;
 
   // Deslocamento da semana para o gráfico semanal (0 = Esta semana, -1 = semana passada...)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -80,16 +98,55 @@ export function useFocusAnalytics({
     [relevantRecords, visibleRecordCount],
   );
 
-  const { metrics, weeklyDays, totalWeekMinutes, weekLabel, weekDateRange } =
-    useMemo(() => {
-      return calculateFocusMetrics(
-        relevantRecords,
-        weekOffset,
-        undefined,
-        locale,
-        userTimeZone,
-      );
-    }, [relevantRecords, weekOffset, locale, userTimeZone]);
+  // Agregação única O(N) apenas como fallback caso o resumo agregado do backend não esteja disponível.
+  // Completamente desacoplada de `weekOffset` para manter `metrics` estável ao navegar semanas (< >).
+  const aggregated = useMemo(() => {
+    if (activeSummary) {
+      return {
+        metrics: focusSummaryToMetrics(activeSummary),
+        dayMinutesMap: activeSummary.dailyMinutes,
+        globalTodayProductiveMinutes:
+          activeSummary.globalTodayProductiveMinutes,
+        globalTodayRewardableMinutes:
+          activeSummary.globalTodayRewardableMinutes,
+        todayDurationByActivityId: activeSummary.todayDurationByActivityId,
+      };
+    }
+
+    return aggregateFocusRecordsSinglePass(initialRecords, {
+      todayStr: todayDateKey,
+      timeZone: effectiveTimeZone,
+      activityIdFilter: selectedActivityId,
+    });
+  }, [
+    activeSummary,
+    initialRecords,
+    todayDateKey,
+    effectiveTimeZone,
+    selectedActivityId,
+  ]);
+
+  // Fatia semanal O(7) isolada sobre `dayMinutesMap` (não recalcula `metrics` nem re-renderiza FocusMetricsGrid)
+  const weekly = useMemo(() => {
+    void todayDateKey;
+    return buildWeeklyFocusChartData(
+      aggregated.dayMinutesMap,
+      weekOffset,
+      new Date(),
+      locale,
+      effectiveTimeZone,
+      dateFormat,
+    );
+  }, [
+    aggregated.dayMinutesMap,
+    weekOffset,
+    locale,
+    effectiveTimeZone,
+    dateFormat,
+    todayDateKey,
+  ]);
+
+  const metrics: FocusMetrics = aggregated.metrics;
 
   return {
     weekOffset,
@@ -99,12 +156,14 @@ export function useFocusAnalytics({
     selectedActivity,
     recentRecords,
     relevantRecordsCount: relevantRecords.length,
-    visibleRecordCount,
     showMoreRecords,
     metrics,
-    weeklyDays,
-    totalWeekMinutes,
-    weekLabel,
-    weekDateRange,
+    globalTodayProductiveMinutes: aggregated.globalTodayProductiveMinutes,
+    globalTodayRewardableMinutes: aggregated.globalTodayRewardableMinutes,
+    todayDurationByActivityId: aggregated.todayDurationByActivityId,
+    weeklyDays: weekly.weeklyDays,
+    totalWeekMinutes: weekly.totalWeekMinutes,
+    weekLabel: weekly.weekLabel,
+    weekDateRange: weekly.weekDateRange,
   };
 }

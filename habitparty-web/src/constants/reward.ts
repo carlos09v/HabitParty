@@ -18,6 +18,7 @@ import {
   PartyPopper,
   Pizza,
   Plane,
+  Receipt,
   Shield,
   ShoppingBag,
   Skull,
@@ -103,6 +104,7 @@ export const REWARD_ICONS: readonly IconOption[] = [
   { id: "dumbbell", label: "Fitness", icon: Dumbbell },
   { id: "sparkles", label: "Especial", icon: Sparkles },
   { id: "mystery_box", label: "Surpresa", icon: Package },
+  { id: "receipt", label: "Conta / Dívida", icon: Receipt },
 
   // Ícones Exclusivos VIP Premium
   { id: "crown", label: "Realeza VIP", icon: Crown, isPremium: true },
@@ -123,6 +125,13 @@ export const REWARD_ICONS: readonly IconOption[] = [
 /** Índice O(1) para resolução rápida de ícones de recompensa */
 export const REWARD_ICON_MAP = new Map(
   REWARD_ICONS.map((item) => [item.id.toLowerCase(), item.icon]),
+);
+
+/** Conjunto O(1) de IDs de ícones exclusivos Premium para filtrar auto-sugestões em contas Free */
+export const REWARD_PREMIUM_ICON_IDS = new Set(
+  REWARD_ICONS.filter((item) => item.isPremium).map((item) =>
+    item.id.toLowerCase(),
+  ),
 );
 
 export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {

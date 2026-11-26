@@ -12,6 +12,7 @@ import type onboarding from "../messages/en/onboarding.json";
 import type rewards from "../messages/en/rewards.json";
 import type settings from "../messages/en/settings.json";
 import type showcase from "../messages/en/showcase.json";
+import type showcaseCatalog from "../messages/en/showcaseCatalog.json";
 import type tasks from "../messages/en/tasks.json";
 import type { AppLocale } from "./config";
 
@@ -40,7 +41,12 @@ type RawAppMessages = typeof common &
     history: typeof history;
     help: typeof help;
     admin: typeof admin;
-    showcase: typeof showcase;
+    showcase: typeof showcase & {
+      catalog: typeof showcaseCatalog.catalog;
+      artifacts: typeof showcase.artifacts & {
+        items: typeof showcaseCatalog.artifactItems;
+      };
+    };
   };
 
 /**

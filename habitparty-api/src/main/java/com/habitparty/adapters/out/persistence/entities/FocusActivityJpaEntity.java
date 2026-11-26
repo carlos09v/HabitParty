@@ -11,26 +11,31 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "focus_activity")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class FocusActivityJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class FocusActivityJpaEntity extends BaseUuidJpaEntity {
+
   @Id
+  @ToString.Include
   @Column(name = "focus_activity_id", updatable = false, nullable = false)
   private UUID id;
 
-  // Deixar sem o relacionamento @ManyToOne para desempenho
   @Column(name = "user_id", nullable = false)
   private UUID userId;
 
+  @ToString.Include
   @Column(name = "name", nullable = false, length = 50)
   private String name;
 

@@ -18,33 +18,53 @@ public class DeleteTransactionHistoryUseCase {
 
   private final TransactionHistoryRepository port;
 
-    public DeleteTransactionHistoryUseCase(TransactionHistoryRepository port) {
-        this.port = port;
-    }
+  public DeleteTransactionHistoryUseCase(TransactionHistoryRepository port) {
+    this.port = port;
+  }
 
-    @Transactional
-    public void execute(UUID transactionId, UUID userIdLogado) {
-        TransactionHistory transaction = port.findById(transactionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Registro de transação não encontrado."));
-        transaction.validateOwnership(userIdLogado);
+  /**
+   * Oculta logicamente um registro do extrato (preservando dados operacionais como
+   * limite diário de hábitos, streak efetivo e retrospectiva anual).
+   */
+  @Transactional
+  public void execute(UUID transactionId, UUID userIdLogado) {
+    TransactionHistory transaction = port.findById(transactionId)
+        .orElseThrow(() -> new ResourceNotFoundException("Registro de transação não encontrado."));
+    transaction.validateOwnership(userIdLogado);
 
-        // 3. Deleta do banco
-        port.deleteById(transactionId);
-    }
+    port.hideByIdAndUserId(transactionId, userIdLogado);
+  }
 
-    /**
-     * Exclusão em lote: remove apenas os registros que pertencem ao usuário logado
-     * (IDs de outros usuários são ignorados silenciosamente pela cláusula de ownership).
-     */
-    @Transactional
-    public int executeBatch(List<UUID> transactionIds, UUID userIdLogado) {
-        if (transactionIds == null || transactionIds.isEmpty()) {
-            throw new DomainValidationException("Nenhum registro selecionado para exclusão.");
-        }
-        if (transactionIds.size() > MAX_BATCH_SIZE) {
-            throw new DomainValidationException("Limite de " + MAX_BATCH_SIZE + " registros por exclusão em lote.");
-        }
-        List<UUID> distinctIds = transactionIds.stream().filter(Objects::nonNull).distinct().toList();
-        return port.deleteAllByIdsAndUserId(distinctIds, userIdLogado);
+  /**
+   * Ocultação lógica em lote: oculta apenas registros pertencentes ao usuário logado
+   * (IDs de outros usuários são ignorados silenciosamente pela cláusula de ownership).
+   */
+  @Transactional
+  public int executeBatch(List<UUID> transactionIds, UUID userIdLogado) {
+    List<UUID> distinctIds = validateAndDeduplicate(transactionIds, "exclusão");
+    return port.hideAllByIdsAndUserId(distinctIds, userIdLogado);
+  }
+
+  /**
+   * Restaura registros ocultados do extrato (suporte a Desfazer / Undo na interface).
+   */
+  @Transactional
+  public int restoreBatch(List<UUID> transactionIds, UUID userIdLogado) {
+    List<UUID> distinctIds = validateAndDeduplicate(transactionIds, "restauração");
+    return port.restoreAllByIdsAndUserId(distinctIds, userIdLogado);
+  }
+
+  private List<UUID> validateAndDeduplicate(List<UUID> transactionIds, String actionLabel) {
+    if (transactionIds == null || transactionIds.isEmpty()) {
+      throw new DomainValidationException("Nenhum registro selecionado para " + actionLabel + ".");
     }
+    if (transactionIds.size() > MAX_BATCH_SIZE) {
+      throw new DomainValidationException("Limite de " + MAX_BATCH_SIZE + " registros por " + actionLabel + " em lote.");
+    }
+    List<UUID> distinctIds = transactionIds.stream().filter(Objects::nonNull).distinct().toList();
+    if (distinctIds.isEmpty()) {
+      throw new DomainValidationException("Nenhum registro válido selecionado para " + actionLabel + ".");
+    }
+    return distinctIds;
+  }
 }

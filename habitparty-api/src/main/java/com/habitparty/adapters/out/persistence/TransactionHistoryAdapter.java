@@ -8,18 +8,33 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.adapters.out.persistence.entities.TransactionHistoryJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.TransactionHistoryMapper;
@@ -34,14 +49,21 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
       TransactionType.HABIT_COMPLETED,
       TransactionType.DAILY_COMPLETED,
       TransactionType.TODO_COMPLETED,
-      TransactionType.TASK_COMPLETED
-  );
+      TransactionType.TASK_COMPLETED);
 
-  private static final LocalTime END_OF_DAY_TIME = LocalTime.of(23, 59, 59, 999999999);
+  public static final List<TransactionType> POSITIVE_REWARD_TYPES = List.of(
+      TransactionType.HABIT_COMPLETED,
+      TransactionType.DAILY_COMPLETED,
+      TransactionType.TODO_COMPLETED,
+      TransactionType.TASK_COMPLETED,
+      TransactionType.FOCUS_COMPLETED);
 
   private final TransactionHistoryJpaRepository repository;
   private final TransactionHistoryMapper mapper;
   private final Clock clock;
+
+  @PersistenceContext
+  private EntityManager entityManager;
 
   @Autowired
   public TransactionHistoryAdapter(
@@ -66,7 +88,7 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   private LocalDateTime toStorageDateTime(LocalDate businessDate, LocalTime businessTime, ZoneId userZone) {
     return businessDate.atTime(businessTime)
         .atZone(resolveZone(userZone))
-        .withZoneSameInstant(ZoneId.systemDefault())
+        .withZoneSameInstant(clock.getZone())
         .toLocalDateTime();
   }
 
@@ -80,14 +102,13 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     ZoneId effectiveZone = resolveZone(userZone);
     LocalDate today = LocalDate.now(clock.withZone(effectiveZone));
     LocalDateTime startOfDay = toStorageDateTime(today, LocalTime.MIN, effectiveZone);
-    LocalDateTime endOfDay = toStorageDateTime(today, END_OF_DAY_TIME, effectiveZone);
+    LocalDateTime nextDayStart = toStorageDateTime(today.plusDays(1), LocalTime.MIN, effectiveZone);
 
-    long count = repository.countByUser_IdAndTransactionTypeInAndCreatedAtBetween(
+    long count = repository.countByUserIdAndTransactionTypeInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
         userId,
         COMPLETED_TASK_TYPES,
         startOfDay,
-        endOfDay
-    );
+        nextDayStart);
 
     return (int) count;
   }
@@ -102,14 +123,13 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     ZoneId effectiveZone = resolveZone(userZone);
     LocalDate yesterday = LocalDate.now(clock.withZone(effectiveZone)).minusDays(1);
     LocalDateTime startOfYesterday = toStorageDateTime(yesterday, LocalTime.MIN, effectiveZone);
-    LocalDateTime endOfYesterday = toStorageDateTime(yesterday, END_OF_DAY_TIME, effectiveZone);
+    LocalDateTime startOfToday = toStorageDateTime(yesterday.plusDays(1), LocalTime.MIN, effectiveZone);
 
-    return repository.countByUser_IdAndTransactionTypeInAndCreatedAtBetween(
+    return repository.countByUserIdAndTransactionTypeInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
         userId,
         COMPLETED_TASK_TYPES,
         startOfYesterday,
-        endOfYesterday
-    ) > 0;
+        startOfToday) > 0;
   }
 
   @Override
@@ -122,19 +142,18 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     ZoneId effectiveZone = resolveZone(userZone);
     LocalDate yesterday = LocalDate.now(clock.withZone(effectiveZone)).minusDays(1);
     LocalDateTime sinceYesterday = toStorageDateTime(yesterday, LocalTime.MIN, effectiveZone);
-    return repository.existsByUser_IdAndTransactionTypeInAndCreatedAtGreaterThanEqual(
+    return repository.existsByUserIdAndTransactionTypeInAndCreatedAtGreaterThanEqual(
         userId,
         COMPLETED_TASK_TYPES,
-        sinceYesterday
-    );
+        sinceYesterday);
   }
 
   @Override
-  public java.util.Map<UUID, LocalDateTime> findLastCompletedTaskAtByUserIds(java.util.Collection<UUID> userIds, LocalDateTime since) {
+  public Map<UUID, LocalDateTime> findLastCompletedTaskAtByUserIds(Collection<UUID> userIds, LocalDateTime since) {
     if (userIds == null || userIds.isEmpty()) {
-      return java.util.Map.of();
+      return Map.of();
     }
-    java.util.Map<UUID, LocalDateTime> result = new java.util.HashMap<>();
+    Map<UUID, LocalDateTime> result = new HashMap<>();
     for (Object[] row : repository.findLastCompletedTaskAtByUserIds(userIds, COMPLETED_TASK_TYPES, since)) {
       if (row != null && row.length >= 2 && row[0] instanceof UUID uid && row[1] instanceof LocalDateTime dt) {
         result.put(uid, dt);
@@ -153,11 +172,10 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     if (transactions == null || transactions.isEmpty()) {
       return;
     }
-    List<com.habitparty.adapters.out.persistence.entities.TransactionHistoryJpaEntity> entities =
-        transactions.stream()
-            .filter(java.util.Objects::nonNull)
-            .map(mapper::toEntity)
-            .toList();
+    List<TransactionHistoryJpaEntity> entities = transactions.stream()
+        .filter(Objects::nonNull)
+        .map(mapper::toEntity)
+        .toList();
     if (!entities.isEmpty()) {
       repository.saveAll(entities);
     }
@@ -211,44 +229,331 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
-  public Page<TransactionHistory> findAllByUserId(UUID userId, int page, int size) {
-    return repository.findAllByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size))
-        .map(mapper::toDomain);
+  public int hideByIdAndUserId(UUID id, UUID userId) {
+    if (id == null || userId == null) {
+      return 0;
+    }
+    return repository.hideByIdAndUserId(id, userId);
   }
 
   @Override
-  public Page<TransactionHistory> findAllByUserIdAndTypes(
-      UUID userId, List<TransactionType> types, int page, int size) {
-    return repository.findAllByUserIdAndTransactionTypeInOrderByCreatedAtDesc(
-            userId, types, PageRequest.of(page, size))
-        .map(mapper::toDomain);
+  public int hideAllByIdsAndUserId(List<UUID> ids, UUID userId) {
+    if (ids == null || ids.isEmpty() || userId == null) {
+      return 0;
+    }
+    return repository.hideAllByIdInAndUserId(ids, userId);
+  }
+
+  @Override
+  public int restoreAllByIdsAndUserId(List<UUID> ids, UUID userId) {
+    if (ids == null || ids.isEmpty() || userId == null) {
+      return 0;
+    }
+    return repository.restoreAllByIdInAndUserId(ids, userId);
   }
 
   @Override
   public Page<TransactionHistory> findFiltered(
       UUID userId, List<TransactionType> types, LocalDateTime startDate, String search, int page, int size) {
-    Specification<TransactionHistoryJpaEntity> spec = (root, query, cb) -> {
-      List<Predicate> predicates = new ArrayList<>();
-      predicates.add(cb.equal(root.get("user").get("id"), userId));
+    return findFiltered(userId, new TransactionHistoryFilter(types, startDate, search), page, size);
+  }
 
-      if (types != null && !types.isEmpty()) {
-        predicates.add(root.get("transactionType").in(types));
-      }
+  @Override
+  public Page<TransactionHistory> findFiltered(
+      UUID userId, TransactionHistoryFilter filter, int page, int size) {
+    TransactionHistoryFilter safeFilter = filter != null
+        ? filter
+        : new TransactionHistoryFilter(null, null, null);
+    Specification<TransactionHistoryJpaEntity> spec = (root, query, cb) ->
+        cb.and(buildFilteredPredicates(userId, safeFilter, null, null, root, cb).toArray(new Predicate[0]));
 
-      if (startDate != null) {
-        predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startDate));
-      }
-
-      if (search != null && !search.trim().isEmpty()) {
-        String pattern = "%" + search.trim().toLowerCase() + "%";
-        predicates.add(cb.like(cb.lower(root.get("nameSnapshot")), pattern));
-      }
-
-      return cb.and(predicates.toArray(new Predicate[0]));
-    };
-
-    PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+    PageRequest pageRequest = PageRequest.of(page, size, resolveSort(safeFilter.sort()));
     return repository.findAll(spec, pageRequest).map(mapper::toDomain);
+  }
+
+  @Override
+  public boolean supportsDirectPageContent() {
+    return entityManager != null;
+  }
+
+  @Override
+  public List<TransactionHistory> findFilteredPageContent(
+      UUID userId, TransactionHistoryFilter filter, int page, int size) {
+    TransactionHistoryFilter safeFilter = filter != null
+        ? filter
+        : new TransactionHistoryFilter(null, null, null);
+    int safePage = Math.max(page, 0);
+    int safeSize = Math.min(Math.max(size, 1), 1000);
+
+    if (entityManager == null) {
+      return findFiltered(userId, safeFilter, safePage, safeSize).getContent();
+    }
+
+    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    CriteriaQuery<TransactionHistoryJpaEntity> cq = cb.createQuery(TransactionHistoryJpaEntity.class);
+    Root<TransactionHistoryJpaEntity> root = cq.from(TransactionHistoryJpaEntity.class);
+    List<Predicate> predicates = buildFilteredPredicates(userId, safeFilter, null, null, root, cb);
+    cq.select(root)
+        .where(predicates.toArray(new Predicate[0]))
+        .orderBy(resolveCriteriaOrders(safeFilter.sort(), root, cb));
+
+    return entityManager.createQuery(cq)
+        .setFirstResult(safePage * safeSize)
+        .setMaxResults(safeSize)
+        .getResultList()
+        .stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public List<TransactionHistory> findFilteredSliceAfterCursor(
+      UUID userId,
+      TransactionHistoryFilter filter,
+      LocalDateTime cursorCreatedAt,
+      UUID cursorId,
+      int limit) {
+    int safeLimit = Math.min(Math.max(limit, 1), 1000);
+    TransactionHistoryFilter safeFilter = filter != null
+        ? filter
+        : new TransactionHistoryFilter(null, null, null);
+    boolean isOldest = isOldestSort(safeFilter.sort());
+
+    if (entityManager != null) {
+      CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+      CriteriaQuery<TransactionHistoryJpaEntity> cq = cb.createQuery(TransactionHistoryJpaEntity.class);
+      Root<TransactionHistoryJpaEntity> root = cq.from(TransactionHistoryJpaEntity.class);
+      List<Predicate> predicates = buildFilteredPredicates(userId, safeFilter, cursorCreatedAt, cursorId, root, cb);
+      cq.select(root)
+          .where(predicates.toArray(new Predicate[0]))
+          .orderBy(isOldest
+              ? List.of(cb.asc(root.get("createdAt")), cb.asc(root.get("id")))
+              : List.of(cb.desc(root.get("createdAt")), cb.desc(root.get("id"))));
+      return entityManager.createQuery(cq)
+          .setMaxResults(safeLimit)
+          .getResultList()
+          .stream()
+          .map(mapper::toDomain)
+          .toList();
+    }
+
+    Specification<TransactionHistoryJpaEntity> spec = (root, query, cb) ->
+        cb.and(buildFilteredPredicates(userId, safeFilter, cursorCreatedAt, cursorId, root, cb).toArray(new Predicate[0]));
+    Sort keysetSort = isOldest
+        ? Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"))
+        : Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"));
+    PageRequest pageRequest = PageRequest.of(0, safeLimit, keysetSort);
+    return repository.findAll(spec, pageRequest).getContent().stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public TransactionHistorySummary summarizeFiltered(UUID userId, TransactionHistoryFilter filter) {
+    if (entityManager == null || userId == null) {
+      return TransactionHistorySummary.empty();
+    }
+    TransactionHistoryFilter safeFilter = filter != null
+        ? filter
+        : new TransactionHistoryFilter(null, null, null);
+
+    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    CriteriaQuery<Tuple> cq = cb.createTupleQuery();
+    Root<TransactionHistoryJpaEntity> root = cq.from(TransactionHistoryJpaEntity.class);
+    List<Predicate> predicates = buildFilteredPredicates(userId, safeFilter, null, null, root, cb);
+
+    Expression<BigDecimal> goldPath = root.get("goldAmount");
+    Expression<Integer> xpPath = root.get("xpAmount");
+
+    Expression<BigDecimal> goldEarnedExpr = cb.sum(
+        cb.<BigDecimal>selectCase()
+            .when(cb.greaterThan(goldPath, BigDecimal.ZERO), goldPath)
+            .otherwise(BigDecimal.ZERO));
+    Expression<BigDecimal> goldSpentExpr = cb.sum(
+        cb.<BigDecimal>selectCase()
+            .when(cb.lessThan(goldPath, BigDecimal.ZERO), cb.neg(goldPath))
+            .otherwise(BigDecimal.ZERO));
+    Expression<Long> xpEarnedExpr = cb.sumAsLong(
+        cb.<Integer>selectCase()
+            .when(cb.greaterThan(xpPath, 0), xpPath)
+            .otherwise(0));
+    Expression<Long> xpLostExpr = cb.sumAsLong(
+        cb.<Integer>selectCase()
+            .when(cb.lessThan(xpPath, 0), cb.neg(xpPath))
+            .otherwise(0));
+    Expression<Long> totalCountExpr = cb.count(root.get("id"));
+
+    cq.multiselect(goldEarnedExpr, goldSpentExpr, xpEarnedExpr, xpLostExpr, totalCountExpr)
+        .where(predicates.toArray(new Predicate[0]));
+
+    Tuple result = entityManager.createQuery(cq).getSingleResult();
+    if (result == null) {
+      return TransactionHistorySummary.empty();
+    }
+    BigDecimal goldEarned = result.get(0, BigDecimal.class);
+    BigDecimal goldSpent = result.get(1, BigDecimal.class);
+    Long xpEarned = result.get(2, Long.class);
+    Long xpLost = result.get(3, Long.class);
+    Long totalCount = result.get(4, Long.class);
+
+    return new TransactionHistorySummary(
+        goldEarned != null ? goldEarned : BigDecimal.ZERO,
+        goldSpent != null ? goldSpent : BigDecimal.ZERO,
+        xpEarned != null ? Math.toIntExact(xpEarned) : 0,
+        xpLost != null ? Math.toIntExact(xpLost) : 0,
+        totalCount != null ? totalCount : 0L);
+  }
+
+  private List<Predicate> buildFilteredPredicates(
+      UUID userId,
+      TransactionHistoryFilter filter,
+      LocalDateTime cursorCreatedAt,
+      UUID cursorId,
+      Root<TransactionHistoryJpaEntity> root,
+      CriteriaBuilder cb) {
+    List<Predicate> predicates = new ArrayList<>();
+    predicates.add(cb.equal(root.get("userId"), userId));
+    predicates.add(cb.isFalse(root.get("hiddenFromHistory")));
+
+    if (filter.types() != null && !filter.types().isEmpty()) {
+      predicates.add(root.get("transactionType").in(filter.types()));
+    }
+
+    if (filter.startDate() != null) {
+      predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), filter.startDate()));
+    }
+
+    if (filter.endDate() != null) {
+      predicates.add(cb.lessThan(root.get("createdAt"), filter.endDate()));
+    }
+
+    if (filter.direction() != null && !filter.direction().isBlank()) {
+      String normalizedDirection = filter.direction().trim().toUpperCase(Locale.ROOT);
+      if ("IN".equals(normalizedDirection)) {
+        predicates.add(cb.or(
+            cb.greaterThan(root.get("goldAmount"), BigDecimal.ZERO),
+            cb.greaterThan(root.get("xpAmount"), 0)));
+      } else if ("OUT".equals(normalizedDirection)) {
+        predicates.add(cb.or(
+            cb.lessThan(root.get("goldAmount"), BigDecimal.ZERO),
+            cb.lessThan(root.get("xpAmount"), 0)));
+      }
+    }
+
+    if (filter.search() != null && !filter.search().trim().isEmpty()) {
+      String pattern = "%" + escapeLikePattern(filter.search().trim().toLowerCase(Locale.ROOT)) + "%";
+      Expression<?> tagsPath = root.get("tagsSnapshot");
+      Expression<String> tagsAsText = (cb instanceof HibernateCriteriaBuilder hcb
+          && tagsPath instanceof JpaExpression<?> jpaTags)
+          ? hcb.cast(jpaTags, String.class)
+          : tagsPath.as(String.class);
+      predicates.add(cb.or(
+          cb.like(cb.lower(root.get("nameSnapshot")), pattern, '\\'),
+          cb.like(cb.lower(cb.coalesce(root.get("columnNameSnapshot"), "")), pattern, '\\'),
+          cb.like(cb.lower(cb.coalesce(root.get("descriptionSnapshot"), "")), pattern, '\\'),
+          cb.like(cb.lower(cb.coalesce(tagsAsText, "")), pattern, '\\')));
+    }
+
+    if (cursorCreatedAt != null && cursorId != null) {
+      if (isOldestSort(filter.sort())) {
+        predicates.add(cb.or(
+            cb.greaterThan(root.get("createdAt"), cursorCreatedAt),
+            cb.and(
+                cb.equal(root.get("createdAt"), cursorCreatedAt),
+                cb.greaterThan(root.get("id"), cursorId))));
+      } else {
+        predicates.add(cb.or(
+            cb.lessThan(root.get("createdAt"), cursorCreatedAt),
+            cb.and(
+                cb.equal(root.get("createdAt"), cursorCreatedAt),
+                cb.lessThan(root.get("id"), cursorId))));
+      }
+    }
+
+    return predicates;
+  }
+
+  private static boolean isOldestSort(String sort) {
+    return sort != null && "OLDEST".equalsIgnoreCase(sort.trim());
+  }
+
+  private static List<Order> resolveCriteriaOrders(
+      String sort, Root<TransactionHistoryJpaEntity> root, CriteriaBuilder cb) {
+    String normalized = sort != null ? sort.trim().toUpperCase(Locale.ROOT) : "NEWEST";
+    return switch (normalized) {
+      case "OLDEST" -> List.of(cb.asc(root.get("createdAt")), cb.asc(root.get("id")));
+      case "HIGHEST_GOLD" -> List.of(
+          cb.asc(cb.<Integer>selectCase().when(cb.isNull(root.get("goldAmount")), 1).otherwise(0)),
+          cb.desc(root.get("goldAmount")),
+          cb.desc(root.get("createdAt")),
+          cb.desc(root.get("id")));
+      case "LOWEST_GOLD" -> List.of(
+          cb.asc(cb.<Integer>selectCase().when(cb.isNull(root.get("goldAmount")), 1).otherwise(0)),
+          cb.asc(root.get("goldAmount")),
+          cb.desc(root.get("createdAt")),
+          cb.desc(root.get("id")));
+      default -> List.of(cb.desc(root.get("createdAt")), cb.desc(root.get("id")));
+    };
+  }
+
+  private static Sort resolveSort(String sort) {
+    if (sort == null || sort.isBlank()) {
+      return Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+    }
+    return switch (sort.trim().toUpperCase(Locale.ROOT)) {
+      case "OLDEST" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
+      case "HIGHEST_GOLD" -> Sort.by(
+          Sort.Order.desc("goldAmount").nullsLast(),
+          Sort.Order.desc("createdAt"),
+          Sort.Order.desc("id"));
+      case "LOWEST_GOLD" -> Sort.by(
+          Sort.Order.asc("goldAmount").nullsLast(),
+          Sort.Order.desc("createdAt"),
+          Sort.Order.desc("id"));
+      default -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+    };
+  }
+
+  static String escapeLikePattern(String raw) {
+    return raw
+        .replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_");
+  }
+
+  @Override
+  public Optional<Boolean> existsAnyByReferenceIdsAndUserId(Collection<UUID> referenceIds, UUID userId) {
+    if (referenceIds == null || referenceIds.isEmpty() || userId == null) {
+      return Optional.of(false);
+    }
+    return Optional.of(repository.existsByReferenceIdInAndUserId(referenceIds, userId));
+  }
+
+  @Override
+  public Optional<List<RetrospectiveTxBucket>> aggregateForRetrospective(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endExclusive) {
+    if (userId == null || startInclusive == null || endExclusive == null) {
+      return Optional.of(List.of());
+    }
+    List<Object[]> rows = repository.aggregateForRetrospective(
+        userId, COMPLETED_TASK_TYPES, POSITIVE_REWARD_TYPES, startInclusive, endExclusive);
+    List<RetrospectiveTxBucket> buckets = new ArrayList<>(rows.size());
+    for (Object[] row : rows) {
+      BigDecimal coins = row[8] instanceof BigDecimal bd
+          ? bd
+          : (row[8] instanceof Number n ? BigDecimal.valueOf(n.doubleValue()) : BigDecimal.ZERO);
+      buckets.add(new RetrospectiveTxBucket(
+          ((Number) row[0]).intValue(),
+          ((Number) row[1]).intValue(),
+          ((Number) row[2]).intValue(),
+          ((Number) row[3]).intValue(),
+          ((Number) row[4]).intValue(),
+          ((Number) row[5]).intValue(),
+          ((Number) row[6]).intValue(),
+          ((Number) row[7]).intValue(),
+          coins));
+    }
+    return Optional.of(buckets);
   }
 
   @Override
@@ -257,18 +562,18 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     if (userId == null || startInclusive == null || endInclusive == null) {
       return List.of();
     }
-    return repository.findAllByUser_IdAndCreatedAtBetweenOrderByCreatedAtAsc(userId, startInclusive, endInclusive)
+    return repository.findAllByUserIdAndCreatedAtBetweenOrderByCreatedAtAsc(userId, startInclusive, endInclusive)
         .stream()
         .map(mapper::toDomain)
         .toList();
   }
 
   @Override
-  public java.util.Optional<LocalDateTime> findEarliestCreatedAtByUserId(UUID userId) {
+  public Optional<LocalDateTime> findEarliestCreatedAtByUserId(UUID userId) {
     if (userId == null) {
-      return java.util.Optional.empty();
+      return Optional.empty();
     }
-    return java.util.Optional.ofNullable(repository.findEarliestCreatedAtByUserId(userId));
+    return Optional.ofNullable(repository.findEarliestCreatedAtByUserId(userId));
   }
 
   @Override
@@ -338,7 +643,7 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
       return List.of();
     }
     return repository
-        .findTop2ByUser_IdAndReferenceIdAndTransactionTypeOrderByCreatedAtDesc(
+        .findTop2ByUserIdAndReferenceIdAndTransactionTypeOrderByCreatedAtDesc(
             userId, referenceId, transactionType)
         .stream()
         .map(mapper::toDomain)
@@ -371,6 +676,7 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  @Transactional
   public int updateFocusCompletedSnapshot(
       UUID referenceId,
       UUID userId,
@@ -388,7 +694,7 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
       repository.updateFocusCreatedAt(referenceId, userId, createdAt);
     }
     List<TransactionHistoryJpaEntity> entities = repository
-        .findAllByUser_IdAndReferenceIdAndTransactionType(
+        .findAllByUserIdAndReferenceIdAndTransactionType(
             userId, referenceId, TransactionType.FOCUS_COMPLETED);
     if (entities.isEmpty()) {
       return 0;

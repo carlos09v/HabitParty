@@ -14,6 +14,7 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { Task } from "@/types/task";
 import { cn, formatCoins } from "@/utils";
+import { isTaskCycleBasedStreak } from "@/utils/date";
 
 interface TaskRewardBadgesProps {
   task: Task;
@@ -47,14 +48,7 @@ export function TaskRewardBadges({
   const hasRewards =
     effectiveShowRewards &&
     (task.rewardXp !== undefined || task.rewardGold !== undefined);
-  const isCycleBasedStreak =
-    taskType === "daily"
-      ? (task.repeatType != null &&
-          task.repeatType.toUpperCase() !== "DAILY") ||
-        (task.repeatEvery ?? 1) > 1
-      : isHabit &&
-        task.resetCounter != null &&
-        task.resetCounter.toUpperCase() !== "DAILY";
+  const isCycleBasedStreak = isTaskCycleBasedStreak(task);
 
   const showDifficultyIndicator = true;
 
@@ -143,7 +137,7 @@ export function TaskRewardBadges({
                 : "badges.streakTitle";
           return (
             <span
-              className="flex items-center gap-0.5 text-warning-500 font-bold"
+              className="flex items-center gap-0.5 text-warning-500 font-bold leading-none tabular-nums whitespace-nowrap"
               title={t(titleKey, { count: current, highest })}
             >
               <Flame

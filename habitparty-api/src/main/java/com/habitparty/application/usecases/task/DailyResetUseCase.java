@@ -4,12 +4,10 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,9 +15,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
@@ -42,6 +45,8 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class DailyResetUseCase {
+  private static final Logger log = LoggerFactory.getLogger(DailyResetUseCase.class);
+
   // Tamanho do lote de usuários processados por transação curta
   static final int BATCH_SIZE = 500;
 
@@ -51,6 +56,7 @@ public class DailyResetUseCase {
   private final Clock clock;
   private final TransactionOperations transactionOperations;
   private final BoardColumnRepository boardColumnPort;
+  private TransactionOperations requiresNewTransactionOperations;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private FocusRecordRepository focusRecordPort;
 
@@ -71,6 +77,15 @@ public class DailyResetUseCase {
   }
 
   @Autowired(required = false)
+  public void setTransactionManager(PlatformTransactionManager transactionManager) {
+    if (transactionManager != null) {
+      TransactionTemplate template = new TransactionTemplate(transactionManager);
+      template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      this.requiresNewTransactionOperations = template;
+    }
+  }
+
+  @Autowired(required = false)
   public void setEvaluateUserAchievementsUseCase(
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
@@ -85,13 +100,20 @@ public class DailyResetUseCase {
 
   private record RolloverOutcome(boolean changed, boolean hasFailed) {}
 
+  private record BatchResult(RolloverSummary summary, List<User> cleanHabitUsers) {
+    static BatchResult empty() {
+      return new BatchResult(new RolloverSummary(0, 0, 0, 0), List.of());
+    }
+  }
+
   public void executeDailyRollover() {
     executeDailyRolloverSummary();
   }
 
   /**
-   * Garante virada preguiçosa e atômica para um único usuário caso ele interaja entre 00:00 locais
-   * e a execução do próximo lote do cron (evita cliques pós-meia-noite serem tratados como do dia anterior).
+   * Garante virada preguiçosa e atômica em transação independente ({@code REQUIRES_NEW}) para um único
+   * usuário caso ele interaja entre 00:00 locais e o próximo ciclo do cron, evitando rollback da virada
+   * se a operação chamadora falhar posteriormente.
    */
   public boolean resetUserIfDue(UUID userId) {
     if (userId == null) {
@@ -102,17 +124,25 @@ public class DailyResetUseCase {
       return false;
     }
 
-    if (transactionOperations != null) {
-      Boolean executed = transactionOperations.execute(status -> executeSingleUserRolloverUnderLock(userId, nowUtc));
-      return Boolean.TRUE.equals(executed);
+    TransactionOperations txOps = resolveRequiresNewOperations();
+    BatchResult result = txOps != null
+        ? txOps.execute(status -> executeSingleUserRolloverUnderLock(userId, nowUtc))
+        : executeSingleUserRolloverUnderLock(userId, nowUtc);
+    if (result == null) {
+      return false;
     }
-    return executeSingleUserRolloverUnderLock(userId, nowUtc);
+    evaluateCleanCycleAchievementsPostCommit(result.cleanHabitUsers());
+    return result.summary().processedUsers() > 0;
   }
 
-  private boolean executeSingleUserRolloverUnderLock(UUID userId, Instant nowUtc) {
+  private TransactionOperations resolveRequiresNewOperations() {
+    return requiresNewTransactionOperations != null ? requiresNewTransactionOperations : transactionOperations;
+  }
+
+  private BatchResult executeSingleUserRolloverUnderLock(UUID userId, Instant nowUtc) {
     Optional<User> lockedUser = userPort.findByIdForUpdate(userId);
     if (lockedUser.isEmpty()) {
-      return false;
+      return BatchResult.empty();
     }
     User user = lockedUser.get();
     ZoneId userZone = user.resolveZoneId(clock.getZone());
@@ -120,16 +150,15 @@ public class DailyResetUseCase {
     if (!user.shouldRunDailyReset(userToday)
         && user.getNextDailyResetAt() != null
         && user.getNextDailyResetAt().isAfter(nowUtc)) {
-      return false;
+      return BatchResult.empty();
     }
-    RolloverSummary summary = processLoadedUsersBatch(List.of(user));
-    return summary.processedUsers() > 0;
+    return processLoadedUsersBatch(List.of(user), nowUtc);
   }
 
   /**
    * Executa a virada diária por fuso horário de cada usuário devido (cron UTC a cada 15 min ou startup).
-   * Como a atualização de {@code lastDailyResetDate} e {@code nextDailyResetAt} ocorre na mesma transação
-   * das tarefas e penalidades, a operação é idempotente por usuário e dia calendário local.
+   * Isola falhas por lote e, em caso de erro inesperado num lote, reprocessa cada usuário em transação
+   * independente para que 1 conta corrompida nunca derrube as demais.
    */
   public RolloverSummary executeDailyRolloverSummary() {
     Instant nowUtc = Instant.now(clock);
@@ -145,31 +174,79 @@ public class DailyResetUseCase {
 
     for (int start = 0; start < dueUserIds.size(); start += BATCH_SIZE) {
       List<UUID> slice = dueUserIds.subList(start, Math.min(start + BATCH_SIZE, dueUserIds.size()));
-      RolloverSummary batch = transactionOperations.execute(status -> processUsersBatch(slice));
-      if (batch != null) {
-        processedUsers += batch.processedUsers();
-        updatedTasks += batch.updatedTasks();
-        overdueHardcoreTodos += batch.overdueHardcoreTodos();
-        expiredStreaks += batch.expiredStreaks();
+      try {
+        BatchResult batchResult = transactionOperations.execute(status -> processUsersBatch(slice, nowUtc));
+        if (batchResult != null) {
+          RolloverSummary batch = batchResult.summary();
+          processedUsers += batch.processedUsers();
+          updatedTasks += batch.updatedTasks();
+          overdueHardcoreTodos += batch.overdueHardcoreTodos();
+          expiredStreaks += batch.expiredStreaks();
+          // Avalia conquistas pós-commit, fora do lock FOR UPDATE de 500 linhas
+          evaluateCleanCycleAchievementsPostCommit(batchResult.cleanHabitUsers());
+        }
+      } catch (Exception batchError) {
+        log.error(
+            "[DailyResetUseCase] Erro no lote de {} usuário(s); aplicando fallback isolado por usuário: {}",
+            slice.size(),
+            batchError.getMessage(),
+            batchError);
+        TransactionOperations isolatedTx = resolveRequiresNewOperations();
+        for (UUID singleUserId : slice) {
+          try {
+            BatchResult singleResult = isolatedTx != null
+                ? isolatedTx.execute(status -> processUsersBatch(List.of(singleUserId), nowUtc))
+                : processUsersBatch(List.of(singleUserId), nowUtc);
+            if (singleResult != null) {
+              RolloverSummary single = singleResult.summary();
+              processedUsers += single.processedUsers();
+              updatedTasks += single.updatedTasks();
+              overdueHardcoreTodos += single.overdueHardcoreTodos();
+              expiredStreaks += single.expiredStreaks();
+              evaluateCleanCycleAchievementsPostCommit(singleResult.cleanHabitUsers());
+            }
+          } catch (Exception userError) {
+            log.error(
+                "[DailyResetUseCase] Falha isolada no reset diário do usuário {}: {}",
+                singleUserId,
+                userError.getMessage(),
+                userError);
+          }
+        }
       }
     }
 
     return new RolloverSummary(processedUsers, updatedTasks, overdueHardcoreTodos, expiredStreaks);
   }
 
-  private RolloverSummary processUsersBatch(List<UUID> batchUserIds) {
+  private void evaluateCleanCycleAchievementsPostCommit(List<User> cleanHabitUsers) {
+    if (evaluateUserAchievementsUseCase == null || cleanHabitUsers == null || cleanHabitUsers.isEmpty()) {
+      return;
+    }
+    for (User user : cleanHabitUsers) {
+      try {
+        evaluateUserAchievementsUseCase.execute(user);
+      } catch (Exception e) {
+        log.warn(
+            "[DailyResetUseCase] Falha não-bloqueante ao avaliar conquistas pós-rollover do usuário {}: {}",
+            user.getId(),
+            e.getMessage());
+      }
+    }
+  }
+
+  private BatchResult processUsersBatch(List<UUID> batchUserIds, Instant nowUtc) {
     List<User> lockedUsers = userPort.findAllByIdsForUpdate(batchUserIds);
     List<User> loadedUsers = (lockedUsers != null && !lockedUsers.isEmpty())
         ? lockedUsers
         : userPort.findAllByIds(batchUserIds);
     if (loadedUsers == null || loadedUsers.isEmpty()) {
-      return new RolloverSummary(0, 0, 0, 0);
+      return BatchResult.empty();
     }
-    return processLoadedUsersBatch(loadedUsers);
+    return processLoadedUsersBatch(loadedUsers, nowUtc);
   }
 
-  private RolloverSummary processLoadedUsersBatch(List<User> loadedUsers) {
-
+  private BatchResult processLoadedUsersBatch(List<User> loadedUsers, Instant nowUtc) {
     Map<UUID, User> usersById = new LinkedHashMap<>();
     Map<UUID, User> dirtyUsers = new LinkedHashMap<>();
     Map<UUID, ZoneId> dueZonesById = new LinkedHashMap<>();
@@ -186,9 +263,11 @@ public class DailyResetUseCase {
         dueZonesById.put(user.getId(), userZone);
         dueTodayById.put(user.getId(), userToday);
         previousResetById.put(user.getId(), previousResetDate);
-      } else if (user.getNextDailyResetAt() == null) {
-        // Garante preenchimento de nextDailyResetAt sem reexecutar o dia já processado
-        LocalDate anchor = previousResetDate != null ? previousResetDate : userToday;
+      } else if (user.getNextDailyResetAt() == null || !user.getNextDailyResetAt().isAfter(nowUtc)) {
+        // Repara nextDailyResetAt vencido/nulo mesmo quando lastDailyResetDate >= userToday (evita hot-loop de FOR UPDATE)
+        LocalDate anchor = (previousResetDate != null && !previousResetDate.isBefore(userToday))
+            ? previousResetDate
+            : userToday;
         user.markDailyResetExecuted(anchor, userZone);
         dirtyUsers.put(user.getId(), user);
       }
@@ -198,7 +277,7 @@ public class DailyResetUseCase {
       if (!dirtyUsers.isEmpty()) {
         userPort.saveAll(dirtyUsers.values());
       }
-      return new RolloverSummary(0, 0, 0, 0);
+      return BatchResult.empty();
     }
 
     List<Task> changedTasks = new ArrayList<>();
@@ -264,16 +343,16 @@ public class DailyResetUseCase {
     if (!dirtyUsers.isEmpty()) {
       userPort.saveAll(dirtyUsers.values());
     }
-    if (evaluateUserAchievementsUseCase != null && !cleanHabitCycleUsers.isEmpty()) {
-      for (UUID userId : new LinkedHashSet<>(cleanHabitCycleUsers)) {
-        User user = usersById.get(userId);
-        if (user != null) {
-          evaluateUserAchievementsUseCase.execute(user);
-        }
-      }
-    }
 
-    return new RolloverSummary(dueTodayById.size(), changedTasks.size(), overdueTodos.size(), expiredStreaks);
+    List<User> cleanUsersForPostCommit = cleanHabitCycleUsers.stream()
+        .distinct()
+        .map(usersById::get)
+        .filter(java.util.Objects::nonNull)
+        .toList();
+
+    return new BatchResult(
+        new RolloverSummary(dueTodayById.size(), changedTasks.size(), overdueTodos.size(), expiredStreaks),
+        cleanUsersForPostCommit);
   }
 
   private List<Task> collectOverdueHardcoreTodos(Map<UUID, LocalDate> dueTodayById) {
@@ -318,18 +397,20 @@ public class DailyResetUseCase {
         return new RolloverOutcome(true, false);
       }
       if (habit.getStatus() == TaskStatus.COMPLETED) {
-        if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0 && eligibleCleanCycle) {
+        // Se houve rollover atrasado pulando pelo menos 1 ciclo completo após a última conclusão, aplica falha
+        boolean missedCycle = habit.getLastCompletedAt() != null && !habit.isStreakStillActive(userToday);
+        if (missedCycle) {
+          habit.breakStreak();
+        } else if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0 && eligibleCleanCycle) {
           cleanHabitCycleUsers.add(habit.getUserId());
         }
-        breakExpiredHabitStreakIfNeeded(habit, userToday);
         habit.resetCycleCounts();
         habit.changeStatus(TaskStatus.PENDING);
-        return new RolloverOutcome(true, false);
+        return new RolloverOutcome(true, missedCycle);
       }
       if (habit.getStatus() == TaskStatus.PENDING) {
-        if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0 && eligibleCleanCycle) {
-          cleanHabitCycleUsers.add(habit.getUserId());
-        }
+        // Hábito POSITIVE ou BOTH não concluído falhou no ciclo: quebra ofensiva e aplica penalidade Hardcore
+        // (não concede clean-cycle para BOTH quando a meta positiva do ciclo falhou).
         habit.breakStreak();
         habit.resetCycleCounts();
         return new RolloverOutcome(true, true);
@@ -393,14 +474,20 @@ public class DailyResetUseCase {
         || daily.getLastCompletedAt().toLocalDate().isBefore(userToday);
 
     if (daily.getStatus() == TaskStatus.COMPLETED && canResetCompleted) {
-      if (daily.getLastCompletedAt() != null && !daily.isStreakStillActive(userToday)) {
-        daily.breakStreak();
+      boolean missedDueCycle = false;
+      if (daily.getLastCompletedAt() != null) {
+        LocalDate nextExpectedAfterLast = daily.calculateNextOccurrence(
+            daily.getLastCompletedAt().toLocalDate(), false);
+        if (nextExpectedAfterLast.isBefore(userToday)) {
+          missedDueCycle = true;
+          daily.breakStreak();
+        }
       }
       daily.changeStatus(TaskStatus.PENDING);
       if (daily.getDueDate().isPresent() && daily.getDueDate().get().isBefore(userToday)) {
         daily.advanceDueDateToAtLeast(userToday);
       }
-      return new RolloverOutcome(true, false);
+      return new RolloverOutcome(true, missedDueCycle);
     }
 
     if (daily.getStatus() == TaskStatus.PENDING

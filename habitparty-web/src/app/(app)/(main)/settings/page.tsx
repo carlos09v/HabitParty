@@ -1,6 +1,8 @@
 import {
+  AlertTriangle,
   Calendar,
   Clock,
+  Compass,
   Crown,
   Eye,
   Globe,
@@ -14,6 +16,7 @@ import {
   Volume2,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -26,7 +29,9 @@ import { LanguageSettings } from "@/components/settings/LanguageSettings";
 import { PrivacySettingsCard } from "@/components/settings/PrivacySettingsCard";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { ProfileHeaderCard } from "@/components/settings/ProfileHeaderCard";
+import { RoutinePreferencesCard } from "@/components/settings/RoutinePreferencesCard";
 import { SettingsCard } from "@/components/settings/SettingsCard";
+import { SettingsDirtyProvider } from "@/components/settings/SettingsDirtyContext";
 import { SettingsNavTabs } from "@/components/settings/SettingsNavTabs";
 import { SoundNotificationSettings } from "@/components/settings/SoundNotificationSettings";
 import { SubscriptionSettingsCard } from "@/components/settings/SubscriptionSettingsCard";
@@ -34,10 +39,18 @@ import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { TimezoneSettings } from "@/components/settings/TimezoneSettings";
 import { WelcomeCardsSettings } from "@/components/settings/WelcomeCardsSettings";
 import { resolveSettingsTab } from "@/constants/settings";
+import { ExperienceModeFallbackProvider } from "@/hooks/useExperienceMode";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getCurrentUser } from "@/services/userService";
 import type { SettingsTabId } from "@/types/settings";
+import type { DateFormat, ThemeId, TimeFormat } from "@/types/ui";
 import type { UserResponseDTO } from "@/types/user";
+import {
+  getDateFormat,
+  getOptionalThemeCookie,
+  getTimeFormat,
+} from "@/utils/cookies";
+import { resolveExperienceMode } from "@/utils/experienceMode";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings.metadata");
@@ -49,8 +62,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 function renderActiveSettingsPanel(
   activeTab: SettingsTabId,
-  user: UserResponseDTO | null,
+  user: UserResponseDTO,
   t: Awaited<ReturnType<typeof getTranslations<"settings">>>,
+  initialDateFormat: DateFormat,
+  initialTimeFormat: TimeFormat,
+  initialTheme: ThemeId | null,
+  serverNowMs: number,
 ): ReactNode {
   switch (activeTab) {
     case "profile":
@@ -83,7 +100,15 @@ function renderActiveSettingsPanel(
             description={t("cards.experienceModeDesc")}
             icon={<Swords size={18} className="text-gold" />}
           >
-            <ExperienceModeSettings initialMode={user?.experienceMode} />
+            <ExperienceModeSettings initialMode={user.experienceMode} />
+          </SettingsCard>
+
+          <SettingsCard
+            title={t("cards.routine")}
+            description={t("cards.routineDesc")}
+            icon={<Compass size={18} className="text-gold" />}
+          >
+            <RoutinePreferencesCard initialUser={user} />
           </SettingsCard>
 
           <SettingsCard
@@ -100,8 +125,9 @@ function renderActiveSettingsPanel(
             icon={<Globe size={18} className="text-gold" />}
           >
             <TimezoneSettings
-              initialTimezone={user?.timezone}
-              initialTimezoneUpdatedAt={user?.timezoneUpdatedAt}
+              initialTimezone={user.timezone}
+              initialTimezoneUpdatedAt={user.timezoneUpdatedAt}
+              serverNowMs={serverNowMs}
             />
           </SettingsCard>
 
@@ -110,7 +136,10 @@ function renderActiveSettingsPanel(
             description={t("cards.dateFormatDesc")}
             icon={<Calendar size={18} className="text-gold" />}
           >
-            <FormatPreferenceSettings kind="date" />
+            <FormatPreferenceSettings
+              kind="date"
+              initialDateFormat={initialDateFormat}
+            />
           </SettingsCard>
 
           <SettingsCard
@@ -118,7 +147,10 @@ function renderActiveSettingsPanel(
             description={t("cards.timeFormatDesc")}
             icon={<Clock size={18} className="text-gold" />}
           >
-            <FormatPreferenceSettings kind="time" />
+            <FormatPreferenceSettings
+              kind="time"
+              initialTimeFormat={initialTimeFormat}
+            />
           </SettingsCard>
         </>
       );
@@ -130,7 +162,10 @@ function renderActiveSettingsPanel(
             description={t("cards.appearanceThemeDesc")}
             icon={<Palette size={18} className="text-gold" />}
           >
-            <ThemeSettings />
+            <ThemeSettings
+              initialTheme={initialTheme}
+              initialIsPremium={Boolean(user.isPremium)}
+            />
           </SettingsCard>
 
           <SettingsCard
@@ -149,7 +184,9 @@ function renderActiveSettingsPanel(
           description={t("cards.audioDesc")}
           icon={<Volume2 className="text-gold" size={20} />}
         >
-          <SoundNotificationSettings />
+          <SoundNotificationSettings
+            initialIsPremium={Boolean(user.isPremium)}
+          />
         </SettingsCard>
       );
     case "privacy":
@@ -181,49 +218,85 @@ function renderActiveSettingsPanel(
             <AccountResetCard />
           </SettingsCard>
 
-          <DangerZoneCard />
+          <SettingsCard
+            title={t("cards.dangerZone")}
+            description={t("cards.dangerZoneDesc")}
+            icon={<AlertTriangle size={18} className="text-red-400" />}
+            variant="danger"
+          >
+            <DangerZoneCard initialUser={user} />
+          </SettingsCard>
         </>
       );
   }
 }
 
 type SettingsPageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string | string[] }>;
 };
 
 export default async function SettingsPage({
   searchParams,
 }: SettingsPageProps) {
-  const [t, resolvedParams, user] = await Promise.all([
+  const [
+    t,
+    resolvedParams,
+    user,
+    initialDateFormat,
+    initialTimeFormat,
+    initialTheme,
+  ] = await Promise.all([
     getTranslations("settings"),
     searchParams,
     getCurrentUser(),
+    getDateFormat(),
+    getTimeFormat(),
+    getOptionalThemeCookie(),
   ]);
 
+  if (!user) {
+    redirect("/signIn");
+  }
+
   const activeTab = resolveSettingsTab(resolvedParams.tab);
+  const serverNowMs = Date.now();
 
   return (
     <ScopedIntlProvider scope="settings">
-      <PageWrapper>
-        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-16">
-          {/* HEADER */}
-          <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
-            <h1 className="text-2xl sm:text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
-              {t("headerTitle")}
-            </h1>
-            <p className="text-body-m text-neutral-300">
-              {t("headerSubtitle")}
-            </p>
-          </header>
+      <ExperienceModeFallbackProvider
+        mode={resolveExperienceMode(user.experienceMode)}
+      >
+        <PageWrapper>
+          <SettingsDirtyProvider>
+            <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-16">
+              {/* HEADER */}
+              <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
+                <h1 className="text-2xl sm:text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
+                  {t("headerTitle")}
+                </h1>
+                <p className="text-body-m text-neutral-300">
+                  {t("headerSubtitle")}
+                </p>
+              </header>
 
-          {/* NAVEGAÇÃO E PAINEL ÚNICO ATIVO (evita hidratar e manter as outras 5 abas no DOM) */}
-          <SettingsNavTabs activeTab={activeTab} />
+              {/* NAVEGAÇÃO E PAINEL ÚNICO ATIVO */}
+              <SettingsNavTabs activeTab={activeTab} />
 
-          <div className="flex flex-col gap-6 mt-1">
-            {renderActiveSettingsPanel(activeTab, user || null, t)}
-          </div>
-        </div>
-      </PageWrapper>
+              <div className="flex flex-col gap-6 mt-1">
+                {renderActiveSettingsPanel(
+                  activeTab,
+                  user,
+                  t,
+                  initialDateFormat,
+                  initialTimeFormat,
+                  initialTheme,
+                  serverNowMs,
+                )}
+              </div>
+            </div>
+          </SettingsDirtyProvider>
+        </PageWrapper>
+      </ExperienceModeFallbackProvider>
     </ScopedIntlProvider>
   );
 }

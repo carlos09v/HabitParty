@@ -18,21 +18,20 @@ import type {
 } from "@/types/showcase";
 import type { FriendConnectionItem } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
+import { type LevelProgress, resolveUserLevelState } from "@/utils/levels";
 import {
   buildProgressionPyramidTiers,
   groupFriendsByLevelTier,
-  type LevelProgress,
   type ProgressionEraId,
   type ProgressionTierView,
   RANK_ERA_ORDER,
   RANK_TIER_METADATA,
-  resolveAchievementCopy,
-  resolveUserLevelState,
   type UserLevelTier,
-} from "@/utils";
+} from "@/utils/progression";
+import { EMPTY_FRIENDS, resolveAchievementCopy } from "@/utils/showcaseUtils";
 import { getTierStatus, type TierStatus } from "./tierStatus";
 
-export const EMPTY_FRIENDS: FriendConnectionItem[] = [];
+export { EMPTY_FRIENDS };
 
 export interface EraTierGroup {
   eraId: ProgressionEraId;

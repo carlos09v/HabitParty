@@ -365,20 +365,13 @@ export function useTaskTagSelector({
       return;
     }
 
-    if (query.includes(">") && (highlightedIndex >= 0 || caretAtEnd)) {
+    // Somente remove o separador ">" pendente ao pressionar ← no fim da string vazia de sub-tag;
+    // nunca apaga texto digitado pelo usuário durante edição normal com a seta esquerda.
+    const trimmedEnd = query.trimEnd();
+    if (caretAtEnd && trimmedEnd.endsWith(">")) {
       e.preventDefault();
       e.stopPropagation();
-      const trimmedEnd = query.trimEnd();
-      if (trimmedEnd.endsWith(">")) {
-        setQuery(trimmedEnd.replace(/\s*>\s*$/, ""));
-      } else {
-        const segments = getTagSegments(query);
-        setQuery(
-          segments.length > 1
-            ? segments.slice(0, -1).join(TAG_HIERARCHY_SEPARATOR)
-            : "",
-        );
-      }
+      setQuery(trimmedEnd.replace(/\s*>\s*$/, ""));
       setHighlightedIndex(-1);
     }
   };
@@ -451,7 +444,7 @@ export function useTaskTagSelector({
     }
   };
 
-  const handleTriggerKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handleTriggerKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (disabled || editingTag) return;
     if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
       e.preventDefault();

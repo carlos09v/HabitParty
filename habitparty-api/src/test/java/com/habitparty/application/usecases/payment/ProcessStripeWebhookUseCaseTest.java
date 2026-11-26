@@ -67,9 +67,9 @@ class ProcessStripeWebhookUseCaseTest {
   }
 
   @Test
-  @DisplayName("Ignora reprocessamento de evento com mesmo eventId (Idempotência)")
+  @DisplayName("Ignora reprocessamento de evento com mesmo eventId (Idempotência via claimEvent atômico)")
   void testIgnoreDuplicateWebhookEvent() {
-    when(paymentEventRepository.existsByEventId("evt_dup_123")).thenReturn(true);
+    when(paymentEventRepository.claimEvent("evt_dup_123", "CheckoutCompleted", userId)).thenReturn(false);
 
     PaymentWebhookEvent event = new PaymentWebhookEvent.CheckoutCompleted(
         "evt_dup_123",
@@ -85,7 +85,7 @@ class ProcessStripeWebhookUseCaseTest {
 
     processStripeWebhookUseCase.execute(event);
 
-    verify(userRepository, never()).findById(any());
+    verify(userRepository, never()).findByIdForUpdate(any());
     verify(userRepository, never()).save(any());
     verify(paymentEventRepository, never()).recordEvent(any(), any(), any(), any(), any());
   }
@@ -93,8 +93,9 @@ class ProcessStripeWebhookUseCaseTest {
   @Test
   @DisplayName("Processa Pix avulso com sucesso, estende dias e registra evento com userId e status PROCESSED")
   void testProcessPixCheckoutCompleted() {
-    when(paymentEventRepository.existsByEventId("evt_pix_123")).thenReturn(false);
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(paymentEventRepository.claimEvent("evt_pix_123", "CheckoutCompleted", userId)).thenReturn(true);
+    when(paymentEventRepository.claimEvent("session_cs_pix_123", "CheckoutSessionCompleted", userId)).thenReturn(true);
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
 
     PaymentWebhookEvent event = new PaymentWebhookEvent.CheckoutCompleted(
         "evt_pix_123",
@@ -133,8 +134,9 @@ class ProcessStripeWebhookUseCaseTest {
   @Test
   @DisplayName("Assinatura Anual no Cartão concede 1 ano completo de expiração")
   void testProcessAnnualSubscriptionCheckoutCompleted() {
-    when(paymentEventRepository.existsByEventId("evt_annual_123")).thenReturn(false);
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(paymentEventRepository.claimEvent("evt_annual_123", "CheckoutCompleted", userId)).thenReturn(true);
+    when(paymentEventRepository.claimEvent("session_cs_annual_123", "CheckoutSessionCompleted", userId)).thenReturn(true);
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
 
     PaymentWebhookEvent event = new PaymentWebhookEvent.CheckoutCompleted(
         "evt_annual_123",
@@ -174,8 +176,8 @@ class ProcessStripeWebhookUseCaseTest {
   @Test
   @DisplayName("Ignora duplicidade se a sessão de checkout já foi ativada (prevenção de duplicidade entre verificação direta e webhook)")
   void testIgnoreDuplicateCheckoutSessionId() {
-    when(paymentEventRepository.existsByEventId("evt_wh_123")).thenReturn(false);
-    when(paymentEventRepository.existsByEventId("session_cs_already_paid")).thenReturn(true);
+    when(paymentEventRepository.claimEvent("evt_wh_123", "CheckoutCompleted", userId)).thenReturn(true);
+    when(paymentEventRepository.claimEvent("session_cs_already_paid", "CheckoutSessionCompleted", userId)).thenReturn(false);
 
     PaymentWebhookEvent event = new PaymentWebhookEvent.CheckoutCompleted(
         "evt_wh_123",

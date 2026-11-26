@@ -1,14 +1,26 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useContextMenu } from "@/hooks/useContextMenu";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTaskInteractionModals } from "@/hooks/useTaskInteractionModals";
 import type { BoardColumn } from "@/types/task";
 import type { ColumnInsertTarget } from "@/types/task-ui";
+import { hasOpenModalDialog, isInsideAnyDialog } from "@/utils/portal";
+import { replaceUrlSearchParams } from "@/utils/urlParams";
 
 interface UseBoardModalsOptions {
   initialOpenCreateColumn?: boolean;
   ensureColumnVisible?: (columnId: string) => void;
+  onCreateColumnParamRequest?: () => void;
+}
+
+function escapeCssAttributeValue(value: string): string {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+  return value.replace(/["\\]/g, "\\$&");
 }
 
 /**
@@ -18,34 +30,68 @@ interface UseBoardModalsOptions {
 export function useBoardModals({
   initialOpenCreateColumn = false,
   ensureColumnVisible,
+  onCreateColumnParamRequest,
 }: UseBoardModalsOptions = {}) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Modal: Criar / Editar Coluna
+  // Modal: Criar / Editar Coluna (inicia fechado para passar pela guarda de permissão/limite)
   const [columnModalState, setColumnModalState] = useState<{
     isOpen: boolean;
     columnToEdit?: BoardColumn | null;
     insertTarget?: ColumnInsertTarget | null;
   }>({
-    isOpen: initialOpenCreateColumn,
+    isOpen: false,
     columnToEdit: null,
     insertTarget: null,
   });
 
+  const onCreateColumnParamRequestRef = useLatestRef(
+    onCreateColumnParamRequest,
+  );
+
+  const handledInitialCreateRef = useRef(false);
+  const handledUrlCreateRef = useRef(false);
+  const urlWantsCreateColumn = searchParams.get("createColumn") === "true";
+
   useEffect(() => {
-    if (
-      initialOpenCreateColumn ||
-      searchParams.get("createColumn") === "true"
-    ) {
+    if (!urlWantsCreateColumn) {
+      handledUrlCreateRef.current = false;
+    }
+
+    const shouldTriggerFromUrl =
+      urlWantsCreateColumn && !handledUrlCreateRef.current;
+    const shouldTriggerFromInitial =
+      initialOpenCreateColumn && !handledInitialCreateRef.current;
+
+    if (!shouldTriggerFromUrl && !shouldTriggerFromInitial) {
+      return;
+    }
+
+    if (shouldTriggerFromUrl) {
+      handledUrlCreateRef.current = true;
+    }
+    if (shouldTriggerFromInitial) {
+      handledInitialCreateRef.current = true;
+    }
+
+    replaceUrlSearchParams((params) => {
+      params.delete("createColumn");
+    });
+
+    if (onCreateColumnParamRequestRef.current) {
+      onCreateColumnParamRequestRef.current();
+    } else {
       setColumnModalState({
         isOpen: true,
         columnToEdit: null,
         insertTarget: null,
       });
     }
-  }, [initialOpenCreateColumn, searchParams]);
+  }, [
+    initialOpenCreateColumn,
+    urlWantsCreateColumn,
+    onCreateColumnParamRequestRef,
+  ]);
 
   const {
     taskModalState,
@@ -57,16 +103,21 @@ export function useBoardModals({
     handleOpenTaskContextMenu,
   } = useTaskInteractionModals();
 
-  // Menu de Contexto da Coluna (3 pontos)
-  const [columnContextMenu, setColumnContextMenu] = useState<{
-    isOpen: boolean;
-    position: { x: number; y: number };
-    column: BoardColumn | null;
-  }>({
-    isOpen: false,
-    position: { x: 0, y: 0 },
-    column: null,
-  });
+  // Menu de Contexto da Coluna (3 pontos) reutilizando useContextMenu
+  const {
+    contextMenu: rawColumnMenu,
+    openContextMenu: handleOpenColumnContextMenu,
+    closeContextMenu: closeColumnContextMenu,
+  } = useContextMenu<BoardColumn>();
+
+  const columnContextMenu = useMemo(
+    () => ({
+      isOpen: rawColumnMenu.isOpen,
+      position: rawColumnMenu.position,
+      column: rawColumnMenu.data,
+    }),
+    [rawColumnMenu.data, rawColumnMenu.isOpen, rawColumnMenu.position],
+  );
 
   // Modal: Excluir Coluna
   const [columnToDelete, setColumnToDelete] = useState<BoardColumn | null>(
@@ -93,24 +144,18 @@ export function useBoardModals({
     }
   }, [searchParams, ensureColumnVisible]);
 
-  // Limpa o columnId da URL de forma segura com window.history e router do Next.js
+  // Limpa o columnId da URL preservando window.history.state sem disparar refetch RSC
   const clearColumnQueryParam = useCallback(() => {
-    if (searchParams.get("columnId")) {
-      const params = new URLSearchParams(searchParams.toString());
+    replaceUrlSearchParams((params) => {
       params.delete("columnId");
-      const nextUrl = params.toString()
-        ? `${pathname}?${params.toString()}`
-        : pathname;
-      if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", nextUrl);
-      }
-      router.replace(nextUrl, { scroll: false });
-    }
-  }, [pathname, router, searchParams]);
+    });
+  }, []);
 
   // Desseleciona a coluna ativa ao clicar fora dela ou pressionar Escape
   useEffect(() => {
     if (!selectedColumnId) return;
+
+    const escapedColumnId = escapeCssAttributeValue(selectedColumnId);
 
     // Aguarda um pequeno tick para evitar que o clique de navegação descarte imediatamente a seleção
     let isReady = false;
@@ -127,13 +172,13 @@ export function useBoardModals({
           : (e.target as Node | null)?.parentElement;
 
       // Se clicou dentro da coluna selecionada, mantém a borda ativa
-      if (targetNode?.closest(`[data-column-id="${selectedColumnId}"]`)) {
+      if (targetNode?.closest(`[data-column-id="${escapedColumnId}"]`)) {
         return;
       }
 
       // Se clicou em um modal, drawer, popover ou menu aberto, não desseleciona
       if (
-        targetNode?.closest('[role="dialog"]') ||
+        isInsideAnyDialog(targetNode) ||
         targetNode?.closest('[role="menu"]')
       ) {
         return;
@@ -146,6 +191,7 @@ export function useBoardModals({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (e.defaultPrevented || hasOpenModalDialog()) return;
         setSelectedColumnId(null);
         clearColumnQueryParam();
       }
@@ -161,32 +207,16 @@ export function useBoardModals({
     };
   }, [selectedColumnId, clearColumnQueryParam]);
 
-  const handleOpenColumnContextMenu = useCallback(
-    (e: React.MouseEvent, column: BoardColumn) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setColumnContextMenu({
-        isOpen: true,
-        position: { x: e.clientX, y: e.clientY },
-        column,
-      });
-    },
-    [],
-  );
-
   const closeColumnModal = useCallback(() => {
     setColumnModalState({
       isOpen: false,
       columnToEdit: null,
       insertTarget: null,
     });
-    if (searchParams.get("createColumn") === "true") {
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.delete("createColumn");
-      const qs = nextParams.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    }
-  }, [pathname, router, searchParams]);
+    replaceUrlSearchParams((params) => {
+      params.delete("createColumn");
+    });
+  }, []);
 
   return {
     columnModalState,
@@ -199,7 +229,7 @@ export function useBoardModals({
     contextMenu,
     setContextMenu,
     columnContextMenu,
-    setColumnContextMenu,
+    closeColumnContextMenu,
     columnToDelete,
     setColumnToDelete,
     selectedColumnId,

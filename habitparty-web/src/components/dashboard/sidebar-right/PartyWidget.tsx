@@ -13,10 +13,13 @@ import { PartyWidgetModeLabel } from "./PartyWidgetModeLabel";
  */
 export async function PartyWidget({
   experienceMode = "PRODUCTIVITY",
+  initialOverview,
 }: PartyWidgetProps) {
   const [t, overview] = await Promise.all([
     getTranslations("dashboard.sidebarRight.partyWidget"),
-    getFriendsOverview(),
+    initialOverview !== undefined
+      ? Promise.resolve(initialOverview)
+      : getFriendsOverview(),
   ]);
 
   const isGamified = experienceMode === "GAMIFIED";

@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
 import type { RarityThemeTokens } from "@/constants/achievements";
 import type { AchievementItemResponseDTO } from "@/types/showcase";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 interface LinkedAchievementCardProps {
   achievement?: AchievementItemResponseDTO;

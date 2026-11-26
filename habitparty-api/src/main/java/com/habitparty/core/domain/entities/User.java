@@ -1,9 +1,7 @@
 package com.habitparty.core.domain.entities;
 
 import java.math.BigDecimal;
-import java.security.SecureRandom;
 import java.time.Clock;
-import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,7 +9,6 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +17,10 @@ import java.util.stream.Stream;
 
 import com.habitparty.core.domain.entities.achievement.CosmeticCatalog;
 import com.habitparty.core.domain.entities.achievement.CosmeticCatalog.CosmeticUnlockContext;
+import com.habitparty.core.domain.entities.user.FriendCode;
+import com.habitparty.core.domain.entities.user.OnboardingPreferences;
+import com.habitparty.core.domain.entities.user.PrivacySettings;
+import com.habitparty.core.domain.entities.user.UserTimezonePolicy;
 import com.habitparty.core.domain.enums.FriendRequestPolicy;
 import com.habitparty.core.domain.enums.PrivacyLevel;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
@@ -30,8 +31,8 @@ import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 public class User {
-  public static final String DEFAULT_TIMEZONE = "America/Sao_Paulo";
-  public static final long TIMEZONE_CHANGE_COOLDOWN_HOURS = 24L;
+  public static final String DEFAULT_TIMEZONE = UserTimezonePolicy.DEFAULT_TIMEZONE;
+  public static final long TIMEZONE_CHANGE_COOLDOWN_HOURS = UserTimezonePolicy.TIMEZONE_CHANGE_COOLDOWN_HOURS;
   public static final String DEFAULT_THEME = "dark";
   public static final String DEFAULT_LIGHT_THEME = "light";
   public static final Set<String> LIGHT_THEMES = Set.of(
@@ -62,6 +63,7 @@ public class User {
   private String username;
   private String email;
   private String password;
+  private boolean hasPassword = true;
   private boolean emailVerified;
   private LocalDateTime emailVerifiedAt;
   private LocalDate birthDate;
@@ -81,31 +83,56 @@ public class User {
 
   // Social & Privacidade (v1.4)
   private String friendCode;
-  private PrivacyLevel profileVisibility = PrivacyLevel.PUBLIC;
-  private PrivacyLevel statsVisibility = PrivacyLevel.PUBLIC;
-  private PrivacyLevel achievementsVisibility = PrivacyLevel.PUBLIC;
-  private FriendRequestPolicy friendRequestPolicy = FriendRequestPolicy.EVERYONE;
+  private PrivacySettings privacySettings = PrivacySettings.DEFAULT;
 
   // Preferências coletadas no FirstStep (v1.6)
-  private String usageMode;
-  private List<String> primaryGoals;
-  private String mainObstacle;
-  private Integer dailyFocusGoalMinutes;
-  private String peakPeriod;
-  private String disciplineStyle;
-
-  private static final Set<String> VALID_USAGE_MODES = Set.of("personal", "studies", "work", "all");
-  private static final Set<String> VALID_PEAK_PERIODS = Set.of("morning", "afternoon", "night");
-  private static final Set<String> VALID_DISCIPLINE_STYLES = Set.of("flexible", "strict");
-
-  private static final String FRIEND_CODE_PREFIX = "HP-";
-  private static final String FRIEND_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  private static final int FRIEND_CODE_RANDOM_LENGTH = 6;
-  private static final SecureRandom FRIEND_CODE_RANDOM = new SecureRandom();
+  private OnboardingPreferences onboardingPreferences = OnboardingPreferences.EMPTY;
 
   // Sub-entidades do Agregado (1:1 com PK compartilhada no banco)
   private UserStats stats;
   private UserSubscription subscription;
+
+  /**
+   * Factory coesa para criação de novas contas (cadastro tradicional ou OAuth),
+   * evitando duplicação da montagem inicial de {@link UserStats}, {@link UserSubscription} e timezone.
+   */
+  public static User createNew(
+      String fullName,
+      String username,
+      String email,
+      String encodedPassword,
+      boolean hasPassword,
+      boolean emailVerified,
+      LocalDate birthDate,
+      String profilePhotoUrl,
+      UserGender gender,
+      String requestedTimezone,
+      Clock clock) {
+    Clock effectiveClock = clock != null ? clock : Clock.system(ZoneId.of(DEFAULT_TIMEZONE));
+    LocalDateTime createdAtUtc = LocalDateTime.now(effectiveClock.withZone(java.time.ZoneOffset.UTC));
+    UUID newUserId = UUID.randomUUID();
+    String normalizedEmail = email != null ? email.trim().toLowerCase(Locale.ROOT) : null;
+
+    User newUser = new User(
+        newUserId,
+        UserRole.USER,
+        fullName,
+        username,
+        normalizedEmail,
+        encodedPassword,
+        emailVerified,
+        emailVerified ? createdAtUtc : null,
+        birthDate,
+        profilePhotoUrl,
+        gender,
+        UserExperienceMode.PRODUCTIVITY,
+        createdAtUtc,
+        UserStats.createInitial(newUserId),
+        UserSubscription.createInitial(newUserId));
+    newUser.setHasPassword(hasPassword);
+    newUser.initializeTimezone(requestedTimezone, effectiveClock);
+    return newUser;
+  }
 
   // Construtor compatível anterior (16 parâmetros)
   public User(UUID id, UserRole role, boolean isPremium, String fullName, String username, String email,
@@ -448,6 +475,10 @@ public class User {
     return subscription.hasActiveRecurringSubscription();
   }
 
+  public boolean hasCancelableStripeSubscription() {
+    return subscription.hasCancelableStripeSubscription();
+  }
+
   public void setPremium(boolean isPremium) {
     subscription.setPremium(isPremium);
   }
@@ -564,55 +595,21 @@ public class User {
       Integer dailyFocusGoalMinutes,
       String peakPeriod,
       String disciplineStyle) {
-    if (usageMode != null && !usageMode.isBlank()) {
-      String normalized = usageMode.trim().toLowerCase(Locale.ROOT);
-      if (!VALID_USAGE_MODES.contains(normalized)) {
-        throw new DomainValidationException("Modo de uso inválido: " + usageMode);
-      }
-      this.usageMode = normalized;
-    }
+    this.onboardingPreferences = this.onboardingPreferences.update(
+        usageMode,
+        primaryGoals,
+        mainObstacle,
+        dailyFocusGoalMinutes,
+        peakPeriod,
+        disciplineStyle);
+  }
 
-    if (primaryGoals != null) {
-      List<String> sanitized = primaryGoals.stream()
-          .filter(goal -> goal != null && !goal.isBlank())
-          .map(goal -> goal.trim().toLowerCase(Locale.ROOT))
-          .map(goal -> goal.length() > 40 ? goal.substring(0, 40) : goal)
-          .distinct()
-          .limit(3)
-          .toList();
-      this.primaryGoals = List.copyOf(sanitized);
-    }
+  public OnboardingPreferences getOnboardingPreferences() {
+    return onboardingPreferences;
+  }
 
-    if (mainObstacle != null && !mainObstacle.isBlank()) {
-      String cleaned = mainObstacle.trim().toLowerCase(Locale.ROOT);
-      if (cleaned.length() > 30) {
-        throw new DomainValidationException("Obstáculo principal deve ter até 30 caracteres.");
-      }
-      this.mainObstacle = cleaned;
-    }
-
-    if (dailyFocusGoalMinutes != null) {
-      if (dailyFocusGoalMinutes < 15 || dailyFocusGoalMinutes > 720) {
-        throw new DomainValidationException("Meta diária de foco deve ficar entre 15 e 720 minutos.");
-      }
-      this.dailyFocusGoalMinutes = dailyFocusGoalMinutes;
-    }
-
-    if (peakPeriod != null && !peakPeriod.isBlank()) {
-      String normalized = peakPeriod.trim().toLowerCase(Locale.ROOT);
-      if (!VALID_PEAK_PERIODS.contains(normalized)) {
-        throw new DomainValidationException("Período de pico inválido: " + peakPeriod);
-      }
-      this.peakPeriod = normalized;
-    }
-
-    if (disciplineStyle != null && !disciplineStyle.isBlank()) {
-      String normalized = disciplineStyle.trim().toLowerCase(Locale.ROOT);
-      if (!VALID_DISCIPLINE_STYLES.contains(normalized)) {
-        throw new DomainValidationException("Estilo de disciplina inválido: " + disciplineStyle);
-      }
-      this.disciplineStyle = normalized;
-    }
+  public PrivacySettings getPrivacySettings() {
+    return privacySettings;
   }
 
   public void updatePassword(String newHashedPassword) {
@@ -620,6 +617,7 @@ public class User {
       throw new DomainValidationException("A senha não pode ser nula.");
     }
     this.password = newHashedPassword;
+    this.hasPassword = true;
   }
 
   public UUID getId() {
@@ -674,6 +672,14 @@ public class User {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public boolean hasPassword() {
+    return hasPassword;
+  }
+
+  public void setHasPassword(boolean hasPassword) {
+    this.hasPassword = hasPassword;
   }
 
   public UserGender getGender() {
@@ -739,7 +745,7 @@ public class User {
 
   public void setEquippedTitle(String equippedTitle) {
     this.equippedTitle = (equippedTitle != null && !equippedTitle.isBlank())
-        ? equippedTitle.trim().toUpperCase()
+        ? equippedTitle.trim().toUpperCase(Locale.ROOT)
         : null;
   }
 
@@ -749,27 +755,27 @@ public class User {
 
   public void setAvatarPreset(String avatarPreset) {
     this.avatarPreset = (avatarPreset != null && !avatarPreset.isBlank())
-        ? avatarPreset.trim().toLowerCase()
+        ? avatarPreset.trim().toLowerCase(Locale.ROOT)
         : null;
   }
 
   public static boolean isPremiumTheme(String themeId) {
-    return themeId != null && PREMIUM_THEMES.contains(themeId.trim().toLowerCase());
+    return themeId != null && PREMIUM_THEMES.contains(themeId.trim().toLowerCase(Locale.ROOT));
   }
 
   public static String getFallbackThemeForPolarity(String themeId) {
-    if (themeId != null && LIGHT_THEMES.contains(themeId.trim().toLowerCase())) {
+    if (themeId != null && LIGHT_THEMES.contains(themeId.trim().toLowerCase(Locale.ROOT))) {
       return DEFAULT_LIGHT_THEME;
     }
     return DEFAULT_THEME;
   }
 
   public String getTheme() {
-    return (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase() : DEFAULT_THEME;
+    return (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase(Locale.ROOT) : DEFAULT_THEME;
   }
 
   public void setTheme(String theme) {
-    this.theme = (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase() : DEFAULT_THEME;
+    this.theme = (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase(Locale.ROOT) : DEFAULT_THEME;
   }
 
   public String getEffectiveTheme() {
@@ -787,7 +793,7 @@ public class User {
     if (newTheme == null || newTheme.isBlank()) {
       throw new DomainValidationException("O tema visual não pode estar vazio.");
     }
-    String cleanTheme = newTheme.trim().toLowerCase();
+    String cleanTheme = newTheme.trim().toLowerCase(Locale.ROOT);
     if (!VALID_THEMES.contains(cleanTheme)) {
       throw new DomainValidationException("Tema visual inválido: " + newTheme);
     }
@@ -834,93 +840,26 @@ public class User {
     this.createdAt = createdAt;
   }
 
-  // --- FUSO HORÁRIO E CONTROLE IDEMPOTENTE DE VIRADA DIÁRIA ---
-
-  private static final Map<String, String> CANONICAL_ZONE_ALIASES = Map.ofEntries(
-      Map.entry("Z", "UTC"),
-      Map.entry("GMT", "UTC"),
-      Map.entry("GMT+0", "UTC"),
-      Map.entry("GMT-0", "UTC"),
-      Map.entry("GMT0", "UTC"),
-      Map.entry("Etc/GMT", "UTC"),
-      Map.entry("Etc/GMT+0", "UTC"),
-      Map.entry("Etc/GMT-0", "UTC"),
-      Map.entry("Etc/GMT0", "UTC"),
-      Map.entry("Etc/UTC", "UTC"),
-      Map.entry("Etc/Universal", "UTC"),
-      Map.entry("Etc/Zulu", "UTC"),
-      Map.entry("Universal", "UTC"),
-      Map.entry("Zulu", "UTC"),
-      Map.entry("Asia/Calcutta", "Asia/Kolkata"),
-      Map.entry("Asia/Saigon", "Asia/Ho_Chi_Minh"),
-      Map.entry("Asia/Katmandu", "Asia/Kathmandu"),
-      Map.entry("Asia/Rangoon", "Asia/Yangon"),
-      Map.entry("Europe/Kiev", "Europe/Kyiv"),
-      Map.entry("America/Buenos_Aires", "America/Argentina/Buenos_Aires"),
-      Map.entry("America/Godthab", "America/Nuuk"),
-      Map.entry("Brazil/East", "America/Sao_Paulo"),
-      Map.entry("Brazil/West", "America/Manaus"),
-      Map.entry("US/Eastern", "America/New_York"),
-      Map.entry("US/Central", "America/Chicago"),
-      Map.entry("US/Mountain", "America/Denver"),
-      Map.entry("US/Pacific", "America/Los_Angeles"),
-      Map.entry("US/Hawaii", "Pacific/Honolulu"),
-      Map.entry("US/Alaska", "America/Anchorage"),
-      Map.entry("Africa/Asmera", "Africa/Asmara"),
-      Map.entry("Atlantic/Faeroe", "Atlantic/Faroe"),
-      Map.entry("Pacific/Ponape", "Pacific/Pohnpei"),
-      Map.entry("Pacific/Truk", "Pacific/Chuuk")
-  );
+  // --- FUSO HORÁRIO E CONTROLE IDEMPOTENTE DE VIRADA DIÁRIA (delegado a UserTimezonePolicy) ---
 
   public static ZoneId canonicalizeZoneId(ZoneId zone) {
-    if (zone == null) {
-      return ZoneId.of(DEFAULT_TIMEZONE);
-    }
-    String mapped = CANONICAL_ZONE_ALIASES.get(zone.getId());
-    return mapped != null ? ZoneId.of(mapped) : zone;
+    return UserTimezonePolicy.canonicalizeZoneId(zone);
   }
 
   public static boolean areTimezonesEquivalent(String first, String second) {
-    if (first == null || first.isBlank() || second == null || second.isBlank()) {
-      return false;
-    }
-    try {
-      return canonicalizeZoneId(ZoneId.of(first.trim()))
-          .equals(canonicalizeZoneId(ZoneId.of(second.trim())));
-    } catch (DateTimeException e) {
-      return false;
-    }
+    return UserTimezonePolicy.areTimezonesEquivalent(first, second);
   }
 
   public static ZoneId parseValidZoneId(String rawTimezone) {
-    if (rawTimezone == null || rawTimezone.isBlank()) {
-      throw new DomainValidationException("O fuso horário não pode estar vazio.");
-    }
-    String clean = rawTimezone.trim();
-    if (clean.length() > 64) {
-      throw new DomainValidationException("Identificador de fuso horário inválido.");
-    }
-    try {
-      return canonicalizeZoneId(ZoneId.of(clean));
-    } catch (DateTimeException e) {
-      throw new DomainValidationException("Fuso horário IANA inválido: " + clean);
-    }
+    return UserTimezonePolicy.parseValidZoneId(rawTimezone);
   }
 
   public static Instant calculateNextMidnightInstant(LocalDate referenceDate, ZoneId zone) {
-    ZoneId effectiveZone = zone != null ? zone : ZoneId.of(DEFAULT_TIMEZONE);
-    return referenceDate.plusDays(1).atStartOfDay(effectiveZone).toInstant();
+    return UserTimezonePolicy.calculateNextMidnightInstant(referenceDate, zone);
   }
 
   public ZoneId resolveZoneId(ZoneId fallback) {
-    if (this.timezone != null && !this.timezone.isBlank()) {
-      try {
-        return ZoneId.of(this.timezone.trim());
-      } catch (DateTimeException ignored) {
-        // Cai para o fallback seguro caso um valor legado inválido exista
-      }
-    }
-    return fallback != null ? fallback : ZoneId.of(DEFAULT_TIMEZONE);
+    return UserTimezonePolicy.resolveZoneId(this.timezone, fallback);
   }
 
   public LocalDate resolveLocalDate(Clock baseClock) {
@@ -1025,49 +964,16 @@ public class User {
   }
 
   public static String generateRandomFriendCode() {
-    StringBuilder sb = new StringBuilder(FRIEND_CODE_PREFIX.length() + FRIEND_CODE_RANDOM_LENGTH);
-    sb.append(FRIEND_CODE_PREFIX);
-    for (int i = 0; i < FRIEND_CODE_RANDOM_LENGTH; i++) {
-      int idx = FRIEND_CODE_RANDOM.nextInt(FRIEND_CODE_ALPHABET.length());
-      sb.append(FRIEND_CODE_ALPHABET.charAt(idx));
-    }
-    return sb.toString();
+    return FriendCode.generateRandom();
   }
 
   public static String normalizeFriendCode(String raw) {
-    if (raw == null) {
-      return null;
-    }
-    String cleaned = raw.trim().toUpperCase(Locale.ROOT);
-    if (cleaned.isEmpty()) {
-      return null;
-    }
-    if (cleaned.startsWith(FRIEND_CODE_PREFIX)) {
-      String suffix = cleaned.substring(FRIEND_CODE_PREFIX.length());
-      return isAlphanumericCodeSuffix(suffix) ? cleaned : null;
-    }
-    if (cleaned.length() == FRIEND_CODE_RANDOM_LENGTH && isAlphanumericCodeSuffix(cleaned)) {
-      return FRIEND_CODE_PREFIX + cleaned;
-    }
-    return null;
-  }
-
-  private static boolean isAlphanumericCodeSuffix(String value) {
-    if (value == null || value.isEmpty() || value.length() > 9) {
-      return false;
-    }
-    for (int i = 0; i < value.length(); i++) {
-      char c = value.charAt(i);
-      if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
-        return false;
-      }
-    }
-    return true;
+    return FriendCode.normalize(raw);
   }
 
   public void assignFriendCodeIfMissing() {
     if (this.friendCode == null || this.friendCode.isBlank()) {
-      this.friendCode = generateRandomFriendCode();
+      this.friendCode = FriendCode.generateRandom();
     }
   }
 
@@ -1076,18 +982,11 @@ public class User {
       PrivacyLevel statsVisibility,
       PrivacyLevel achievementsVisibility,
       FriendRequestPolicy friendRequestPolicy) {
-    if (profileVisibility != null) {
-      this.profileVisibility = profileVisibility;
-    }
-    if (statsVisibility != null) {
-      this.statsVisibility = statsVisibility;
-    }
-    if (achievementsVisibility != null) {
-      this.achievementsVisibility = achievementsVisibility;
-    }
-    if (friendRequestPolicy != null) {
-      this.friendRequestPolicy = friendRequestPolicy;
-    }
+    this.privacySettings = this.privacySettings.update(
+        profileVisibility,
+        statsVisibility,
+        achievementsVisibility,
+        friendRequestPolicy);
   }
 
   public String getFriendCode() {
@@ -1095,86 +994,86 @@ public class User {
   }
 
   public void setFriendCode(String friendCode) {
-    this.friendCode = normalizeFriendCode(friendCode);
+    this.friendCode = FriendCode.normalize(friendCode);
   }
 
   public PrivacyLevel getProfileVisibility() {
-    return profileVisibility != null ? profileVisibility : PrivacyLevel.PUBLIC;
+    return privacySettings.profileVisibility();
   }
 
   public void setProfileVisibility(PrivacyLevel profileVisibility) {
-    this.profileVisibility = profileVisibility != null ? profileVisibility : PrivacyLevel.PUBLIC;
+    this.privacySettings = this.privacySettings.withProfileVisibility(profileVisibility);
   }
 
   public PrivacyLevel getStatsVisibility() {
-    return statsVisibility != null ? statsVisibility : PrivacyLevel.PUBLIC;
+    return privacySettings.statsVisibility();
   }
 
   public void setStatsVisibility(PrivacyLevel statsVisibility) {
-    this.statsVisibility = statsVisibility != null ? statsVisibility : PrivacyLevel.PUBLIC;
+    this.privacySettings = this.privacySettings.withStatsVisibility(statsVisibility);
   }
 
   public PrivacyLevel getAchievementsVisibility() {
-    return achievementsVisibility != null ? achievementsVisibility : PrivacyLevel.PUBLIC;
+    return privacySettings.achievementsVisibility();
   }
 
   public void setAchievementsVisibility(PrivacyLevel achievementsVisibility) {
-    this.achievementsVisibility = achievementsVisibility != null ? achievementsVisibility : PrivacyLevel.PUBLIC;
+    this.privacySettings = this.privacySettings.withAchievementsVisibility(achievementsVisibility);
   }
 
   public FriendRequestPolicy getFriendRequestPolicy() {
-    return friendRequestPolicy != null ? friendRequestPolicy : FriendRequestPolicy.EVERYONE;
+    return privacySettings.friendRequestPolicy();
   }
 
   public void setFriendRequestPolicy(FriendRequestPolicy friendRequestPolicy) {
-    this.friendRequestPolicy = friendRequestPolicy != null ? friendRequestPolicy : FriendRequestPolicy.EVERYONE;
+    this.privacySettings = this.privacySettings.withFriendRequestPolicy(friendRequestPolicy);
   }
 
   public String getUsageMode() {
-    return usageMode;
+    return onboardingPreferences.usageMode();
   }
 
   public void setUsageMode(String usageMode) {
-    this.usageMode = usageMode;
+    this.onboardingPreferences = this.onboardingPreferences.withUsageMode(usageMode);
   }
 
   public List<String> getPrimaryGoals() {
-    return primaryGoals;
+    return onboardingPreferences.primaryGoals();
   }
 
   public void setPrimaryGoals(List<String> primaryGoals) {
-    this.primaryGoals = primaryGoals != null ? List.copyOf(primaryGoals) : null;
+    this.onboardingPreferences = this.onboardingPreferences.withPrimaryGoals(primaryGoals);
   }
 
   public String getMainObstacle() {
-    return mainObstacle;
+    return onboardingPreferences.mainObstacle();
   }
 
   public void setMainObstacle(String mainObstacle) {
-    this.mainObstacle = mainObstacle;
+    this.onboardingPreferences = this.onboardingPreferences.withMainObstacle(mainObstacle);
   }
 
   public Integer getDailyFocusGoalMinutes() {
-    return dailyFocusGoalMinutes;
+    return onboardingPreferences.dailyFocusGoalMinutes();
   }
 
   public void setDailyFocusGoalMinutes(Integer dailyFocusGoalMinutes) {
-    this.dailyFocusGoalMinutes = dailyFocusGoalMinutes;
+    this.onboardingPreferences = this.onboardingPreferences.withDailyFocusGoalMinutes(dailyFocusGoalMinutes);
   }
 
   public String getPeakPeriod() {
-    return peakPeriod;
+    return onboardingPreferences.peakPeriod();
   }
 
   public void setPeakPeriod(String peakPeriod) {
-    this.peakPeriod = peakPeriod;
+    this.onboardingPreferences = this.onboardingPreferences.withPeakPeriod(peakPeriod);
   }
 
   public String getDisciplineStyle() {
-    return disciplineStyle;
+    return onboardingPreferences.disciplineStyle();
   }
 
   public void setDisciplineStyle(String disciplineStyle) {
-    this.disciplineStyle = disciplineStyle;
+    this.onboardingPreferences = this.onboardingPreferences.withDisciplineStyle(disciplineStyle);
   }
 }

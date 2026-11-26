@@ -22,7 +22,7 @@ public interface SocialNotificationJpaRepository extends JpaRepository<SocialNot
 
   long countByRecipientIdAndSeenFalse(UUID recipientId);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       UPDATE SocialNotificationJpaEntity n
       SET n.seen = TRUE
@@ -30,7 +30,7 @@ public interface SocialNotificationJpaRepository extends JpaRepository<SocialNot
       """)
   void markAllSeenByRecipientId(@Param("recipientId") UUID recipientId);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       UPDATE SocialNotificationJpaEntity n
       SET n.seen = TRUE
@@ -40,7 +40,7 @@ public interface SocialNotificationJpaRepository extends JpaRepository<SocialNot
       @Param("notificationId") UUID notificationId,
       @Param("recipientId") UUID recipientId);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       UPDATE SocialNotificationJpaEntity n
       SET n.seen = TRUE
@@ -50,7 +50,7 @@ public interface SocialNotificationJpaRepository extends JpaRepository<SocialNot
       @Param("referenceId") UUID referenceId,
       @Param("type") SocialNotificationType type);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       UPDATE SocialNotificationJpaEntity n
       SET n.seen = TRUE
@@ -62,7 +62,7 @@ public interface SocialNotificationJpaRepository extends JpaRepository<SocialNot
       @Param("userId") UUID userId,
       @Param("otherUserId") UUID otherUserId);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("DELETE FROM SocialNotificationJpaEntity n WHERE n.recipientId = :userId OR n.actorId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
 }

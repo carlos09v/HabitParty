@@ -16,6 +16,7 @@ import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.UserStats;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
@@ -26,6 +27,8 @@ import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
  */
 public final class FocusRecordReversalSupport {
 
+  private static final int DEFAULT_ACTIVITY_TARGET_MINUTES = 25;
+
   private record TaskDelta(int minutes, int pomos) {
     TaskDelta add(int addMinutes, int addPomos) {
       return new TaskDelta(this.minutes + addMinutes, this.pomos + addPomos);
@@ -35,27 +38,9 @@ public final class FocusRecordReversalSupport {
   private FocusRecordReversalSupport() {}
 
   /**
-   * Estorna tempo de cupons, XP/moedas/estatísticas em {@link UserStats} (incluindo recorde de duração e
-   * sessões por período do dia) e métricas acumuladas nas tarefas vinculadas.
+   * Estorna tempo de cupons, XP/moedas/estatísticas em {@link UserStats} (incluindo recorde de duração,
+   * metas de atividade e sessões por período do dia) e métricas acumuladas nas tarefas vinculadas.
    */
-  public static void revertDeletedRecords(
-      UUID userId,
-      List<FocusRecord> recordsToDelete,
-      FocusRecordRepository focusRecordPort,
-      UserRepository userPort,
-      InventoryItemRepository inventoryItemPort,
-      TaskRepository taskPort) {
-    revertDeletedRecords(
-        userId,
-        recordsToDelete,
-        focusRecordPort,
-        userPort,
-        inventoryItemPort,
-        taskPort,
-        null,
-        null);
-  }
-
   public static void revertDeletedRecords(
       UUID userId,
       List<FocusRecord> recordsToDelete,
@@ -117,8 +102,7 @@ public final class FocusRecordReversalSupport {
       }
       boolean hasImpact = record.getXpEarned().orElse(0) > 0
           || record.getCoinsEarned().orElse(BigDecimal.ZERO).compareTo(BigDecimal.ZERO) > 0
-          || record.getDurationMinutes() >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS
-          || record.getCompletedPomos().orElse(0) > 0;
+          || record.getDurationMinutes() >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
       if (hasImpact) {
         qualifyingRecords.add(record);
       }
@@ -129,6 +113,7 @@ public final class FocusRecordReversalSupport {
     }
 
     Clock effectiveClock = clock != null ? clock : Clock.systemUTC();
+    ZoneId storageZone = effectiveClock.getZone();
 
     userPort.findById(userId).ifPresent(user -> {
       UserStats stats = user.getStats();
@@ -136,7 +121,7 @@ public final class FocusRecordReversalSupport {
         return;
       }
 
-      ZoneId userZone = user.resolveZoneId(ZoneId.of(com.habitparty.core.domain.entities.User.DEFAULT_TIMEZONE));
+      ZoneId userZone = user.resolveZoneId(ZoneId.of(User.DEFAULT_TIMEZONE));
       LocalDate userToday = LocalDate.now(effectiveClock.withZone(userZone));
       int maxDurationReverted = 0;
       int deletedMinutesOnToday = 0;
@@ -147,24 +132,33 @@ public final class FocusRecordReversalSupport {
         BigDecimal coinsToRevert = record.getCoinsEarned().orElse(BigDecimal.ZERO);
         int minsToRevert = record.getDurationMinutes();
         int pomosToRevert = record.getCompletedPomos().orElse(0);
+        boolean qualifiedForStats = minsToRevert >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
 
-        stats.revertFocusSession(xpToRevert, coinsToRevert, minsToRevert, pomosToRevert);
+        // Alinha pomodoros estornados à mesma regra de CreateFocusRecordUseCase (>= 10 min)
+        stats.revertFocusSession(xpToRevert, coinsToRevert, minsToRevert, qualifiedForStats ? pomosToRevert : 0);
 
         LocalDateTime userEndTime = record.getEndTime()
-            .atZone(ZoneId.systemDefault())
+            .atZone(storageZone)
             .withZoneSameInstant(userZone)
             .toLocalDateTime();
         if (userEndTime.toLocalDate().equals(userToday) && minsToRevert > 0) {
           deletedMinutesOnToday += minsToRevert;
         }
 
-        if (minsToRevert >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS) {
+        if (qualifiedForStats) {
           LocalDateTime userStartTime = record.getStartTime()
-              .atZone(ZoneId.systemDefault())
+              .atZone(storageZone)
               .withZoneSameInstant(userZone)
               .toLocalDateTime();
           stats.revertFocusTimeOfDay(userStartTime, userEndTime, minsToRevert);
           maxDurationReverted = Math.max(maxDurationReverted, minsToRevert);
+
+          if (record.getFocusActivityId().isPresent()) {
+            int targetMinutes = record.getPomoTargetMinutes().orElse(DEFAULT_ACTIVITY_TARGET_MINUTES);
+            if (pomosToRevert >= 1 || minsToRevert >= targetMinutes) {
+              stats.revertActivityGoalMet();
+            }
+          }
         }
         if (record.getId() != null) {
           productiveRecordIds.add(record.getId());

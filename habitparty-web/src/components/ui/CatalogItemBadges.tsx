@@ -1,10 +1,7 @@
-"use client";
-
 import { Clock } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { TIER_CHIP_STYLES } from "@/constants/reward";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { CatalogItemVariant } from "@/types/reward";
 import { cn, formatCoins, STOP_DRAG_PROPAGATION_PROPS } from "@/utils";
@@ -101,6 +98,7 @@ interface CatalogItemPricePillProps {
   price: number;
   size?: "sm" | "md";
   canAfford?: boolean;
+  isGamified?: boolean;
   variant?: "default" | "debt";
   className?: string;
 }
@@ -112,16 +110,16 @@ export function CatalogItemPricePill({
   price,
   size = "md",
   canAfford = true,
+  isGamified = true,
   variant = "default",
   className,
 }: CatalogItemPricePillProps) {
   const locale = useLocale() as AppLocale;
-  const { isGamified } = useExperienceMode();
 
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-lg border transition-colors",
+        "flex items-center gap-1.5 rounded-lg border transition-colors shrink-0",
         size === "sm" ? "px-2 py-0.5" : "px-2.5 py-1",
         !canAfford
           ? "bg-surface/80 border-neutral-700/80 text-neutral-300 dark:bg-white/5 dark:border-white/10 dark:text-neutral-300"
@@ -167,93 +165,21 @@ export function CatalogItemVariantChips({
 
   if (variants.length <= 1) return null;
 
-  if (variant === "row") {
-    return (
-      <fieldset
-        className={cn(
-          "flex items-center gap-1 flex-wrap border-0 p-0 m-0 min-w-0",
-          className,
-        )}
-        aria-label={t("packageVariantsAria")}
-        {...STOP_DRAG_PROPAGATION_PROPS}
-      >
-        {variants.map((item) => {
-          const pkgKey = toPackageMessageKey(item.packageLevel);
-          const chipStyle = TIER_CHIP_STYLES[pkgKey] ?? TIER_CHIP_STYLES.NONE;
-          const isSelected = activeVariantId === item.id;
-          const tierLabel = pkgKey !== "NONE" ? t(`packages.${pkgKey}`) : null;
-          const durationText = item.baseDurationMinutes
-            ? formatFocusMinutes(item.baseDurationMinutes)
-            : null;
-          const formattedPrice = formatCoins(item.price, { locale });
-          const accessibleLabel = durationText
-            ? t("packageOptionWithDurationAria", {
-                tier: tierLabel ?? t(`packages.${pkgKey}`),
-                duration: durationText,
-                price: formattedPrice,
-              })
-            : t("packageOptionWithPriceAria", {
-                tier: tierLabel ?? t(`packages.${pkgKey}`),
-                price: formattedPrice,
-              });
-
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={isSelected}
-              aria-label={accessibleLabel}
-              title={accessibleLabel}
-              disabled={disabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectVariant(item.id);
-              }}
-              onDoubleClick={(e) => e.stopPropagation()}
-              className={cn(
-                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none tabular-nums",
-                isSelected
-                  ? chipStyle.selectedClass
-                  : chipStyle.unselectedClass,
-                disabled && "opacity-60 cursor-not-allowed",
-              )}
-            >
-              {chipStyle.dotColor && (
-                <span
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full shrink-0",
-                    chipStyle.dotColor,
-                  )}
-                  aria-hidden="true"
-                />
-              )}
-              {tierLabel && <span>{tierLabel}</span>}
-              {tierLabel && durationText && (
-                <span className="opacity-65">·</span>
-              )}
-              {durationText ? (
-                <span>{durationText}</span>
-              ) : (
-                <span className="inline-flex items-center gap-0.5">
-                  {tierLabel && <span className="opacity-65 mr-0.5">·</span>}
-                  <CoinIcon size={10} />
-                  <span>{formattedPrice}</span>
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </fieldset>
-    );
-  }
-
-  return (
-    <fieldset
-      className={cn(
+  const isRow = variant === "row";
+  const fieldsetClassName = isRow
+    ? cn(
+        "flex items-center gap-1 flex-wrap border-0 p-0 m-0 min-w-0",
+        className,
+      )
+    : cn(
         "grid gap-1 border-0 p-0 m-0 min-w-0 w-full",
         variants.length <= 4 ? "grid-flow-col auto-cols-fr" : "grid-cols-4",
         className,
-      )}
+      );
+
+  return (
+    <fieldset
+      className={fieldsetClassName}
       aria-label={t("packageVariantsAria")}
       {...STOP_DRAG_PROPAGATION_PROPS}
     >
@@ -261,8 +187,8 @@ export function CatalogItemVariantChips({
         const pkgKey = toPackageMessageKey(item.packageLevel);
         const chipStyle = TIER_CHIP_STYLES[pkgKey] ?? TIER_CHIP_STYLES.NONE;
         const isSelected = activeVariantId === item.id;
-        const tierLabel = t(`packages.${pkgKey}`);
         const hasNamedTier = pkgKey !== "NONE";
+        const tierLabel = t(`packages.${pkgKey}`);
         const durationText = item.baseDurationMinutes
           ? formatFocusMinutes(item.baseDurationMinutes)
           : null;
@@ -292,7 +218,10 @@ export function CatalogItemVariantChips({
             }}
             onDoubleClick={(e) => e.stopPropagation()}
             className={cn(
-              "inline-flex items-center justify-center gap-1 min-h-6 px-1.5 py-1 rounded-lg border text-[10.5px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none min-w-0 focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-1",
+              "inline-flex items-center gap-1 border font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-1",
+              isRow
+                ? "px-1.5 py-0.5 rounded-md text-[11px] tabular-nums"
+                : "justify-center min-h-6 px-1.5 py-1 rounded-lg text-[10.5px] min-w-0",
               isSelected ? chipStyle.selectedClass : chipStyle.unselectedClass,
               disabled && "opacity-60 cursor-not-allowed",
             )}
@@ -307,7 +236,25 @@ export function CatalogItemVariantChips({
               />
             )}
 
-            {durationText ? (
+            {isRow ? (
+              <>
+                {hasNamedTier && <span>{tierLabel}</span>}
+                {hasNamedTier && durationText && (
+                  <span className="opacity-65">·</span>
+                )}
+                {durationText ? (
+                  <span>{durationText}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5">
+                    {hasNamedTier && (
+                      <span className="opacity-65 mr-0.5">·</span>
+                    )}
+                    <CoinIcon size={10} />
+                    <span>{formattedPrice}</span>
+                  </span>
+                )}
+              </>
+            ) : durationText ? (
               <span className="inline-flex items-center gap-0.5 min-w-0">
                 {!(hasNamedTier && chipStyle.dotColor) && (
                   <Clock size={10} className="shrink-0" aria-hidden="true" />

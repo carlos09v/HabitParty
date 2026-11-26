@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { AvatarFrameId } from "@/constants/avatarFrames";
 import type {
   AchievementItemResponseDTO,
@@ -7,6 +8,7 @@ import type {
 } from "@/types/showcase";
 import type { FriendConnectionItem } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
+import type { UserLevelTier } from "@/utils/progression";
 import { EffortSimulatorCard } from "./EffortSimulatorCard";
 import { LinkedAchievementCard } from "./LinkedAchievementCard";
 import { ProgressionHeader } from "./ProgressionHeader";
@@ -31,6 +33,7 @@ export function ProgressionPyramidPanel({
   activeFrameId,
   isVisitorMode = false,
 }: ProgressionPyramidPanelProps) {
+  const inspectorAsideRef = useRef<HTMLElement>(null);
   const {
     isGamified,
     currentXp,
@@ -59,6 +62,35 @@ export function ProgressionPyramidPanel({
     isVisitorMode,
   });
 
+  const handleSelectTier = (tier: UserLevelTier) => {
+    selectTier(tier);
+    if (
+      typeof window !== "undefined" &&
+      window.innerWidth < 1024 &&
+      inspectorAsideRef.current
+    ) {
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      inspectorAsideRef.current.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "nearest",
+      });
+    }
+  };
+
+  // Quando o usuário está no degrau atual (e não no topo), o simulador aponta para a próxima patente
+  const simulatorRemainingXp =
+    selectedStatus === "current" && !progress.isMaxLevel
+      ? progress.remainingXp
+      : remainingXpToSelected;
+  const simulatorTargetTitle =
+    selectedStatus === "current" && !progress.isMaxLevel
+      ? nextRankTitle
+      : selectedStatus === "locked"
+        ? selectedTierView.localizedTitle
+        : undefined;
+
   return (
     <div className="flex flex-col gap-6">
       <ProgressionHeader
@@ -79,7 +111,7 @@ export function ProgressionPyramidPanel({
           selectedTier={selectedTierView.entry.tier}
           isGamified={isGamified}
           isVisitorMode={isVisitorMode}
-          onSelectTier={selectTier}
+          onSelectTier={handleSelectTier}
           friendsByTier={friendsByTier}
           progress={progress}
           userAvatar={{
@@ -91,7 +123,10 @@ export function ProgressionPyramidPanel({
           }}
         />
 
-        <aside className="lg:col-span-5 flex flex-col gap-4">
+        <aside
+          ref={inspectorAsideRef}
+          className="lg:col-span-5 flex flex-col gap-4 scroll-mt-4"
+        >
           <TierInspectorCard
             tierView={selectedTierView}
             status={selectedStatus}
@@ -102,7 +137,8 @@ export function ProgressionPyramidPanel({
           />
 
           <EffortSimulatorCard
-            remainingXp={remainingXpToSelected}
+            remainingXp={simulatorRemainingXp}
+            targetRankTitle={simulatorTargetTitle}
             isGamified={isGamified}
           />
 

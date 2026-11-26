@@ -1,12 +1,9 @@
 package com.habitparty.application.usecases.user;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +15,6 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.auth.SendEmailVerificationUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.auth.DisposableEmailValidator;
-import com.habitparty.core.domain.enums.SubscriptionStatus;
-import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
@@ -81,32 +76,18 @@ public class CreateUserUseCase {
     String hashedPassword = passwordHasher.encode(command.password());
 
     // 2. Cria o usuário no cadastro comum com emailVerified = false
-    User newUser = new User(
-        UUID.randomUUID(),
-        UserRole.USER,
-        false,
-        false,
-        null,
-        null,
-        SubscriptionStatus.FREE,
-        null,
+    User newUser = User.createNew(
         command.fullName(),
         command.username(),
-        command.email() != null ? command.email().trim().toLowerCase() : null,
+        command.email(),
         hashedPassword,
+        true,
         false, // emailVerified = false até confirmar no link enviado por e-mail
-        null,  // emailVerifiedAt
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
         command.birthDate(),
         null,
         command.gender(),
-        0,
-        0,
-        0,
-        LocalDateTime.now(clock.withZone(java.time.ZoneOffset.UTC))
-    );
-    newUser.initializeTimezone(userZone.getId(), clock);
+        userZone.getId(),
+        clock);
 
     // 3. Salva no banco
     User savedUser = port.save(newUser);

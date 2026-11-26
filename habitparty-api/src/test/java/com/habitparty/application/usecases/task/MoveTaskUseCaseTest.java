@@ -30,6 +30,7 @@ import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.LimitExceededException;
@@ -88,7 +89,7 @@ class MoveTaskUseCaseTest {
   @DisplayName("Bloqueia movimentação de tarefa para coluna de ambiente em modo somente-leitura no plano Free")
   void blocksMovingTaskIntoReadOnlyWorkspace() {
     UUID taskId = UUID.randomUUID();
-    Task task = mock(Task.class);
+    Task task = mock(Todo.class);
     when(task.getBoardColumnId()).thenReturn(colWs1Id);
 
     BoardColumn colWs1 = new BoardColumn(colWs1Id, userId, ws1Id, "Origem", 0, "sun", true);
@@ -111,7 +112,7 @@ class MoveTaskUseCaseTest {
   @DisplayName("Bloqueia movimentação de tarefa saindo de ambiente em modo somente-leitura no plano Free")
   void blocksMovingTaskOutOfReadOnlyWorkspace() {
     UUID taskId = UUID.randomUUID();
-    Task task = mock(Task.class);
+    Task task = mock(Todo.class);
     when(task.getBoardColumnId()).thenReturn(colWs3Id);
 
     BoardColumn colWs3 = new BoardColumn(colWs3Id, userId, ws3Id, "Origem Bloqueada", 0, "lock", true);

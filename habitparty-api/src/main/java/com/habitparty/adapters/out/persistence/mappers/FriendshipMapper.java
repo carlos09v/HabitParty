@@ -25,13 +25,20 @@ public class FriendshipMapper {
     if (domain == null) {
       return null;
     }
-    FriendshipJpaEntity entity = new FriendshipJpaEntity();
-    entity.setId(domain.getId());
+    return FriendshipJpaEntity.builder()
+        .id(domain.getId())
+        .requesterId(domain.getRequesterId())
+        .addresseeId(domain.getAddresseeId())
+        .status(domain.getStatus())
+        .createdAt(domain.getCreatedAt())
+        .respondedAt(domain.getRespondedAt())
+        .build();
+  }
+
+  public void updateEntityFromDomain(FriendshipJpaEntity entity, Friendship domain) {
     entity.setRequesterId(domain.getRequesterId());
     entity.setAddresseeId(domain.getAddresseeId());
     entity.setStatus(domain.getStatus());
-    entity.setCreatedAt(domain.getCreatedAt());
     entity.setRespondedAt(domain.getRespondedAt());
-    return entity;
   }
 }

@@ -15,7 +15,9 @@ import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.domain.enums.task.TodoReminderType;
 import com.habitparty.core.exceptions.DomainValidationException;
 
-public class Todo extends Task {
+public non-sealed class Todo extends Task {
+  public static final int MAX_REMINDER_ATTEMPTS = 3;
+
   private LocalTime dueTime;
   private LocalTime startTime;
   private LocalTime dueEndTime;
@@ -26,6 +28,7 @@ public class Todo extends Task {
   private boolean isPenaltyApplied;
   private boolean sendEmailReminder;
   private boolean emailReminderSent;
+  private int reminderAttempts;
 
   public Todo(
       // --- Campos da Base (Task) ---
@@ -178,12 +181,14 @@ public class Todo extends Task {
       this.reminderAt = newReminderAt;
       // Se a data/hora do lembrete mudou, permite que o novo e-mail seja disparado no novo momento
       this.emailReminderSent = false;
+      this.reminderAttempts = 0;
     }
 
     if (sendEmailReminder != null) {
       this.sendEmailReminder = sendEmailReminder;
       if (!this.sendEmailReminder) {
         this.emailReminderSent = false;
+        this.reminderAttempts = 0;
       }
     }
   }
@@ -225,7 +230,7 @@ public class Todo extends Task {
       int reducedXp = Math.max(1, BigDecimal.valueOf(base.xp()).multiply(HALF_RATE).intValue());
       BigDecimal reducedCoins = base.coins()
           .multiply(HALF_RATE)
-          .setScale(2, java.math.RoundingMode.HALF_DOWN);
+          .setScale(2, java.math.RoundingMode.HALF_UP);
 
       if (reducedCoins.compareTo(MIN_COINS) < 0) {
         reducedCoins = MIN_COINS;
@@ -275,6 +280,22 @@ public class Todo extends Task {
     this.emailReminderSent = true;
   }
 
+  public int getReminderAttempts() {
+    return reminderAttempts;
+  }
+
+  public void restoreReminderAttempts(int persistedAttempts) {
+    this.reminderAttempts = Math.max(0, persistedAttempts);
+  }
+
+  public int incrementReminderAttempts() {
+    this.reminderAttempts += 1;
+    if (this.reminderAttempts >= MAX_REMINDER_ATTEMPTS) {
+      this.emailReminderSent = true;
+    }
+    return this.reminderAttempts;
+  }
+
   /**
    * Define (ou remove, se nulo) o horário de término do evento.
    * Regra: exige um horário de início (startTime ou dueTime) e deve ser posterior a ele no mesmo dia.
@@ -304,10 +325,10 @@ public class Todo extends Task {
 
   public void defineEventSchedule(LocalTime newStartTime, LocalTime newEndTime, Boolean allDay, LocalDate referenceDate) {
     LocalDate effectiveReferenceDate = referenceDate != null ? referenceDate : LocalDate.now();
-    if (this.dueDate == null && (Boolean.TRUE.equals(allDay) || newStartTime != null || newEndTime != null)) {
-      this.dueDate = effectiveReferenceDate;
-    }
-    if (this.dueDate == null) {
+    boolean wantsEvent = Boolean.TRUE.equals(allDay) || newStartTime != null || newEndTime != null;
+    LocalDate resolvedDueDate = (this.dueDate == null && wantsEvent) ? effectiveReferenceDate : this.dueDate;
+
+    if (resolvedDueDate == null) {
       this.isAllDay = false;
       this.startTime = null;
       this.dueEndTime = null;
@@ -315,6 +336,7 @@ public class Todo extends Task {
     }
 
     if (Boolean.TRUE.equals(allDay)) {
+      this.dueDate = resolvedDueDate;
       this.isAllDay = true;
       this.dueTime = null;
       this.startTime = null;
@@ -322,13 +344,15 @@ public class Todo extends Task {
       return;
     }
 
-    this.isAllDay = false;
     if (newStartTime == null && newEndTime == null) {
+      this.dueDate = resolvedDueDate;
+      this.isAllDay = false;
       this.startTime = null;
       this.dueEndTime = null;
       return;
     }
 
+    // Valida TODAS as invariantes antes de mutar qualquer estado (atomicidade em caso de erro)
     if (newStartTime == null) {
       throw new DomainValidationException("O horário de término exige um horário de início.");
     }
@@ -336,6 +360,8 @@ public class Todo extends Task {
       throw new DomainValidationException("O horário de término deve ser posterior ao horário de início.");
     }
 
+    this.dueDate = resolvedDueDate;
+    this.isAllDay = false;
     this.dueTime = null;
     this.startTime = newStartTime;
     this.dueEndTime = newEndTime;

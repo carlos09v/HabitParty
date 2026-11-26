@@ -25,6 +25,7 @@ export default async function InventoryPage() {
       <PageWrapper>
         <InventoryContainer
           initialItems={initialItems}
+          initialIsPremium={Boolean(user?.isPremium)}
           initialExperienceMode={user?.experienceMode ?? "PRODUCTIVITY"}
         />
       </PageWrapper>

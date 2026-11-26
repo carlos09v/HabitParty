@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowRight, FileText, SlidersHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {

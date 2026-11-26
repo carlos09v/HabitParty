@@ -1,8 +1,7 @@
 import type { EditableGroupVariant } from "@/components/reward/form/RewardGroupPackagesEditor";
-import {
-  COUPON_PACKAGE_OPTIONS,
-  DEFAULT_MYSTERY_BOX_LOOT,
-} from "@/constants/reward";
+import { getLocalizedDefaultMysteryBoxLoot } from "@/constants/mysteryBox";
+import { COUPON_PACKAGE_OPTIONS } from "@/constants/reward";
+import type { AppLocale } from "@/i18n/config";
 import type {
   CreateRewardDTO,
   MysteryBoxLootItem,
@@ -16,8 +15,8 @@ import type {
 } from "@/types/reward";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
-  adjustSuggestedPriceForCategory,
-  calculateSuggestedCouponPrice,
+  parseLocalizedPrice,
+  resolveSuggestedPackagePrice,
 } from "@/utils/rewardEconomy";
 import {
   buildRewardVariantTitle,
@@ -44,9 +43,9 @@ export const MAX_REWARD_TITLE_LENGTH = 30;
 
 export function createDefaultLootTuple(
   tierId: MysteryBoxTier["id"] = "Básico",
+  locale: AppLocale = "pt-BR",
 ): LootTuple {
-  const source =
-    DEFAULT_MYSTERY_BOX_LOOT[tierId] || DEFAULT_MYSTERY_BOX_LOOT.Básico;
+  const source = getLocalizedDefaultMysteryBoxLoot(tierId, locale);
   return [{ ...source[0] }, { ...source[1] }, { ...source[2] }];
 }
 
@@ -79,6 +78,7 @@ export function buildGroupUpdateDto(params: {
   selectedIcon: string;
   type: RewardType;
   category: RewardCategory;
+  formatPackageLabel?: (pkgKey: PackageMessageKey) => string;
 }):
   | { ok: true; dto: UpdateRewardGroupDTO }
   | {
@@ -96,6 +96,7 @@ export function buildGroupUpdateDto(params: {
     selectedIcon,
     type,
     category,
+    formatPackageLabel,
   } = params;
 
   if (groupVariants.length === 0) {
@@ -105,7 +106,7 @@ export function buildGroupUpdateDto(params: {
   const isTimeBasedGroup = toRewardTypeMessageKey(type) === "TimeBased";
   const parsedVariants = groupVariants.map((variant) => ({
     variant,
-    numericPrice: Number.parseFloat(variant.price.replace(",", ".")),
+    numericPrice: parseLocalizedPrice(variant.price),
     numericDuration: isTimeBasedGroup
       ? Math.max(
           5,
@@ -133,6 +134,14 @@ export function buildGroupUpdateDto(params: {
     }
   }
 
+  const getLocalizedTierSuffix = (variant: EditableGroupVariant) => {
+    const pkgKey = toPackageMessageKey(variant.packageLevel);
+    if (pkgKey === "NONE") return "";
+    return formatPackageLabel
+      ? formatPackageLabel(pkgKey)
+      : String(variant.packageLevel);
+  };
+
   const rawSuffixes = parsedVariants.map(({ variant, numericDuration }) => {
     if (isTimeBasedGroup && numericDuration) {
       return ` (${formatFocusMinutes(numericDuration)})`;
@@ -142,7 +151,8 @@ export function buildGroupUpdateDto(params: {
     if (pkgKey === origKey && variant.originalSuffix) {
       return variant.originalSuffix;
     }
-    return pkgKey !== "NONE" ? ` - ${variant.packageLevel}` : "";
+    const label = getLocalizedTierSuffix(variant);
+    return label ? ` - ${label}` : "";
   });
 
   const suffixCounts = new Map<string, number>();
@@ -151,12 +161,13 @@ export function buildGroupUpdateDto(params: {
   }
 
   const finalSuffixes = rawSuffixes.map((raw, idx) => {
+    const variant = parsedVariants[idx].variant;
     if (
       isTimeBasedGroup &&
       (suffixCounts.get(raw) ?? 0) > 1 &&
-      toPackageMessageKey(parsedVariants[idx].variant.packageLevel) !== "NONE"
+      toPackageMessageKey(variant.packageLevel) !== "NONE"
     ) {
-      return ` - ${parsedVariants[idx].variant.packageLevel}${raw}`;
+      return ` - ${getLocalizedTierSuffix(variant)}${raw}`;
     }
     return raw;
   });
@@ -238,11 +249,7 @@ export function buildBatchCouponPayloads(params: {
     mapRewardFormToCreatePayload({
       title: `${safeBase}${suffix}`,
       description: params.description.trim(),
-      price: opt.suggestedMinutes
-        ? calculateSuggestedCouponPrice(opt.suggestedMinutes, params.category)
-        : opt.suggestedPrice
-          ? adjustSuggestedPriceForCategory(opt.suggestedPrice, params.category)
-          : calculateSuggestedCouponPrice(30, params.category),
+      price: resolveSuggestedPackagePrice(opt, params.category),
       type: "TimeBased",
       category: params.category,
       packageLevel: opt.id,
@@ -264,16 +271,22 @@ export function buildSingleRewardFormInput(params: {
   baseDurationMinutes: string;
   selectedIcon: string;
   lootItems: LootTuple;
+  locale?: AppLocale;
 }): RewardFormInput {
   const isDebtSubmission = toCategoryMessageKey(params.category) === "DEBT";
   const parsedDuration =
     params.type === "TimeBased"
-      ? Math.max(5, Number.parseInt(params.baseDurationMinutes, 10) || 30)
+      ? Math.min(
+          1440,
+          Math.max(5, Number.parseInt(params.baseDurationMinutes, 10) || 30),
+        )
       : undefined;
 
   const tier = getMysteryBoxTier(params.packageLevel);
-  const tierDefaultLoot =
-    DEFAULT_MYSTERY_BOX_LOOT[tier.id] ?? DEFAULT_MYSTERY_BOX_LOOT.Básico;
+  const tierDefaultLoot = getLocalizedDefaultMysteryBoxLoot(
+    tier.id,
+    params.locale ?? "pt-BR",
+  );
 
   const normalizedLootItems =
     params.type === "MysteryBox"

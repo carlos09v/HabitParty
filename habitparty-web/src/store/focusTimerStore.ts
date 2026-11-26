@@ -1,11 +1,11 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { DEFAULT_POMO_MINUTES } from "@/constants/focusRules";
 import {
-  DEFAULT_LONG_BREAK_MINUTES,
-  DEFAULT_POMO_MINUTES,
-  DEFAULT_SHORT_BREAK_MINUTES,
-} from "@/constants/focus";
+  pauseAmbientIfSynced,
+  playFocusStartSounds,
+} from "@/store/focus/focusAmbientSync";
 import { executeCompleteLinkedTask } from "@/store/focus/focusLinkedTaskAction";
 import {
   executeCompleteSession,
@@ -14,46 +14,88 @@ import {
 import {
   buildIdleTimerPatch,
   type FocusTimerStoreState,
+  resolveWorkDurationSeconds,
 } from "@/store/focus/focusTimerState";
 import { executeFocusTick } from "@/store/focus/focusTimerTickAction";
 import {
   startGlobalTicker,
   stopGlobalTicker,
 } from "@/store/focus/focusTimerTicker";
+import { useFocusPreferencesStore } from "@/store/focusPreferencesStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUIStore } from "@/store/uiStore";
-import type { FocusActivity, FocusPhase, FocusRecordType } from "@/types/focus";
+import type {
+  FocusActiveTarget,
+  FocusActivity,
+  FocusPhase,
+  FocusRecordType,
+} from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import {
-  createOptimizedFocusPersistStorage,
-  registerFocusTimerWindowListeners,
-  updateDocumentTitle,
-} from "@/utils/focusTimerBrowser";
+  resolveFocusBreakPlan,
+  resolveLinkedTask,
+} from "@/utils/focusFormatters";
 import {
+  createOptimizedFocusPersistStorage,
+  FOCUS_TIMER_STORAGE_KEY,
+  registerFocusTimerWindowListeners,
   setFocusTimerTranslators,
   tStoreMsg,
-} from "@/utils/focusTimerMessages";
+  updateDocumentTitle,
+} from "@/utils/focusTimerBrowser";
 import { soundEffects } from "@/utils/soundEffects";
 
 export type { FocusTimerStoreState };
 export { setFocusTimerTranslators };
 
-function playStartSounds(withAmbient = false) {
-  const soundPrefs = useSoundPreferencesStore.getState();
-  if (soundPrefs.timerSoundsEnabled) {
-    const vol = soundPrefs.timerVolume ?? 0.8;
-    soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
+const VALID_MODES = new Set<FocusRecordType>(["POMO", "STOPWATCH"]);
+const VALID_PHASES = new Set<FocusPhase>(["WORK", "SHORT_BREAK", "LONG_BREAK"]);
+const VALID_TARGET_TYPES = new Set<FocusActiveTarget["type"]>([
+  "activity",
+  "inventory",
+  "task",
+]);
+
+function sanitizeNonNegativeInt(value: unknown, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return fallback;
   }
+  return Math.floor(value);
+}
+
+function sanitizePersistedTarget(value: unknown): FocusActiveTarget | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
   if (
-    withAmbient &&
-    soundPrefs.isAmbientPlaying &&
-    soundPrefs.ambientSoundType !== "none"
+    typeof raw.type !== "string" ||
+    !VALID_TARGET_TYPES.has(raw.type as FocusActiveTarget["type"]) ||
+    typeof raw.id !== "string" ||
+    typeof raw.name !== "string"
   ) {
-    soundEffects.startAmbientSound(
-      soundPrefs.ambientSoundType,
-      soundPrefs.ambientVolume,
-    );
+    return null;
   }
+  return {
+    type: raw.type as FocusActiveTarget["type"],
+    id: raw.id,
+    name: raw.name,
+    icon: typeof raw.icon === "string" ? raw.icon : undefined,
+    targetMinutes:
+      typeof raw.targetMinutes === "number" &&
+      Number.isFinite(raw.targetMinutes) &&
+      raw.targetMinutes > 0
+        ? Math.floor(raw.targetMinutes)
+        : undefined,
+    remainingSeconds:
+      typeof raw.remainingSeconds === "number" &&
+      Number.isFinite(raw.remainingSeconds) &&
+      raw.remainingSeconds >= 0
+        ? Math.floor(raw.remainingSeconds)
+        : undefined,
+    packageLevel:
+      typeof raw.packageLevel === "string" ? raw.packageLevel : undefined,
+    taskId: typeof raw.taskId === "string" ? raw.taskId : undefined,
+    taskName: typeof raw.taskName === "string" ? raw.taskName : undefined,
+  };
 }
 
 export const useFocusTimerStore = create<FocusTimerStoreState>()(
@@ -68,25 +110,13 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       elapsedSeconds: 0,
       completedCycles: 0,
       hasTriggeredOvertimeAlert: false,
+      customWorkDurationMinutes: null,
       isSavingSession: false,
       isCompletingLinkedTask: false,
       target: null,
-      startedAt: null,
       lastTickTimestamp: null,
-      onSessionSavedCallback: null,
       sessionNotes: "",
       setSessionNotes: (notes: string) => set({ sessionNotes: notes }),
-
-      toggleSound: () => {
-        useSoundPreferencesStore.getState().toggleTimerSounds();
-      },
-      setTimerSoundType: (type) => {
-        useSoundPreferencesStore.getState().setTimerSoundType(type);
-      },
-
-      setOnSessionSavedCallback: (cb) => {
-        set({ onSessionSavedCallback: cb });
-      },
 
       tick: () => executeFocusTick(set, get),
 
@@ -95,73 +125,59 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         if (isFocusSessionCompleting(state)) {
           return;
         }
-
-        if (!state.isActive) {
-          if (!state.target) {
-            const isGamified =
-              useUIStore.getState().experienceMode === "GAMIFIED";
-            toast.info(
-              tStoreMsg(
-                isGamified
-                  ? "selectTargetToStartToast"
-                  : "selectTargetToStartToastProductivity",
-              ),
-            );
-            return;
-          }
-          if (
-            state.target.type === "inventory" &&
-            state.secondsRemaining <= 1
-          ) {
-            toast.info(tStoreMsg("itemAlreadyCompletedToast"));
-            return;
-          }
-          const nowStr = state.startedAt || new Date().toISOString();
-          playStartSounds(true);
-          set({
-            isActive: true,
-            isPaused: false,
-            startedAt: nowStr,
-            lastTickTimestamp: Date.now(),
-          });
-          updateDocumentTitle(get());
-          startGlobalTicker(get().tick);
+        if (state.isActive && !state.isPaused) {
+          get().pauseTimer();
           return;
         }
-
-        if (state.isPaused) {
-          if (
-            state.target?.type === "inventory" &&
-            state.secondsRemaining <= 1
-          ) {
-            toast.info(tStoreMsg("itemAlreadyCompletedToast"));
-            return;
-          }
-          playStartSounds(true);
-          set({
-            isPaused: false,
-            lastTickTimestamp: Date.now(),
-          });
-          updateDocumentTitle(get());
-          startGlobalTicker(get().tick);
-        } else {
-          set({
-            isPaused: true,
-            lastTickTimestamp: null,
-          });
-          stopGlobalTicker();
-          updateDocumentTitle(get());
+        if (!state.isActive && !state.target) {
+          const isGamified =
+            useUIStore.getState().experienceMode === "GAMIFIED";
+          toast.info(
+            tStoreMsg(
+              isGamified
+                ? "selectTargetToStartToast"
+                : "selectTargetToStartToastProductivity",
+            ),
+          );
+          return;
         }
+        get().resumeTimer();
       },
 
       pauseTimer: () => {
+        const state = get();
+        if (
+          !state.isActive ||
+          state.isPaused ||
+          isFocusSessionCompleting(state)
+        ) {
+          return;
+        }
         set({ isPaused: true, lastTickTimestamp: null });
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         updateDocumentTitle(get());
       },
 
       resumeTimer: () => {
-        set({ isActive: true, isPaused: false, lastTickTimestamp: Date.now() });
+        const state = get();
+        if (isFocusSessionCompleting(state) || !state.target) {
+          return;
+        }
+        if (state.target.type === "inventory" && state.secondsRemaining <= 1) {
+          toast.info(tStoreMsg("itemAlreadyCompletedToast"));
+          return;
+        }
+        const isBreakPhase =
+          state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
+        if (!isBreakPhase) {
+          playFocusStartSounds(true);
+        }
+        set({
+          isActive: true,
+          isPaused: false,
+          lastTickTimestamp: Date.now(),
+        });
         updateDocumentTitle(get());
         startGlobalTicker(get().tick);
       },
@@ -171,12 +187,13 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         set((prev) => {
           const isBreak =
             prev.phase === "SHORT_BREAK" || prev.phase === "LONG_BREAK";
           const duration = isBreak
-            ? (prev.target?.targetMinutes || DEFAULT_POMO_MINUTES) * 60
-            : prev.totalDurationSeconds || DEFAULT_POMO_MINUTES * 60;
+            ? resolveWorkDurationSeconds(prev)
+            : prev.totalDurationSeconds || resolveWorkDurationSeconds(prev);
           return buildIdleTimerPatch(duration, { target: prev.target });
         });
         updateDocumentTitle(get());
@@ -187,16 +204,17 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         set((prev) => {
           if (prev.target?.type === "task") {
             return buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
               mode: "POMO",
               target: null,
+              customWorkDurationMinutes: null,
             });
           }
           if (prev.target?.type === "activity") {
-            const duration =
-              (prev.target.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
+            const duration = resolveWorkDurationSeconds(prev);
             return buildIdleTimerPatch(duration, {
               target: {
                 ...prev.target,
@@ -217,9 +235,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         const state = get();
-        const workDuration =
-          (state.target?.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
+        const workDuration = resolveWorkDurationSeconds(state);
         set(buildIdleTimerPatch(workDuration));
         updateDocumentTitle(get());
       },
@@ -240,14 +258,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         }
 
         const cycles = get().completedCycles;
-        const isLongBreak = cycles > 0 && cycles % 4 === 0;
-        const breakMinutes = isLongBreak
-          ? DEFAULT_LONG_BREAK_MINUTES
-          : DEFAULT_SHORT_BREAK_MINUTES;
+        const focusPrefs = useFocusPreferencesStore.getState();
+        const { minutes: breakMinutes, phase: nextPhase } =
+          resolveFocusBreakPlan(cycles, focusPrefs);
         const breakSeconds = breakMinutes * 60;
-        const nextPhase: FocusPhase = isLongBreak
-          ? "LONG_BREAK"
-          : "SHORT_BREAK";
 
         if (useSoundPreferencesStore.getState().timerSoundsEnabled) {
           soundEffects.playBreakStartSound();
@@ -260,7 +274,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           secondsRemaining: breakSeconds,
           totalDurationSeconds: breakSeconds,
           elapsedSeconds: 0,
-          startedAt: new Date().toISOString(),
           lastTickTimestamp: Date.now(),
           hasTriggeredOvertimeAlert: false,
         });
@@ -273,22 +286,23 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         executeCompleteSession(set, get, notes, options),
 
       changeMode: (newMode: FocusRecordType) => {
-        if (isFocusSessionCompleting(get())) {
+        const current = get();
+        if (
+          isFocusSessionCompleting(current) ||
+          current.target?.type === "inventory"
+        ) {
           return;
         }
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         set((prev) => {
           if (prev.target?.type === "inventory") {
             return prev;
           }
-          const defaultDuration =
-            prev.target?.targetMinutes ||
-            (prev.target?.remainingSeconds
-              ? Math.ceil(prev.target.remainingSeconds / 60)
-              : DEFAULT_POMO_MINUTES);
+          const workDurationSeconds = resolveWorkDurationSeconds(prev);
           return {
             ...prev,
-            ...buildIdleTimerPatch(defaultDuration * 60, { mode: newMode }),
+            ...buildIdleTimerPatch(workDurationSeconds, { mode: newMode }),
           };
         });
         updateDocumentTitle(get());
@@ -304,23 +318,30 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           }
           return {
             ...prev,
-            ...buildIdleTimerPatch(minutes * 60),
+            ...buildIdleTimerPatch(minutes * 60, {
+              sessionNotes: prev.sessionNotes,
+              customWorkDurationMinutes: minutes,
+            }),
           };
         });
         updateDocumentTitle(get());
       },
 
       startFocusActivity: (activity: FocusActivity) => {
+        if (isFocusSessionCompleting(get())) {
+          return;
+        }
         stopGlobalTicker();
         const minutes = activity.targetTimeMinutes || DEFAULT_POMO_MINUTES;
         const mode = activity.recordType || "POMO";
-        playStartSounds();
+        playFocusStartSounds(true);
 
         set((prev) => ({
           ...buildIdleTimerPatch(minutes * 60, {
             isActive: true,
             mode,
             completedCycles: 0,
+            customWorkDurationMinutes: null,
             target: {
               type: "activity",
               id: activity.id,
@@ -337,7 +358,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                   ? prev.target.taskName
                   : undefined,
             },
-            startedAt: new Date().toISOString(),
             lastTickTimestamp: Date.now(),
           }),
         }));
@@ -346,6 +366,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       startFocusTask: (task: { id: string; title: string }) => {
+        if (isFocusSessionCompleting(get())) {
+          return;
+        }
         stopGlobalTicker();
         const prev = get();
         // Foco direto na tarefa: nunca herda atividade/cupom selecionados anteriormente.
@@ -353,7 +376,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         const minutes = DEFAULT_POMO_MINUTES;
         const mode: FocusRecordType =
           prev.target?.type === "inventory" ? "POMO" : prev.mode || "POMO";
-        playStartSounds();
+        playFocusStartSounds(true);
 
         const nextTarget = {
           type: "task" as const,
@@ -370,8 +393,8 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             isActive: true,
             mode,
             completedCycles: 0,
+            customWorkDurationMinutes: null,
             target: nextTarget,
-            startedAt: new Date().toISOString(),
             lastTickTimestamp: Date.now(),
           }),
         });
@@ -380,7 +403,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       startFocusItem: (item: InventoryItemResponseDTO) => {
-        stopGlobalTicker();
+        if (isFocusSessionCompleting(get())) {
+          return;
+        }
         const totalSecs =
           item.remainingSeconds !== undefined && item.remainingSeconds !== null
             ? item.remainingSeconds
@@ -391,13 +416,15 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
 
-        playStartSounds();
+        stopGlobalTicker();
+        playFocusStartSounds(true);
 
         set({
           ...buildIdleTimerPatch(totalSecs, {
             isActive: true,
             mode: "POMO",
             completedCycles: 0,
+            customWorkDurationMinutes: null,
             target: {
               type: "inventory",
               id: item.inventoryItemId || "",
@@ -407,7 +434,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               targetMinutes: Math.ceil(totalSecs / 60),
               packageLevel: item.rewardPackageLevel,
             },
-            startedAt: new Date().toISOString(),
             lastTickTimestamp: Date.now(),
           }),
         });
@@ -427,6 +453,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               ...buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
                 mode: "POMO",
                 target: null,
+                customWorkDurationMinutes: null,
               }),
             };
           }
@@ -439,6 +466,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             ...buildIdleTimerPatch(minutes * 60, {
               mode,
               completedCycles: 0,
+              customWorkDurationMinutes: null,
               target: {
                 type: "activity",
                 id: activity.id,
@@ -578,9 +606,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         let shouldResetDirectTaskSession = false;
         set((prev) => {
           if (!prev.target) return prev;
-          const currentTaskId =
-            prev.target.taskId ||
-            (prev.target.type === "task" ? prev.target.id : undefined);
+          const { taskId: currentTaskId } = resolveLinkedTask(prev.target);
           if (currentTaskId !== taskId) return prev;
 
           if (prev.target.type === "activity") {
@@ -609,6 +635,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         });
         if (shouldResetDirectTaskSession) {
           stopGlobalTicker();
+          pauseAmbientIfSynced();
         }
         updateDocumentTitle(get());
       },
@@ -628,6 +655,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               ...buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
                 mode: "POMO",
                 target: null,
+                customWorkDurationMinutes: null,
               }),
             };
           }
@@ -643,6 +671,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             ...buildIdleTimerPatch(totalSecs, {
               mode: "POMO",
               completedCycles: 0,
+              customWorkDurationMinutes: null,
               target: {
                 type: "inventory",
                 id: item.inventoryItemId || "",
@@ -658,50 +687,74 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       resetTarget: () => {
+        if (isFocusSessionCompleting(get())) {
+          return;
+        }
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         set(
           buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
             mode: "POMO",
             target: null,
+            completedCycles: 0,
+            customWorkDurationMinutes: null,
           }),
         );
         updateDocumentTitle(get());
       },
 
       transferTarget: (activity: FocusActivity) => {
+        const currentState = get();
+        if (isFocusSessionCompleting(currentState)) {
+          return;
+        }
+        // Nunca converte tempo de pausa ou de cupom da mochila em tempo produtivo de atividade
+        if (
+          currentState.phase !== "WORK" ||
+          currentState.target?.type === "inventory"
+        ) {
+          get().startFocusActivity(activity);
+          return;
+        }
+        const shouldPlayStartSounds =
+          !currentState.isActive || currentState.isPaused;
         const minutes = activity.targetTimeMinutes || DEFAULT_POMO_MINUTES;
         const newMode = activity.recordType || "POMO";
         const newTotalSeconds = minutes * 60;
 
-        set((prev) => ({
-          isActive: true,
-          isPaused: false,
-          mode: newMode,
-          phase: "WORK",
-          totalDurationSeconds: newTotalSeconds,
-          secondsRemaining:
+        if (shouldPlayStartSounds) {
+          playFocusStartSounds(true);
+        }
+
+        set((prev) => {
+          const nextSecondsRemaining =
             newMode === "POMO"
-              ? Math.max(1, newTotalSeconds - prev.elapsedSeconds)
-              : newTotalSeconds,
-          lastTickTimestamp: Date.now(),
-          target: {
-            type: "activity",
-            id: activity.id,
-            name: activity.name,
-            icon: activity.icon,
-            targetMinutes: minutes,
-            // Ao transferir o tempo de uma sessão de tarefa (ou Atividade + Tarefa),
-            // a tarefa continua vinculada para não perder o esforço já contabilizado nela.
-            taskId:
-              prev.target?.type !== "inventory"
-                ? prev.target?.taskId
-                : undefined,
-            taskName:
-              prev.target?.type !== "inventory"
-                ? prev.target?.taskName
-                : undefined,
-          },
-        }));
+              ? Math.max(0, newTotalSeconds - prev.elapsedSeconds)
+              : newTotalSeconds;
+          return {
+            isActive: true,
+            isPaused: false,
+            mode: newMode,
+            phase: "WORK",
+            totalDurationSeconds: newTotalSeconds,
+            secondsRemaining: nextSecondsRemaining,
+            customWorkDurationMinutes: null,
+            hasTriggeredOvertimeAlert:
+              newMode === "POMO" && nextSecondsRemaining === 0,
+            lastTickTimestamp: Date.now(),
+            target: {
+              type: "activity",
+              id: activity.id,
+              name: activity.name,
+              icon: activity.icon,
+              targetMinutes: minutes,
+              // Ao transferir o tempo de uma sessão de tarefa (ou Atividade + Tarefa),
+              // a tarefa continua vinculada para não perder o esforço já contabilizado nela.
+              taskId: prev.target?.taskId,
+              taskName: prev.target?.taskName,
+            },
+          };
+        });
         updateDocumentTitle(get());
         startGlobalTicker(get().tick);
       },
@@ -810,6 +863,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                     : (metadata.recordType ?? state.mode),
                 totalDurationSeconds: nextDurationSeconds,
                 secondsRemaining: nextDurationSeconds,
+                ...(hasMinutesChange
+                  ? { customWorkDurationMinutes: null }
+                  : {}),
               }
             : {}),
         });
@@ -817,7 +873,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
     }),
     {
-      name: "habitparty-focus-timer",
+      name: FOCUS_TIMER_STORAGE_KEY,
       storage: createOptimizedFocusPersistStorage(),
       partialize: (state) => ({
         isActive: state.isActive,
@@ -829,37 +885,101 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         elapsedSeconds: state.elapsedSeconds,
         completedCycles: state.completedCycles,
         hasTriggeredOvertimeAlert: state.hasTriggeredOvertimeAlert,
+        customWorkDurationMinutes: state.customWorkDurationMinutes,
         // Nunca persiste alvo de mochila se não houver foco ativamente em execução
         target:
           state.target?.type === "inventory" && !state.isActive
             ? null
             : state.target,
-        startedAt: state.startedAt,
         lastTickTimestamp: state.lastTickTimestamp,
+        sessionNotes: state.sessionNotes,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
+      merge: (persistedState, currentState) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return currentState;
+        }
+        const raw = persistedState as Record<string, unknown>;
+        const defaultSecs = DEFAULT_POMO_MINUTES * 60;
+        const sanitizedTarget = sanitizePersistedTarget(raw.target);
+        const mode: FocusRecordType =
+          typeof raw.mode === "string" &&
+          VALID_MODES.has(raw.mode as FocusRecordType)
+            ? (raw.mode as FocusRecordType)
+            : currentState.mode;
+        const phase: FocusPhase =
+          typeof raw.phase === "string" &&
+          VALID_PHASES.has(raw.phase as FocusPhase)
+            ? (raw.phase as FocusPhase)
+            : "WORK";
+        const isActive = Boolean(raw.isActive) && sanitizedTarget !== null;
+        const totalDurationSeconds = Math.max(
+          1,
+          sanitizeNonNegativeInt(raw.totalDurationSeconds, defaultSecs),
+        );
+        const secondsRemaining = sanitizeNonNegativeInt(
+          raw.secondsRemaining,
+          totalDurationSeconds,
+        );
+        const elapsedSeconds = sanitizeNonNegativeInt(raw.elapsedSeconds, 0);
+        const completedCycles = sanitizeNonNegativeInt(raw.completedCycles, 0);
+        const customWorkDurationMinutes =
+          typeof raw.customWorkDurationMinutes === "number" &&
+          Number.isFinite(raw.customWorkDurationMinutes) &&
+          raw.customWorkDurationMinutes > 0
+            ? Math.floor(raw.customWorkDurationMinutes)
+            : null;
+
+        const merged: FocusTimerStoreState = {
+          ...currentState,
+          isActive,
+          isPaused: Boolean(raw.isPaused),
+          mode,
+          phase,
+          secondsRemaining,
+          totalDurationSeconds,
+          elapsedSeconds,
+          completedCycles,
+          hasTriggeredOvertimeAlert: Boolean(raw.hasTriggeredOvertimeAlert),
+          customWorkDurationMinutes,
+          target: sanitizedTarget,
+          lastTickTimestamp:
+            typeof raw.lastTickTimestamp === "number" &&
+            Number.isFinite(raw.lastTickTimestamp)
+              ? raw.lastTickTimestamp
+              : null,
+          sessionNotes:
+            typeof raw.sessionNotes === "string" ? raw.sessionNotes : "",
+        };
 
         // Se o alvo for item de mochila mas não estiver ativo ou com tempo concluído, limpa o alvo
         if (
-          state.target?.type === "inventory" &&
-          (!state.isActive || state.secondsRemaining <= 1)
+          merged.target?.type === "inventory" &&
+          (!merged.isActive || merged.secondsRemaining <= 1)
         ) {
-          state.target = null;
-          state.isActive = false;
-          state.isPaused = false;
-          state.secondsRemaining = DEFAULT_POMO_MINUTES * 60;
-          state.totalDurationSeconds = DEFAULT_POMO_MINUTES * 60;
-          state.elapsedSeconds = 0;
-          state.lastTickTimestamp = null;
-          return;
+          return {
+            ...merged,
+            ...buildIdleTimerPatch(defaultSecs, {
+              target: null,
+              completedCycles: 0,
+              customWorkDurationMinutes: null,
+            }),
+          };
         }
 
-        // Se a sessão estava ativa quando a aba/navegador foi fechado, restaura em estado PAUSADO
-        // preservando exatamente o tempo acumulado até o fechamento (sem somar horas offline).
-        if (state.isActive) {
-          state.isPaused = true;
-          state.lastTickTimestamp = null;
+        // Se a sessão estava ativa quando a aba/navegador foi fechado (ou outra aba salvou),
+        // restaura em estado PAUSADO preservando o tempo acumulado sem somar horas offline nem duplicar ticks.
+        if (merged.isActive) {
+          return {
+            ...merged,
+            isPaused: true,
+            lastTickTimestamp: null,
+          };
+        }
+
+        return merged;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state) {
           updateDocumentTitle(state);
         }
       },
@@ -867,4 +987,11 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
   ),
 );
 
-registerFocusTimerWindowListeners(() => useFocusTimerStore.getState());
+registerFocusTimerWindowListeners(
+  () => useFocusTimerStore.getState(),
+  () => {
+    stopGlobalTicker();
+    pauseAmbientIfSynced();
+    void useFocusTimerStore.persist.rehydrate();
+  },
+);

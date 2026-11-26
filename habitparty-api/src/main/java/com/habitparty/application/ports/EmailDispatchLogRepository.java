@@ -18,15 +18,11 @@ public interface EmailDispatchLogRepository {
       LocalDateTime date
   );
 
-  long countByUserIdAndSentAtAfter(UUID userId, LocalDateTime date);
-
   long countByUserIdAndStatusAndSentAtAfter(
       UUID userId,
       com.habitparty.core.domain.enums.EmailDispatchStatus status,
       LocalDateTime date
   );
-
-  Map<UUID, Long> countByUserIdsAndSentAtAfter(Collection<UUID> userIds, LocalDateTime date);
 
   Map<UUID, Long> countByUserIdsAndStatusAndSentAtAfter(
       Collection<UUID> userIds,

@@ -2,7 +2,6 @@ package com.habitparty.adapters.out.persistence.mappers;
 
 import org.springframework.stereotype.Component;
 
-import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.UserTokenJpaEntity;
 import com.habitparty.core.domain.entities.UserToken;
 
@@ -10,31 +9,35 @@ import com.habitparty.core.domain.entities.UserToken;
 public class UserTokenMapper {
 
   public UserTokenJpaEntity toEntity(UserToken domain) {
-    UserJpaEntity userReference = new UserJpaEntity();
-    userReference.setId(domain.getUserId());
+    return UserTokenJpaEntity.builder()
+        .id(domain.getId())
+        .userId(domain.getUserId())
+        .tokenType(domain.getTokenType())
+        .token(domain.getToken())
+        .expirationDate(domain.getExpirationDate())
+        .used(domain.isUsed())
+        .usedAt(domain.getUsedAt())
+        .createdAt(domain.getCreatedAt())
+        .build();
+  }
 
-    UserTokenJpaEntity entity = new UserTokenJpaEntity();
-    entity.setId(domain.getId());
-    entity.setUser(userReference);
+  public void updateEntityFromDomain(UserTokenJpaEntity entity, UserToken domain) {
     entity.setTokenType(domain.getTokenType());
     entity.setToken(domain.getToken());
     entity.setExpirationDate(domain.getExpirationDate());
     entity.setUsed(domain.isUsed());
     entity.setUsedAt(domain.getUsedAt());
-    entity.setCreatedAt(domain.getCreatedAt());
-    return entity;
   }
 
   public UserToken toDomain(UserTokenJpaEntity entity) {
     return new UserToken(
         entity.getId(),
-        entity.getUser().getId(),
+        entity.getUserId(),
         entity.getTokenType(),
         entity.getToken(),
         entity.getExpirationDate(),
         entity.isUsed(),
         entity.getUsedAt(),
-        entity.getCreatedAt()
-    );
+        entity.getCreatedAt());
   }
 }

@@ -289,6 +289,7 @@ export function TimePicker({
     toggle,
     coords,
     shouldRenderPortal,
+    portalContainer,
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align,
@@ -317,7 +318,7 @@ export function TimePicker({
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   const timePopover =
-    isOpen && shouldRenderPortal && coords
+    isOpen && shouldRenderPortal && coords && portalContainer
       ? createPortal(
           <div
             ref={popoverRef}
@@ -373,7 +374,7 @@ export function TimePicker({
               </button>
             </div>
           </div>,
-          document.body,
+          portalContainer,
         )
       : null;
 
@@ -486,7 +487,7 @@ export function TimePicker({
               disabled={disabled}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
-              aria-invalid={error ? true : undefined}
+              aria-invalid={Boolean(error)}
               aria-describedby={describedBy}
               className="flex-1 flex items-center gap-2 min-w-0 text-left cursor-pointer outline-none"
             >

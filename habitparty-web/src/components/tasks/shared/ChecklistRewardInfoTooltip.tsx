@@ -192,3 +192,61 @@ export function ChecklistRewardInfoTooltip({
     </InfoTooltip>
   );
 }
+
+interface RewardedStepToggleButtonProps {
+  isActive: boolean;
+  disabled: boolean;
+  ariaLabel: string;
+  title: string;
+  onClick: () => void;
+  size?: "sm" | "md";
+}
+
+/**
+ * Botão compartilhado para alternar se uma nova etapa do checklist será recompensada
+ * (reutilizado em `TaskChecklistSection` no modal e `TaskDetailsChecklist` no popover).
+ */
+export function RewardedStepToggleButton({
+  isActive,
+  disabled,
+  ariaLabel,
+  title,
+  onClick,
+  size = "md",
+}: RewardedStepToggleButtonProps) {
+  const { isGamified } = useExperienceMode();
+  const RewardIcon = isGamified ? Swords : Zap;
+  const isSmall = size === "sm";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={isActive}
+      aria-label={ariaLabel}
+      title={title}
+      className={cn(
+        "inline-flex items-center justify-center border transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-gold",
+        isSmall
+          ? "min-h-6 min-w-6 px-1.5 py-0.5 rounded"
+          : "min-h-8 min-w-8 px-2.5 rounded-lg",
+        isActive
+          ? "bg-amber-500/15 border-amber-500/50 text-amber-800 hover:bg-amber-500/25 dark:bg-gold/15 dark:border-gold/55 dark:text-gold dark:hover:bg-gold/25 cursor-pointer"
+          : disabled
+            ? isSmall
+              ? "border-transparent text-neutral-500 opacity-35 cursor-not-allowed"
+              : "border-neutral-700/60 text-neutral-500 opacity-45 cursor-not-allowed"
+            : isSmall
+              ? "border-dashed border-neutral-500/40 text-neutral-400 hover:text-amber-700 hover:border-amber-500/50 hover:bg-gold/10 dark:border-neutral-600 dark:text-neutral-400 dark:hover:text-gold dark:hover:border-gold/50 cursor-pointer"
+              : "border-dashed border-neutral-600 text-neutral-300 hover:text-amber-700 hover:border-amber-500/50 hover:bg-gold/10 dark:border-primary/35 dark:text-neutral-400 dark:hover:text-gold dark:hover:border-gold/50 cursor-pointer",
+      )}
+    >
+      <RewardIcon
+        size={isSmall ? 12 : 15}
+        className="shrink-0"
+        aria-hidden="true"
+      />
+    </button>
+  );
+}

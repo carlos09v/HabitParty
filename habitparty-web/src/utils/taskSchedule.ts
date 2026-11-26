@@ -1,3 +1,4 @@
+import { normalizeTaskType } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
@@ -14,7 +15,7 @@ import {
   resolveEffectiveDateFormat,
   resolveEffectiveTimeFormat,
 } from "./date";
-import { getDatePartsInTimeZone, resolveValidTimeZone } from "./timezone";
+import { getDatePartsInTimeZone } from "./timezone";
 
 export interface TaskDueDateInfo {
   label: string;
@@ -124,6 +125,32 @@ function computeTaskTimeStatus(
   return { isTodayTimeOverdue, isInProgress };
 }
 
+/**
+ * Caminho rápido (zero alocação de strings/Intl): verifica se um Afazer previsto para hoje
+ * já ultrapassou seu horário limite dado `currentMinutes` pré-calculado no fuso do usuário.
+ */
+export function isTodoTimeOverdueTodayFast(
+  scheduleInput: {
+    dueTime?: string | null;
+    startTime?: string | null;
+    dueEndTime?: string | null;
+    isAllDay?: boolean | null;
+  },
+  currentMinutes: number,
+): boolean {
+  if (scheduleInput.isAllDay) return false;
+  const endMinutes = parseTimeToMinutes(
+    scheduleInput.dueEndTime ? scheduleInput.dueEndTime.slice(0, 5) : null,
+  );
+  const hasStartTime = Boolean(scheduleInput.startTime);
+  const dueMinutes = parseTimeToMinutes(
+    scheduleInput.dueTime ? scheduleInput.dueTime.slice(0, 5) : null,
+  );
+  // Com horário de término (ou evento de dia inteiro), a tarefa só fica atrasada após o fim do evento/dia.
+  const deadlineMinutes = endMinutes ?? (hasStartTime ? null : dueMinutes);
+  return deadlineMinutes !== null && deadlineMinutes < currentMinutes;
+}
+
 /** Verifica se um Afazer previsto para hoje já ultrapassou seu horário limite no fuso informado. */
 export function isTodoTimeOverdueToday(
   scheduleInput: {
@@ -135,11 +162,18 @@ export function isTodoTimeOverdueToday(
   now: Date = new Date(),
   timeZone?: string | null,
 ): boolean {
-  const schedule = resolveTaskScheduleStrings({
-    ...scheduleInput,
-    locale: "pt-BR",
-  });
-  return computeTaskTimeStatus(schedule, 0, now, timeZone).isTodayTimeOverdue;
+  if (scheduleInput.isAllDay) return false;
+  if (
+    !scheduleInput.dueEndTime &&
+    (scheduleInput.startTime || !scheduleInput.dueTime)
+  ) {
+    return false;
+  }
+  const nowParts = getDatePartsInTimeZone(now, timeZone);
+  return isTodoTimeOverdueTodayFast(
+    scheduleInput,
+    nowParts.hour * 60 + nowParts.minute,
+  );
 }
 
 export function getTaskDueDateInfo(
@@ -459,20 +493,97 @@ export function getPopoverDueDateInfo(
 }
 
 /**
- * Verifica se uma tarefa com Modo Hardcore ativado já ultrapassou o prazo (23:59:59 do dueDate)
- * e deve ter seu título, prazo e dificuldade bloqueados contra edição.
+ * Fonte única de verdade para a regra de bloqueio e penalidade do Modo Hardcore (alinhada ao backend `Task.isOverdue`):
+ * um Afazer Hardcore fica bloqueado (impedindo alterar o prazo ou desativar Hardcore) e sujeito à entrega tardia (50%)
+ * quando o dia de vencimento (`dueDate`) é anterior ao dia atual no fuso do usuário (`dueDate < today`).
  */
 export function isTaskHardcoreLocked(
-  task?: { isHardcoreModeEnabled?: boolean; dueDate?: string | null } | null,
+  task?: {
+    type?: string;
+    taskType?: string;
+    isHardcoreModeEnabled?: boolean;
+    dueDate?: string | null;
+  } | null,
   now: Date = new Date(),
   timeZone?: string | null,
 ): boolean {
   if (!task?.isHardcoreModeEnabled || !task?.dueDate) return false;
-  const datePart = task.dueDate.split("T")[0];
-  if (!resolveValidTimeZone(timeZone)) {
-    return new Date(`${datePart}T23:59:59`) < now;
+  if ((task.type || task.taskType) && normalizeTaskType(task) !== "todo") {
+    return false;
   }
+  const datePart = task.dueDate.split("T")[0];
   return datePart < getTodayDateString(now, timeZone);
+}
+
+/**
+ * Fonte única de verdade para detectar se um To-Do Hardcore está vencido (e ainda pendente),
+ * considerando fuso horário, `startTime`, `dueTime`, `dueEndTime` e `isAllDay`.
+ */
+export function isTaskHardcoreOverdue(
+  task?: {
+    type?: string;
+    taskType?: string;
+    completed?: boolean;
+    isHardcoreModeEnabled?: boolean;
+    dueDate?: string;
+    dueTime?: string;
+    startTime?: string;
+    dueEndTime?: string;
+    isAllDay?: boolean;
+  } | null,
+  timeZone?: string | null,
+  options?: {
+    isDone?: boolean;
+    dueDateInfo?: Pick<TaskDueDateInfo, "isOverdue">;
+  },
+): boolean {
+  if (!task?.isHardcoreModeEnabled) return false;
+  const isDone = options?.isDone ?? Boolean(task.completed);
+  if (isDone) return false;
+  if (normalizeTaskType(task) !== "todo") return false;
+  if (options?.dueDateInfo) {
+    return Boolean(options.dueDateInfo.isOverdue);
+  }
+  const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
+    dueTime: task.dueTime,
+    startTime: task.startTime,
+    dueEndTime: task.dueEndTime,
+    isAllDay: task.isAllDay,
+    timeZone,
+  });
+  return Boolean(dueDateInfo.isOverdue);
+}
+
+/**
+ * Determina se a ofensiva da tarefa é contabilizada em ciclos agendados (`x`)
+ * em vez de dias consecutivos (`d`).
+ */
+export function isTaskCycleBasedStreak(task?: {
+  type?: string;
+  taskType?: string;
+  resetCounter?: string | null;
+  repeatType?: string | null;
+  repeatEvery?: number | null;
+}): boolean {
+  if (!task) return false;
+  const taskType = normalizeTaskType({
+    type: task.type,
+    taskType: task.taskType,
+    resetCounter: task.resetCounter ?? undefined,
+    repeatType: task.repeatType ?? undefined,
+  });
+  if (taskType === "habit") {
+    return (
+      task.resetCounter != null && task.resetCounter.toUpperCase() !== "DAILY"
+    );
+  }
+  if (taskType === "daily") {
+    return (
+      (task.repeatType != null && task.repeatType.toUpperCase() !== "DAILY") ||
+      (task.repeatEvery ?? 1) > 1
+    );
+  }
+  return false;
 }
 
 export interface EventScheduleState {

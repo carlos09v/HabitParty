@@ -11,23 +11,29 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "achievements")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class AchievementJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class AchievementJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "achievement_id")
   private UUID id;
 
+  @ToString.Include
   @Column(name = "code", nullable = false, unique = true, length = 60)
   private String code;
 
@@ -40,6 +46,7 @@ public class AchievementJpaEntity {
   @Column(name = "icon_name", nullable = false, length = 60)
   private String iconName;
 
+  @Builder.Default
   @Column(name = "points", nullable = false)
   private int points = 10;
 
@@ -51,12 +58,15 @@ public class AchievementJpaEntity {
   @Column(name = "rarity", nullable = false, length = 30)
   private AchievementRarity rarity;
 
+  @Builder.Default
   @Column(name = "target_value", nullable = false)
   private int targetValue = 1;
 
+  @Builder.Default
   @Column(name = "display_order", nullable = false)
   private int displayOrder = 0;
 
+  @Builder.Default
   @Column(name = "is_secret", nullable = false)
   private boolean secret = false;
 }

@@ -70,4 +70,9 @@ public interface PaymentGatewayPort {
    * Consulta e retorna os dados de uma sessão de checkout diretamente no gateway caso esteja paga.
    */
   java.util.Optional<PaymentWebhookEvent.CheckoutCompleted> retrievePaidCheckoutSession(String sessionId);
+
+  /**
+   * Cancela imediatamente uma assinatura recorrente ativa no gateway (ex.: durante exclusão de conta).
+   */
+  default void cancelSubscriptionImmediately(String subscriptionId) {}
 }

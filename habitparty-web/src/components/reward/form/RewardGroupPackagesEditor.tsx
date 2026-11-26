@@ -23,6 +23,7 @@ import {
   adjustSuggestedPriceForCategory,
   analyzeRewardPrice,
   calculateSuggestedCouponPrice,
+  parseLocalizedPrice,
 } from "@/utils/rewardEconomy";
 import {
   toPackageMessageKey,
@@ -106,8 +107,7 @@ export function RewardGroupPackagesEditor({
           const chipStyle = TIER_CHIP_STYLES[pkgKey] ?? TIER_CHIP_STYLES.NONE;
           const durationNum =
             Number.parseInt(variant.durationMinutes || "0", 10) || 0;
-          const numericPrice =
-            Number.parseFloat(variant.price.replace(",", ".")) || 0;
+          const numericPrice = parseLocalizedPrice(variant.price) || 0;
 
           const usedByOtherRows = new Set<PackageMessageKey>();
           for (const other of variants) {

@@ -141,7 +141,6 @@ export interface AvatarFrameUnlockContext {
   isPremium: boolean;
   totalXp: number;
   achievements?: AchievementItemResponseDTO[];
-  equippedFrameId?: string | null;
 }
 
 /**

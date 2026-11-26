@@ -101,14 +101,14 @@ export function useCatalogItemInteraction<T extends HTMLElement>({
       onPointerEnter: mysteryPopover
         ? (e) => {
             if (e.pointerType === "mouse") {
-              mysteryPopover.open();
+              mysteryPopover.openFromHover();
             }
           }
         : undefined,
       onPointerLeave: mysteryPopover
         ? (e) => {
             if (e.pointerType === "mouse") {
-              mysteryPopover.close();
+              mysteryPopover.closeFromHover();
             }
           }
         : undefined,
@@ -118,15 +118,13 @@ export function useCatalogItemInteraction<T extends HTMLElement>({
               e.target === e.currentTarget &&
               e.currentTarget.matches(":focus-visible")
             ) {
-              mysteryPopover.open();
+              mysteryPopover.openFromFocus();
             }
           }
         : undefined,
       onBlur: mysteryPopover
         ? (e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-              mysteryPopover.close();
-            }
+            mysteryPopover.closeFromBlur(e.relatedTarget);
           }
         : undefined,
     };

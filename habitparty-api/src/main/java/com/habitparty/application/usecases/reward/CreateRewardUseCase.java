@@ -51,31 +51,13 @@ public class CreateRewardUseCase {
         : 0;
 
     if (categoriaFinal == RewardCategory.DEBT) {
-      int activeDebts = RewardGrouping.countActiveDebts(existingRewards);
-      if (activeDebts >= RewardGrouping.MAX_ACTIVE_DEBTS) {
-        throw new LimitExceededException(
-            "Limite máximo de " + RewardGrouping.MAX_ACTIVE_DEBTS
-                + " dívidas ativas atingido. Quite uma dívida antes de registrar outra.");
-      }
+      RewardLimitValidator.assertActiveDebtQuotaNotExceeded(RewardGrouping.countActiveDebts(existingRewards));
+    } else if (existingVariantsInGroup > 0) {
+      RewardLimitValidator.assertGroupVariantCapacityForCreate(existingVariantsInGroup);
     } else {
-      int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
-      if (existingVariantsInGroup > 0) {
-        if (existingVariantsInGroup >= RewardGrouping.MAX_VARIANTS_PER_GROUP) {
-          throw new LimitExceededException(
-              "Este card já atingiu o limite máximo de "
-                  + RewardGrouping.MAX_VARIANTS_PER_GROUP
-                  + " pacotes.");
-        }
-      } else {
-        int currentCards = RewardGrouping.countRegularDistinctGroups(existingRewards);
-        if (currentCards >= maxCards) {
-          throw new LimitExceededException(user.isPremium()
-              ? "Limite de " + RewardGrouping.PREMIUM_MAX_REWARD_CARDS
-                  + " cards de recompensa por usuário atingido no plano premium."
-              : "Limite de " + RewardGrouping.FREE_MAX_REWARD_CARDS
-                  + " cards de recompensa por usuário atingido no plano gratuito.");
-        }
-      }
+      RewardLimitValidator.assertRewardCardQuotaForCreate(
+          user.isPremium(),
+          RewardGrouping.countRegularDistinctGroups(existingRewards));
     }
 
     int maxIndex = port.getMaxOrderIndex(user.getId());
@@ -107,15 +89,13 @@ public class CreateRewardUseCase {
           command.lootItems());
     }
 
-    if (candidateGroupKey != null
-        && existingVariantsInGroup > 0
-        && RewardGrouping.findConflictingPackageTier(
-                existingRewards, candidateGroupKey, packageFinal, null)
-            .isPresent()) {
-      throw new DomainValidationException(
-          "Este card já possui um pacote de nível "
-              + RewardGrouping.formatPackageLevelLabel(packageFinal)
-              + ". Escolha outro nível.");
+    if (candidateGroupKey != null && existingVariantsInGroup > 0) {
+      RewardLimitValidator.assertNoConflictingPackageTier(
+          existingRewards,
+          candidateGroupKey,
+          packageFinal,
+          null,
+          "Este card já possui um pacote de nível %s. Escolha outro nível.");
     }
 
     Reward newReward = new Reward(

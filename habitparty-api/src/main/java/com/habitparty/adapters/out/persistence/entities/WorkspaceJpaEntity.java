@@ -7,34 +7,33 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "workspaces")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class WorkspaceJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class WorkspaceJpaEntity extends BaseUuidJpaEntity {
+
   @Id
-  // @GeneratedValue(strategy = GenerationType.UUID) =? O usecase que irá gerar
+  @ToString.Include
   @Column(name = "workspace_id")
   private UUID id;
 
-  // Relacionamento N:1 (Muitos Workspaces pertencem a 1 Usuário)
-  // FetchType.LAZY garante performance no JPA. Quando buscar um Workspace no banco, o Hibernate não vai fazer um mega SELECT para trazer todos os dados do Usuário junto, a menos que você peça explicitamente. Ele traz o Workspace rápido e leve.
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserJpaEntity user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
+  @ToString.Include
   @Column(nullable = false, length = 25)
   private String name;
 

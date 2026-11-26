@@ -1,7 +1,7 @@
 package com.habitparty.core.domain.entities;
 
 import java.util.List;
-import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
+
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 
@@ -9,6 +9,9 @@ public record KanbanBoard(
     Workspace workspace,
     List<KanbanColumn> columns
 ) {
+  public record ColumnMetrics(long totalTasks, long completedTasks) {
+  }
+
   public record KanbanColumn(
       BoardColumn column,
       List<Task> tasks,
@@ -23,12 +26,12 @@ public record KanbanBoard(
         BoardColumn column,
         List<Task> tasks,
         boolean excludeArchivedCompleted,
-        BoardColumnSummaryDTO summary) {
+        ColumnMetrics metrics) {
       if (!excludeArchivedCompleted) {
         return new KanbanColumn(column, tasks);
       }
-      if (summary != null) {
-        return new KanbanColumn(column, tasks, summary.totalTasks(), summary.completedTasks());
+      if (metrics != null) {
+        return new KanbanColumn(column, tasks, metrics.totalTasks(), metrics.completedTasks());
       }
       long completedCount = tasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
       return new KanbanColumn(column, tasks, (long) tasks.size(), completedCount);

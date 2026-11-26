@@ -113,6 +113,7 @@ export function TaskTagSelector({
       triggerId={triggerId}
       floatingStyle={floating.floatingStyle ?? {}}
       shouldRenderPortal={floating.shouldRenderPortal}
+      portalContainer={floating.portalContainer}
       placement={floating.coords?.placement}
       isPopoverVariant={isPopoverVariant}
       query={query}
@@ -167,7 +168,7 @@ export function TaskTagSelector({
             />
           ))}
 
-          {isLimitReached ? (
+          {disabled ? null : isLimitReached ? (
             <span
               title={tPopover("maxTagsTitle", { max: maxTags })}
               className="text-tiny text-neutral-500 italic px-1 select-none"
@@ -197,24 +198,20 @@ export function TaskTagSelector({
           )}
         </div>
 
-        {isOpen && !isLimitReached && dropdownPortal}
+        {!disabled && isOpen && !isLimitReached && dropdownPortal}
       </div>
     );
   }
 
   return (
     <div ref={floating.containerRef} className="relative w-full">
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Pointer convenience click on field whitespace; keyboard trigger lives on sibling button */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Avoids nested interactive buttons inside role=combobox */}
       <div
         ref={floating.triggerRef}
-        id={triggerId}
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-controls={listboxId}
-        aria-disabled={disabled}
-        tabIndex={disabled ? -1 : 0}
-        onClick={toggleSelector}
-        onKeyDown={handleTriggerKeyDown}
+        onClick={() => {
+          if (!disabled) toggleSelector();
+        }}
         className={cn(
           "w-full rounded-lg text-left transition-colors py-1.5 pl-8 pr-8 min-h-[38px] relative flex items-center flex-wrap gap-1",
           "bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 shadow-xs",
@@ -226,35 +223,56 @@ export function TaskTagSelector({
       >
         <Tag
           size={15}
+          aria-hidden="true"
           className="absolute left-2.5 top-2.5 text-neutral-400 pointer-events-none shrink-0"
         />
 
-        {selectedTags.length === 0 ? (
-          <span className="text-body-s text-neutral-400 dark:text-neutral-500 truncate select-none">
-            {t("selectOrCreatePlaceholder")}
-          </span>
-        ) : (
-          selectedTags.map((tag) => (
-            <SelectedTagChip
-              key={tag}
-              tag={tag}
-              variant="modal"
-              isEditing={editingTag === tag}
-              editingValue={editingValue}
-              editInputRef={editInputRef}
-              disabled={disabled}
-              canUpdate={Boolean(onUpdateTag)}
-              onEditingValueChange={setEditingValue}
-              onStartEdit={handleStartEditTag}
-              onCommitEdit={handleCommitEditTag}
-              onCancelEdit={handleCancelEditTag}
-              onRemoveTag={onRemoveTag}
-            />
-          ))
-        )}
+        {selectedTags.map((tag) => (
+          <SelectedTagChip
+            key={tag}
+            tag={tag}
+            variant="modal"
+            isEditing={editingTag === tag}
+            editingValue={editingValue}
+            editInputRef={editInputRef}
+            disabled={disabled}
+            canUpdate={Boolean(onUpdateTag)}
+            onEditingValueChange={setEditingValue}
+            onStartEdit={handleStartEditTag}
+            onCommitEdit={handleCommitEditTag}
+            onCancelEdit={handleCancelEditTag}
+            onRemoveTag={onRemoveTag}
+          />
+        ))}
+
+        <button
+          id={triggerId}
+          type="button"
+          disabled={disabled}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-label={t("selectOrCreatePlaceholder")}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) toggleSelector();
+          }}
+          onKeyDown={handleTriggerKeyDown}
+          className={cn(
+            "flex-1 min-w-[24px] text-left text-body-s text-neutral-400 dark:text-neutral-500 truncate select-none bg-transparent border-0 p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded",
+            disabled ? "cursor-not-allowed" : "cursor-pointer",
+          )}
+        >
+          {selectedTags.length === 0 ? (
+            t("selectOrCreatePlaceholder")
+          ) : (
+            <span className="sr-only">{t("selectOrCreatePlaceholder")}</span>
+          )}
+        </button>
 
         <ChevronDown
           size={15}
+          aria-hidden="true"
           className={cn(
             "absolute right-2.5 top-2.5 text-neutral-400 pointer-events-none transition-transform duration-150",
             isOpen && "rotate-180 text-gold",

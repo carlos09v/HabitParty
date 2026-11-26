@@ -1,9 +1,6 @@
-"use client";
-
-import { useSortable } from "@dnd-kit/sortable";
-import { GripVertical, Loader2, Receipt } from "lucide-react";
+import { Backpack, GripVertical, Receipt } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { memo, type default as React } from "react";
+import { memo, type default as React, type ReactNode } from "react";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
@@ -11,30 +8,23 @@ import {
 } from "@/components/ui/CatalogItemBadges";
 import {
   CatalogPinnedBadge,
+  CatalogPrimaryActionButton,
+  CatalogStatusBadge,
   CatalogUtilityActions,
+  calculateMissingBalance,
+  formatMissingBalanceHint,
+  getCatalogItemIconBoxClass,
 } from "@/components/ui/CatalogItemShared";
 import {
-  type CatalogSortableBindings,
-  IDLE_SORTABLE_BINDINGS,
-  useCatalogItemInteraction,
-} from "@/hooks/useCatalogItemInteraction";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
-import {
-  type MysteryPopoverBridge,
-  useMysteryBoxItemPopover,
-} from "@/hooks/useMysteryBoxItemPopover";
+  type CatalogItemRenderContext,
+  CatalogItemWrapper,
+} from "@/components/ui/CatalogItemWrapper";
+import { useCatalogItemInteraction } from "@/hooks/useCatalogItemInteraction";
 import type { AppLocale } from "@/i18n/config";
-import type {
-  CatalogItemVariant,
-  MysteryBoxLootItem,
-  MysteryBoxTier,
-} from "@/types/reward";
+import type { CatalogItemVariant, MysteryBoxLootItem } from "@/types/reward";
 import { cn } from "@/utils";
-import {
-  resolveCatalogActionTooltip,
-  resolveCatalogItemVisuals,
-  resolveCatalogTypePresentation,
-} from "@/utils/catalogItemVisuals";
+import { resolveCatalogTypePresentation } from "@/utils/catalogItemVisuals";
+import { CATALOG_ROW_GRID_CLASS } from "@/utils/catalogLayout";
 
 export interface ItemRowProps {
   id: string;
@@ -48,10 +38,15 @@ export interface ItemRowProps {
   baseDurationMinutes?: number | null;
   remainingSeconds?: number | null;
   quantity?: number;
+  ownedQuantity?: number;
   price?: number;
+  currentCoins?: number;
+  showMysteryPriceFooter?: boolean;
+  isGamified?: boolean;
   variants?: CatalogItemVariant[];
   activeVariantId?: string;
   onSelectVariant?: (variantId: string) => void;
+  canAfford?: boolean;
   disabled?: boolean;
   disabledTitle?: string;
   actionLabel: string;
@@ -65,14 +60,11 @@ export interface ItemRowProps {
   isActionLoading?: boolean;
   isDragDisabled?: boolean;
   lootItems?: MysteryBoxLootItem[];
+  statusBadgeSlot?: ReactNode;
 }
 
-type RowVisuals = ReturnType<typeof resolveCatalogItemVisuals>;
-
 interface ItemRowContentProps extends ItemRowProps {
-  visuals: RowVisuals;
-  sortable: CatalogSortableBindings;
-  mysteryPopover?: MysteryPopoverBridge;
+  context: CatalogItemRenderContext;
 }
 
 function ItemRowContent({
@@ -82,10 +74,14 @@ function ItemRowContent({
   baseDurationMinutes,
   remainingSeconds,
   quantity,
+  ownedQuantity,
   price,
+  currentCoins,
+  isGamified = true,
   variants,
   activeVariantId,
   onSelectVariant,
+  canAfford: canAffordProp,
   disabled = false,
   disabledTitle,
   actionLabel,
@@ -95,14 +91,12 @@ function ItemRowContent({
   inUse = false,
   isDeleteChecking = false,
   isActionLoading = false,
-  isDragDisabled = false,
-  visuals,
-  sortable,
-  mysteryPopover,
+  statusBadgeSlot,
+  context,
 }: ItemRowContentProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
-  const { isGamified } = useExperienceMode();
+  const { visuals, sortable, isDragDisabled, mysteryPopover } = context;
   const {
     typeKey,
     typeMeta,
@@ -127,9 +121,22 @@ function ItemRowContent({
       onContextMenu,
     });
 
-  const isPrimaryDisabled =
-    disabled || (inUse && !isFocusNavigate) || isActionLoading;
+  const canAfford = canAffordProp ?? !disabled;
   const isDebtCategory = visuals.isDebt;
+  const { TypeIcon, typeLabel } = resolveCatalogTypePresentation(
+    { isMystery, typeKey, typeMeta },
+    isGamified,
+    t,
+  );
+
+  const missingCoins =
+    typeof price === "number" &&
+    price > 0 &&
+    typeof currentCoins === "number" &&
+    !canAfford &&
+    currentCoins < price
+      ? calculateMissingBalance(price, currentCoins)
+      : 0;
 
   return (
     <li
@@ -147,20 +154,21 @@ function ItemRowContent({
                 !leftAccentClass && "hover:border-l-gold/50",
                 leftAccentClass,
               ),
-        "flex flex-col gap-2.5 p-3 sm:p-3.5",
-        "md:grid md:grid-cols-[minmax(0,3.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_auto] xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.7fr)_minmax(0,1.1fr)_auto] md:items-center",
-        "md:gap-2.5 xl:gap-4 md:px-3.5 xl:px-4 md:py-2.5",
+        "flex flex-col gap-2.5 p-3 sm:p-3.5 md:py-2.5",
+        CATALOG_ROW_GRID_CLASS,
         onDoubleClick && "cursor-pointer",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
-      {/* Coluna 1: Grip (ou Pin fixo para Dívida) + Ícone + [Qtd] + Título/Descrição (+ Preço rápido no mobile) */}
+      {/* Coluna 1: Grip (ou Pin fixo apenas para Dívida) + Ícone + [Qtd] + Título/Descrição */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div className="w-4 flex items-center justify-center shrink-0">
-            {isDebtCategory || isDragDisabled ? (
+            {isDebtCategory ? (
               <CatalogPinnedBadge variant="row" />
+            ) : isDragDisabled ? (
+              <span className="w-4 h-4 shrink-0" aria-hidden="true" />
             ) : (
               <GripVertical
                 size={14}
@@ -173,16 +181,13 @@ function ItemRowContent({
           <div
             className={cn(
               "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 shrink-0 group-hover:scale-105 w-9 h-9 md:w-10 md:h-10",
-              packageIconTheme ||
-                (typeKey === "TimeBased"
-                  ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
-                  : "bg-primary/10 text-primary border-primary/20 group-hover:border-primary/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"),
+              getCatalogItemIconBoxClass(typeKey, packageIconTheme),
             )}
           >
             <RewardIcon
               size={19}
               className={
-                isMystery ? "text-amber-800 dark:text-amber-400" : undefined
+                isMystery ? "text-amber-700 dark:text-amber-400" : undefined
               }
               aria-hidden="true"
             />
@@ -195,16 +200,31 @@ function ItemRowContent({
           )}
 
           <div className="flex flex-col min-w-0 flex-1">
-            <h4
-              className={cn(
-                "font-bold text-neutral-100 truncate transition-colors leading-tight text-body-s",
-                isDebtCategory
-                  ? "group-hover:text-rose-700 dark:group-hover:text-rose-300"
-                  : "group-hover:text-primary dark:group-hover:text-gold",
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h4
+                className={cn(
+                  "font-bold text-neutral-100 truncate transition-colors leading-tight text-body-s",
+                  isDebtCategory
+                    ? "group-hover:text-rose-700 dark:group-hover:text-rose-300"
+                    : "group-hover:text-primary dark:group-hover:text-gold",
+                )}
+              >
+                {title}
+              </h4>
+              {typeof ownedQuantity === "number" && ownedQuantity > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 font-semibold rounded-md border border-sky-500/35 bg-sky-500/12 text-sky-700 dark:border-info/35 dark:bg-info/15 dark:text-info text-[10px] px-1.5 py-0.5 leading-none shrink-0 whitespace-nowrap tabular-nums"
+                  title={
+                    isGamified
+                      ? t("ownedInBackpackTooltip", { count: ownedQuantity })
+                      : t("ownedInInventoryTooltip", { count: ownedQuantity })
+                  }
+                >
+                  <Backpack size={10} className="shrink-0" aria-hidden="true" />
+                  <span>{ownedQuantity}x</span>
+                </span>
               )}
-            >
-              {title}
-            </h4>
+            </div>
             {description && description.trim() !== "" && (
               <p className="text-neutral-400 truncate mt-0.5 leading-tight text-xs">
                 {description}
@@ -229,23 +249,23 @@ function ItemRowContent({
             <CatalogItemPricePill
               price={price}
               size="sm"
-              canAfford={!disabled}
+              canAfford={canAfford}
+              isGamified={isGamified}
               variant={isDebtCategory ? "debt" : "default"}
             />
           </div>
         )}
       </div>
 
-      {/* Container de Metadados: No Mobile fica em linha única com wrap; no Desktop usa `md:contents` para ocupar as Colunas 2, 3 e 4 do Grid */}
+      {/* Container de Metadados */}
       <div className="flex items-center gap-1.5 flex-wrap pl-0 min-[380px]:pl-6 md:pl-0 md:contents">
-        {/* Coluna 2: Badge de Status (Em Foco) + Tipo (ou Dívida) */}
+        {/* Coluna 2: Badge de Status + Tipo */}
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-          {inUse && (
-            <span className="text-label-m font-bold border truncate inline-flex items-center gap-1.5 leading-none shrink-0 border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-              {t("inFocus")}
-            </span>
-          )}
+          <CatalogStatusBadge
+            variant="row"
+            statusBadgeSlot={statusBadgeSlot}
+            inUse={inUse}
+          />
           {isDebtCategory ? (
             <span className="text-label-m font-bold border truncate inline-flex items-center gap-1 leading-none shrink-0 px-2 py-0.5 rounded-md bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300">
               <Receipt size={11} className="shrink-0" aria-hidden="true" />
@@ -259,25 +279,10 @@ function ItemRowContent({
                   "text-neutral-200 bg-white/10 border-white/20",
               )}
             >
-              {(() => {
-                const { TypeIcon, typeLabel } = resolveCatalogTypePresentation(
-                  { isMystery, typeKey, typeMeta },
-                  isGamified,
-                  t,
-                );
-                return (
-                  <>
-                    {TypeIcon && (
-                      <TypeIcon
-                        size={11}
-                        className="shrink-0"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span>{typeLabel}</span>
-                  </>
-                );
-              })()}
+              {TypeIcon && (
+                <TypeIcon size={11} className="shrink-0" aria-hidden="true" />
+              )}
+              <span>{typeLabel}</span>
             </span>
           )}
         </div>
@@ -334,67 +339,57 @@ function ItemRowContent({
         </div>
       </div>
 
-      {/* Coluna 5: Preço (Desktop) & Botão de Ação */}
+      {/* Coluna 5: Preço (Desktop) + Hint de moedas faltantes + Botão de Ação */}
       <div
         className={cn(
-          "flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3.5 pt-1 md:pt-0 border-t md:border-t-0 shrink-0",
+          "flex flex-col items-end justify-center gap-0.5 pt-1 md:pt-0 border-t md:border-t-0 shrink-0",
           isDebtCategory
             ? "border-rose-500/20 dark:border-rose-400/15"
             : "border-neutral-700 dark:border-white/5",
         )}
       >
-        {typeof price === "number" && (
-          <div className="hidden md:flex">
-            <CatalogItemPricePill
-              price={price}
-              size="md"
-              canAfford={!disabled}
-              variant={isDebtCategory ? "debt" : "default"}
-            />
-          </div>
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 w-full">
+          {typeof price === "number" && (
+            <div className="hidden md:flex">
+              <CatalogItemPricePill
+                price={price}
+                size="md"
+                canAfford={canAfford}
+                isGamified={isGamified}
+                variant={isDebtCategory ? "debt" : "default"}
+              />
+            </div>
+          )}
+
+          <CatalogPrimaryActionButton
+            variant="row"
+            actionLabel={actionLabel}
+            title={title}
+            price={price}
+            disabledTitle={disabledTitle}
+            canAfford={canAfford}
+            inUse={inUse}
+            isFocusNavigate={isFocusNavigate}
+            isDebtCategory={isDebtCategory}
+            isGamified={isGamified}
+            isActionLoading={isActionLoading}
+            onAction={onAction}
+          />
+
+          <CatalogUtilityActions
+            variant="row"
+            mysteryPopover={mysteryPopover}
+            isGamified={isGamified}
+            isDeleteChecking={isDeleteChecking}
+            onContextMenu={onContextMenu}
+          />
+        </div>
+
+        {missingCoins > 0 && (
+          <span className="text-[10px] font-medium text-neutral-400 tabular-nums pr-1">
+            {formatMissingBalanceHint(missingCoins, isGamified, locale, t)}
+          </span>
         )}
-
-        <button
-          type="button"
-          onClick={onAction}
-          onDoubleClick={(e) => e.stopPropagation()}
-          disabled={isPrimaryDisabled}
-          aria-busy={isActionLoading}
-          aria-label={`${actionLabel} ${title}`}
-          title={resolveCatalogActionTooltip({
-            isFocusNavigate,
-            inUse,
-            canAfford: !disabled,
-            isGamified,
-            actionLabel,
-            title,
-            price,
-            disabledTitle,
-            locale,
-            t,
-          })}
-          className={cn(
-            "inline-flex items-center justify-center gap-1.5 rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9 px-3 py-1.5 text-xs sm:py-1",
-            !isActionLoading && (isFocusNavigate || (!disabled && !inUse))
-              ? isDebtCategory
-                ? "bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white border border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.25)] cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
-                : "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
-              : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
-          )}
-        >
-          {isActionLoading && (
-            <Loader2 size={12} className="animate-spin shrink-0" />
-          )}
-          <span>{actionLabel}</span>
-        </button>
-
-        <CatalogUtilityActions
-          variant="row"
-          mysteryPopover={mysteryPopover}
-          isGamified={isGamified}
-          isDeleteChecking={isDeleteChecking}
-          onContextMenu={onContextMenu}
-        />
       </div>
 
       {mysteryPopover?.portalNode}
@@ -402,83 +397,26 @@ function ItemRowContent({
   );
 }
 
-function MysteryBoxItemRow({
-  mysteryTier,
-  ...props
-}: ItemRowContentProps & { mysteryTier: MysteryBoxTier }) {
-  const mysteryPopover = useMysteryBoxItemPopover({
-    mysteryTier,
-    isDragging: props.sortable.isDragging,
-    price: props.price,
-    lootItems: props.lootItems,
-  });
-
-  return <ItemRowContent {...props} mysteryPopover={mysteryPopover} />;
-}
-
-function ItemRowVariantBranch(
-  props: ItemRowProps & {
-    isDragDisabled: boolean;
-    visuals: RowVisuals;
-    sortable: CatalogSortableBindings;
-  },
-) {
-  if (props.visuals.isMystery && props.visuals.mysteryTier) {
-    return (
-      <MysteryBoxItemRow {...props} mysteryTier={props.visuals.mysteryTier} />
-    );
-  }
-
-  return <ItemRowContent {...props} />;
-}
-
-function SortableItemRowBridge(
-  props: ItemRowProps & {
-    isDragDisabled: boolean;
-    visuals: RowVisuals;
-  },
-) {
-  const sortable = useSortable({
-    id: props.sortableId ?? props.id,
-    data: props.dragData || { id: props.id },
-  });
-
-  return <ItemRowVariantBranch {...props} sortable={sortable} />;
-}
-
 /**
  * Linha de lista reordenável e memoizada para Vitrine (Rewards) e Mochila (Inventory).
- * Isola hooks de popover em Caixas Misteriosas e ignora `useSortable` em itens fixados/dívidas.
- * Utiliza uma única árvore DOM responsiva (Flex no mobile -> Grid de 5 colunas no desktop md+).
  */
 export const ItemRow = memo(function ItemRow(props: ItemRowProps) {
-  const visuals = resolveCatalogItemVisuals({
-    type: props.type,
-    iconName: props.iconName,
-    packageLevel: props.packageLevel,
-    category: props.category,
-    isActiveFocusSession: props.isActiveFocusSession,
-    includeMysteryTier: true,
-  });
-
-  const isDragDisabled = Boolean(props.isDragDisabled || visuals.isDebt);
-
-  if (isDragDisabled) {
-    return (
-      <ItemRowVariantBranch
-        {...props}
-        isDragDisabled={true}
-        visuals={visuals}
-        sortable={IDLE_SORTABLE_BINDINGS}
-      />
-    );
-  }
-
   return (
-    <SortableItemRowBridge
-      {...props}
-      isDragDisabled={false}
-      visuals={visuals}
+    <CatalogItemWrapper
+      id={props.id}
+      sortableId={props.sortableId}
+      type={props.type}
+      iconName={props.iconName}
+      packageLevel={props.packageLevel}
+      category={props.category}
+      price={props.price}
+      showMysteryPriceFooter={props.showMysteryPriceFooter}
+      isGamified={props.isGamified}
+      isActiveFocusSession={props.isActiveFocusSession}
+      isDragDisabled={props.isDragDisabled}
+      dragData={props.dragData}
+      lootItems={props.lootItems}
+      render={(context) => <ItemRowContent {...props} context={context} />}
     />
   );
 });

@@ -1,3 +1,5 @@
+import { getCachedNumberFormat } from "@/utils/economy";
+import { formatFocusHours } from "@/utils/showcaseUtils";
 import {
   drawMetricBox,
   drawRoundedRect,
@@ -16,9 +18,8 @@ export function renderProfileBody(
   const gap = 18;
   const cardW = (width - 108 - gap * 3) / 4;
   const stats = input.stats;
-  const focusHours = stats
-    ? Math.round((stats.totalFocusMinutes / 60) * 10) / 10
-    : 0;
+  const numFmt = getCachedNumberFormat(input.locale || undefined);
+  const focusHours = formatFocusHours(stats?.totalFocusMinutes);
 
   drawMetricBox(
     ctx,
@@ -27,7 +28,7 @@ export function renderProfileBody(
     cardW,
     108,
     input.labels.metricStreakLabel,
-    stats ? `${stats.highestStreak}d` : "—",
+    stats ? `${numFmt.format(stats.highestStreak)}d` : "—",
     null,
     "#FB923C",
     palette,
@@ -39,7 +40,7 @@ export function renderProfileBody(
     cardW,
     108,
     input.labels.metricTasksLabel,
-    stats ? `${stats.totalTasksCompleted}` : "—",
+    stats ? numFmt.format(stats.totalTasksCompleted) : "—",
     null,
     "#38BDF8",
     palette,
@@ -51,7 +52,7 @@ export function renderProfileBody(
     cardW,
     108,
     input.labels.metricFocusLabel,
-    stats ? `${focusHours}h` : "—",
+    stats ? `${numFmt.format(focusHours)}h` : "—",
     null,
     "#A78BFA",
     palette,
@@ -63,7 +64,7 @@ export function renderProfileBody(
     cardW,
     108,
     input.labels.metricPointsLabel,
-    stats ? `${stats.achievementPoints}` : "—",
+    stats ? numFmt.format(stats.achievementPoints) : "—",
     null,
     palette.gold,
     palette,

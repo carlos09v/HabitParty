@@ -2,20 +2,22 @@
 
 import { Copy, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { TaskHardcoreBadge, TaskRewardBadges } from "@/components/tasks/shared";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
-import { normalizeTaskType } from "@/constants/task";
-import { useClickOutside } from "@/hooks/useClickOutside";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { TaskDetailsFooterProps } from "@/types/task-ui";
-import { getTaskDueDateInfo } from "@/utils/date";
+import { cn } from "@/utils";
+import { isTaskHardcoreOverdue } from "@/utils/date";
 import { getTaskRewardBreakdown, toTaskRewardEstimate } from "@/utils/economy";
 
 export function TaskDetailsFooter({
   task,
+  isReadOnly = false,
   onDeleteTask,
   onDuplicateTask,
   isDuplicating = false,
@@ -25,12 +27,65 @@ export function TaskDetailsFooter({
   const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuContainerRef = useRef<HTMLDivElement>(null);
+  const menuTriggerId = useId();
+  const menuId = useId();
 
-  useClickOutside(menuContainerRef, () => setIsMenuOpen(false), {
-    enabled: isMenuOpen,
+  const {
+    containerRef: menuContainerRef,
+    triggerRef: menuTriggerRef,
+    popoverRef: menuPopoverRef,
+    isOpen: isMenuOpen,
+    close: closeMenu,
+    toggle: toggleMenu,
+    coords: menuCoords,
+    shouldRenderPortal: shouldRenderMenuPortal,
+    portalContainer: menuPortalContainer,
+    floatingStyle: menuFloatingStyle,
+  } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
+    align: "right",
+    estimatedHeight: 112,
+    estimatedWidth: 144,
+    offset: 6,
+    zIndex: 150,
+    disabled: isReadOnly,
+    restoreFocusOnEscape: true,
   });
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const frameId = window.requestAnimationFrame(() => {
+      const firstItem = menuPopoverRef.current?.querySelector<HTMLElement>(
+        '[role="menuitem"]:not([disabled])',
+      );
+      firstItem?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isMenuOpen, menuPopoverRef]);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      e.currentTarget.querySelectorAll<HTMLElement>(
+        '[role="menuitem"]:not([disabled])',
+      ),
+    );
+    if (items.length === 0) return;
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      items[(currentIndex + 1) % items.length]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      items[(currentIndex - 1 + items.length) % items.length]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    } else if (e.key === "Tab") {
+      closeMenu();
+    }
+  };
 
   const rewardEstimate = useMemo(() => {
     if (!task) return null;
@@ -58,18 +113,10 @@ export function TaskDetailsFooter({
     });
   }, [task, locale, userTimeZone, isGamified]);
 
-  const isHardcoreOverdue = useMemo(() => {
-    if (!task) return false;
-    const isTodo = normalizeTaskType(task) === "todo";
-    const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
-      dueTime: task.dueTime,
-      dueEndTime: task.dueEndTime,
-      timeZone: userTimeZone,
-    });
-    return Boolean(
-      isTodo && task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
-    );
-  }, [task, userTimeZone]);
+  const isHardcoreOverdue = useMemo(
+    () => isTaskHardcoreOverdue(task, userTimeZone),
+    [task, userTimeZone],
+  );
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-700/60 dark:border-white/8 mt-0.5 min-w-0">
@@ -98,67 +145,100 @@ export function TaskDetailsFooter({
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        {/* Menu de Mais Opções */}
-        <div ref={menuContainerRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            title={t("moreOptionsTitle")}
-            aria-label={t("moreOptionsTitle")}
-            className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-neutral-300 hover:text-gold hover:bg-white/8 transition-colors cursor-pointer"
-          >
-            <MoreHorizontal size={15} />
-          </button>
+      {!isReadOnly && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Menu de Mais Opções */}
+          <div ref={menuContainerRef} className="relative">
+            <button
+              ref={menuTriggerRef}
+              id={menuTriggerId}
+              type="button"
+              onClick={toggleMenu}
+              title={t("moreOptionsTitle")}
+              aria-label={t("moreOptionsTitle")}
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              aria-controls={menuId}
+              className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-neutral-300 hover:text-gold hover:bg-white/8 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <MoreHorizontal size={15} aria-hidden="true" />
+            </button>
 
-          {isMenuOpen && (
-            <div className="absolute right-0 bottom-full mb-1.5 w-36 bg-popover border border-primary/40 rounded-lg shadow-xl py-1 z-50 animate-in fade-in duration-100">
-              {onOpenEdit && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onOpenEdit();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <Pencil size={12} />
-                  <span>{t("editFull")}</span>
-                </button>
-              )}
-              {onDuplicateTask && (
-                <button
-                  type="button"
-                  disabled={isDuplicating}
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onDuplicateTask();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDuplicating ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : (
-                    <Copy size={12} />
+            {isMenuOpen &&
+              shouldRenderMenuPortal &&
+              menuCoords &&
+              menuPortalContainer &&
+              createPortal(
+                <div
+                  ref={menuPopoverRef}
+                  id={menuId}
+                  role="menu"
+                  aria-label={t("moreOptionsTitle")}
+                  data-select-for={menuTriggerId}
+                  style={menuFloatingStyle}
+                  onKeyDown={handleMenuKeyDown}
+                  className={cn(
+                    "w-36 bg-popover border border-primary/40 rounded-lg shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100",
+                    menuCoords.placement === "top"
+                      ? "origin-bottom"
+                      : "origin-top",
                   )}
-                  <span>{t("duplicate")}</span>
-                </button>
+                >
+                  {onOpenEdit && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        closeMenu();
+                        onOpenEdit();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:bg-white/10 focus-visible:text-gold"
+                    >
+                      <Pencil size={12} aria-hidden="true" />
+                      <span>{t("editFull")}</span>
+                    </button>
+                  )}
+                  {onDuplicateTask && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={isDuplicating}
+                      onClick={() => {
+                        closeMenu();
+                        onDuplicateTask();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:bg-white/10 focus-visible:text-gold"
+                    >
+                      {isDuplicating ? (
+                        <Loader2
+                          size={12}
+                          className="animate-spin"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Copy size={12} aria-hidden="true" />
+                      )}
+                      <span>{t("duplicate")}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      closeMenu();
+                      onDeleteTask();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-danger-500 hover:bg-danger-500/10 cursor-pointer focus-visible:outline-none focus-visible:bg-danger-500/15"
+                  >
+                    <Trash2 size={12} aria-hidden="true" />
+                    <span>{t("deleteTask")}</span>
+                  </button>
+                </div>,
+                menuPortalContainer,
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  onDeleteTask();
-                }}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-danger-500 hover:bg-danger-500/10 cursor-pointer"
-              >
-                <Trash2 size={12} />
-                <span>{t("deleteTask")}</span>
-              </button>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

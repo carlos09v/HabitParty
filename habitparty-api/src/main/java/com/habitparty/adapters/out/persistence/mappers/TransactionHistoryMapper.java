@@ -6,64 +6,54 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.adapters.out.persistence.entities.TransactionHistoryJpaEntity;
-import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.core.domain.entities.TransactionHistory;
 
 @Component
 public class TransactionHistoryMapper {
+
   public TransactionHistoryJpaEntity toEntity(TransactionHistory domain) {
-        // Cria um user vazio apenas para carregar o ID
-        UserJpaEntity userReference = new UserJpaEntity();
-        userReference.setId(domain.getUserId());
+    return TransactionHistoryJpaEntity.builder()
+        .id(domain.getId())
+        .userId(domain.getUserId())
+        .transactionType(domain.getTransactionType())
+        .createdAt(domain.getCreatedAt())
+        .referenceId(domain.getReferenceId().orElse(null))
+        .nameSnapshot(domain.getNameSnapshot())
+        .goldAmount(domain.getGoldAmount().orElse(null))
+        .xpAmount(domain.getXpAmount())
+        .priceSnapshot(domain.getPriceSnapshot().orElse(null))
+        .iconSnapshot(domain.getIconSnapshot().orElse(null))
+        .difficultySnapshot(domain.getDifficultySnapshot().orElse(null))
+        .packageLevelSnapshot(domain.getPackageLevelSnapshot().orElse(null))
+        .tagsSnapshot(domain.getTagsSnapshot().map(ArrayList::new).orElse(null))
+        .columnNameSnapshot(domain.getColumnNameSnapshot().orElse(null))
+        .descriptionSnapshot(domain.getDescriptionSnapshot().orElse(null))
+        .checklistCompletedSnapshot(domain.getChecklistCompletedSnapshot().orElse(null))
+        .effortUnitsSnapshot(domain.getEffortUnitsSnapshot().orElse(null))
+        .hiddenFromHistory(false)
+        .build();
+  }
 
-        TransactionHistoryJpaEntity entity = new TransactionHistoryJpaEntity();
-        entity.setId(domain.getId());
-        entity.setUser(userReference);
-        entity.setTransactionType(domain.getTransactionType());
-        entity.setCreatedAt(domain.getCreatedAt());
-        
-        // O Soft-link unificado
-        entity.setReferenceId(domain.getReferenceId().orElse(null));
-        
-        // Snapshots
-        entity.setNameSnapshot(domain.getNameSnapshot());
-        entity.setGoldAmount(domain.getGoldAmount().orElse(null));
-        entity.setXpAmount(domain.getXpAmount());
-        entity.setPriceSnapshot(domain.getPriceSnapshot().orElse(null));
-        entity.setIconSnapshot(domain.getIconSnapshot().orElse(null));
-        entity.setDifficultySnapshot(domain.getDifficultySnapshot().orElse(null));
-        entity.setPackageLevelSnapshot(domain.getPackageLevelSnapshot().orElse(null));
-        entity.setTagsSnapshot(domain.getTagsSnapshot().orElse(null));
-        entity.setColumnNameSnapshot(domain.getColumnNameSnapshot().orElse(null));
-        entity.setDescriptionSnapshot(domain.getDescriptionSnapshot().orElse(null));
-        entity.setChecklistCompletedSnapshot(domain.getChecklistCompletedSnapshot().orElse(null));
-        entity.setEffortUnitsSnapshot(domain.getEffortUnitsSnapshot().orElse(null));
+  public TransactionHistory toDomain(TransactionHistoryJpaEntity entity) {
+    List<String> domainTags = entity.getTagsSnapshot() != null ? entity.getTagsSnapshot() : new ArrayList<>();
 
-        return entity;
-    }
-
-    public TransactionHistory toDomain(TransactionHistoryJpaEntity entity) {
-        // Tratamento de segurança para listas nulas vindas do banco
-        List<String> domainTags = entity.getTagsSnapshot() != null ? entity.getTagsSnapshot() : new ArrayList<>();
-
-        return new TransactionHistory(
-            entity.getId(),
-            entity.getUser().getId(),
-            entity.getReferenceId(),
-            entity.getGoldAmount(),
-            entity.getXpAmount() != null ? entity.getXpAmount() : 0,
-            entity.getPriceSnapshot(),
-            entity.getTransactionType(),
-            entity.getNameSnapshot(),
-            entity.getIconSnapshot(),
-            entity.getPackageLevelSnapshot(),
-            entity.getDifficultySnapshot(),
-            domainTags,
-            entity.getColumnNameSnapshot(),
-            entity.getDescriptionSnapshot(),
-            entity.getChecklistCompletedSnapshot(),
-            entity.getEffortUnitsSnapshot(),
-            entity.getCreatedAt()
-        );
-    }
+    return new TransactionHistory(
+        entity.getId(),
+        entity.getUserId(),
+        entity.getReferenceId(),
+        entity.getGoldAmount(),
+        entity.getXpAmount() != null ? entity.getXpAmount() : 0,
+        entity.getPriceSnapshot(),
+        entity.getTransactionType(),
+        entity.getNameSnapshot(),
+        entity.getIconSnapshot(),
+        entity.getPackageLevelSnapshot(),
+        entity.getDifficultySnapshot(),
+        domainTags,
+        entity.getColumnNameSnapshot(),
+        entity.getDescriptionSnapshot(),
+        entity.getChecklistCompletedSnapshot(),
+        entity.getEffortUnitsSnapshot(),
+        entity.getCreatedAt());
+  }
 }

@@ -25,19 +25,25 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class UserJpaEntity extends BaseUuidJpaEntity {
+
   @Id
+  @ToString.Include
   @Column(name = "user_id")
   private UUID id;
 
@@ -48,6 +54,7 @@ public class UserJpaEntity {
   @Column(nullable = false, length = 150, name = "full_name")
   private String fullName;
 
+  @ToString.Include
   @Column(unique = true, nullable = false)
   private String username;
 
@@ -57,6 +64,11 @@ public class UserJpaEntity {
   @Column(nullable = false)
   private String password;
 
+  @Builder.Default
+  @Column(name = "has_password", nullable = false, columnDefinition = "boolean default true")
+  private boolean hasPassword = true;
+
+  @Builder.Default
   @Column(name = "email_verified", nullable = false, columnDefinition = "boolean default false")
   private boolean emailVerified = false;
 
@@ -69,6 +81,7 @@ public class UserJpaEntity {
   @Column(name = "bio", length = 160)
   private String bio;
 
+  @Builder.Default
   @Column(name = "avatar_frame", nullable = false, length = 40, columnDefinition = "varchar(40) default 'none'")
   private String avatarFrame = "none";
 
@@ -78,6 +91,7 @@ public class UserJpaEntity {
   @Column(name = "avatar_preset", length = 40)
   private String avatarPreset;
 
+  @Builder.Default
   @Column(name = "theme", nullable = false, length = 40, columnDefinition = "varchar(40) default 'dark'")
   private String theme = "dark";
 
@@ -88,10 +102,12 @@ public class UserJpaEntity {
   @Column(nullable = false)
   private UserGender gender;
 
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "experience_mode", nullable = false, length = 30, columnDefinition = "varchar(30) default 'PRODUCTIVITY'")
   private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
 
+  @Builder.Default
   @Column(name = "timezone", nullable = false, length = 64, columnDefinition = "varchar(64) default 'America/Sao_Paulo'")
   private String timezone = "America/Sao_Paulo";
 
@@ -111,18 +127,22 @@ public class UserJpaEntity {
   @Column(name = "friend_code", nullable = false, unique = true, length = 12)
   private String friendCode;
 
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "profile_visibility", nullable = false, length = 20)
   private PrivacyLevel profileVisibility = PrivacyLevel.PUBLIC;
 
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "stats_visibility", nullable = false, length = 20)
   private PrivacyLevel statsVisibility = PrivacyLevel.PUBLIC;
 
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "achievements_visibility", nullable = false, length = 20)
   private PrivacyLevel achievementsVisibility = PrivacyLevel.PUBLIC;
 
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "friend_request_policy", nullable = false, length = 25)
   private FriendRequestPolicy friendRequestPolicy = FriendRequestPolicy.EVERYONE;
@@ -146,25 +166,9 @@ public class UserJpaEntity {
   @Column(name = "discipline_style", length = 20)
   private String disciplineStyle;
 
-  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private UserStatsJpaEntity stats;
 
-  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private UserSubscriptionJpaEntity subscription;
-
-  public void setStats(UserStatsJpaEntity stats) {
-    this.stats = stats;
-    if (stats != null) {
-      stats.setUser(this);
-      stats.setUserId(this.id);
-    }
-  }
-
-  public void setSubscription(UserSubscriptionJpaEntity subscription) {
-    this.subscription = subscription;
-    if (subscription != null) {
-      subscription.setUser(this);
-      subscription.setUserId(this.id);
-    }
-  }
 }

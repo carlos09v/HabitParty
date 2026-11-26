@@ -168,9 +168,6 @@ export interface WelcomeCardProps {
   icon?: LucideIcon;
   stats?: WelcomeCardStat[];
   headingLevel?: "h1" | "h2";
-  isExpanded?: boolean;
-  defaultExpanded?: boolean;
-  onToggle?: (expanded: boolean) => void;
   className?: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -215,11 +212,9 @@ export interface ItemCatalogFilterState {
   search: string;
   type: string;
   category: string;
-  tag?: string;
   packageLevel?: string;
   status?: string;
   sortBy?: string;
-  viewMode?: "card" | "list";
 }
 
 export interface FilterBarProps {
@@ -235,6 +230,8 @@ export interface FilterBarProps {
   dropdownFilters?: DropdownFilter[];
   onDropdownChange?: (filterLabel: string, value: string) => void;
   onClearDropdowns?: () => void;
+  mobileExtraFilters?: React.ReactNode;
+  extraActiveFiltersCount?: number;
   leftActions?: React.ReactNode;
   middleActions?: React.ReactNode;
   rightActions?: React.ReactNode;

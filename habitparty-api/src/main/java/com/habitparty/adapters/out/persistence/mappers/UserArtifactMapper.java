@@ -9,12 +9,13 @@ import com.habitparty.core.domain.entities.achievement.UserArtifact;
 public class UserArtifactMapper {
 
   public UserArtifactJpaEntity toEntity(UserArtifact domain) {
-    return new UserArtifactJpaEntity(
-        domain.getUserId(),
-        domain.getArtifactId(),
-        domain.getObtainedSource(),
-        domain.getUnlockedAt(),
-        domain.isSeen());
+    return UserArtifactJpaEntity.builder()
+        .userId(domain.getUserId())
+        .artifactId(domain.getArtifactId())
+        .obtainedSource(domain.getObtainedSource())
+        .unlockedAt(domain.getUnlockedAt())
+        .seen(domain.isSeen())
+        .build();
   }
 
   public UserArtifact toDomain(UserArtifactJpaEntity entity) {

@@ -1,11 +1,12 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
@@ -30,6 +31,7 @@ public class DeleteTaskUseCase {
   private WorkspaceWriteGuard workspaceWriteGuard;
   private UserRepository userPort;
   private ProfileHighlightRepository profileHighlightPort;
+  private Clock clock = Clock.systemUTC();
 
   public DeleteTaskUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort) {
     this.taskPort = taskPort;
@@ -41,7 +43,7 @@ public class DeleteTaskUseCase {
     this.focusRecordPort = focusRecordPort;
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }
@@ -54,6 +56,11 @@ public class DeleteTaskUseCase {
   @Autowired(required = false)
   public void setProfileHighlightPort(ProfileHighlightRepository profileHighlightPort) {
     this.profileHighlightPort = profileHighlightPort;
+  }
+
+  @Autowired(required = false)
+  public void setClock(Clock clock) {
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public void execute(UUID taskId, UUID userIdLogado) {
@@ -88,7 +95,9 @@ public class DeleteTaskUseCase {
               focusRecordPort,
               userPort,
               null,
-              null);
+              null,
+              transactionPort,
+              clock);
           List<UUID> standaloneTaskRecordIds = standaloneTaskRecords.stream()
               .map(FocusRecord::getId)
               .toList();

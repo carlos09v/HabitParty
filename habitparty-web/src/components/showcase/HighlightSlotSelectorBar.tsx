@@ -1,7 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { HighlightSlotInputDTO } from "@/types/showcase";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 interface HighlightSlotSelectorBarProps {
   draftSlots: (HighlightSlotInputDTO | null)[];
@@ -30,41 +30,44 @@ export function HighlightSlotSelectorBar({
           <div
             key={`picker-slot-${slotIdx}`}
             className={cn(
-              "relative rounded-xl border p-2.5 flex flex-col justify-between gap-1 text-left transition-colors",
+              "relative rounded-xl border transition-colors",
               isSelectedSlot
                 ? "border-gold bg-gold/15 shadow-glow-gold-xs"
                 : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/25 dark:bg-surface/60",
             )}
           >
-            <div className="flex items-center justify-between gap-1">
-              <button
-                type="button"
-                onClick={() => onSelectSlot(slotIdx)}
-                className="text-label-m font-extrabold uppercase tracking-wider text-amber-700 dark:text-gold cursor-pointer text-left flex-1"
-              >
-                {tHighlights("slotLabel", { index: slotIdx + 1 })}
-              </button>
-              {slotItem && (
-                <button
-                  type="button"
-                  onClick={() => onClearSlot(slotIdx)}
-                  className="text-neutral-400 hover:text-red-400 p-0.5 rounded cursor-pointer"
-                  title={t("clearSlot")}
-                >
-                  <Trash2 size={12} />
-                </button>
-              )}
-            </div>
             <button
               type="button"
+              aria-pressed={isSelectedSlot}
               onClick={() => onSelectSlot(slotIdx)}
               className={cn(
-                "text-xs font-bold truncate text-left cursor-pointer",
-                slotItem ? "text-neutral-100" : "text-neutral-400 italic",
+                "w-full p-2.5 flex flex-col justify-between gap-1 text-left rounded-xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+                slotItem && "pr-8",
               )}
             >
-              {getSlotTitle(slotItem)}
+              <span className="text-label-m font-extrabold uppercase tracking-wider text-amber-700 dark:text-gold block">
+                {tHighlights("slotLabel", { index: slotIdx + 1 })}
+              </span>
+              <span
+                className={cn(
+                  "text-xs font-bold truncate block w-full",
+                  slotItem ? "text-neutral-100" : "text-neutral-400 italic",
+                )}
+              >
+                {getSlotTitle(slotItem)}
+              </span>
             </button>
+            {slotItem && (
+              <button
+                type="button"
+                onClick={() => onClearSlot(slotIdx)}
+                className="absolute top-2 right-2 text-neutral-400 hover:text-red-400 p-1 rounded-md cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
+                aria-label={`${t("clearSlot")} #${slotIdx + 1}`}
+                title={t("clearSlot")}
+              >
+                <Trash2 size={12} aria-hidden="true" />
+              </button>
+            )}
           </div>
         );
       })}

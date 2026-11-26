@@ -56,6 +56,8 @@ export const DEFAULT_DASHBOARD_ADVANCED_FILTERS: DashboardAdvancedFilters = {
   taskType: "all",
   columnId: "all",
   difficulty: "all",
+  priority: "all",
+  tag: null,
   hideCompleted: false,
   sortBy: "default",
 };
@@ -107,4 +109,6 @@ export const ACTIVITY_PERIOD_OPTIONS: readonly {
 }[] = [{ id: "today" }, { id: "this_week" }, { id: "this_month" }] as const;
 
 /** Quantidade padrão de tarefas exibidas por página na tabela do Dashboard */
-export const DASHBOARD_ITEMS_PER_PAGE = 5;
+export const DASHBOARD_ITEMS_PER_PAGE = 10;
+
+export const DASHBOARD_PAGE_SIZE_OPTIONS = [5, 10, 20] as const;

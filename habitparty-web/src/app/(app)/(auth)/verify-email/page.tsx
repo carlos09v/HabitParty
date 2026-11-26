@@ -21,6 +21,34 @@ interface VerifyEmailPageProps {
   searchParams: Promise<{ token?: string }>;
 }
 
+function VerifyEmailErrorState({
+  title,
+  description,
+  ctaLabel,
+}: {
+  title: string;
+  description: string;
+  ctaLabel: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
+      <div className="w-14 h-14 rounded-2xl bg-danger-500/15 border border-danger-500/35 flex items-center justify-center text-danger-400">
+        <ShieldAlert size={28} aria-hidden="true" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-bold text-neutral-50">{title}</h1>
+        <p className="text-sm text-neutral-300">{description}</p>
+      </div>
+      <Link
+        href="/dashboard"
+        className="w-full py-3 px-6 rounded-xl bg-gold text-on-gold font-bold hover:bg-gold-hover transition-colors text-center outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        {ctaLabel}
+      </Link>
+    </div>
+  );
+}
+
 export default async function VerifyEmailPage({
   searchParams,
 }: VerifyEmailPageProps) {
@@ -28,28 +56,15 @@ export default async function VerifyEmailPage({
     searchParams,
     getTranslations("auth.verifyEmail"),
   ]);
-  const token = resolvedParams.token;
-  const cleanToken = token?.trim();
+  const cleanToken = resolvedParams.token?.trim();
 
   if (!cleanToken) {
     return (
-      <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
-        <div className="w-14 h-14 rounded-2xl bg-danger-500/15 border border-danger-500/35 flex items-center justify-center text-danger-400">
-          <ShieldAlert size={28} />
-        </div>
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-neutral-50">
-            {t("errorTitle")}
-          </h1>
-          <p className="text-sm text-neutral-300">{t("invalidTokenDesc")}</p>
-        </div>
-        <Link
-          href="/dashboard"
-          className="w-full py-3 px-6 rounded-xl bg-gold text-neutral-950 font-bold hover:bg-gold-hover transition-colors text-center"
-        >
-          {t("backToHabitParty")}
-        </Link>
-      </div>
+      <VerifyEmailErrorState
+        title={t("errorTitle")}
+        description={t("invalidTokenDesc")}
+        ctaLabel={t("backToHabitParty")}
+      />
     );
   }
 
@@ -59,32 +74,18 @@ export default async function VerifyEmailPage({
 
   if (!verificationResult.success) {
     return (
-      <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
-        <div className="w-14 h-14 rounded-2xl bg-danger-500/15 border border-danger-500/35 flex items-center justify-center text-danger-400">
-          <ShieldAlert size={28} />
-        </div>
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-neutral-50">
-            {t("errorTitle")}
-          </h1>
-          <p className="text-sm text-neutral-300">
-            {verificationResult.error || t("fallbackError")}
-          </p>
-        </div>
-        <Link
-          href="/dashboard"
-          className="w-full py-3 px-6 rounded-xl bg-gold text-on-gold font-bold hover:bg-gold-hover transition-colors text-center"
-        >
-          {t("backToHabitParty")}
-        </Link>
-      </div>
+      <VerifyEmailErrorState
+        title={t("errorTitle")}
+        description={verificationResult.error || t("fallbackError")}
+        ctaLabel={t("backToHabitParty")}
+      />
     );
   }
 
   return (
     <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
       <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-800 dark:text-emerald-400">
-        <CheckCircle2 size={28} />
+        <CheckCircle2 size={28} aria-hidden="true" />
       </div>
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-neutral-50">
@@ -95,7 +96,7 @@ export default async function VerifyEmailPage({
       <form action={redirectAfterEmailVerificationAction} className="w-full">
         <button
           type="submit"
-          className="w-full py-3 px-6 rounded-xl bg-gold text-on-gold font-bold hover:bg-gold-hover transition-colors text-center cursor-pointer"
+          className="w-full py-3 px-6 rounded-xl bg-gold text-on-gold font-bold hover:bg-gold-hover transition-colors text-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {t("continueToApp")}
         </button>

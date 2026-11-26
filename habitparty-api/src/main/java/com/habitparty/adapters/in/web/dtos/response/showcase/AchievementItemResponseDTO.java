@@ -1,11 +1,10 @@
 package com.habitparty.adapters.in.web.dtos.response.showcase;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase.AchievementProgressItem;
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
 import com.habitparty.core.domain.entities.achievement.Achievement;
 import com.habitparty.core.domain.enums.AchievementCategory;
 import com.habitparty.core.domain.enums.AchievementRarity;
@@ -31,9 +30,7 @@ public record AchievementItemResponseDTO(
 
   public static AchievementItemResponseDTO fromDomain(AchievementProgressItem item) {
     Achievement a = item.achievement();
-    OffsetDateTime unlockedAtUtc = item.unlockedAt() != null
-        ? item.unlockedAt().atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
-        : null;
+    OffsetDateTime unlockedAtUtc = UtcDateTimeMapper.toUtcOffsetDateTime(item.unlockedAt());
     return new AchievementItemResponseDTO(
         a.getId(),
         a.getCode(),

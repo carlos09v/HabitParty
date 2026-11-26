@@ -26,14 +26,18 @@ export function SubmitButton({
         "bg-primary hover:bg-primary-dark text-white border border-primary-dark/30 shadow-sm active:scale-[0.99]",
         // Tema Escuro: Preenchimento primário de alto impacto visual com brilho sutil
         "dark:bg-primary dark:hover:bg-primary-dark dark:border dark:border-primary-light/40 dark:hover:border-gold/60 dark:shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_35%,transparent)] dark:hover:shadow-glow-gold-md dark:text-white",
-        "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         className,
       )}
       {...props}
     >
       {isPending && (
-        <Loader2 size={18} className="animate-spin text-white dark:text-gold" />
+        <Loader2
+          size={18}
+          aria-hidden="true"
+          className="animate-spin text-white dark:text-gold"
+        />
       )}
       <span>{isPending && loadingText ? loadingText : children}</span>
     </button>

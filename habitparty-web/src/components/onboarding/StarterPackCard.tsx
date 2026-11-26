@@ -1,8 +1,7 @@
-"use client";
-
 import {
   CheckSquare,
   Gift,
+  Info,
   Kanban,
   Layers,
   type LucideIcon,
@@ -11,7 +10,7 @@ import {
   Timer,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useId, useMemo } from "react";
+import { type ReactNode, useId } from "react";
 import { buildStarterPackPlan } from "@/constants/onboarding";
 import type {
   DailyFocusGoalMinutes,
@@ -24,6 +23,11 @@ import type {
 } from "@/types/onboarding";
 import type { ExperienceMode } from "@/types/ui";
 import { cn } from "@/utils";
+import {
+  ONBOARDING_CHIP_IDLE,
+  ONBOARDING_CHIP_SELECTED,
+  ONBOARDING_FOCUS_RING,
+} from "./onboardingStyles";
 
 interface StarterPackToggleItemProps {
   id: string;
@@ -32,6 +36,7 @@ interface StarterPackToggleItemProps {
   icon: LucideIcon;
   iconClassName: string;
   title: string;
+  helperNote?: string;
   children: ReactNode;
 }
 
@@ -42,32 +47,46 @@ function StarterPackToggleItem({
   icon: Icon,
   iconClassName,
   title,
+  helperNote,
   children,
 }: StarterPackToggleItemProps) {
   return (
     <label
-      htmlFor={id}
       className={cn(
         "flex flex-col gap-1.5 p-3 min-h-[56px] rounded-xl border cursor-pointer transition-colors",
         checked
           ? "bg-surface/80 border-primary/45 dark:bg-surface/65 dark:border-primary/45"
-          : "bg-surface/40 border-neutral-700/60 opacity-70",
+          : "bg-surface/40 border-neutral-700/60 hover:border-primary/40",
       )}
     >
-      <div className="flex items-center gap-2.5">
-        <input
-          id={id}
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          className="w-4 h-4 accent-amber-500 rounded cursor-pointer shrink-0"
-        />
-        <Icon
-          size={15}
-          aria-hidden="true"
-          className={cn("shrink-0", iconClassName)}
-        />
-        <span className="text-xs font-bold text-neutral-100">{title}</span>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <input
+            id={id}
+            type="checkbox"
+            checked={checked}
+            onChange={onToggle}
+            className="checkbox-custom cursor-pointer shrink-0"
+          />
+          <Icon
+            size={15}
+            aria-hidden="true"
+            className={cn("shrink-0", iconClassName)}
+          />
+          <span
+            className={cn(
+              "text-xs font-bold",
+              checked ? "text-neutral-100" : "text-neutral-300",
+            )}
+          >
+            {title}
+          </span>
+        </div>
+        {helperNote && (
+          <span className="text-[11px] font-medium text-neutral-400 pl-7 sm:pl-0">
+            {helperNote}
+          </span>
+        )}
       </div>
       {children}
     </label>
@@ -107,25 +126,14 @@ export function StarterPackCard({
   const baseId = useId();
   const isGamified = experienceMode === "GAMIFIED";
 
-  const plan = useMemo(
-    () =>
-      buildStarterPackPlan({
-        usageMode,
-        primaryGoals,
-        mainObstacle,
-        dailyFocusGoalMinutes,
-        peakPeriod,
-        disciplineStyle,
-      }),
-    [
-      usageMode,
-      primaryGoals,
-      mainObstacle,
-      dailyFocusGoalMinutes,
-      peakPeriod,
-      disciplineStyle,
-    ],
-  );
+  const plan = buildStarterPackPlan({
+    usageMode,
+    primaryGoals,
+    mainObstacle,
+    dailyFocusGoalMinutes,
+    peakPeriod,
+    disciplineStyle,
+  });
 
   const currencyLabel = isGamified
     ? t("currencyGamified")
@@ -137,12 +145,13 @@ export function StarterPackCard({
     tRhythm(`peakOptions.${peakPeriod}.label`),
   ];
 
+  const hasAnySelected = Object.values(selections).some(Boolean);
+
   const modeButtonClass = (active: boolean) =>
     cn(
-      "flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-xl border text-xs font-bold transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold",
-      active
-        ? "bg-amber-500/15 border-amber-500/80 text-amber-800 dark:bg-gold/15 dark:border-gold dark:text-gold"
-        : "bg-surface/75 border-neutral-700 text-neutral-300 hover:text-neutral-100 dark:border-primary/25",
+      "flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-xl border text-xs font-bold transition-colors cursor-pointer",
+      ONBOARDING_FOCUS_RING,
+      active ? ONBOARDING_CHIP_SELECTED : ONBOARDING_CHIP_IDLE,
     );
 
   return (
@@ -173,11 +182,28 @@ export function StarterPackCard({
         </button>
       </div>
 
-      {!startBlank && (
+      {startBlank ? (
+        <div
+          aria-live="polite"
+          className="flex items-start gap-2.5 p-3.5 rounded-xl bg-surface/65 border border-neutral-700/70 dark:border-primary/20 text-xs text-neutral-300"
+        >
+          <Info
+            size={16}
+            aria-hidden="true"
+            className="text-info shrink-0 mt-0.5"
+          />
+          <div className="flex flex-col gap-0.5">
+            <span className="font-bold text-neutral-100">
+              {t("blankStateTitle")}
+            </span>
+            <p className="leading-relaxed">{t("blankStateNote")}</p>
+          </div>
+        </div>
+      ) : (
         <div className="flex flex-col gap-2.5 pt-1">
           {/* Resumo visual dos critérios aplicados ao Starter Pack */}
           <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-2 rounded-lg bg-surface/65 border border-neutral-700/60 dark:border-primary/20 text-[11px]">
-            <span className="inline-flex items-center gap-1 font-bold text-amber-700 dark:text-gold shrink-0">
+            <span className="inline-flex items-center gap-1 font-bold text-gold-ink dark:text-gold shrink-0">
               <Sparkles size={12} aria-hidden="true" />
               {t("calibratedPrefix")}
             </span>
@@ -191,16 +217,30 @@ export function StarterPackCard({
             ))}
           </div>
 
+          {!hasAnySelected && (
+            <div
+              aria-live="polite"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface/60 border border-neutral-700/70 text-xs text-neutral-300"
+            >
+              <Info
+                size={14}
+                aria-hidden="true"
+                className="text-info shrink-0"
+              />
+              <span>{t("allUncheckedNotice")}</span>
+            </div>
+          )}
+
           {/* 1. Colunas Kanban */}
           <StarterPackToggleItem
             id={`${baseId}-columns`}
             checked={selections.createColumns}
             onToggle={() => onToggleSelection("createColumns")}
             icon={Kanban}
-            iconClassName="text-amber-700 dark:text-gold"
+            iconClassName="text-gold-ink dark:text-gold"
             title={t("toggles.columnsTitle")}
           >
-            <div className="flex flex-wrap gap-1.5 pl-6">
+            <div className="flex flex-wrap gap-1.5 pl-7">
               {plan.columns.map((col) => (
                 <span
                   key={col.key}
@@ -218,10 +258,15 @@ export function StarterPackCard({
             checked={selections.createTasks}
             onToggle={() => onToggleSelection("createTasks")}
             icon={CheckSquare}
-            iconClassName="text-emerald-800 dark:text-emerald-400"
+            iconClassName="text-success-400"
             title={t("toggles.tasksTitle", { count: plan.tasks.length })}
+            helperNote={
+              !selections.createColumns
+                ? t("tasksRequireColumnsHint")
+                : undefined
+            }
           >
-            <ul className="flex flex-col gap-1 pl-6 text-[11px] text-neutral-300">
+            <ul className="flex flex-col gap-1 pl-7 text-[11px] text-neutral-300">
               {plan.tasks.map((task) => {
                 const showHardcoreBadge =
                   task.isHardcoreIfStrict && disciplineStyle === "strict";
@@ -239,18 +284,18 @@ export function StarterPackCard({
                   >
                     <span>• {t(`presets.tasks.${task.key}`)}</span>
                     {showHardcoreBadge && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-700 dark:text-rose-300 font-semibold">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-danger-500/12 text-danger-400 dark:text-danger-300 font-semibold">
                         <ShieldAlert size={10} aria-hidden="true" />
                         {isGamified ? t("badgeHardcore") : t("badgeStrict")}
                       </span>
                     )}
                     {showPriorityBadge && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:bg-gold/15 dark:text-gold font-semibold">
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-gold-ink dark:bg-gold/15 dark:text-gold font-semibold">
                         {t("badgePriority")}
                       </span>
                     )}
                     {showLowFrictionBadge && (
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-semibold">
+                      <span className="px-1.5 py-0.5 rounded bg-success-500/15 text-success-400 font-semibold">
                         {t("badgeLowFriction")}
                       </span>
                     )}
@@ -267,14 +312,14 @@ export function StarterPackCard({
               checked={selections.createFocusActivity}
               onToggle={() => onToggleSelection("createFocusActivity")}
               icon={Timer}
-              iconClassName="text-sky-700 dark:text-sky-400"
+              iconClassName="text-info"
               title={t("toggles.focusTitle")}
             >
-              <div className="flex items-center gap-2 pl-6 text-[11px] text-neutral-300">
+              <div className="flex items-center flex-wrap gap-2 pl-7 text-[11px] text-neutral-300">
                 <span className="font-semibold text-neutral-100">
                   {t(`presets.focus.${plan.focusActivity.key}`)}
                 </span>
-                <span className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold">
+                <span className="px-1.5 py-0.5 rounded bg-info/15 text-info font-semibold">
                   {t("badgeDailyFocus", {
                     minutes: plan.focusActivity.targetTimeMinutes,
                   })}
@@ -287,14 +332,14 @@ export function StarterPackCard({
               checked={selections.createRewards}
               onToggle={() => onToggleSelection("createRewards")}
               icon={Gift}
-              iconClassName="text-amber-700 dark:text-gold"
+              iconClassName="text-gold-ink dark:text-gold"
               title={t("toggles.rewardsTitle", { count: plan.rewards.length })}
             >
-              <div className="flex flex-col gap-0.5 pl-6 text-[11px] text-neutral-300">
+              <div className="flex flex-col gap-0.5 pl-7 text-[11px] text-neutral-300">
                 {plan.rewards.map((reward) => (
                   <span key={reward.key}>
                     • {t(`presets.rewards.${reward.key}`)} —{" "}
-                    <strong className="text-amber-700 dark:text-gold">
+                    <strong className="text-gold-ink dark:text-gold">
                       {reward.price} {currencyLabel}
                     </strong>
                   </span>

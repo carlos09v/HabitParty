@@ -16,8 +16,15 @@ import type {
   TaskStreakHighlightDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
-import type { UserRetrospectiveData } from "@/types/social";
+import type {
+  FriendConnectionItem,
+  UserRetrospectiveData,
+} from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
+
+export const EMPTY_FRIENDS: FriendConnectionItem[] = [];
+export const EMPTY_ARTIFACTS: ArtifactItemResponseDTO[] = [];
+export const EMPTY_TASK_STREAKS: TaskStreakHighlightDTO[] = [];
 
 export type ShowcaseTabId =
   | "overview"
@@ -27,12 +34,66 @@ export type ShowcaseTabId =
 
 export type ShowcaseCollectionTabId = "achievements" | "artifacts";
 
+export type VisitorAudience = "public" | "friend";
+
+/**
+ * Decodifica um segmento de URL com proteção contra sequências percent-encoded inválidas.
+ */
+export function safeDecodeURIComponent(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Converte minutos de foco em horas com 1 casa decimal.
+ */
+export function formatFocusHours(minutes: number | null | undefined): number {
+  const safeMinutes = Math.max(0, minutes ?? 0);
+  return Math.round((safeMinutes / 60) * 10) / 10;
+}
+
+/**
+ * Capitaliza a primeira letra de uma string respeitando o locale.
+ */
+export function capitalizeFirst(
+  text: string | null | undefined,
+  locale?: string,
+): string | null {
+  if (!text) return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  return trimmed.charAt(0).toLocaleUpperCase(locale) + trimmed.slice(1);
+}
+
+/**
+ * Avalia se um nível de privacidade permite visualização para um público simulado (público geral vs amigo).
+ */
+export function canAudienceViewVisibility(
+  visibility: "PUBLIC" | "FRIENDS_ONLY" | "PRIVATE" | undefined | null,
+  audience: VisitorAudience,
+): boolean {
+  const resolved = visibility ?? "PUBLIC";
+  if (resolved === "PUBLIC") return true;
+  if (resolved === "FRIENDS_ONLY") return audience === "friend";
+  return false;
+}
+
 /**
  * Normaliza o parâmetro de query `tab` da vitrine pública/pessoal.
  */
-export function resolveShowcaseTab(val?: string | null): ShowcaseTabId {
-  if (val === "progression" || val === "friends" || val === "retrospective") {
-    return val;
+export function resolveShowcaseTab(
+  val?: string | string[] | null,
+): ShowcaseTabId {
+  const first = Array.isArray(val) ? val[0] : val;
+  if (
+    first === "progression" ||
+    first === "friends" ||
+    first === "retrospective"
+  ) {
+    return first;
   }
   return "overview";
 }
@@ -50,14 +111,27 @@ export function resolveShowcaseCollectionTab(
   return "achievements";
 }
 
+export interface TabListKeyDownOptions {
+  /**
+   * Quando `true` (padrão para abas instantâneas locais), setas focam e ativam a aba imediatamente.
+   * Quando `false` (recomendado pela MWG para abas que alteram URL ou disparam fetch), setas apenas movem o foco
+   * e `Enter`/`Espaço` ativam a aba selecionada.
+   */
+  activateOnFocus?: boolean;
+}
+
 /**
  * Navegação por teclado seguindo o padrão WAI-ARIA para abas (`tablist` / `tab`).
  */
-export function handleTabListKeyDown(e: {
-  key: string;
-  preventDefault: () => void;
-  currentTarget: HTMLButtonElement;
-}): void {
+export function handleTabListKeyDown(
+  e: {
+    key: string;
+    preventDefault: () => void;
+    currentTarget: HTMLButtonElement;
+  },
+  options: TabListKeyDownOptions = {},
+): void {
+  const { activateOnFocus = true } = options;
   const tabs = Array.from(
     e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
       '[role="tab"]:not([disabled])',
@@ -83,7 +157,9 @@ export function handleTabListKeyDown(e: {
     e.preventDefault();
     const targetTab = tabs[nextIndex];
     targetTab.focus();
-    targetTab.click();
+    if (activateOnFocus) {
+      targetTab.click();
+    }
   }
 }
 
@@ -527,16 +603,15 @@ export function resolveRetrospectiveViewMeta(
     tRarities: CatalogTranslator;
   },
 ): ResolvedRetrospectiveViewMeta {
-  const focusHours = retro
-    ? Math.round((retro.focusMinutes / 60) * 10) / 10
-    : 0;
-  const bestMonthName =
+  const focusHours = formatFocusHours(retro?.focusMinutes);
+  const rawBestMonthName =
     retro?.bestMonth && retro.bestMonth >= 1 && retro.bestMonth <= 12
       ? new Intl.DateTimeFormat(locale, {
           month: "long",
           timeZone: "UTC",
         }).format(new Date(Date.UTC(2024, retro.bestMonth - 1, 1)))
       : null;
+  const bestMonthName = capitalizeFirst(rawBestMonthName, locale);
 
   const archetypeKey = retro?.archetype ?? "RISING_SPARK";
   const archetypeTitle = isGamified

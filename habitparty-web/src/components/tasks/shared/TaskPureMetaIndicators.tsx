@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Bell,
   CheckSquare,
@@ -20,12 +22,14 @@ export function TaskChecklistBadge({
   checklistRewarded = 0,
   isChecklistAllDone,
   isCompact = false,
+  variant = "row",
 }: {
   checklistCompleted: number;
   checklistTotal: number;
   checklistRewarded?: number;
   isChecklistAllDone: boolean;
   isCompact?: boolean;
+  variant?: "card" | "row";
 }) {
   const t = useTranslations("dashboard.taskShared.badges");
   const { isGamified } = useExperienceMode();
@@ -38,8 +42,14 @@ export function TaskChecklistBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 font-medium rounded-md border px-1.5 py-0.5 shrink-0 transition-colors",
-        isCompact ? "text-label-s leading-none" : "text-tiny",
+        "inline-flex items-center font-medium rounded-md border shrink-0 transition-colors leading-none tabular-nums whitespace-nowrap",
+        variant === "card"
+          ? isCompact
+            ? "h-[17px] gap-1 px-1 text-label-s"
+            : "h-[19px] gap-1 px-1.5 text-tiny"
+          : isCompact
+            ? "gap-1.5 px-1.5 py-0.5 text-label-s"
+            : "gap-1.5 px-1.5 py-0.5 text-tiny",
         isChecklistAllDone
           ? "text-success-500 bg-success-500/12 border-success-500/35 font-semibold"
           : checklistRewarded > 0
@@ -65,7 +75,7 @@ export function TaskChecklistBadge({
       }
     >
       <CheckSquare
-        size={isCompact ? 9 : 11}
+        size={isCompact ? 9 : 10}
         className={isChecklistAllDone ? "text-success-500" : "text-gold"}
       />
       <span>
@@ -83,6 +93,7 @@ export function TaskChecklistBadge({
         percent={progressPercent}
         className={cn(
           "bg-neutral-700/40 dark:bg-white/10 shrink-0",
+          variant === "card" && "hidden @[280px]/card:inline-flex",
           isCompact ? "w-5 h-1" : "w-7 h-1",
         )}
         fillClassName={cn(
@@ -132,7 +143,11 @@ export function TaskPriorityBadge({
       title={t("badges.priorityTitle", { label: priorityLabel })}
       className={cn(
         "flex items-center justify-center transition-colors select-none shrink-0 border",
-        sizeVariant === "card" ? "p-0.5 rounded" : "p-1 rounded-md",
+        sizeVariant === "card"
+          ? isCompact
+            ? "w-[18px] h-[18px] rounded"
+            : "w-5 h-5 rounded"
+          : "p-1 rounded-md",
         meta?.badgeColor ||
           "text-neutral-400 bg-surface border-neutral-700 dark:bg-white/5 dark:border-white/10",
       )}

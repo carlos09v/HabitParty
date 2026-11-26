@@ -2,17 +2,21 @@
 
 import { useTranslations } from "next-intl";
 import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useRef, useTransition } from "react";
+import { startTransition, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { createTask, moveTasks } from "@/actions/taskActions";
+import { createTask, deleteTask, moveTasks } from "@/actions/taskActions";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 import {
   applyOptimisticHabitChange,
+  applyOptimisticHabitRollback,
   applyOptimisticTaskRollback,
   applyOptimisticTaskToggle,
+  type HabitRollbackState,
   type TaskToggleRollbackState,
   useTaskMutations,
 } from "@/hooks/useTaskMutations";
 import { useUserStore } from "@/store/userStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import type {
   BoardColumn,
   CreateTaskDTO,
@@ -20,17 +24,26 @@ import type {
   TaskTypeOption,
   UpdateTaskOrderDTO,
 } from "@/types/task";
+import type { WorkspaceResponseDTO } from "@/types/workspace";
 import { soundEffects } from "@/utils/soundEffects";
 import {
   buildQuickCreateTaskPayload,
+  mapTaskInColumns,
   mapTaskResponseToTask,
+  removeTaskFromColumns,
 } from "@/utils/taskMapper";
 
 interface UseBoardTaskActionsOptions {
   columns: BoardColumn[];
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
+  workspaceId?: string | null;
+  workspaces?: WorkspaceResponseDTO[];
   onTaskUpdatedInDetails?: (task: Task) => void;
+  onTempTaskReconciled?: (tempId: string, realTask: Task) => void;
+  onTaskDeleted?: (taskId: string) => void;
 }
+
+let quickCreateTempSeq = 0;
 
 /**
  * Hook dedicado às ações e mutações assíncronas de tarefas do quadro Kanban.
@@ -39,17 +52,32 @@ interface UseBoardTaskActionsOptions {
 export function useBoardTaskActions({
   columns,
   setColumns,
+  workspaceId,
+  workspaces,
   onTaskUpdatedInDetails,
+  onTempTaskReconciled,
+  onTaskDeleted,
 }: UseBoardTaskActionsOptions) {
   const t = useTranslations("tasks.hooks");
-  const [, startTransition] = useTransition();
   const columnsRef = useRef(columns);
-  columnsRef.current = columns;
+  const deletedTempTaskIdsRef = useRef<Set<string>>(new Set());
+  const moveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const moveSeqRef = useRef(0);
+
+  useIsomorphicLayoutEffect(() => {
+    columnsRef.current = columns;
+  }, [columns]);
 
   const handleTaskSaved = useCallback(
     (savedTask: Task, targetColumnId: string) => {
-      setColumns((prev) =>
-        prev.map((col) => {
+      setColumns((prev) => {
+        const existedInOtherColumn = prev.some(
+          (col) =>
+            col.id !== targetColumnId &&
+            col.tasks.some((t) => t.id === savedTask.id),
+        );
+
+        return prev.map((col) => {
           const existsInThisCol = col.tasks.some((t) => t.id === savedTask.id);
 
           if (col.id === targetColumnId) {
@@ -61,7 +89,13 @@ export function useBoardTaskActions({
                 ),
               };
             }
-            return { ...col, tasks: [...col.tasks, savedTask] };
+            // Ao mover entre colunas via modal, o backend posiciona em newOrderIndex: 0
+            return {
+              ...col,
+              tasks: existedInOtherColumn
+                ? [savedTask, ...col.tasks]
+                : [...col.tasks, savedTask],
+            };
           }
 
           if (existsInThisCol) {
@@ -72,8 +106,8 @@ export function useBoardTaskActions({
           }
 
           return col;
-        }),
-      );
+        });
+      });
     },
     [setColumns],
   );
@@ -84,59 +118,116 @@ export function useBoardTaskActions({
       targetColumnId: string,
       taskType: TaskTypeOption = "TODO",
       extraPayload?: Partial<CreateTaskDTO>,
-    ) => {
-      const tempId = `temp-${Date.now()}`;
+    ): Promise<boolean> => {
+      quickCreateTempSeq += 1;
+      const tempId = `temp-${Date.now()}-${quickCreateTempSeq}`;
+      const userTimeZone = useUserStore.getState().user?.timezone;
+      const wsState = useWorkspaceStore.getState();
+      const effectiveWorkspaceId = workspaceId ?? wsState.activeWorkspaceId;
+      const wsList =
+        workspaces && workspaces.length > 0 ? workspaces : wsState.workspaces;
+      const activeWs = wsList.find((w) => w.id === effectiveWorkspaceId);
+      const workspaceMeta = activeWs
+        ? { id: activeWs.id, name: activeWs.name }
+        : effectiveWorkspaceId
+          ? { id: effectiveWorkspaceId }
+          : undefined;
+
       const { payload, optimisticTask } = buildQuickCreateTaskPayload(
         title,
         targetColumnId,
         taskType,
         extraPayload,
         tempId,
-        useUserStore.getState().user?.timezone,
+        userTimeZone,
       );
+      const enrichedOptimisticTask: Task = workspaceMeta
+        ? {
+            ...optimisticTask,
+            workspaceId: workspaceMeta.id,
+            workspaceName: workspaceMeta.name,
+          }
+        : optimisticTask;
 
       setColumns((prev) =>
         prev.map((col) =>
           col.id === targetColumnId
-            ? { ...col, tasks: [...col.tasks, optimisticTask] }
+            ? { ...col, tasks: [...col.tasks, enrichedOptimisticTask] }
             : col,
         ),
       );
 
       const res = await createTask(targetColumnId, payload);
       if (res.success && res.data) {
-        const realTask = mapTaskResponseToTask(res.data, targetColumnId);
-        setColumns((prev) =>
-          prev.map((col) =>
-            col.id === targetColumnId
-              ? {
-                  ...col,
-                  tasks: col.tasks.map((t) =>
-                    t.id === tempId
-                      ? { ...realTask, columnId: targetColumnId }
-                      : t,
-                  ),
-                }
-              : col,
-          ),
+        // Se o usuário excluiu o card temporário enquanto o POST estava em voo, deleta imediatamente no servidor
+        if (deletedTempTaskIdsRef.current.has(tempId)) {
+          deletedTempTaskIdsRef.current.delete(tempId);
+          if (res.data.id) {
+            void deleteTask(res.data.id, false);
+          }
+          setColumns((prev) => removeTaskFromColumns(prev, tempId));
+          return true;
+        }
+
+        const currentColumnWithTemp = columnsRef.current.find((col) =>
+          col.tasks.some((t) => t.id === tempId),
         );
+        const resolvedColumnId = currentColumnWithTemp?.id ?? targetColumnId;
+        const realTask = mapTaskResponseToTask(
+          res.data,
+          resolvedColumnId,
+          userTimeZone,
+          workspaceMeta,
+        );
+
+        const movedColumnUpdates: UpdateTaskOrderDTO[] | null =
+          currentColumnWithTemp && currentColumnWithTemp.id !== targetColumnId
+            ? currentColumnWithTemp.tasks
+                .map((t) => (t.id === tempId ? realTask : t))
+                .filter((item) => item.id && !item.id.startsWith("temp-"))
+                .map((item, idx) => ({
+                  taskId: item.id,
+                  boardColumnId: currentColumnWithTemp.id,
+                  newOrderIndex: idx,
+                }))
+            : null;
+
+        setColumns((prev) =>
+          prev.map((col) => {
+            const hasTemp = col.tasks.some((t) => t.id === tempId);
+            if (!hasTemp) return col;
+            return {
+              ...col,
+              tasks: col.tasks.map((t, idx) =>
+                t.id === tempId
+                  ? { ...realTask, columnId: col.id, order: idx }
+                  : t,
+              ),
+            };
+          }),
+        );
+
+        onTempTaskReconciled?.(tempId, realTask);
+
+        // Se o card foi arrastado para outra coluna durante o POST, persiste a movimentação agora com o UUID real
+        if (movedColumnUpdates && movedColumnUpdates.length > 0) {
+          void moveTasks(movedColumnUpdates);
+        }
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("habitparty:tasks-changed"));
+        }
         soundEffects.playCreateSound();
-      } else {
-        setColumns((prev) =>
-          prev.map((col) =>
-            col.id === targetColumnId
-              ? {
-                  ...col,
-                  tasks: col.tasks.filter((taskItem) => taskItem.id !== tempId),
-                }
-              : col,
-          ),
-        );
-        const errMsg = !res.success ? res.error : t("quickCreateError");
-        toast.error(errMsg || t("quickCreateError"));
+        return true;
       }
+
+      deletedTempTaskIdsRef.current.delete(tempId);
+      setColumns((prev) => removeTaskFromColumns(prev, tempId));
+      const errMsg = !res.success ? res.error : t("quickCreateError");
+      toast.error(errMsg || t("quickCreateError"));
+      return false;
     },
-    [setColumns, t],
+    [setColumns, t, workspaceId, workspaces, onTempTaskReconciled],
   );
 
   const handleTaskMove = useCallback(
@@ -161,16 +252,24 @@ export function useBoardTaskActions({
         }));
 
       if (updates.length > 0) {
-        startTransition(async () => {
-          const res = await moveTasks(updates);
-          if (!res.success) {
-            if (previousColumns) {
-              columnsRef.current = previousColumns;
-              setColumns(previousColumns);
+        const moveSeq = ++moveSeqRef.current;
+        moveChainRef.current = moveChainRef.current
+          .then(async () => {
+            const res = await moveTasks(updates);
+            if (!res.success) {
+              // Só reverte o snapshot anterior se nenhum arrasto mais recente o substituiu
+              if (previousColumns && moveSeq === moveSeqRef.current) {
+                startTransition(() => {
+                  columnsRef.current = previousColumns;
+                  setColumns(previousColumns);
+                });
+              }
+              toast.error(res.error || t("movePositionError"));
             }
-            toast.error(res.error || t("movePositionError"));
-          }
-        });
+          })
+          .catch(() => {
+            toast.error(t("movePositionError"));
+          });
       }
     },
     [setColumns, t],
@@ -180,37 +279,27 @@ export function useBoardTaskActions({
     (updatedTask: Task) => {
       onTaskUpdatedInDetails?.(updatedTask);
       setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === updatedTask.id ? updatedTask : t,
-          ),
-        })),
+        mapTaskInColumns(prev, updatedTask.id, () => updatedTask),
       );
     },
     [setColumns, onTaskUpdatedInDetails],
   );
 
-  const findTask = useCallback(
-    (taskId: string) =>
-      columnsRef.current
-        .flatMap((col) => col.tasks)
-        .find((t) => t.id === taskId),
-    [],
-  );
+  const findTask = useCallback((taskId: string) => {
+    for (const col of columnsRef.current) {
+      const found = col.tasks.find((t) => t.id === taskId);
+      if (found) return found;
+    }
+    return undefined;
+  }, []);
 
   const onOptimisticToggle = useCallback(
     (taskId: string, completed: boolean) => {
       const nowIso = new Date().toISOString();
       setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === taskId
-              ? applyOptimisticTaskToggle(t, completed, nowIso)
-              : t,
-          ),
-        })),
+        mapTaskInColumns(prev, taskId, (t) =>
+          applyOptimisticTaskToggle(t, completed, nowIso),
+        ),
       );
     },
     [setColumns],
@@ -220,14 +309,9 @@ export function useBoardTaskActions({
     (taskId: string, delta: number) => {
       const timeZone = useUserStore.getState().user?.timezone;
       setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === taskId
-              ? applyOptimisticHabitChange(t, delta, timeZone)
-              : t,
-          ),
-        })),
+        mapTaskInColumns(prev, taskId, (t) =>
+          applyOptimisticHabitChange(t, delta, timeZone),
+        ),
       );
     },
     [setColumns],
@@ -236,12 +320,20 @@ export function useBoardTaskActions({
   const onRollbackToggle = useCallback(
     (taskId: string, previousState: TaskToggleRollbackState) => {
       setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === taskId ? applyOptimisticTaskRollback(t, previousState) : t,
-          ),
-        })),
+        mapTaskInColumns(prev, taskId, (t) =>
+          applyOptimisticTaskRollback(t, previousState),
+        ),
+      );
+    },
+    [setColumns],
+  );
+
+  const onRollbackHabit = useCallback(
+    (taskId: string, previousState: HabitRollbackState) => {
+      setColumns((prev) =>
+        mapTaskInColumns(prev, taskId, (t) =>
+          applyOptimisticHabitRollback(t, previousState),
+        ),
       );
     },
     [setColumns],
@@ -249,15 +341,22 @@ export function useBoardTaskActions({
 
   const onOptimisticDelete = useCallback(
     (task: Task, targetColumnId?: string) => {
-      setColumns((prev) =>
-        prev.map((col) =>
-          !targetColumnId || col.id === targetColumnId
+      if (task.id.startsWith("temp-")) {
+        deletedTempTaskIdsRef.current.add(task.id);
+      }
+      onTaskDeleted?.(task.id);
+      setColumns((prev) => {
+        if (!targetColumnId) {
+          return removeTaskFromColumns(prev, task.id);
+        }
+        return prev.map((col) =>
+          col.id === targetColumnId
             ? { ...col, tasks: col.tasks.filter((t) => t.id !== task.id) }
             : col,
-        ),
-      );
+        );
+      });
     },
-    [setColumns],
+    [setColumns, onTaskDeleted],
   );
 
   const onRollbackDelete = useCallback(
@@ -300,12 +399,7 @@ export function useBoardTaskActions({
   const onReconcileTask = useCallback(
     (reconciledTask: Task) => {
       setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === reconciledTask.id ? reconciledTask : t,
-          ),
-        })),
+        mapTaskInColumns(prev, reconciledTask.id, () => reconciledTask),
       );
     },
     [setColumns],
@@ -315,6 +409,7 @@ export function useBoardTaskActions({
     handleToggleComplete,
     handleHabitChange,
     handleDeleteTask,
+    scheduleUndoDeleteTask,
     handleDuplicateTask,
     duplicatingTaskIds,
   } = useTaskMutations({
@@ -322,6 +417,7 @@ export function useBoardTaskActions({
     onOptimisticToggle,
     onOptimisticHabit,
     onRollbackToggle,
+    onRollbackHabit,
     onOptimisticDelete,
     onRollbackDelete,
     onTaskDuplicated,
@@ -335,6 +431,7 @@ export function useBoardTaskActions({
     handleTaskSaved,
     handleQuickCreateTask,
     handleDeleteTask,
+    scheduleUndoDeleteTask,
     handleTaskMove,
     handleTaskDetailsUpdate,
     handleToggleComplete,

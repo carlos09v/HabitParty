@@ -32,7 +32,7 @@ function handleVisibilityChange() {
   }
 }
 
-function subscribe(listener: () => void) {
+export function subscribeMinuteTicker(listener: () => void): () => void {
   listeners.add(listener);
   if (listeners.size === 1 && typeof window !== "undefined") {
     scheduleNextMinuteTick();
@@ -76,7 +76,7 @@ const noopSubscribe = () => () => {};
  */
 export function useMinuteTicker(enabled = true): number {
   return useSyncExternalStore(
-    enabled ? subscribe : noopSubscribe,
+    enabled ? subscribeMinuteTicker : noopSubscribe,
     getSnapshot,
     getServerSnapshot,
   );

@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,15 +12,19 @@ import org.springframework.data.repository.query.Param;
 import com.habitparty.adapters.out.persistence.entities.RewardJpaEntity;
 
 public interface RewardJpaRepository extends JpaRepository<RewardJpaEntity, UUID> {
-  int countByUser_Id(UUID userId);
 
-  List<RewardJpaEntity> findByUser_IdOrderByOrderIndexAsc(UUID userId);
+  int countByUserId(UUID userId);
 
-  // Acha o maior index para criar uma nova no final da fila (começando do 0)
-  @Query("SELECT COALESCE(MAX(r.orderIndex), -1) FROM RewardJpaEntity r WHERE r.user.id = :userId")
+  List<RewardJpaEntity> findByUserIdOrderByOrderIndexAsc(UUID userId);
+
+  @Query("SELECT COALESCE(MAX(r.orderIndex), -1) FROM RewardJpaEntity r WHERE r.userId = :userId")
   int findMaxOrderIndexByUserId(@Param("userId") UUID userId);
 
-  @Modifying
-  @Query("DELETE FROM RewardJpaEntity r WHERE r.user.id = :userId")
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM RewardJpaEntity r WHERE r.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM RewardJpaEntity r WHERE r.id IN :ids AND r.userId = :userId")
+  int deleteAllByIdInAndUserId(@Param("ids") Collection<UUID> ids, @Param("userId") UUID userId);
 }

@@ -32,6 +32,7 @@ export function TierFriendsPopover({
     estimatedHeight: 220,
     offset: 8,
     margin: 12,
+    zIndex: 9999,
   });
 
   const previewFriends = friends.slice(0, 2);
@@ -82,6 +83,7 @@ export function TierFriendsPopover({
       {popover.isOpen &&
         popover.shouldRenderPortal &&
         popover.floatingStyle &&
+        popover.portalContainer &&
         createPortal(
           <div
             ref={popover.popoverRef}
@@ -115,7 +117,7 @@ export function TierFriendsPopover({
               ))}
             </ul>
           </div>,
-          document.body,
+          popover.portalContainer,
         )}
     </div>
   );

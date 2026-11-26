@@ -4,9 +4,12 @@
     "description": "Turn your daily routine into an epic journey. Earn XP, stack gold coins, beat procrastination in Focus Mode, and trade effort for real-life rewards."
   },
   "navbar": {
+    "homeAria": "HabitParty — Home",
+    "navAria": "Primary navigation",
+    "mobileNavAria": "Mobile navigation",
     "links": {
+      "gamification": "Live Demo",
       "howItWorks": "How It Works",
-      "gamification": "Gamification",
       "features": "Features",
       "roadmap": "Roadmap",
       "pricing": "Pricing",
@@ -15,15 +18,15 @@
     "signIn": "Sign In",
     "startFree": "Start Free",
     "signInAccount": "Sign In to Account",
-    "startFreeAdventure": "Start for Free ✨",
+    "startFreeAdventure": "Start for Free",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
   "hero": {
-    "badge": "Productivity that adapts to your brain: Executive Mode or Gamified RPG",
+    "badge": "Productivity that adapts to your brain: Essential Mode or Gamified RPG",
     "titleLine1": "Beat procrastination. ",
     "titleHighlight": "Turn daily discipline into real-life rewards.",
-    "subtitle": "Unite habits, Kanban boards, and Pomodoro focus in a system where every hour of effort unlocks guilt-free leisure on a 3:1 to 4:1 ratio. Use Essential Mode (clean & executive) or Adventure Mode (with XP, gold coins, and Mystery Boxes).",
+    "subtitle": "Unite habits, Kanban boards, and Pomodoro focus in a system where your daily effort unlocks guilt-free leisure. Use Essential Mode (clean & executive) or Adventure Mode (with XP, gold coins, and Mystery Boxes).",
     "primaryCta": "Start Free Now",
     "secondaryCta": "Try Live Interactive Demo",
     "ctaHint": "Free to start • No credit card required • Takes 30 seconds",
@@ -31,7 +34,7 @@
       "levels": "Focus Levels & XP",
       "streaks": "Streaks & Dailies",
       "pomodoro": "Pomodoro & Zen Mode",
-      "shop": "3:1–4:1 Balanced Shop"
+      "shop": "Real-Life Reward Shop"
     },
     "preview": {
       "modeSwitcherLabel": "Switch preview style between Essential Mode and Adventure Mode",
@@ -42,7 +45,7 @@
       "dailyTag": "Daily • Hardcore",
       "dailyTagEssential": "Routine • Strict Deadline",
       "dailyTitle": "1h Deep Study & Focus",
-      "streakBadge": "14 days 🔥",
+      "streakBadge": "14 days",
       "xpReward": "+30 XP",
       "pointsReward": "+30 pts",
       "coinReward": "+5",
@@ -52,57 +55,78 @@
       "rewardTag": "Personal Reward",
       "rewardTagEssential": "Direct Reward",
       "rewardTitle": "Gaming / Movie Session (1h)",
-      "rewardAction": "Redeemed ✓",
-      "rewardActionEssential": "In Inventory ✓",
-      "ratioNoteAdventure": "3:1–4:1 Ratio • ~15 🪙/day funds 1h of guilt-free leisure",
-      "ratioNoteEssential": "3:1–4:1 Ratio • ~15 Credits/day funds 1h of guilt-free downtime"
+      "rewardAction": "Redeemed",
+      "rewardActionEssential": "In Inventory",
+      "ratioNoteAdventure": "Your daily effort funds guilt-free breaks and leisure",
+      "ratioNoteEssential": "Your daily effort funds guilt-free downtime"
     }
   },
   "demo": {
     "badge": "Interactive Demo",
     "title": "Experience the dopamine of discipline right now.",
-    "subtitle": "Click the tasks below and feel how every completed action triggers sound, instant progress, XP, and real rewards.",
+    "subtitle": "Click the tasks below, switch experience styles, and feel how every completed action builds momentum and unlocks real rewards.",
     "windowTitle": "HabitParty • Live Demo",
+    "modeSwitcherLabel": "Switch demo style between Essential Mode and Adventure Mode",
+    "modeEssential": "Essential",
+    "modeAdventure": "Adventure",
+    "resetDemo": "Reset",
+    "resetDemoAria": "Reset interactive demo",
     "goldStatus": "{gold} Gold",
+    "creditsStatus": "{gold} Credits",
     "levelStatus": "Level {level}",
-    "footerHint": "Interactive simulation: click the buttons below to feel immediate feedback.",
-    "footerHighlight": "In HabitParty: your effort turns into well-earned leisure in fair measure ✨",
+    "footerHint": "Interactive simulation: complete actions above and try redeeming a guilt-free break.",
+    "footerHighlight": "Real effort turned into well-earned rest",
     "toasts": {
-      "habitLevelUp": "🎉 LEVEL UP! Level {level} reached!",
+      "habitLevelUp": "Level up! Level {level} reached!",
       "habitScored": "+10 XP • +2 Gold Coins!",
-      "habitDecremented": "Log decreased",
-      "dailyLevelUp": "🎉 LEVEL UP! Level {level}!",
-      "dailyCompleted": "⚔️ Routine Completed! +30 XP • +5 Coins!",
+      "habitScoredEssential": "+10 pts • +2 Credits!",
+      "habitDecremented": "Log adjusted (-1)",
+      "dailyLevelUp": "Level up! Level {level} reached!",
+      "dailyCompleted": "Routine completed! +30 XP • +5 Coins!",
+      "dailyCompletedEssential": "Routine completed! +30 pts • +5 Credits!",
       "dailyReopened": "Routine reopened",
-      "timerStarted": "⏱️ Hyperfocus Mode Started! Take a deep breath.",
-      "timerPaused": "Timer paused."
+      "timerStarted": "Hyperfocus Mode started! Take a deep breath.",
+      "timerPaused": "Timer paused.",
+      "timerCompleted": "Session completed! +25 XP • +3 Coins!",
+      "timerCompletedEssential": "Session completed! +25 pts • +3 Credits!",
+      "rewardRedeemed": "Reward redeemed! Enjoy 30 min guilt-free.",
+      "rewardInsufficient": "Need {missing} more balance. Complete a task above first!",
+      "demoReset": "Demo reset."
     },
     "playerHeader": {
       "levelBadge": "Lv.{level}",
       "name": "Cosmic Explorer",
+      "nameEssential": "Executive Profile",
       "titleBadge": "Focus Warrior",
+      "titleBadgeEssential": "High Performance",
       "xpNextLevel": "{xp} / {maxXp} XP to next level",
-      "xpProgressLabel": "XP Progress"
+      "xpNextLevelEssential": "{xp} / {maxXp} pts to next milestone",
+      "xpProgressLabel": "XP Progress",
+      "pointsProgressLabel": "Points Progress"
     },
     "habitCard": {
       "badge": "Daily Habit",
-      "title": "💧 Drink 2L of Water",
+      "title": "Drink 2L of Water",
       "logsLabel": "Today's logs: ",
       "glassesCount": "{count, plural, one {# glass} other {# glasses}}",
       "clickToScore": "Click to score:",
-      "decreaseAria": "Decrease glass"
+      "decreaseAria": "Decrease glass",
+      "xpAction": "+10 XP",
+      "pointsAction": "+10 pts"
     },
     "dailyCard": {
       "streakBadge": "{count, plural, one {#-day Streak} other {#-day Streak}}",
-      "title": "💻 1h Deep Study",
+      "title": "1h Deep Study",
       "resetNote": "Resets at midnight if not completed.",
       "statusDone": "Completed!",
       "statusPending": "Complete routine:",
       "buttonDone": "Done!",
-      "buttonPending": "Complete (+30 XP)"
+      "buttonPending": "Complete (+30 XP)",
+      "buttonPendingEssential": "Complete (+30 pts)"
     },
     "focusCard": {
       "badge": "Zen Focus",
+      "title": "Pomodoro Session",
       "duration": "25 min",
       "descriptionRunning": "Hyperfocus active • Notifications muted",
       "descriptionIdle": "Eliminate distractions and focus on the task",
@@ -110,13 +134,22 @@
       "statusIdle": "Start session:",
       "pause": "Pause",
       "start": "Start Focus"
+    },
+    "rewardBar": {
+      "tag": "Your Shop",
+      "tagEssential": "Personal Showcase",
+      "title": "Guilt-Free Break: 30 min Show or Gaming",
+      "costAdventure": "{cost} Gold",
+      "costEssential": "{cost} Credits",
+      "redeemCta": "Redeem",
+      "missingHint": "Need {missing} more",
+      "redeemedCount": "{count, plural, one {# redeemed} other {# redeemed}}"
     }
   },
   "productivityLoop": {
     "badge": "HabitParty Methodology",
     "title": "The continuous loop of personal consistency.",
     "subtitle": "We combine neuroscience, agile workflows, and behavioral psychology to turn discipline into daily excitement.",
-    "cardFooter": "Personalized & Automated",
     "steps": {
       "step1": {
         "tag": "Routine & Habits",
@@ -131,9 +164,9 @@
         "footer": "Ambient Sounds & Zen Mode"
       },
       "step3": {
-        "tag": "Rewards & Leisure (3:1 to 4:1)",
+        "tag": "Rewards & Leisure",
         "title": "Reward your Dedication",
-        "description": "Calibrated on a 3:1 to 4:1 duty-to-reward ratio: ~3 to 4 hours of real work (~15 coins) earn 1 hour of guilt-free leisure. Redeem breaks or personal prizes using Credits (Essential Mode) or Gold Coins & Mystery Boxes (Adventure Mode).",
+        "description": "A balanced 3:1 to 4:1 effort-to-rest economy: every 3 to 4 hours of real work fund 1 hour of guilt-free leisure. Redeem breaks using Credits (Essential Mode) or Gold Coins & Mystery Boxes (Adventure Mode).",
         "footer": "Personal Shop & Mystery Boxes"
       }
     }
@@ -157,18 +190,18 @@
     "items": {
       "experienceMode": {
         "badge": "Dual Styles",
-        "title": "Two Styles: Essential Mode or Adventure Mode",
-        "description": "All the power of gamified productivity at your pace: adopt Essential Mode for a clean executive interface with Credits, Points, and direct focus on deliverables; or activate Adventure Mode with gold coins, XP, and Mystery Boxes. Switch anytime with 1 click."
+        "title": "Essential Mode or Adventure Mode",
+        "description": "Adopt Essential Mode for a clean executive interface with Credits, Points, and direct focus on deliverables; or activate Adventure Mode with gold coins, XP, and Mystery Boxes. Switch anytime with 1 click."
       },
       "rewardShop": {
-        "badge": "3:1–4:1 Economy",
+        "badge": "Personal Shop",
         "title": "Reward Shop & Mystery Boxes",
-        "description": "Register your real-life treats (e.g., 30m or 1h of leisure with automatic 3:1–4:1 pricing guidance) or test your luck opening Mystery Boxes in Adventure Mode."
+        "description": "Register your real-life treats with automatic price guidance tuned to your effort — or test your luck opening Mystery Boxes in Adventure Mode."
       },
       "partyGuild": {
         "badge": "Social & Co-op",
         "title": "Friend Network, Parties & Guilds",
-        "description": "Connect today via @username or unique HP-XXXXXX code with granular privacy controls. Next up: cooperative squads and guilds."
+        "description": "Connect today via @username or unique HP-XXXXXX code with granular privacy controls. Next up: cooperative squads (Parties) and guilds."
       },
       "hardcoreMode": {
         "badge": "Real Discipline",
@@ -181,9 +214,9 @@
         "description": "Isolate Work, Study, and Personal Life, organize with hierarchical tags (>), filter all workspaces together on the Dashboard, and find any task instantly."
       },
       "analytics": {
-        "badge": "Metrics & Social",
-        "title": "History, Friends & Retrospective",
-        "description": "Track focus hours and earnings flow, connect with friends using granular privacy controls, and export collectible PNG profile and retrospective cards."
+        "badge": "Metrics & Progress",
+        "title": "History, Charts & Retrospective",
+        "description": "Track focus hours, full earnings & redemptions ledger, your Annual Retrospective, and export collectible PNG profile cards."
       },
       "soundEffects": {
         "badge": "Customization",
@@ -195,12 +228,22 @@
   "roadmap": {
     "badge": "Journey Map",
     "title": "From Solo Journey to Social MMO.",
-    "subtitle": "Discover the next chapters of HabitParty's evolution. Every update adds deeper immersion, co-op features, and tools to supercharge your consistency.",
+    "subtitle": "See what is already live and the upcoming chapters of HabitParty's evolution toward cooperative productivity.",
     "founderBanner": {
       "title": "Early Access for Founding Members",
-      "spotsBadge": "30 Spots",
+      "spotsBadge": "{remainingSlots} of 30 spots",
+      "soldOutBadge": "Batch Sold Out",
       "description": "Pioneer subscribers test every phase first and earn a prestigious lifetime badge on their profile.",
-      "cta": "View Offer"
+      "soldOutDescription": "All 30 pioneer spots have been claimed. You can still unlock every VIP feature with Cosmic Guardian.",
+      "cta": "View Offer",
+      "soldOutCta": "View Plans"
+    },
+    "upcomingHeading": "Upcoming chapters",
+    "deliveredGroup": {
+      "badge": "Already shipped & live",
+      "title": "Releases 1.1 to 1.4 are available today",
+      "subtitle": "Bilingual (EN/PT-BR), Essential & Adventure Modes, 7 Themes, Achievements, Kanban Events, Task-Linked Focus, Friend Network & Retrospective.",
+      "toggleLabel": "View details of the 4 shipped releases"
     },
     "phaseLabel": "Phase 0{index}",
     "highlightsLabel": "Release highlights:",
@@ -218,68 +261,51 @@
         "title": "Bilingual Support & Experience Modes",
         "tagline": "Full English and Portuguese support, two adaptive productivity profiles, and stronger account protection.",
         "features": [
-          "Full support for English (EN) and Portuguese (PT-BR)",
-          "Instant language switching across all screens without reloading the app",
-          "Experience Modes (Essential Mode vs. Adventure Mode): choose between an executive aesthetic with Credits and Points or an RPG journey with gold coins and Mystery Boxes",
-          "Progressive email verification to protect your account and unlock alerts"
+          "Full English (EN) and Portuguese (PT-BR) support with instant switching",
+          "Experience Modes (Essential vs. Adventure) switchable in 1 click",
+          "Progressive email verification and anti-spam signup protection"
         ],
         "extras": [
-          "Automatic protection against fake signups and disposable emails",
-          "Performance tuning for faster daily board loading and transitions",
-          "Global time format customization (12h AM/PM or 24h) and interface preferences"
+          "Global 12h/24h time format preference and navigation performance tuning"
         ]
       },
       "r12": {
         "releaseLabel": "Release 1.2",
         "statusLabel": "Completed",
         "title": "Light Theme, Achievements & Public Profiles",
-        "tagline": "Crisp high-contrast daytime mode, discipline trophies, public profiles, and a customizable highlight showcase.",
+        "tagline": "High-contrast daytime mode, 63 automated medals, and a customizable highlight showcase.",
         "features": [
-          "Cosmic Daylight light theme with high contrast and comfortable daytime readability",
-          "Quick Light/Dark theme toggle directly from the sidebar",
-          "Personal Achievements system with 63 automated medals (including 8 secret trophies)",
-          "Dedicated Achievements Gallery to track your discipline milestones",
-          "Public Profile pages to share level, consistency, and streaks",
-          "Highlight Showcase to organize and pin up to 4 favorite badges and trophies at the top of your profile"
+          "Cosmic Daylight light theme with high contrast and quick toggle",
+          "63 Personal Achievement medals (including 8 secret trophies)",
+          "Public Profiles and Showcase to pin up to 4 favorite trophies"
         ]
       },
       "r13": {
         "releaseLabel": "Release 1.3",
         "statusLabel": "Completed",
         "title": "Kanban Events, Bulk History & Task-Linked Focus",
-        "tagline": "Schedule To-Dos as timed events, manage transaction ledgers in bulk, and link Pomodoro timers directly to tasks.",
+        "tagline": "Schedule To-Dos as timed events, audit history in bulk, and link Pomodoro timers directly to tasks.",
         "features": [
-          "Task-Linked Focus timers: 1-click launch, card-level time tracking, and optional auto-completion",
-          "To-Dos as Events (VIP): schedule with start & end times or all-day and track a live 'In progress' badge on Kanban",
-          "Bulk Ledger Management: multi-selection, batch deletion, and original Kanban column snapshot preservation",
-          "Cross-Workspace Search: smart banner detecting matching tasks in other workspaces with 1-click switching"
+          "Task-Linked Focus timers with 1-click launch and card-level time tracking",
+          "To-Dos as Events (VIP) with start/end times or all-day scheduling",
+          "Bulk History management and cross-workspace smart search"
         ],
         "extras": [
-          "Global Time Format (12h AM/PM vs 24h) synced across cards, details, history, and focus logs",
-          "Expanded task descriptions up to 2,000 characters with a real-time character counter",
-          "Friendly streak-recovery alerts encouraging fresh restarts",
-          "Optional synchronized cleanup of linked History entries when deleting tasks or focus logs"
+          "Expanded 2,000-char descriptions and friendly streak-recovery alerts"
         ]
       },
       "r14": {
         "releaseLabel": "Release 1.4",
         "statusLabel": "Completed",
         "title": "7 Themes, Friend Network & Granular Privacy",
-        "tagline": "Customize your atmosphere across 7 themes, connect via friend codes, control privacy, and share collectible cards.",
+        "tagline": "Customize your atmosphere across 7 themes, connect via friend codes, and share collectible cards.",
         "features": [
-          "7 Atmospheric Themes: 4 Free (Cosmic Dark, Cosmic Daylight, Dark Knight & Solar Parchment) + 3 VIP (Cyberpunk Neon, Forest Ranger & Royal Gold)",
-          "Friend Network with fast search by @username, name, or unique HP-XXXXXX friend code",
-          "Public Profiles (/profile/[username]) to follow friends' streaks and achievements",
-          "Granular Privacy Controls (Public, Friends Only, or Private) for profile visibility, stats, streaks, and invite policies",
-          "Social Activity Notifications for incoming requests, accepted invites, and milestones"
+          "7 Visual Themes: 4 Free (Cosmic Dark, Cosmic Daylight, Dark Knight & Solar Parchment) + 3 VIP",
+          "Friend Network via @username or HP-XXXXXX code with granular privacy",
+          "Annual Retrospective, downloadable PNG cards, and unified All Workspaces view"
         ],
         "extras": [
-          "Annual Retrospective (Dec 20 – Jan 31 seasonal window with 5 behavioral archetypes) & downloadable PNG Profile/Retrospective cards",
-          "Unified 'All Workspaces' Dashboard view + 1-click Quick Focus play/pause directly on task rows",
-          "Automatic timezone synchronization so daily rollovers, streak checks, and reminders align with local midnight",
-          "Rich-Text task descriptions (lists, formatting & links) and hierarchical nested tags (>) with inline editing & filter counts",
-          "Cross-workspace Kanban column moves, 3:1–4:1 reward price guidance, and transaction ledger safety checks",
-          "Upgraded Showcase (bio editor & XP panel) and smart toggle memory recalling your favorite Light/Dark theme"
+          "Rich-Text descriptions, hierarchical tags (>), guided Shop pricing, and automatic timezone sync"
         ]
       },
       "r15": {
@@ -303,7 +329,7 @@
         "features": [
           "Built-in Real-Time Chat with dedicated Party channels and direct messages between friends",
           "Live Presence Status (real-time focus indicators, break status, and availability)",
-          "Quick 1-Click Reactions and encouragement emojis during shared focus blocks",
+          "Quick 1-Click Reactions and encouragement cues during shared focus blocks",
           "Instant sound and visual alerts for incoming messages and team milestones",
           "Built-in Do Not Disturb mode for uninterrupted deep work sessions"
         ]
@@ -330,6 +356,7 @@
     "badge": "Choose Your Tier",
     "title": "Plans designed for your pace.",
     "subtitle": "Start 100% free or claim one of the <gold>{remainingSlots} Founder spots</gold> with full access and a lifetime badge on your profile.",
+    "subtitleSoldOut": "Start 100% free or unlock advanced features with the <gold>Cosmic Guardian</gold> plan.",
     "promoBanner": {
       "tag": "Early Bird Launch Offer",
       "spotsRemaining": "Spots Remaining: Only {remainingSlots} of 30",
@@ -365,7 +392,7 @@
           "Unlimited Pomodoro & Zen Mode",
           "Habit & Daily Task Streaks",
           "Hardcore Mode for Tasks, Habits, and Dailies",
-          "4 Themes: Cosmic Dark & Daylight + 1 alternate Dark (Dark Knight) & 1 alternate Light (Solar Parchment)",
+          "4 Themes: Cosmic Dark, Cosmic Daylight, Dark Knight & Solar Parchment",
           "Sound effects and confetti celebrations"
         ]
       },
@@ -376,23 +403,14 @@
         "originalPrice": "$19.90",
         "period": "year (annual billing)",
         "description": "Only for the first 30 subscribers: annual plan with ~45% discount and a Lifetime Founding Member Badge on your profile.",
-        "ctaText": "Claim Founder Spot 🛡️✨",
+        "ctaText": "Claim Founder Spot",
+        "ctaSoldOut": "Founder Batch Sold Out",
         "features": [
-          "🛡️ Exclusive Lifetime Founding Member Badge on your profile forever",
-          "👑 1 full year of Cosmic Guardian for $10.90 (down from $19.90/yr)",
-          "⭐ Eternal recognition as a pioneer in HabitParty history",
-          "🚀 Priority access to upcoming Roadmap releases (Parties, Live Chat & Guilds)",
-          "Schedule To-Dos as Events (start & end times or all-day)",
-          "3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger & extra Light theme Royal Gold)",
-          "Exclusive animated frames for your profile and avatar",
-          "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
-          "Exclusive VIP icon pack for activities, columns, and shop",
-          "Up to 4 independent Workspaces — double the free plan!",
-          "Up to 6 Lists/Columns per board for complete workflows",
-          "Up to 6 custom Activities in Focus Mode",
-          "Up to 50 Reward Cards in your shop (up to 4 packages each)",
-          "Expanded Backpack with capacity for up to 100 items",
-          "Expanded Email Reminders (up to 30 active & 100 sends/month)"
+          "All features and expanded limits from Cosmic Guardian included",
+          "Exclusive Lifetime Founding Member Badge on your profile forever",
+          "1 full year of VIP access for $10.90 (down from $19.90/yr)",
+          "Eternal recognition as a pioneer in HabitParty history",
+          "Priority access to upcoming Roadmap releases (Parties, Live Chat & Guilds)"
         ]
       },
       "guardian": {
@@ -401,21 +419,21 @@
         "price": "$1.99",
         "period": "month (or $19.90/year)",
         "description": "Expanded capacity for managing multiple projects, advanced studies, and limitless focus.",
-        "ctaText": "Unlock Monthly Plan 👑",
+        "ctaText": "Unlock Monthly Plan",
         "features": [
           "Schedule To-Dos as Events (start & end times or all-day)",
-          "3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger & extra Light theme Royal Gold)",
+          "3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger & Royal Gold)",
           "Expanded Email Reminders (up to 30 active & 100 sends/month)",
           "Exclusive animated frames for your profile and avatar",
           "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
           "Exclusive VIP icon pack for activities, columns, and shop",
-          "Up to 4 independent Workspaces — double the free plan!",
+          "Up to 4 independent Workspaces — double the free plan",
           "Up to 6 Lists/Columns per board for complete workflows",
           "Up to 6 custom Activities in Focus Mode",
           "Up to 50 Reward Cards in your shop (up to 4 packages each)",
           "Expanded Backpack with capacity for up to 100 items",
           "VIP Cosmic Guardian emblem on profile and golden ring",
-          "Early access to new features (such as Guild/Party)"
+          "Early access to new features (such as Parties & Guilds)"
         ]
       }
     },
@@ -436,7 +454,7 @@
       },
       "freeVsPremium": {
         "question": "Is HabitParty free? What does the Premium plan offer?",
-        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 12 reward cards (with up to 4 packages per card), a 20-item backpack, up to 5 active email reminders (20 monthly sends), and 4 visual themes (Cosmic Dark & Daylight plus 1 alternate Dark [Dark Knight] and 1 alternate Light [Solar Parchment]). For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan adds 3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger, and the extra Light theme Royal Gold), expanded email reminders (up to 30 active & 100 monthly sends), scheduled events, animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, and expansion to 4 workspaces, 6 columns, 6 focus activities, up to 50 reward cards, and a 100-item backpack."
+        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 12 reward cards (with up to 4 packages per card), a 20-item backpack, up to 5 active email reminders (20 monthly sends), and 4 visual themes (Cosmic Dark, Cosmic Daylight, Dark Knight, and Solar Parchment). For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan adds 3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger, and Royal Gold), expanded email reminders (up to 30 active & 100 monthly sends), scheduled events, animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, and expansion to 4 workspaces, 6 columns, 6 focus activities, up to 50 reward cards, and a 100-item backpack."
       },
       "honestyShop": {
         "question": "How does the Shop work and why is it based on honesty?",
@@ -479,7 +497,7 @@
     "accessTitle": "Access",
     "signInLink": "Sign In",
     "signUpFreeLink": "Sign Up for Free",
-    "helpCenterLink": "Help Center",
+    "helpCenterLink": "FAQ",
     "supportTitle": "Support & Contact",
     "reportBugLink": "Report a Bug (GitHub)",
     "officialRepoLink": "Official Repository",

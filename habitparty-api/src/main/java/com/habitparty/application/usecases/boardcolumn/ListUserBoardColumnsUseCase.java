@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.application.ports.BoardColumnRepository;
@@ -12,6 +13,7 @@ import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional(readOnly = true)
 public class ListUserBoardColumnsUseCase {
   private final WorkspaceRepository workspacePort;
   private final BoardColumnRepository port;

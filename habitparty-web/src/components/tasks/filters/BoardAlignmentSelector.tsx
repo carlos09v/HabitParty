@@ -16,8 +16,8 @@ export function BoardAlignmentSelector({
         "inline-flex items-center gap-0.5 rounded-lg bg-card dark:bg-surface border border-neutral-700 dark:border-white/15 p-0.5 m-0 shadow-xs shrink-0",
         className,
       )}
-      aria-label={t("ariaLabel")}
     >
+      <legend className="sr-only">{t("ariaLabel")}</legend>
       <span
         aria-hidden="true"
         className="hidden md:inline font-medium text-neutral-400 select-none pl-2 pr-1 text-xs"

@@ -15,31 +15,39 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Version;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "user_subscriptions")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserSubscriptionJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class UserSubscriptionJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "user_id")
-  private UUID userId;
+  private UUID id;
 
   @OneToOne(fetch = FetchType.LAZY)
   @MapsId
   @JoinColumn(name = "user_id")
   private UserJpaEntity user;
 
+  @Builder.Default
   @Column(name = "is_premium", nullable = false)
   private boolean isPremium = false;
 
+  @Builder.Default
   @Column(name = "is_founder", nullable = false, columnDefinition = "boolean default false")
   private boolean isFounder = false;
 
@@ -49,6 +57,8 @@ public class UserSubscriptionJpaEntity {
   @Column(name = "stripe_subscription_id")
   private String stripeSubscriptionId;
 
+  @ToString.Include
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "subscription_status", nullable = false, length = 50)
   private SubscriptionStatus subscriptionStatus = SubscriptionStatus.FREE;
@@ -59,9 +69,15 @@ public class UserSubscriptionJpaEntity {
   @Column(name = "prepaid_ends_at")
   private LocalDateTime prepaidEndsAt;
 
+  @Builder.Default
   @Column(name = "cancel_at_period_end", nullable = false, columnDefinition = "boolean default false")
   private boolean cancelAtPeriodEnd = false;
 
   @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt = LocalDateTime.now();
+  private LocalDateTime updatedAt;
+
+  @Version
+  @Setter(AccessLevel.NONE)
+  @Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+  private Long version;
 }

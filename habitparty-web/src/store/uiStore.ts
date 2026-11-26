@@ -206,11 +206,16 @@ export interface UIState {
     allowCustomThemes?: boolean,
   ) => void;
   experienceMode: ExperienceMode;
-  setExperienceMode: (mode: ExperienceMode) => void;
+  setExperienceMode: (
+    mode: ExperienceMode,
+  ) => Promise<{ success: boolean; error?: string }>;
   dateFormat: DateFormat;
   setDateFormat: (format: DateFormat) => void;
   timeFormat: TimeFormat;
   setTimeFormat: (format: TimeFormat) => void;
+  isUpgradeModalOpen: boolean;
+  openUpgradeModal: () => void;
+  closeUpgradeModal: () => void;
 }
 
 export const useUIStore = create<UIState>()((set, get) => ({
@@ -373,10 +378,28 @@ export const useUIStore = create<UIState>()((set, get) => ({
     scheduleBackgroundThemeSync(nextTheme);
   },
   experienceMode: "PRODUCTIVITY",
-  setExperienceMode: (experienceMode) => {
+  setExperienceMode: async (experienceMode) => {
+    const previousMode = get().experienceMode;
     set({ experienceMode, hydrated: true });
     useUserStore.getState().updateUserPartial({ experienceMode });
-    updateUserExperienceModeAction(experienceMode);
+
+    try {
+      const res = await updateUserExperienceModeAction(experienceMode);
+      if (!res.success) {
+        set({ experienceMode: previousMode, hydrated: true });
+        useUserStore
+          .getState()
+          .updateUserPartial({ experienceMode: previousMode });
+        return { success: false, error: res.error };
+      }
+      return { success: true };
+    } catch {
+      set({ experienceMode: previousMode, hydrated: true });
+      useUserStore
+        .getState()
+        .updateUserPartial({ experienceMode: previousMode });
+      return { success: false };
+    }
   },
   dateFormat: detectBrowserDateFormat(),
   setDateFormat: (dateFormat) => {
@@ -388,4 +411,7 @@ export const useUIStore = create<UIState>()((set, get) => ({
     set({ timeFormat, hydrated: true });
     setClientCookie("timeFormat", timeFormat);
   },
+  isUpgradeModalOpen: false,
+  openUpgradeModal: () => set({ isUpgradeModalOpen: true }),
+  closeUpgradeModal: () => set({ isUpgradeModalOpen: false }),
 }));

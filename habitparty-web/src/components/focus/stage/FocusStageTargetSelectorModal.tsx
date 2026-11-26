@@ -16,9 +16,10 @@ import {
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
-import { getFocusIcon, MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import { useResolvedIsPremium } from "@/components/ui/CatalogItemShared";
+import { getFocusIcon } from "@/constants/focusIcons";
+import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focusRules";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useUserStore } from "@/store/userStore";
 import type {
   FocusActiveTarget,
   FocusActivity,
@@ -27,8 +28,9 @@ import type {
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import {
-  formatDurationMinutes,
+  formatFocusMinutes,
   getItemRemainingMinutes,
+  isBackpackItemTimeDepleted,
 } from "@/utils/focusFormatters";
 import { getRewardIcon } from "@/utils/rewardMapper";
 
@@ -41,6 +43,7 @@ export interface FocusStageTargetSelectorModalProps {
   currentTargetId?: string;
   currentTarget?: FocusActiveTarget | null;
   initialTab?: "ACTIVITIES" | "TASKS" | "BACKPACK";
+  initialIsPremium?: boolean;
   /** Quando verdadeiro, oculta as abas de Tarefas/Mochila e exibe apenas Atividades para vincular à tarefa atual */
   onlyActivities?: boolean;
   /** Quando verdadeiro, oculta as abas de Atividades/Mochila e exibe apenas Tarefas para vincular à atividade atual */
@@ -51,6 +54,7 @@ export interface FocusStageTargetSelectorModalProps {
   /** Quando o alvo atual é uma tarefa direta, selecionar uma atividade vincula (Macro + Micro) mantendo o tempo */
   onLinkActivityToTask?: (activity: FocusActivity) => void;
   onSelectBackpackItem?: (item: InventoryItemResponseDTO) => void;
+  onConsumeBackpackItem?: (item: InventoryItemResponseDTO) => void;
   onSelectTask?: (task: { id: string; title: string }) => void;
   onUnlinkTask?: () => void;
   onOpenUpgradeModal?: () => void;
@@ -66,12 +70,14 @@ export function FocusStageTargetSelectorModal({
   currentTargetId,
   currentTarget,
   initialTab = "ACTIVITIES",
+  initialIsPremium = false,
   onlyActivities = false,
   onlyTasks = false,
   isLoadingActivities = false,
   onSelectActivity,
   onLinkActivityToTask,
   onSelectBackpackItem,
+  onConsumeBackpackItem,
   onSelectTask,
   onUnlinkTask,
   onOpenUpgradeModal,
@@ -86,7 +92,7 @@ export function FocusStageTargetSelectorModal({
   const [taskTypeFilter, setTaskTypeFilter] = useState<
     "ALL" | "daily" | "todo"
   >("ALL");
-  const isPremium = useUserStore((s) => s.is_Premium);
+  const isPremium = useResolvedIsPremium(initialIsPremium);
   const isTaskSession = currentTarget?.type === "task";
   const canLinkActivityToTask = isTaskSession && Boolean(onLinkActivityToTask);
   const isFilteredMode = onlyActivities || onlyTasks;
@@ -134,27 +140,39 @@ export function FocusStageTargetSelectorModal({
 
   const activeActivities = activities;
 
-  const filteredTasks = useMemo(() => {
+  const indexedTasks = useMemo(() => {
     const normalize = (val: string) =>
       val
         .normalize("NFD")
         .replace(/\p{Diacritic}/gu, "")
         .toLowerCase();
-    const q = normalize(taskSearch.trim());
-
-    return focusableTasks.filter((task) => {
-      if (taskTypeFilter !== "ALL" && task.type !== taskTypeFilter) {
-        return false;
-      }
-      if (!q) return true;
-      const haystack = normalize(
+    return focusableTasks.map((task) => ({
+      task,
+      haystack: normalize(
         [task.title, task.columnTitle, task.workspaceName]
           .filter(Boolean)
           .join(" "),
-      );
-      return haystack.includes(q);
-    });
-  }, [focusableTasks, taskSearch, taskTypeFilter]);
+      ),
+    }));
+  }, [focusableTasks]);
+
+  const filteredTasks = useMemo(() => {
+    const q = taskSearch
+      .trim()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+
+    return indexedTasks
+      .filter(({ task, haystack }) => {
+        if (taskTypeFilter !== "ALL" && task.type !== taskTypeFilter) {
+          return false;
+        }
+        if (!q) return true;
+        return haystack.includes(q);
+      })
+      .map(({ task }) => task);
+  }, [indexedTasks, taskSearch, taskTypeFilter]);
 
   return (
     <BaseModal
@@ -205,17 +223,16 @@ export function FocusStageTargetSelectorModal({
               type="button"
               role="tab"
               aria-selected={selectorTab === "ACTIVITIES"}
-              aria-controls="target-selector-panel-ACTIVITIES"
               tabIndex={selectorTab === "ACTIVITIES" ? 0 : -1}
               onClick={() => setSelectorTab("ACTIVITIES")}
               className={cn(
-                "min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
+                "relative min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
                 selectorTab === "ACTIVITIES"
-                  ? "bg-gold text-on-gold shadow-glow-gold-xs"
+                  ? "bg-gold text-on-gold shadow-glow-gold-xs after:content-[''] after:absolute after:inset-x-2 after:bottom-0.5 after:border-b-2 after:border-on-gold/60"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
             >
-              <Layers size={13} className="shrink-0" />
+              <Layers size={13} aria-hidden="true" className="shrink-0" />
               <span className="truncate">
                 {t("activitiesTab", { count: activeActivities.length })}
               </span>
@@ -228,17 +245,16 @@ export function FocusStageTargetSelectorModal({
               type="button"
               role="tab"
               aria-selected={selectorTab === "TASKS"}
-              aria-controls="target-selector-panel-TASKS"
               tabIndex={selectorTab === "TASKS" ? 0 : -1}
               onClick={() => setSelectorTab("TASKS")}
               className={cn(
-                "min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
+                "relative min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
                 selectorTab === "TASKS"
-                  ? "bg-gold text-on-gold shadow-glow-gold-xs"
+                  ? "bg-gold text-on-gold shadow-glow-gold-xs after:content-[''] after:absolute after:inset-x-2 after:bottom-0.5 after:border-b-2 after:border-on-gold/60"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
             >
-              <ListTodo size={13} className="shrink-0" />
+              <ListTodo size={13} aria-hidden="true" className="shrink-0" />
               <span className="truncate">
                 {t("tasksTab", { count: focusableTasks.length })}
               </span>
@@ -251,20 +267,19 @@ export function FocusStageTargetSelectorModal({
               type="button"
               role="tab"
               aria-selected={selectorTab === "BACKPACK"}
-              aria-controls="target-selector-panel-BACKPACK"
               tabIndex={selectorTab === "BACKPACK" ? 0 : -1}
               onClick={() => setSelectorTab("BACKPACK")}
               className={cn(
-                "min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
+                "relative min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
                 selectorTab === "BACKPACK"
-                  ? "bg-gold text-on-gold shadow-glow-gold-xs"
+                  ? "bg-gold text-on-gold shadow-glow-gold-xs after:content-[''] after:absolute after:inset-x-2 after:bottom-0.5 after:border-b-2 after:border-on-gold/60"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
             >
               {isGamified ? (
-                <Backpack size={13} className="shrink-0" />
+                <Backpack size={13} aria-hidden="true" className="shrink-0" />
               ) : (
-                <Package size={13} className="shrink-0" />
+                <Package size={13} aria-hidden="true" className="shrink-0" />
               )}
               <span className="truncate">
                 {isGamified
@@ -438,7 +453,10 @@ export function FocusStageTargetSelectorModal({
                   )}
 
                   {focusableTasks.length > 0 && (
-                    <search className="flex flex-col gap-2">
+                    <search
+                      aria-label={t("searchTasksRegionAria")}
+                      className="flex flex-col gap-2"
+                    >
                       <div className="relative flex items-center">
                         <Search
                           size={13}
@@ -455,20 +473,23 @@ export function FocusStageTargetSelectorModal({
                           autoCapitalize="none"
                           spellCheck={false}
                           aria-label={t("searchTasksPlaceholder")}
-                          className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-neutral-700 dark:border-primary/30 bg-surface/70 text-xs text-neutral-100 placeholder:text-neutral-400 outline-none focus:border-gold/50 transition-colors"
+                          className="w-full pl-8 pr-9 py-1.5 rounded-lg border border-neutral-700 dark:border-primary/30 bg-surface/70 text-xs text-neutral-100 placeholder:text-neutral-400 outline-none focus:border-gold/50 transition-colors"
                         />
                         {taskSearch && (
                           <button
                             type="button"
                             onClick={() => setTaskSearch("")}
                             aria-label={t("clearSearchAria")}
-                            className="absolute right-2.5 text-neutral-400 hover:text-neutral-200 cursor-pointer"
+                            className="absolute right-1 min-w-7 min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-md flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer"
                           >
-                            <X size={12} aria-hidden="true" />
+                            <X size={13} aria-hidden="true" />
                           </button>
                         )}
                       </div>
                       <fieldset className="flex items-center gap-1.5 flex-wrap border-0 p-0 m-0">
+                        <legend className="sr-only">
+                          {t("taskFilterLegend")}
+                        </legend>
                         {(
                           [
                             { id: "ALL", label: t("taskFilterAll") },
@@ -540,7 +561,7 @@ export function FocusStageTargetSelectorModal({
                                 {(task.totalFocusMinutes ?? 0) > 0 && (
                                   <span className="inline-flex items-center gap-0.5 text-gold font-medium">
                                     <Timer size={10} />
-                                    {formatDurationMinutes(
+                                    {formatFocusMinutes(
                                       task.totalFocusMinutes ?? 0,
                                     )}
                                   </span>
@@ -599,6 +620,9 @@ export function FocusStageTargetSelectorModal({
               ) : (
                 backpackItems.map((item) => {
                   const isCurrent = currentTargetId === item.inventoryItemId;
+                  const isDepleted = isBackpackItemTimeDepleted(
+                    item.remainingSeconds,
+                  );
                   const remainingMinutes = getItemRemainingMinutes(
                     item.remainingSeconds,
                   );
@@ -626,8 +650,15 @@ export function FocusStageTargetSelectorModal({
                           <span className="text-xs font-bold text-neutral-100 truncate">
                             {item.rewardName || t("defaultItemName")}
                           </span>
-                          <span className="text-tiny text-neutral-400">
-                            {remainingMinutes > 0
+                          <span
+                            className={cn(
+                              "text-tiny",
+                              isDepleted
+                                ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+                                : "text-neutral-400",
+                            )}
+                          >
+                            {!isDepleted && remainingMinutes > 0
                               ? t("remainingMinutesBalance", {
                                   minutes: remainingMinutes,
                                 })
@@ -636,23 +667,46 @@ export function FocusStageTargetSelectorModal({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        disabled={isCurrent}
-                        onClick={() => {
-                          if (isCurrent) return;
-                          onSelectBackpackItem?.(item);
-                          onClose();
-                        }}
-                        className={cn(
-                          "px-3 py-1 rounded-lg text-xs font-bold transition-colors shrink-0",
-                          isCurrent
-                            ? "bg-gold text-on-gold shadow-glow-gold-xs cursor-default"
-                            : "bg-surface dark:bg-surface/80 hover:bg-amber-500/15 dark:hover:bg-gold/20 text-neutral-200 dark:text-neutral-300 hover:text-amber-800 dark:hover:text-gold border border-neutral-700 dark:border-primary/30 cursor-pointer",
-                        )}
-                      >
-                        {isCurrent ? t("selected") : t("link")}
-                      </button>
+                      {isDepleted ? (
+                        onConsumeBackpackItem ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onConsumeBackpackItem(item);
+                              onClose();
+                            }}
+                            className="px-3 py-1 rounded-lg text-xs font-bold transition-colors shrink-0 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 cursor-pointer"
+                          >
+                            {t("completeDepletedCoupon")}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            className="px-3 py-1 rounded-lg text-xs font-bold shrink-0 bg-surface text-neutral-500 border border-neutral-700 cursor-not-allowed"
+                          >
+                            {t("completedCoupon")}
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isCurrent}
+                          onClick={() => {
+                            if (isCurrent) return;
+                            onSelectBackpackItem?.(item);
+                            onClose();
+                          }}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-xs font-bold transition-colors shrink-0",
+                            isCurrent
+                              ? "bg-gold text-on-gold shadow-glow-gold-xs cursor-default"
+                              : "bg-surface dark:bg-surface/80 hover:bg-amber-500/15 dark:hover:bg-gold/20 text-neutral-200 dark:text-neutral-300 hover:text-amber-800 dark:hover:text-gold border border-neutral-700 dark:border-primary/30 cursor-pointer",
+                          )}
+                        >
+                          {isCurrent ? t("selected") : t("link")}
+                        </button>
+                      )}
                     </div>
                   );
                 })

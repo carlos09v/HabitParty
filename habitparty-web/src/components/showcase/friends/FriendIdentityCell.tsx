@@ -8,7 +8,7 @@ import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { SocialUserSummary } from "@/types/social";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 import { localizeLevelTitle } from "@/utils/levels";
 
 interface FriendIdentityCellProps {
@@ -30,7 +30,10 @@ export function FriendIdentityCell({
   const displayName = user.fullName || user.username;
   const isCompact = variant === "compact";
   const resolvedLevelTitle =
-    metaText ?? localizeLevelTitle(user.levelTitle, locale, isGamified);
+    metaText ??
+    (user.levelTitle
+      ? localizeLevelTitle(user.levelTitle, locale, isGamified)
+      : null);
 
   return (
     <Link
@@ -72,13 +75,18 @@ export function FriendIdentityCell({
         </div>
         {isCompact ? (
           <p className="text-[11px] text-neutral-400 truncate tabular-nums">
-            @{user.username} • {resolvedLevelTitle}
+            @{user.username}
+            {resolvedLevelTitle ? ` • ${resolvedLevelTitle}` : ""}
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-400">
             <span className="truncate">@{user.username}</span>
-            <span>•</span>
-            <span className="truncate">{resolvedLevelTitle}</span>
+            {resolvedLevelTitle && (
+              <>
+                <span>•</span>
+                <span className="truncate">{resolvedLevelTitle}</span>
+              </>
+            )}
           </div>
         )}
       </div>

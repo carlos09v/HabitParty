@@ -15,10 +15,20 @@
     "openBox": "Open Box",
     "sendToFocus": "Send to Focus",
     "use": "Use",
-    "openBoxProductivity": "Run Break Draw"
+    "openBoxProductivity": "Run Break Draw",
+    "completeCoupon": "Complete",
+    "runningNow": "Running now",
+    "pausedInFocus": "Paused in Focus",
+    "stagedInFocus": "On stage"
   },
   "container": {
     "listAriaLabel": "Inventory items",
+    "capacityTitle": "Capacity used: {current} of {max} items",
+    "quickLinks": {
+      "history": "History",
+      "storeGamified": "Store",
+      "storeProductivity": "Showcase"
+    },
     "filters": {
       "statusLabel": "Status",
       "statusAll": "All Statuses",
@@ -30,6 +40,7 @@
       "typeSingleUse": "Single-Use",
       "typeTimeBased": "Time Voucher",
       "typeMysteryBox": "Mystery Box",
+      "packageLabel": "Package",
       "sortLabel": "Sort",
       "sortDefault": "Default Order",
       "sortQuantityDesc": "Highest Quantity",
@@ -43,13 +54,14 @@
       "noResultsTitle": "No items found",
       "emptyDescription": "You don't have any items or vouchers in your inventory yet. Earn coins by completing your daily tasks and redeem epic rewards in the Store!",
       "emptyDescriptionGamified": "You don't have any items or vouchers in your backpack yet. Earn coins by completing your daily tasks and redeem epic rewards in the Store!",
-      "emptyDescriptionProductivity": "You don't have any items or vouchers in your inventory yet. Earn coins by completing tasks and redeem rewards in the Store!",
+      "emptyDescriptionProductivity": "You don't have any items or vouchers in your inventory yet. Earn credits by completing your tasks and redeem rewards in the Showcase!",
       "noResultsDescription": "We couldn't find any items matching the applied filters.",
       "exploreStore": "Explore Store",
       "clearFilters": "Clear Filters"
     },
     "contextMenu": {
       "openInFocus": "Open in Focus",
+      "completeCoupon": "Complete depleted voucher",
       "returnToBackpack": "Return to backpack",
       "returnToBackpackGamified": "Return to backpack",
       "returnToBackpackProductivity": "Return to inventory",
@@ -67,13 +79,23 @@
       "description": "Are you sure you want to discard 1x <strong>\"{title}\"</strong>? This action does not refund spent coins.",
       "confirmText": "Yes, discard",
       "cancelText": "Cancel",
-      "descriptionProductivity": "Are you sure you want to discard 1x <strong>\"{title}\"</strong>? This action does not refund spent credits."
+      "descriptionProductivity": "Are you sure you want to discard 1x <strong>\"{title}\"</strong>? This action does not refund spent credits.",
+      "remainingUnitsHint": "{remaining} {remaining, plural, one {unit} other {units}} will remain in the stack after discarding."
+    },
+    "returnActiveModal": {
+      "titleGamified": "Return voucher with active timer?",
+      "titleProductivity": "Return voucher with active timer?",
+      "descriptionGamified": "<strong>\"{title}\"</strong> is currently running in the Focus timer. Returning it to your backpack will stop and clear the active session (your unlogged balance remains saved).",
+      "descriptionProductivity": "<strong>\"{title}\"</strong> is currently running in the Focus timer. Returning it to your inventory will stop and clear the active session (your unlogged balance remains saved).",
+      "confirmText": "Yes, stop and return",
+      "cancelText": "Keep in Focus"
     },
     "toasts": {
       "useError": "Error using item.",
       "useSuccess": "You used \"{title}\"!",
       "sendToFocusError": "Error adding item to Focus.",
       "sendToFocusSuccess": "\"{title}\" successfully added to Focus!",
+      "goToFocusAction": "Go to Focus",
       "returnToBackpackError": "Error returning item to backpack.",
       "returnToBackpackErrorGamified": "Error returning item to backpack.",
       "returnToBackpackErrorProductivity": "Error returning item to inventory.",
@@ -165,7 +187,10 @@
     "wonSingleUseItemProductivity": "Single-Use Reward stored in Inventory",
     "spinButtonProductivity": "Run Draw",
     "spinningStatusProductivity": "Selecting option...",
-    "storeInBackpackButtonProductivity": "Save to Inventory"
+    "storeInBackpackButtonProductivity": "Save to Inventory",
+    "sendWonToFocusButton": "Send to Focus",
+    "useWonNowButton": "Use now",
+    "openNextBoxButton": "Open next ({count} left)"
   },
   "actions": {
     "communicationError": "Internal server communication error.",

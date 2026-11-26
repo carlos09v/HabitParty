@@ -1,24 +1,59 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { serverApi } from "@/api/server";
+import {
+  getServerAuthToken,
+  serverApi,
+  UnauthorizedApiError,
+} from "@/api/server";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
 
-/**
- * Busca a lista de workspaces do usuário autenticado.
- * Cacheada de forma privada no Router Cache do navegador por 5 minutos (`catalog`)
- * e deduplicada automaticamente dentro do mesmo ciclo de renderização.
- */
-export async function getWorkspaces(): Promise<WorkspaceResponseDTO[]> {
+async function fetchWorkspacesCached(): Promise<WorkspaceResponseDTO[]> {
   "use cache: private";
   cacheLife("catalog");
   cacheTag("workspaces");
 
-  const { data, error } = await serverApi.GET("/workspaces");
+  const { data, error, response } = await serverApi.GET("/workspaces");
 
-  if (error || !data) {
-    return [];
+  if (response?.status === 401) {
+    throw new UnauthorizedApiError("WORKSPACES_UNAUTHORIZED");
+  }
+
+  if (error || !Array.isArray(data)) {
+    throw new Error("WORKSPACES_FETCH_FAILED");
   }
 
   return data;
+}
+
+/**
+ * Busca a lista de workspaces do usuário autenticado de forma estrita (propaga 401 e falhas
+ * de rede/servidor para impedir falso estado vazio em rotas dependentes de ambientes).
+ * Nunca armazena falhas transitórias no cache privado.
+ */
+export async function getWorkspacesStrict(): Promise<WorkspaceResponseDTO[]> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    throw new UnauthorizedApiError("WORKSPACES_MISSING_TOKEN");
+  }
+
+  return fetchWorkspacesCached();
+}
+
+/**
+ * Busca a lista de workspaces do usuário autenticado com fallback suave para `[]` em caso de falha,
+ * sem jamais envenenar o cache privado com resultados vazios de erro.
+ */
+export async function getWorkspaces(): Promise<WorkspaceResponseDTO[]> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    return [];
+  }
+
+  try {
+    return await fetchWorkspacesCached();
+  } catch (err) {
+    console.error("[WorkspaceService:getWorkspaces]", err);
+    return [];
+  }
 }
 
 /**

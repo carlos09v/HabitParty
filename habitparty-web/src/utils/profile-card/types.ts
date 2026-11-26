@@ -40,6 +40,7 @@ export interface ProfileCardRenderInput {
   mode: "profile" | "retrospective";
   theme: "dark" | "light";
   isGamified: boolean;
+  locale?: string;
   user: {
     fullName: string;
     username: string;

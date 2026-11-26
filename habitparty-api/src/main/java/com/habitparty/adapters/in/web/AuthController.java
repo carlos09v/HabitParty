@@ -22,8 +22,6 @@ import com.habitparty.application.usecases.auth.ResetPasswordUseCase;
 import com.habitparty.application.usecases.auth.SendEmailVerificationUseCase;
 import com.habitparty.application.usecases.auth.SignInUseCase;
 import com.habitparty.application.usecases.auth.VerifyEmailUseCase;
-import com.habitparty.core.exceptions.UnauthorizedException;
-import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
 
@@ -52,13 +50,7 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<Void> logout(
-            RefreshTokenRequestDTO dto,
-            AuthenticatedUser usuarioLogado) {
-        if (usuarioLogado == null) {
-            throw new UnauthorizedException("Usuário não autenticado.");
-        }
-        UUID userId = usuarioLogado.id();
+    public ResponseEntity<Void> logout(RefreshTokenRequestDTO dto, UUID userId) {
         logoutUseCase.execute(dto.refreshToken(), userId);
         return ResponseEntity.noContent().build();
     }
@@ -82,11 +74,8 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<Void> resendVerification(AuthenticatedUser usuarioLogado) {
-        if (usuarioLogado == null) {
-            throw new UnauthorizedException("Usuário não autenticado.");
-        }
-        sendEmailVerificationUseCase.executeByUserId(usuarioLogado.id());
+    public ResponseEntity<Void> resendVerification(UUID userId) {
+        sendEmailVerificationUseCase.executeByUserId(userId);
         return ResponseEntity.ok().build();
     }
 

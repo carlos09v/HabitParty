@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   type Dispatch,
@@ -30,6 +31,7 @@ import type {
 } from "@/types/reward";
 import {
   extractRewardGroupBaseTitle,
+  isDebtReward,
   normalizeRewardTitleKey,
   sortRewardsWithDebtsFirst,
 } from "@/utils/rewardGrouping";
@@ -44,13 +46,20 @@ export interface RewardPrefillDraft {
   title: string;
   description?: string;
   category: RewardCategory;
-  type: "TimeBased" | "SingleUse";
+  type: "TimeBased" | "SingleUse" | "MysteryBox";
   icon: string;
+  price?: number;
+  baseDurationMinutes?: number;
   suggestedPackageLevel?: "Básico" | "Premium" | "Épico" | "Lendário";
 }
 
 export interface RewardEditingGroup extends RewardGroupContext {
   activeVariantId?: string;
+}
+
+export interface RewardToDelete {
+  reward: Reward;
+  hasHistory: boolean;
 }
 
 export interface RewardGroupToDelete extends RewardGroupContext {
@@ -60,13 +69,18 @@ export interface RewardGroupToDelete extends RewardGroupContext {
 interface UseRewardCatalogActionsParams {
   rewards: Reward[];
   setRewards: Dispatch<SetStateAction<Reward[]>>;
+  fallbackCoins?: number;
+  onRewardBought?: (reward: Reward) => void;
 }
 
 export function useRewardCatalogActions({
   rewards,
   setRewards,
+  fallbackCoins,
+  onRewardBought,
 }: UseRewardCatalogActionsParams) {
   const t = useTranslations("rewards.container");
+  const router = useRouter();
   const { isGamified } = useExperienceMode();
 
   const storeUser = useUserStore((s) => s.user);
@@ -78,6 +92,8 @@ export function useRewardCatalogActions({
     has: isRewardRedeeming,
     setPending: setRewardRedeeming,
   } = useInFlightSet();
+  // Lock global por sessão de compra para impedir double-spend simultâneo em múltiplos cards
+  const isRedeemingAnyRef = useRef(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<Reward | null>(null);
   const [editingGroup, setEditingGroup] = useState<RewardEditingGroup | null>(
@@ -103,13 +119,16 @@ export function useRewardCatalogActions({
 
   const handleBuy = useCallback(
     async (reward: Reward): Promise<boolean> => {
-      if (isRewardRedeeming(reward.id)) return false;
+      if (isRedeemingAnyRef.current || isRewardRedeeming(reward.id)) {
+        return false;
+      }
 
-      const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
+      const isDebt = isDebtReward(reward);
       const totalCost = reward.price;
 
-      const latestCoins = useUserStore.getState().user?.currentCoins;
-      if (typeof latestCoins === "number" && latestCoins < totalCost) {
+      const preAwaitCoins =
+        useUserStore.getState().user?.currentCoins ?? fallbackCoins;
+      if (typeof preAwaitCoins === "number" && preAwaitCoins < totalCost) {
         toast.error(
           isGamified
             ? t("toasts.insufficientCoins")
@@ -118,16 +137,22 @@ export function useRewardCatalogActions({
         return false;
       }
 
+      isRedeemingAnyRef.current = true;
       setRewardRedeeming(reward.id, true);
       try {
-        const res = await redeemReward(reward.id, 1);
+        const res = await redeemReward(reward.id);
         if (!res.success) {
           toast.error(res.error || t("toasts.redeemError"));
           return false;
         }
 
         const freshCoins = useUserStore.getState().user?.currentCoins;
-        if (typeof freshCoins === "number") {
+        // Só aplica débito otimista se o RSC ainda não tiver reidratado o novo saldo
+        if (
+          typeof freshCoins === "number" &&
+          typeof preAwaitCoins === "number" &&
+          freshCoins === preAwaitCoins
+        ) {
           const nextCoins = Math.max(
             0,
             Math.round((freshCoins - totalCost) * 100) / 100,
@@ -140,6 +165,9 @@ export function useRewardCatalogActions({
         // Dívida é descartável: ao quitar, é removida automaticamente da vitrine
         if (isDebt) {
           setRewards((prev) => prev.filter((item) => item.id !== reward.id));
+        } else {
+          onRewardBought?.(reward);
+          useUserStore.getState().triggerAchievementCheck();
         }
 
         soundEffects.playBuySound();
@@ -154,18 +182,32 @@ export function useRewardCatalogActions({
             : isGamified
               ? t("toasts.buySuccessGamified", { title: reward.title })
               : t("toasts.buySuccessProductivity", { title: reward.title }),
+          isDebt
+            ? undefined
+            : {
+                action: {
+                  label: isGamified
+                    ? t("toasts.openBackpackAction")
+                    : t("toasts.openInventoryAction"),
+                  onClick: () => router.push("/inventory"),
+                },
+              },
         );
         return true;
       } catch (_error) {
         toast.error(t("toasts.serverError"));
         return false;
       } finally {
+        isRedeemingAnyRef.current = false;
         setRewardRedeeming(reward.id, false);
       }
     },
     [
+      fallbackCoins,
       isGamified,
       isRewardRedeeming,
+      onRewardBought,
+      router,
       setRewardRedeeming,
       setRewards,
       updateUserPartial,
@@ -180,6 +222,13 @@ export function useRewardCatalogActions({
     setIsFormModalOpen(true);
   }, []);
 
+  const handleOpenTemplateDraft = useCallback((draft: RewardPrefillDraft) => {
+    setEditingReward(null);
+    setEditingGroup(null);
+    setPrefillDraft(draft);
+    setIsFormModalOpen(true);
+  }, []);
+
   const handleAddDebt = useCallback(() => {
     setEditingReward(null);
     setEditingGroup(null);
@@ -187,7 +236,7 @@ export function useRewardCatalogActions({
       title: "",
       category: "Dívida",
       type: "SingleUse",
-      icon: "flame",
+      icon: "receipt",
     });
     setIsFormModalOpen(true);
   }, []);
@@ -224,7 +273,9 @@ export function useRewardCatalogActions({
     [],
   );
 
-  const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
+  const [rewardToDelete, setRewardToDelete] = useState<RewardToDelete | null>(
+    null,
+  );
   const [deleteRewardHistory, setDeleteRewardHistory] = useState(false);
   const [groupToDelete, setGroupToDelete] =
     useState<RewardGroupToDelete | null>(null);
@@ -247,7 +298,9 @@ export function useRewardCatalogActions({
       const res = await deleteReward(target.id, shouldDeleteHistory);
       if (res.success) {
         toast.success(t("toasts.deleteSuccess", { title: target.title }));
-        setRewardToDelete((prev) => (prev?.id === target.id ? null : prev));
+        setRewardToDelete((prev) =>
+          prev?.reward.id === target.id ? null : prev,
+        );
         return true;
       }
 
@@ -259,7 +312,7 @@ export function useRewardCatalogActions({
             ? removedIndex
             : next.length;
         next.splice(insertAt, 0, target);
-        return next;
+        return sortRewardsWithDebtsFirst(next);
       });
       toast.error(res.error || t("toasts.deleteError"));
       return false;
@@ -282,22 +335,13 @@ export function useRewardCatalogActions({
       const res = await checkRewardHasHistory(target.id);
       const hasHistory = !res.success || Boolean(res.data);
 
-      if (hasHistory) {
-        setDeleteRewardHistory(false);
-        setRewardToDelete(target);
-        return;
-      }
-
-      await executeDeleteReward(target, false);
+      // Sempre exibe confirmação explícita antes de excluir, mostrando a opção de apagar histórico apenas se houver registros
+      setDeleteRewardHistory(false);
+      setRewardToDelete({ reward: target, hasHistory });
     } finally {
       setRewardCheckingState(target.id, false);
     }
-  }, [
-    contextMenu.reward,
-    executeDeleteReward,
-    isRewardChecking,
-    setRewardCheckingState,
-  ]);
+  }, [contextMenu.reward, isRewardChecking, setRewardCheckingState]);
 
   const handleDeleteGroupFromContextMenu = useCallback(async () => {
     const group = contextMenu.groupContext;
@@ -328,7 +372,10 @@ export function useRewardCatalogActions({
     if (!target || isDeleting) return;
 
     startDeleteTransition(async () => {
-      await executeDeleteReward(target, deleteRewardHistory);
+      await executeDeleteReward(
+        target.reward,
+        target.hasHistory ? deleteRewardHistory : false,
+      );
     });
   }, [rewardToDelete, isDeleting, deleteRewardHistory, executeDeleteReward]);
 
@@ -339,10 +386,16 @@ export function useRewardCatalogActions({
     startDeleteTransition(async () => {
       const ids = targetGroup.variants.map((v) => v.id);
       const idSet = new Set(ids);
-      const snapshot = rewardsRef.current;
+      const firstRemovedIdx = rewardsRef.current.findIndex((r) =>
+        idSet.has(r.id),
+      );
+      const removedVariants = rewardsRef.current.filter((r) => idSet.has(r.id));
 
       setRewards((prev) => prev.filter((r) => !idSet.has(r.id)));
-      const res = await deleteRewardGroup(ids, deleteGroupHistory);
+      const res = await deleteRewardGroup(
+        ids,
+        targetGroup.hasHistory ? deleteGroupHistory : false,
+      );
       if (res.success) {
         toast.success(
           t("toasts.deleteGroupSuccess", {
@@ -354,22 +407,39 @@ export function useRewardCatalogActions({
         return;
       }
 
-      setRewards(snapshot);
+      // Rollback cirúrgico: reinsere apenas os itens removidos preservando mutações concorrentes
+      setRewards((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id));
+        const toRestore = removedVariants.filter((v) => !existingIds.has(v.id));
+        if (toRestore.length === 0) return prev;
+        const next = [...prev];
+        const insertAt =
+          firstRemovedIdx >= 0 && firstRemovedIdx <= next.length
+            ? firstRemovedIdx
+            : next.length;
+        next.splice(insertAt, 0, ...toRestore);
+        return sortRewardsWithDebtsFirst(next);
+      });
       toast.error(res.error || t("toasts.deleteError"));
     });
   }, [groupToDelete, isDeleting, deleteGroupHistory, setRewards, t]);
 
   const handleAddPackageFromContextMenu = useCallback(() => {
     const target = contextMenu.reward;
-    if (!target || toRewardTypeMessageKey(target.type) !== "TimeBased") return;
+    if (!target || isDebtReward(target)) return;
+    const targetTypeKey = toRewardTypeMessageKey(target.type);
+    if (targetTypeKey !== "TimeBased" && targetTypeKey !== "SingleUse") return;
 
+    const targetCategoryKey = toCategoryMessageKey(target.category);
     const baseTitle = extractRewardGroupBaseTitle(target.title);
     const normalizedBase = normalizeRewardTitleKey(baseTitle);
     const sameGroup =
       contextMenu.groupContext?.variants ??
       rewardsRef.current.filter(
         (r) =>
-          toRewardTypeMessageKey(r.type) === "TimeBased" &&
+          !isDebtReward(r) &&
+          toRewardTypeMessageKey(r.type) === targetTypeKey &&
+          toCategoryMessageKey(r.category) === targetCategoryKey &&
           normalizeRewardTitleKey(extractRewardGroupBaseTitle(r.title)) ===
             normalizedBase,
       );
@@ -396,7 +466,7 @@ export function useRewardCatalogActions({
       title: baseTitle,
       description: target.description || undefined,
       category: target.category,
-      type: "TimeBased",
+      type: targetTypeKey,
       icon: target.icon || "gamepad",
       suggestedPackageLevel: nextTier,
     });
@@ -467,6 +537,7 @@ export function useRewardCatalogActions({
     editingGroup,
     prefillDraft,
     handleAddProduct,
+    handleOpenTemplateDraft,
     handleAddDebt,
     handleCloseFormModal,
     handleRewardSuccess,

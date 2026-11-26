@@ -1,9 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { toast } from "sonner";
+import { ExperienceModeMiniPreview } from "@/components/ui/ExperienceModeMiniPreview";
 import { EXPERIENCE_MODE_OPTIONS } from "@/constants/settings";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { ExperienceMode } from "@/types/ui";
 import { SettingsOptionGrid } from "./SettingsOptionGrid";
 
@@ -18,10 +20,7 @@ export function ExperienceModeSettings({
   const { experienceMode, setExperienceMode, isGamified } = useExperienceMode(
     initialMode ?? undefined,
   );
-  const timerSoundType = useSoundPreferencesStore((s) => s.timerSoundType);
-  const setTimerSoundType = useSoundPreferencesStore(
-    (s) => s.setTimerSoundType,
-  );
+  const [pendingMode, setPendingMode] = useState<ExperienceMode | null>(null);
 
   const statusMessage = (
     <>
@@ -39,22 +38,44 @@ export function ExperienceModeSettings({
     badge: opt.hasDefaultBadge ? t("defaultBadge") : undefined,
   }));
 
-  const handleSelectMode = (nextMode: ExperienceMode) => {
-    if (nextMode === experienceMode) return;
-    setExperienceMode(nextMode);
-    if (nextMode === "PRODUCTIVITY" && timerSoundType === "arcade") {
-      setTimerSoundType("zen");
-    } else if (nextMode === "GAMIFIED" && timerSoundType === "zen") {
-      setTimerSoundType("arcade");
+  const handleSelectMode = async (nextMode: ExperienceMode) => {
+    if (nextMode === experienceMode || pendingMode !== null) return;
+    setPendingMode(nextMode);
+    try {
+      const res = await setExperienceMode(nextMode);
+      if (!res.success) {
+        toast.error(res.error || t("saveError"));
+      }
+    } finally {
+      setPendingMode(null);
     }
   };
 
   return (
-    <SettingsOptionGrid
-      statusMessage={statusMessage}
-      options={options}
-      selectedValue={experienceMode}
-      onSelect={handleSelectMode}
-    />
+    <div className="flex flex-col gap-4">
+      <SettingsOptionGrid
+        statusMessage={statusMessage}
+        options={options}
+        selectedValue={experienceMode}
+        onSelect={(val) => void handleSelectMode(val)}
+        disabled={pendingMode !== null}
+        pendingValue={pendingMode}
+      />
+
+      {/* Live Mini-Preview adaptativo */}
+      <ExperienceModeMiniPreview
+        isGamified={isGamified}
+        label={t("previewLabel")}
+        sampleTask={t("previewSampleTask")}
+        rewardText={
+          isGamified
+            ? t("previewGamifiedReward")
+            : t("previewProductivityReward")
+        }
+        badgeText={
+          isGamified ? t("previewGamifiedBadge") : t("previewProductivityBadge")
+        }
+      />
+    </div>
   );
 }

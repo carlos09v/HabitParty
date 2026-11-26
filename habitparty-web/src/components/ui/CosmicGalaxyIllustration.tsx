@@ -1,39 +1,25 @@
-import Image from "next/image";
 import { cn } from "@/utils";
 
 interface CosmicGalaxyIllustrationProps {
-  alt?: string;
-  priority?: boolean;
   className?: string;
 }
 
+/**
+ * Ilustração decorativa de galáxia renderizada via background-image CSS.
+ * Garante que apenas o SVG do tema ativo seja baixado e evita downloads
+ * desperdiçados quando o container pai está oculto em telas menores (`hidden lg:flex`).
+ */
 export function CosmicGalaxyIllustration({
-  alt = "",
-  priority = false,
   className,
 }: CosmicGalaxyIllustrationProps) {
   return (
-    <>
-      <Image
-        src="/assets/Galaxia.svg"
-        alt={alt}
-        fill
-        priority={priority}
-        className={cn(
-          "hidden dark:block object-contain object-top-right select-none",
-          className,
-        )}
-      />
-      <Image
-        src="/assets/Galaxia-light.svg"
-        alt={alt}
-        fill
-        priority={priority}
-        className={cn(
-          "block dark:hidden object-contain object-top-right select-none",
-          className,
-        )}
-      />
-    </>
+    <div
+      aria-hidden="true"
+      className={cn(
+        "w-full h-full bg-contain bg-no-repeat bg-right-top select-none pointer-events-none",
+        "bg-[url('/assets/Galaxia-light.svg')] dark:bg-[url('/assets/Galaxia.svg')]",
+        className,
+      )}
+    />
   );
 }

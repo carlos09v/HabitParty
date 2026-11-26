@@ -1,8 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useRef, useTransition } from "react";
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   changeTaskStatus,
@@ -50,6 +49,30 @@ export interface TaskToggleRollbackState {
   hasClaimedReward?: boolean;
   lastCompletedAt?: string;
   checklist?: ChecklistItem[];
+}
+
+export interface HabitRollbackState {
+  positiveCount: number;
+  negativeCount: number;
+  streak?: number;
+  highestStreak?: number;
+  completed: boolean;
+  lastCompletedAt?: string;
+}
+
+export function applyOptimisticHabitRollback(
+  task: Task,
+  previousState: HabitRollbackState,
+): Task {
+  return {
+    ...task,
+    positiveCount: previousState.positiveCount,
+    negativeCount: previousState.negativeCount,
+    streak: previousState.streak,
+    highestStreak: previousState.highestStreak,
+    completed: previousState.completed,
+    lastCompletedAt: previousState.lastCompletedAt,
+  };
 }
 
 export function applyOptimisticTaskToggle(
@@ -125,6 +148,7 @@ export interface UseTaskMutationsOptions {
     taskId: string,
     previousState: TaskToggleRollbackState,
   ) => void;
+  onRollbackHabit?: (taskId: string, previousState: HabitRollbackState) => void;
   onOptimisticDelete?: (task: Task, columnId?: string) => void;
   onRollbackDelete?: (task: Task, columnId?: string) => void;
   onTaskDuplicated?: (
@@ -147,6 +171,7 @@ export function useTaskMutations({
   onOptimisticToggle,
   onOptimisticHabit,
   onRollbackToggle,
+  onRollbackHabit,
   onOptimisticDelete,
   onRollbackDelete,
   onTaskDuplicated,
@@ -158,23 +183,58 @@ export function useTaskMutations({
   const tLevelUp = useTranslations("dashboard.taskShared.levelUp");
   const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
   const {
     activeIds: duplicatingTaskIds,
     has: isTaskDuplicating,
     setPending: setTaskDuplicating,
   } = useInFlightSet();
-  const rewardedTaskIdsRef = useRef<Set<string>>(new Set());
+  // Mapeia taskId -> todayIso (YYYY-MM-DD) para expirar automaticamente na virada da meia-noite em Diárias
+  const rewardedTaskDateRef = useRef<Map<string, string>>(new Map());
   const inFlightToggleTasksRef = useRef<Set<string>>(new Set());
   const inFlightHabitTasksRef = useRef<Set<string>>(new Set());
+  const inFlightDeleteTasksRef = useRef<Set<string>>(new Set());
+  const pendingUndoDeletesRef = useRef<
+    Map<
+      string,
+      {
+        task: Task;
+        colId?: string;
+        timer: ReturnType<typeof setTimeout>;
+      }
+    >
+  >(new Map());
   const habitLastActionAtRef = useRef<Map<string, number>>(new Map());
+
+  // Garante que exclusões pendentes na janela de "Desfazer" sejam efetivadas ao desmontar/navegar
+  useEffect(() => {
+    const pendingMap = pendingUndoDeletesRef.current;
+    return () => {
+      if (pendingMap.size === 0) return;
+      for (const entry of pendingMap.values()) {
+        clearTimeout(entry.timer);
+        void deleteTask(entry.task.id, false).then((res) => {
+          if (res.success) {
+            useFocusTimerStore
+              .getState()
+              .handleExternalTaskRemovedOrCompleted(entry.task.id);
+            notifyTasksChanged();
+          } else {
+            useOptimisticDashboardStore
+              .getState()
+              .unmarkTaskDeleted(entry.task.id);
+          }
+        });
+      }
+      pendingMap.clear();
+    };
+  }, []);
 
   const xpLabel = isGamified ? t("xpLabel") : t("xpLabelProductivity");
   const goldLabel = isGamified ? t("goldLabel") : t("goldLabelProductivity");
 
   const handleToggleComplete = useCallback(
     (taskId: string, completed: boolean): boolean => {
+      if (taskId.startsWith("temp-")) return false;
       if (inFlightToggleTasksRef.current.has(taskId)) return false;
 
       const targetTask = findTask(taskId);
@@ -182,15 +242,23 @@ export function useTaskMutations({
 
       inFlightToggleTasksRef.current.add(taskId);
 
+      const userTz = useUserStore.getState().user?.timezone;
+      const todayIso = getTodayDateString(new Date(), userTz);
+      const isDailyTask = targetTask.type?.toLowerCase() === "daily";
+      const rewardedOnDate = rewardedTaskDateRef.current.get(taskId);
+      const wasRewardedInSession = isDailyTask
+        ? rewardedOnDate === todayIso
+        : Boolean(rewardedOnDate);
+
       if (targetTask.completed || targetTask.hasClaimedReward) {
-        rewardedTaskIdsRef.current.add(taskId);
+        rewardedTaskDateRef.current.set(taskId, todayIso);
       }
 
       const alreadyRewarded = Boolean(
-        targetTask.hasClaimedReward || rewardedTaskIdsRef.current.has(taskId),
+        targetTask.hasClaimedReward || wasRewardedInSession,
       );
       if (completed) {
-        rewardedTaskIdsRef.current.add(taskId);
+        rewardedTaskDateRef.current.set(taskId, todayIso);
       }
 
       const rollbackState: TaskToggleRollbackState = {
@@ -202,6 +270,7 @@ export function useTaskMutations({
       const optimisticStore = useOptimisticDashboardStore.getState();
       const optimisticTask = applyOptimisticTaskToggle(targetTask, completed);
 
+      optimisticStore.markTaskInFlight(taskId);
       onOptimisticToggle(taskId, completed);
       optimisticStore.upsertTask(optimisticTask);
       if (completed) {
@@ -217,7 +286,7 @@ export function useTaskMutations({
 
           if (!res.success) {
             if (completed && !alreadyRewarded) {
-              rewardedTaskIdsRef.current.delete(taskId);
+              rewardedTaskDateRef.current.delete(taskId);
             }
             toast.error(res.error || t("statusUpdateError"));
             const rolledBackTask = applyOptimisticTaskRollback(
@@ -254,9 +323,10 @@ export function useTaskMutations({
                   ? t("dailyCompleted")
                   : t("todoCompleted");
 
-            // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
+            // Proteção contra ganho múltiplo de Ouro/XP; prioriza o veredicto explícito do backend (ex: Dia 2 pós-meia-noite)
             const serverAlreadyRewarded =
-              alreadyRewarded || res.data?.rewardGranted === false;
+              res.data?.rewardGranted === false ||
+              (res.data?.rewardGranted !== true && alreadyRewarded);
             if (serverAlreadyRewarded) {
               toast.success(
                 <span>
@@ -269,7 +339,10 @@ export function useTaskMutations({
               return;
             }
 
-            rewardedTaskIdsRef.current.add(taskId);
+            rewardedTaskDateRef.current.set(
+              taskId,
+              getTodayDateString(new Date(), userTimeZone),
+            );
 
             // Se era um To-Do Hardcore atrasado sem penalidade aplicada antes da conclusão,
             // o backend deduz a penalidade antes de conceder a recompensa tardia
@@ -345,6 +418,7 @@ export function useTaskMutations({
               isTaskCompletion: true,
             });
             optimisticStore.addTransaction({
+              referenceId: taskId,
               xpAmount: xp,
               goldAmount: gold,
               transactionType: "TASK_COMPLETED",
@@ -393,7 +467,7 @@ export function useTaskMutations({
             }
           } else {
             if (!reconciledTask?.hasClaimedReward) {
-              rewardedTaskIdsRef.current.delete(taskId);
+              rewardedTaskDateRef.current.delete(taskId);
             }
 
             if (res.data?.rewardReverted) {
@@ -406,12 +480,21 @@ export function useTaskMutations({
                 deductUserPenalty(revertedXp, revertedCoins);
               }
               const userTimeZone = useUserStore.getState().user?.timezone;
+              const todayIso = getTodayDateString(new Date(), userTimeZone);
               useUserStore
                 .getState()
                 .revertTaskCompletionToday(
-                  getTodayDateString(new Date(), userTimeZone),
+                  todayIso,
                   Boolean(res.data.streakReverted),
                 );
+              optimisticStore.revertTaskTransaction({
+                taskId,
+                revertedXp,
+                revertedCoins,
+                streakRevertedDate: res.data.streakReverted
+                  ? todayIso
+                  : undefined,
+              });
 
               const params = {
                 xp: revertedXp,
@@ -430,6 +513,7 @@ export function useTaskMutations({
           }
         } finally {
           inFlightToggleTasksRef.current.delete(taskId);
+          useOptimisticDashboardStore.getState().unmarkTaskInFlight(taskId);
         }
       });
 
@@ -452,6 +536,7 @@ export function useTaskMutations({
 
   const handleHabitChange = useCallback(
     (taskId: string, delta: number): boolean => {
+      if (taskId.startsWith("temp-")) return false;
       if (inFlightHabitTasksRef.current.has(taskId)) return false;
 
       const now = Date.now();
@@ -464,8 +549,27 @@ export function useTaskMutations({
       inFlightHabitTasksRef.current.add(taskId);
       habitLastActionAtRef.current.set(taskId, now);
 
+      const habitRollbackState: HabitRollbackState = {
+        positiveCount: targetTask.positiveCount ?? 0,
+        negativeCount: targetTask.negativeCount ?? 0,
+        streak: targetTask.streak,
+        highestStreak: targetTask.highestStreak,
+        completed: Boolean(targetTask.completed),
+        lastCompletedAt: targetTask.lastCompletedAt,
+      };
+
       // Atualização otimista imediata na visualização do usuário
+      const userTzForOptimistic = useUserStore.getState().user?.timezone;
+      const optimisticHabitTask = applyOptimisticHabitChange(
+        targetTask,
+        delta,
+        userTzForOptimistic,
+      );
+      const optimisticStore = useOptimisticDashboardStore.getState();
+      optimisticStore.markTaskInFlight(taskId);
+      optimisticStore.upsertTask(optimisticHabitTask);
       onOptimisticHabit(taskId, delta);
+      onTaskUpdatedInDetails?.(optimisticHabitTask);
       if (delta > 0) {
         soundEffects.playHabitSound();
       } else if (delta < 0) {
@@ -478,8 +582,13 @@ export function useTaskMutations({
 
           if (!res.success) {
             toast.error(res.error || t("habitScoreError"));
-            // Rollback otimista revertendo o incremento ou decremento
-            onOptimisticHabit(taskId, -delta);
+            const rolledBackTask = applyOptimisticHabitRollback(
+              targetTask,
+              habitRollbackState,
+            );
+            onRollbackHabit?.(taskId, habitRollbackState);
+            useOptimisticDashboardStore.getState().upsertTask(rolledBackTask);
+            onTaskUpdatedInDetails?.(rolledBackTask);
             return;
           }
 
@@ -532,6 +641,7 @@ export function useTaskMutations({
               isTaskCompletion: true,
             });
             optimisticStore.addTransaction({
+              referenceId: taskId,
               xpAmount: xp,
               goldAmount: gold,
               transactionType: "TASK_COMPLETED",
@@ -602,6 +712,7 @@ export function useTaskMutations({
           }
         } finally {
           inFlightHabitTasksRef.current.delete(taskId);
+          useOptimisticDashboardStore.getState().unmarkTaskInFlight(taskId);
         }
       });
 
@@ -610,6 +721,7 @@ export function useTaskMutations({
     [
       findTask,
       onOptimisticHabit,
+      onRollbackHabit,
       onTaskUpdatedInDetails,
       onReconcileTask,
       t,
@@ -624,31 +736,113 @@ export function useTaskMutations({
   const handleDeleteTask = useCallback(
     async (task: Task, targetColumnId?: string, deleteHistory = false) => {
       const colId = targetColumnId || task.columnId || defaultColumnId;
+      if (task.id.startsWith("temp-")) {
+        onOptimisticDelete?.(task, colId);
+        return;
+      }
+      if (inFlightDeleteTasksRef.current.has(task.id)) return;
+      inFlightDeleteTasksRef.current.add(task.id);
+
+      const optimisticStore = useOptimisticDashboardStore.getState();
+      optimisticStore.markTaskInFlight(task.id);
+      onOptimisticDelete?.(task, colId);
+      optimisticStore.markTaskDeleted(task.id);
+
+      try {
+        const res = await deleteTask(task.id, deleteHistory);
+        if (!res.success) {
+          optimisticStore.unmarkTaskDeleted(task.id);
+          onRollbackDelete?.(task, colId);
+          toast.error(res.error || t("deleteError"));
+          return;
+        }
+
+        useFocusTimerStore
+          .getState()
+          .handleExternalTaskRemovedOrCompleted(task.id);
+
+        if (deleteHistory) {
+          optimisticStore.clear({ preserveInFlight: true });
+        }
+
+        notifyTasksChanged();
+        toast.success(t("deleteSuccess", { title: task.title }));
+      } finally {
+        inFlightDeleteTasksRef.current.delete(task.id);
+        useOptimisticDashboardStore.getState().unmarkTaskInFlight(task.id);
+      }
+    },
+    [defaultColumnId, onOptimisticDelete, onRollbackDelete, t],
+  );
+
+  const scheduleUndoDeleteTask = useCallback(
+    (task: Task, targetColumnId?: string) => {
+      const colId = targetColumnId || task.columnId || defaultColumnId;
+      if (task.id.startsWith("temp-")) {
+        onOptimisticDelete?.(task, colId);
+        return;
+      }
+      if (
+        inFlightDeleteTasksRef.current.has(task.id) ||
+        pendingUndoDeletesRef.current.has(task.id)
+      ) {
+        return;
+      }
+
       const optimisticStore = useOptimisticDashboardStore.getState();
       onOptimisticDelete?.(task, colId);
       optimisticStore.markTaskDeleted(task.id);
 
-      const res = await deleteTask(task.id, deleteHistory);
-      if (!res.success) {
-        optimisticStore.unmarkTaskDeleted(task.id);
-        onRollbackDelete?.(task, colId);
-        toast.error(res.error || t("deleteError"));
-        return;
-      }
+      const timer = setTimeout(async () => {
+        const entry = pendingUndoDeletesRef.current.get(task.id);
+        if (!entry) return;
+        pendingUndoDeletesRef.current.delete(task.id);
 
-      useFocusTimerStore
-        .getState()
-        .handleExternalTaskRemovedOrCompleted(task.id);
+        if (inFlightDeleteTasksRef.current.has(task.id)) return;
+        inFlightDeleteTasksRef.current.add(task.id);
+        const currentStore = useOptimisticDashboardStore.getState();
+        currentStore.markTaskInFlight(task.id);
 
-      if (deleteHistory) {
-        optimisticStore.clear();
-        router.refresh();
-      }
+        try {
+          const res = await deleteTask(task.id, false);
+          if (!res.success) {
+            currentStore.unmarkTaskDeleted(task.id);
+            onRollbackDelete?.(entry.task, entry.colId);
+            toast.error(res.error || t("deleteError"));
+            return;
+          }
 
-      notifyTasksChanged();
-      toast.success(t("deleteSuccess", { title: task.title }));
+          useFocusTimerStore
+            .getState()
+            .handleExternalTaskRemovedOrCompleted(task.id);
+          notifyTasksChanged();
+        } finally {
+          inFlightDeleteTasksRef.current.delete(task.id);
+          useOptimisticDashboardStore.getState().unmarkTaskInFlight(task.id);
+        }
+      }, 5000);
+
+      pendingUndoDeletesRef.current.set(task.id, { task, colId, timer });
+
+      toast(t("deleteUndoToast", { title: task.title }), {
+        duration: 5000,
+        action: {
+          label: t("undoAction"),
+          onClick: () => {
+            const entry = pendingUndoDeletesRef.current.get(task.id);
+            if (!entry) return;
+            clearTimeout(entry.timer);
+            pendingUndoDeletesRef.current.delete(task.id);
+            useOptimisticDashboardStore.getState().unmarkTaskDeleted(task.id);
+            onRollbackDelete?.(entry.task, entry.colId);
+            toast.success(
+              t("deleteRestoredToast", { title: entry.task.title }),
+            );
+          },
+        },
+      });
     },
-    [defaultColumnId, onOptimisticDelete, onRollbackDelete, router, t],
+    [defaultColumnId, onOptimisticDelete, onRollbackDelete, t],
   );
 
   const handleDuplicateTask = useCallback(
@@ -680,7 +874,11 @@ export function useTaskMutations({
         const clonedChecklist =
           res.data?.checklist && res.data.checklist.length > 0
             ? res.data.checklist
-            : task.checklist;
+            : task.checklist?.map((item, idx) => ({
+                ...item,
+                id: `dup-chk-${Date.now()}-${idx}`,
+                isCompleted: false,
+              }));
 
         const duplicatedTask: Task = res.data
           ? {
@@ -712,6 +910,7 @@ export function useTaskMutations({
             };
 
         onTaskDuplicated?.(duplicatedTask, colId, task.id);
+        useOptimisticDashboardStore.getState().upsertTask(duplicatedTask);
         notifyTasksChanged();
         soundEffects.playCreateSound();
         toast.success(t("duplicateSuccess", { title: task.title }));
@@ -732,8 +931,8 @@ export function useTaskMutations({
     handleToggleComplete,
     handleHabitChange,
     handleDeleteTask,
+    scheduleUndoDeleteTask,
     handleDuplicateTask,
     duplicatingTaskIds,
-    isPending,
   };
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import { AlertTriangle, Check, Clock, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
@@ -12,6 +10,7 @@ import { cn, formatCoins } from "@/utils";
 import {
   analyzeRewardPrice,
   formatCreditsLeisureEquivalence,
+  parseLocalizedPrice,
   type RewardEffortDescriptor,
   type RewardPriceAnalysis,
   type RewardPriceWarningDescriptor,
@@ -113,7 +112,7 @@ export function RewardPriceGuidance({
   const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
 
-  const numericPrice = Number.parseFloat(price.replace(",", ".")) || 0;
+  const numericPrice = parseLocalizedPrice(price) || 0;
   const numericDuration = Number.parseInt(durationMinutes || "30", 10) || 30;
 
   const analysis = useMemo(
@@ -206,32 +205,32 @@ export function RewardPriceGuidance({
       </span>
     ) : null;
 
+  const effortSummaryNode = (
+    <span className="inline-flex items-center gap-1.5 text-neutral-300 min-w-0">
+      {isGamified ? (
+        <Sparkles size={12} className="text-gold shrink-0" />
+      ) : (
+        <Clock size={12} className="text-sky-700 dark:text-sky-400 shrink-0" />
+      )}
+      <span className="truncate">
+        <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
+        <strong className="font-semibold text-neutral-100">
+          {effortSummary}
+        </strong>
+        {leisureEquivalence && (
+          <span className="text-sky-700 dark:text-sky-300 font-medium">
+            {" "}
+            • {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+
   if (analysis.suggestedPrice === null) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-2 min-h-[24px] text-label-m">
-        <span className="inline-flex items-center gap-1.5 text-neutral-300 min-w-0">
-          {isGamified ? (
-            <Sparkles size={12} className="text-gold shrink-0" />
-          ) : (
-            <Clock
-              size={12}
-              className="text-sky-700 dark:text-sky-400 shrink-0"
-            />
-          )}
-          <span className="truncate">
-            <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
-            <strong className="font-semibold text-neutral-100">
-              {effortSummary}
-            </strong>
-            {leisureEquivalence && (
-              <span className="text-sky-700 dark:text-sky-300 font-medium">
-                {" "}
-                •{" "}
-                {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
-              </span>
-            )}
-          </span>
-        </span>
+        {effortSummaryNode}
         <div className="inline-flex items-center gap-1.5 shrink-0">
           {categoryHintBadge}
           {isWarning && warningMessage && renderWarningTooltip("right")}
@@ -244,29 +243,7 @@ export function RewardPriceGuidance({
     <div className="flex flex-col gap-1">
       {/* Linha 1: Equivalência em esforço (e equivalência em lazer no Modo Essencial) */}
       <div className="flex items-center justify-between gap-2 min-h-[20px] text-label-m text-neutral-300">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {isGamified ? (
-            <Sparkles size={12} className="text-gold shrink-0" />
-          ) : (
-            <Clock
-              size={12}
-              className="text-sky-700 dark:text-sky-400 shrink-0"
-            />
-          )}
-          <span className="truncate">
-            <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
-            <strong className="font-semibold text-neutral-100">
-              {effortSummary}
-            </strong>
-            {leisureEquivalence && (
-              <span className="text-sky-700 dark:text-sky-300 font-medium">
-                {" "}
-                •{" "}
-                {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
-              </span>
-            )}
-          </span>
-        </div>
+        {effortSummaryNode}
         {categoryHintBadge}
       </div>
 

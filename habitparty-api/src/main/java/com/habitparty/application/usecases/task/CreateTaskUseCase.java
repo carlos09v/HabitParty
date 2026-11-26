@@ -66,7 +66,7 @@ public class CreateTaskUseCase {
     this(taskPort, boardColumnPort, userPort, emailLogPort, workspacePort, Clock.systemDefaultZone());
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }
@@ -133,62 +133,35 @@ public class CreateTaskUseCase {
         newTask = createdDaily;
       }
       case TODO -> {
-        boolean isEventSchedule = Boolean.TRUE.equals(command.isAllDay())
-            || command.startTime() != null
-            || command.dueEndTime() != null;
-        if (isEventSchedule && !user.isPremium()) {
-          throw new LimitExceededException(
-              "Agendar afazeres como Evento (com horário de início/término ou dia inteiro) é um recurso exclusivo dos planos Premium."
-          );
-        }
+        boolean isEventSchedule = TodoSchedulePolicy.isEventSchedule(
+            command.isAllDay(), command.startTime(), command.dueEndTime());
+        TodoSchedulePolicy.assertEventScheduleAllowed(user, isEventSchedule);
 
-        boolean hasAnyTimeOrEvent = command.dueTime() != null || isEventSchedule;
-        LocalDate effectiveDueDate = command.dueDate() != null
-            ? command.dueDate()
-            : (hasAnyTimeOrEvent ? userToday : null);
+        LocalDate effectiveDueDate = TodoSchedulePolicy.resolveEffectiveDueDate(
+            command.dueDate(), command.dueTime(), isEventSchedule, userToday);
 
         if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(userToday)) {
           throw new DomainValidationException("A data de vencimento de um afazer no modo Hardcore não pode ser no passado.");
         }
 
         LocalDateTime calculatedReminderAt = Todo.calculateReminderTime(
-            effectiveDueDate, 
-            command.reminderType(), 
-            command.customReminderAt()
-        );
+            effectiveDueDate,
+            command.reminderType(),
+            command.customReminderAt());
 
         boolean sendEmail = Boolean.TRUE.equals(command.sendEmailReminder());
         if (sendEmail) {
-          user.validateEmailVerified("ativar lembretes por e-mail");
-
-          boolean isPremium = user.isPremium();
-          long activeReminders = taskPort.countActiveEmailRemindersByUserId(userIdLogado);
-          com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
-
-          LocalDateTime startOfMonth = userToday.withDayOfMonth(1)
-              .atStartOfDay(userZone)
-              .withZoneSameInstant(ZoneId.systemDefault())
-              .toLocalDateTime();
-          long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
-              userIdLogado,
-              com.habitparty.core.domain.enums.EmailType.TASK_REMINDER,
-              com.habitparty.core.domain.enums.EmailDispatchStatus.SENT,
-              startOfMonth
-          );
-          com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateMonthlyDispatchesQuota(isPremium, sentThisMonth);
+          TodoSchedulePolicy.validateEmailReminderQuotas(
+              user, userIdLogado, userToday, userZone, taskPort, emailLogPort);
         }
 
         Todo newTodo = new Todo(
             newTaskId, boardColumnId, userIdLogado, command.name(), command.description(),
             newOrderIndex, command.priority(), command.tags(), command.difficulty(), TaskStatus.PENDING,
             command.taskType(), command.isHardcoreModeEnabled(), effectiveDueDate, now, emptyChecklist,
-            command.reminderType(), calculatedReminderAt, null, false, sendEmail, false, command.dueTime()
-        );
-        if (Boolean.TRUE.equals(command.isAllDay()) || command.startTime() != null) {
-          newTodo.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay(), userToday);
-        } else {
-          newTodo.defineDueEndTime(command.dueEndTime());
-        }
+            command.reminderType(), calculatedReminderAt, null, false, sendEmail, false, command.dueTime());
+        TodoSchedulePolicy.applyEventSchedule(
+            newTodo, command.startTime(), command.dueEndTime(), command.isAllDay(), userToday, false);
         newTask = newTodo;
       }
       default -> throw new DomainValidationException("Tipo de tarefa inválido: " + command.taskType());

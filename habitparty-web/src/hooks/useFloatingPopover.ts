@@ -4,12 +4,15 @@ import {
   type CSSProperties,
   useCallback,
   useEffect,
-  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
+import { useLatestRef } from "@/hooks/useLatestRef";
+import { resolvePortalContainer } from "@/utils/portal";
 
 export interface FloatingPopoverCoords {
   top?: number;
@@ -32,6 +35,7 @@ export interface UseFloatingPopoverOptions {
   disabled?: boolean;
   usePortal?: boolean;
   zIndex?: number;
+  restoreFocusOnEscape?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
 }
@@ -58,12 +62,12 @@ export function useFloatingPopover<
     disabled = false,
     usePortal = true,
     zIndex = 150,
+    restoreFocusOnEscape = false,
     onOpen,
     onClose,
   } = options;
 
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const onCloseRef = useLatestRef(onClose);
 
   const containerRef = useRef<TContainer>(null);
   const triggerRef = useRef<TTrigger>(null);
@@ -72,16 +76,28 @@ export function useFloatingPopover<
   const mounted = useIsClient();
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<FloatingPopoverCoords | null>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null,
+  );
 
   const close = useCallback(() => {
     setIsOpen(false);
     setCoords(null);
     onCloseRef.current?.();
-  }, []);
+  }, [onCloseRef]);
+
+  const closeOnEscape = useCallback(() => {
+    close();
+    if (restoreFocusOnEscape) {
+      window.requestAnimationFrame(() => {
+        triggerRef.current?.focus();
+      });
+    }
+  }, [close, restoreFocusOnEscape]);
 
   useClickOutside(containerRef, close, {
     enabled: isOpen,
-    onEscape: close,
+    onEscape: closeOnEscape,
     extraRefs: [popoverRef],
   });
 
@@ -93,7 +109,12 @@ export function useFloatingPopover<
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
 
-    if (rect.bottom < 0 || rect.top > viewportHeight) {
+    if (
+      rect.bottom < 0 ||
+      rect.top > viewportHeight ||
+      rect.right < 0 ||
+      rect.left > viewportWidth
+    ) {
       return null;
     }
 
@@ -183,13 +204,19 @@ export function useFloatingPopover<
 
   const open = useCallback(() => {
     if (disabled) return;
-    onOpen?.();
-    const initialCoords = computeCoords();
-    if (initialCoords) {
+    if (usePortal) {
+      const initialCoords = computeCoords();
+      if (!initialCoords) {
+        return;
+      }
+      setPortalContainer(
+        resolvePortalContainer(triggerRef.current || containerRef.current),
+      );
       setCoords(initialCoords);
     }
+    onOpen?.();
     setIsOpen(true);
-  }, [disabled, onOpen, computeCoords]);
+  }, [disabled, onOpen, usePortal, computeCoords]);
 
   const toggle = useCallback(() => {
     if (disabled) return;
@@ -201,30 +228,57 @@ export function useFloatingPopover<
   }, [disabled, isOpen, open, close]);
 
   // Refina coordenadas após montagem do elemento do popover (caso largura/altura real difira da estimada)
-  useLayoutEffect(() => {
-    if (!isOpen || !usePortal) return;
+  useIsomorphicLayoutEffect(() => {
+    if (!isOpen || !usePortal || !popoverRef.current) return;
     const refined = computeCoords();
-    if (refined) {
+    if (!refined) {
+      close();
+      return;
+    }
+    setCoords((prev) => {
+      if (
+        prev &&
+        prev.top === refined.top &&
+        prev.bottom === refined.bottom &&
+        prev.left === refined.left &&
+        prev.width === refined.width &&
+        prev.maxHeight === refined.maxHeight &&
+        prev.placement === refined.placement
+      ) {
+        return prev;
+      }
+      return refined;
+    });
+  }, [isOpen, usePortal, computeCoords, close]);
+
+  // Atualiza coordenadas em scroll externo ou resize da janela (throttled via rAF + comparação rasa)
+  useEffect(() => {
+    if (!isOpen || !usePortal) return;
+
+    let frameId: number | null = null;
+
+    const flushCoords = () => {
+      frameId = null;
+      const nextCoords = computeCoords();
+      if (!nextCoords) {
+        close();
+        return;
+      }
       setCoords((prev) => {
         if (
           prev &&
-          prev.top === refined.top &&
-          prev.bottom === refined.bottom &&
-          prev.left === refined.left &&
-          prev.width === refined.width &&
-          prev.maxHeight === refined.maxHeight &&
-          prev.placement === refined.placement
+          prev.top === nextCoords.top &&
+          prev.bottom === nextCoords.bottom &&
+          prev.left === nextCoords.left &&
+          prev.width === nextCoords.width &&
+          prev.maxHeight === nextCoords.maxHeight &&
+          prev.placement === nextCoords.placement
         ) {
           return prev;
         }
-        return refined;
+        return nextCoords;
       });
-    }
-  }, [isOpen, usePortal, computeCoords]);
-
-  // Atualiza coordenadas em scroll externo ou resize da janela
-  useEffect(() => {
-    if (!isOpen || !usePortal) return;
+    };
 
     const handleScrollOrResize = (e: Event) => {
       if (
@@ -234,11 +288,8 @@ export function useFloatingPopover<
       ) {
         return;
       }
-      const nextCoords = computeCoords();
-      if (!nextCoords) {
-        close();
-      } else {
-        setCoords(nextCoords);
+      if (frameId === null) {
+        frameId = window.requestAnimationFrame(flushCoords);
       }
     };
 
@@ -246,39 +297,62 @@ export function useFloatingPopover<
     window.addEventListener("resize", handleScrollOrResize);
 
     return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
     };
   }, [isOpen, usePortal, computeCoords, close]);
 
   const shouldRenderPortal = Boolean(usePortal && mounted);
+  const resolvedPortalContainer = shouldRenderPortal
+    ? (portalContainer ??
+      (typeof document !== "undefined" ? document.body : null))
+    : null;
 
-  const floatingStyle: CSSProperties | undefined =
-    shouldRenderPortal && coords
-      ? {
-          position: "fixed",
-          top: coords.top !== undefined ? `${coords.top}px` : undefined,
-          bottom:
-            coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
-          left: `${coords.left}px`,
-          width: coords.width ? `${coords.width}px` : undefined,
-          maxHeight: coords.maxHeight ? `${coords.maxHeight}px` : undefined,
-          zIndex,
-          transformOrigin: coords.placement === "top" ? "bottom" : "top",
-        }
-      : undefined;
+  const floatingStyle: CSSProperties | undefined = useMemo(
+    () =>
+      shouldRenderPortal && coords
+        ? {
+            position: "fixed",
+            top: coords.top !== undefined ? `${coords.top}px` : undefined,
+            bottom:
+              coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
+            left: `${coords.left}px`,
+            width: coords.width ? `${coords.width}px` : undefined,
+            maxHeight: coords.maxHeight ? `${coords.maxHeight}px` : undefined,
+            zIndex,
+            transformOrigin: coords.placement === "top" ? "bottom" : "top",
+          }
+        : undefined,
+    [shouldRenderPortal, coords, zIndex],
+  );
 
-  return {
-    containerRef,
-    triggerRef,
-    popoverRef,
-    isOpen,
-    setIsOpen,
-    open,
-    close,
-    toggle,
-    coords,
-    shouldRenderPortal,
-    floatingStyle,
-  };
+  return useMemo(
+    () => ({
+      containerRef,
+      triggerRef,
+      popoverRef,
+      isOpen,
+      setIsOpen,
+      open,
+      close,
+      toggle,
+      coords,
+      shouldRenderPortal,
+      portalContainer: resolvedPortalContainer,
+      floatingStyle,
+    }),
+    [
+      isOpen,
+      open,
+      close,
+      toggle,
+      coords,
+      shouldRenderPortal,
+      resolvedPortalContainer,
+      floatingStyle,
+    ],
+  );
 }

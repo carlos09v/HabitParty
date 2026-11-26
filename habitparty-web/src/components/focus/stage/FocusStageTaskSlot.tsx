@@ -1,5 +1,3 @@
-"use client";
-
 import {
   ArrowRightLeft,
   CheckCircle2,
@@ -12,6 +10,7 @@ import {
 import { useTranslations } from "next-intl";
 import { memo, type ReactNode } from "react";
 import type { FocusActiveTarget } from "@/types/focus";
+import { resolveLinkedTask } from "@/utils/focusFormatters";
 
 interface FocusStageTaskSlotProps {
   target: FocusActiveTarget | null;
@@ -124,12 +123,14 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
     return null;
   }
 
+  const { taskId, taskName } = resolveLinkedTask(target);
+
   // 1. Foco direto em uma Tarefa (barra horizontal compacta)
   if (target.type === "task") {
     return (
       <LinkedTaskBar
-        taskTitle={target.taskName || target.name}
-        taskId={target.taskId}
+        taskTitle={taskName || target.name}
+        taskId={taskId}
         borderClassName="border-primary/30 dark:border-primary/40"
         isCompletingLinkedTask={isCompletingLinkedTask}
         completeLabel={t("completeLinkedTask")}
@@ -156,11 +157,11 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
   }
 
   // 2. Atividade com Tarefa Vinculada (barra horizontal compacta)
-  if (target.type === "activity" && target.taskId && target.taskName) {
+  if (target.type === "activity" && taskId && taskName) {
     return (
       <LinkedTaskBar
-        taskTitle={target.taskName}
-        taskId={target.taskId}
+        taskTitle={taskName}
+        taskId={taskId}
         borderClassName="border-primary/35 dark:border-primary-light/40"
         isCompletingLinkedTask={isCompletingLinkedTask}
         completeLabel={t("completeLinkedTask")}

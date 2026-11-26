@@ -25,6 +25,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.EmailDispatchLog;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.task.EmailReminderQuotas;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.EmailDispatchStatus;
@@ -51,7 +52,7 @@ public class SendTaskRemindersUseCase {
     this.userPort = userPort;
     this.emailPort = emailPort;
     this.emailLogPort = emailLogPort;
-    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public SendTaskRemindersUseCase(
@@ -59,11 +60,11 @@ public class SendTaskRemindersUseCase {
       UserRepository userPort,
       EmailSenderPort emailPort,
       EmailDispatchLogRepository emailLogPort) {
-    this(taskPort, userPort, emailPort, emailLogPort, Clock.systemDefaultZone());
+    this(taskPort, userPort, emailPort, emailLogPort, Clock.systemUTC());
   }
 
   public int execute() {
-    Clock effectiveClock = clock != null ? clock : Clock.systemDefaultZone();
+    Clock effectiveClock = clock != null ? clock : Clock.systemUTC();
     Instant nowInstant = Instant.now(effectiveClock);
     // Consulta ampla no SQL cobrindo todos os fusos horários mundiais (UTC-12 a UTC+14);
     // cada lembrete é validado em seguida no fuso horário exato do seu proprietário.
@@ -81,12 +82,16 @@ public class SendTaskRemindersUseCase {
     Map<UUID, User> usersById = new HashMap<>(userPort.findAllByIds(userIds).stream()
         .collect(Collectors.toMap(User::getId, Function.identity())));
     Map<UUID, Long> monthlySentCache = new HashMap<>();
-    LocalDateTime logNow = LocalDateTime.now(effectiveClock.withZone(ZoneId.systemDefault()));
+    ZoneId storageZone = effectiveClock.getZone();
+    LocalDateTime logNow = LocalDateTime.now(effectiveClock);
 
     int sentCount = 0;
 
     for (Task task : pendingReminders) {
       if (task instanceof Todo todo && todo.isSendEmailReminder() && !todo.isEmailReminderSent()) {
+        if (todo.getReminderAttempts() >= Todo.MAX_REMINDER_ATTEMPTS) {
+          continue;
+        }
         try {
           User user = usersById.get(todo.getUserId());
           if (user == null) {
@@ -96,7 +101,7 @@ public class SendTaskRemindersUseCase {
             }
           }
           if (user != null) {
-            ZoneId userZone = user.resolveZoneId(effectiveClock.getZone());
+            ZoneId userZone = user.resolveZoneId(storageZone);
             LocalDate userToday = user.resolveLocalDate(effectiveClock);
             LocalDateTime userNow = user.resolveLocalDateTime(effectiveClock);
 
@@ -108,17 +113,16 @@ public class SendTaskRemindersUseCase {
             }
 
             boolean isPremium = user.isPremium();
-            int maxMonthly = com.habitparty.core.domain.entities.task.EmailReminderQuotas.getMaxMonthlyDispatches(isPremium);
+            int maxMonthly = EmailReminderQuotas.getMaxMonthlyDispatches(isPremium);
 
             UUID uid = user.getId();
             LocalDateTime startOfMonth = userToday.withDayOfMonth(1)
                 .atStartOfDay(userZone)
-                .withZoneSameInstant(ZoneId.systemDefault())
+                .withZoneSameInstant(storageZone)
                 .toLocalDateTime();
             long sentThisMonth = monthlySentCache.computeIfAbsent(uid,
                 id -> emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
-                    id, EmailType.TASK_REMINDER, EmailDispatchStatus.SENT, startOfMonth
-                ));
+                    id, EmailType.TASK_REMINDER, EmailDispatchStatus.SENT, startOfMonth));
             if (sentThisMonth >= maxMonthly) {
               String planName = isPremium ? "Premium (Uso Justo)" : "Free";
               log.warn("Usuário {} atingiu a cota mensal de {} e-mails de lembrete (plano {}). Lembrete pulado.",
@@ -134,8 +138,7 @@ public class SendTaskRemindersUseCase {
                   "Lembrete de Tarefa: " + todo.getName(),
                   EmailDispatchStatus.FAILED,
                   "Cota mensal de " + maxMonthly + " lembretes excedida para o plano " + planName,
-                  logNow
-              ));
+                  logNow));
               continue;
             }
 
@@ -148,8 +151,7 @@ public class SendTaskRemindersUseCase {
                 userName,
                 todo.getName(),
                 dueDate,
-                todo.isHardcoreModeEnabled()
-            );
+                todo.isHardcoreModeEnabled());
 
             if (success) {
               todo.markEmailReminderSent();
@@ -166,9 +168,14 @@ public class SendTaskRemindersUseCase {
                   "Lembrete de Tarefa: " + todo.getName(),
                   EmailDispatchStatus.SENT,
                   null,
-                  logNow
-              ));
+                  logNow));
             } else {
+              int attempts = todo.incrementReminderAttempts();
+              taskPort.save(todo);
+              if (attempts >= Todo.MAX_REMINDER_ATTEMPTS) {
+                log.warn("Lembrete da tarefa {} atingiu o limite de {} tentativas com falha e foi encerrado.",
+                    todo.getId(), Todo.MAX_REMINDER_ATTEMPTS);
+              }
               emailLogPort.save(new EmailDispatchLog(
                   UUID.randomUUID(),
                   user.getId(),
@@ -177,13 +184,17 @@ public class SendTaskRemindersUseCase {
                   user.getEmail(),
                   "Lembrete de Tarefa: " + todo.getName(),
                   EmailDispatchStatus.FAILED,
-                  "Falha no provedor Resend",
-                  logNow
-              ));
+                  "Falha no provedor Resend (tentativa " + attempts + "/" + Todo.MAX_REMINDER_ATTEMPTS + ")",
+                  logNow));
             }
           }
         } catch (Exception e) {
           log.error("Erro ao processar lembrete por e-mail para a tarefa ID {}: {}", todo.getId(), e.getMessage(), e);
+          try {
+            todo.incrementReminderAttempts();
+            taskPort.save(todo);
+          } catch (Exception ignored) {
+          }
           try {
             emailLogPort.save(new EmailDispatchLog(
                 UUID.randomUUID(),
@@ -194,8 +205,7 @@ public class SendTaskRemindersUseCase {
                 "Lembrete de Tarefa: " + todo.getName(),
                 EmailDispatchStatus.FAILED,
                 e.getMessage(),
-                logNow
-            ));
+                logNow));
           } catch (Exception ignored) {
           }
         }

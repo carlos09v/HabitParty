@@ -24,14 +24,6 @@ const CreateBoardColumnModal = dynamic(
   { ssr: false },
 );
 
-const UpgradePremiumModal = dynamic(
-  () =>
-    import("@/components/subscription/UpgradePremiumModal").then((mod) => ({
-      default: mod.UpgradePremiumModal,
-    })),
-  { ssr: false },
-);
-
 const ConfirmationModal = dynamic(
   () =>
     import("@/components/ui/ConfirmationModal").then((mod) => ({
@@ -41,13 +33,14 @@ const ConfirmationModal = dynamic(
 );
 
 export function DashboardListSummary({
-  initialColumns,
   initialVisibleColumnIds,
   columns: controlledColumns,
   onColumnsChange,
   onColumnDeleted,
   workspaces,
   onColumnMoved,
+  onFilterByColumn,
+  activeFilteredColumnId,
   createColumnTrigger,
   maxColumns,
   activeWorkspaceId,
@@ -69,13 +62,12 @@ export function DashboardListSummary({
     columnCountsMap,
     availableTargetWorkspaces,
     contextMenu,
-    setContextMenu,
+    closeContextMenu,
     columnToEdit,
     isColumnModalOpen,
     setIsColumnModalOpen,
     setColumnToEdit,
-    isUpgradeModalOpen,
-    setIsUpgradeModalOpen,
+    openUpgradeModal,
     columnToDelete,
     setColumnToDelete,
     isDeleting,
@@ -89,7 +81,6 @@ export function DashboardListSummary({
     handleMoveColumnToWorkspace,
     handleMoveLockedWorkspace,
   } = useDashboardListSummary({
-    initialColumns,
     initialVisibleColumnIds,
     columns: controlledColumns,
     onColumnsChange,
@@ -149,7 +140,7 @@ export function DashboardListSummary({
     <section className="flex flex-col shrink-0 gap-2.5">
       <header className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <h3 className="font-bold text-neutral-50 text-lg">{t("title")}</h3>
+          <h2 className="font-bold text-neutral-50 text-lg">{t("title")}</h2>
           {activeWorkspaceName && (
             <TaskWorkspaceBadge
               workspaceName={activeWorkspaceName}
@@ -204,7 +195,7 @@ export function DashboardListSummary({
           {isReadOnly ? (
             <button
               type="button"
-              onClick={() => setIsUpgradeModalOpen(true)}
+              onClick={openUpgradeModal}
               title={t("readOnlyHint")}
               className="inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border bg-amber-500/10 text-amber-800 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:text-gold dark:border-gold/40 dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95 px-3 py-1.5 text-xs"
             >
@@ -223,7 +214,7 @@ export function DashboardListSummary({
           ) : !isPremium ? (
             <button
               type="button"
-              onClick={() => setIsUpgradeModalOpen(true)}
+              onClick={openUpgradeModal}
               title={tUpgrade("upgradeSubtitle")}
               className="inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border bg-amber-500/10 text-amber-700 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:text-gold dark:border-gold/40 dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95 px-3 py-1.5 text-xs"
             >
@@ -257,6 +248,10 @@ export function DashboardListSummary({
                 : null
             }
             hasTaskCountsMap={Boolean(columnCountsMap)}
+            isFiltered={Boolean(
+              activeFilteredColumnId && column.id === activeFilteredColumnId,
+            )}
+            onFilterByColumn={onFilterByColumn}
             isContextMenuOpen={
               contextMenu.isOpen && contextMenu.column?.id === (column.id || "")
             }
@@ -281,28 +276,20 @@ export function DashboardListSummary({
       <ContextMenu
         isOpen={contextMenu.isOpen}
         position={contextMenu.position}
-        onClose={() =>
-          setContextMenu((prev) => ({ ...prev, isOpen: false, column: null }))
-        }
+        onClose={closeContextMenu}
         items={columnMenuItems}
       />
 
       {isColumnModalOpen && (
         <CreateBoardColumnModal
           isOpen={isColumnModalOpen}
+          workspaceId={activeWorkspaceId}
           columnToEdit={columnToEdit}
           onClose={() => {
             setIsColumnModalOpen(false);
             setColumnToEdit(null);
           }}
           onSuccess={handleColumnSaved}
-        />
-      )}
-
-      {isUpgradeModalOpen && (
-        <UpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
         />
       )}
 

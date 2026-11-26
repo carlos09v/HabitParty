@@ -3,6 +3,32 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+function buildApiImageRemotePatterns(): NonNullable<
+  NonNullable<NextConfig["images"]>["remotePatterns"]
+> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) return [];
+  try {
+    const parsed = new URL(apiUrl);
+    if (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+    ) {
+      return [];
+    }
+    return [
+      {
+        protocol: parsed.protocol.replace(":", "") as "http" | "https",
+        hostname: parsed.hostname,
+        ...(parsed.port ? { port: parsed.port } : {}),
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
@@ -47,6 +73,7 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "127.0.0.1",
       },
+      ...buildApiImageRemotePatterns(),
     ],
   },
   async headers() {

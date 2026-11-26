@@ -129,6 +129,38 @@ public class UpdateProfileHighlightsUseCase {
     Map<String, Optional<Artifact>> artifactFallbackCache = new HashMap<>();
     Set<UUID> ownedArtifactIds = null;
 
+    // Pré-carrega em lote todas as tarefas de TASK_STREAK referenciadas nos slots (elimina N+1)
+    Map<UUID, Task> preloadedTasksById = new HashMap<>();
+    if (commands != null && taskPort != null) {
+      Set<UUID> requestedTaskIds = new HashSet<>();
+      for (HighlightSlotCommand cmd : commands) {
+        if (cmd.highlightType() == HighlightType.TASK_STREAK
+            && cmd.highlightKey() != null
+            && !cmd.highlightKey().isBlank()) {
+          try {
+            requestedTaskIds.add(UUID.fromString(cmd.highlightKey().trim()));
+          } catch (IllegalArgumentException ignored) {
+            // Validação detalhada ocorre no loop abaixo com mensagem específica
+          }
+        }
+      }
+      if (!requestedTaskIds.isEmpty()) {
+        taskPort.findAllByIds(requestedTaskIds).ifPresentOrElse(
+            tasks -> {
+              for (Task t : tasks) {
+                if (t != null && t.getId() != null) {
+                  preloadedTasksById.put(t.getId(), t);
+                }
+              }
+            },
+            () -> {
+              for (UUID id : requestedTaskIds) {
+                taskPort.findById(id).ifPresent(t -> preloadedTasksById.put(id, t));
+              }
+            });
+      }
+    }
+
     Set<Integer> usedOrders = new HashSet<>();
     Set<String> usedReferences = new HashSet<>();
     List<ProfileHighlight> domainHighlights = new ArrayList<>();
@@ -207,8 +239,10 @@ public class UpdateProfileHighlightsUseCase {
           } catch (IllegalArgumentException ex) {
             throw new DomainValidationException("Identificador de tarefa inválido: " + cmd.highlightKey());
           }
-          Task task = taskPort.findById(taskId)
-              .orElseThrow(() -> new DomainValidationException("Tarefa não encontrada para destaque na vitrine."));
+          Task task = preloadedTasksById.get(taskId);
+          if (task == null) {
+            throw new DomainValidationException("Tarefa não encontrada para destaque na vitrine.");
+          }
           if (!userId.equals(task.getUserId())) {
             throw new DomainValidationException("Você só pode destacar suas próprias tarefas na vitrine.");
           }

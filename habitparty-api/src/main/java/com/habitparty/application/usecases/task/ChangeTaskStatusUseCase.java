@@ -36,6 +36,7 @@ import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.task.TaskDifficulty;
 import com.habitparty.core.domain.enums.task.TaskStatus;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -79,7 +80,7 @@ public class ChangeTaskStatusUseCase {
     this.dailyResetUseCase = dailyResetUseCase;
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }
@@ -141,6 +142,11 @@ public class ChangeTaskStatusUseCase {
           task.getBoardColumnId(),
           userIdLogado,
           "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para atualizar tarefas nele!");
+    }
+
+    if (task instanceof Habit && newStatus == TaskStatus.COMPLETED) {
+      throw new DomainValidationException(
+          "Hábitos devem ser registrados pelo endpoint de pontuação (+ / -), não marcados como concluídos por status.");
     }
 
     // 2. Só gera extrato e recompensa se o status mudou para COMPLETED e a recompensa ainda não foi resgatada
@@ -262,9 +268,9 @@ public class ChangeTaskStatusUseCase {
     }
 
     TransactionHistory latestTx = latestTxs.get(0);
-    ZoneId systemZone = ZoneId.systemDefault();
+    ZoneId storageZone = clock.getZone();
     LocalDateTime txUserDateTime = latestTx.getCreatedAt() != null
-        ? latestTx.getCreatedAt().atZone(systemZone).withZoneSameInstant(userZone).toLocalDateTime()
+        ? latestTx.getCreatedAt().atZone(storageZone).withZoneSameInstant(userZone).toLocalDateTime()
         : null;
     LocalDate txUserDate = txUserDateTime != null ? txUserDateTime.toLocalDate() : null;
 
@@ -282,7 +288,8 @@ public class ChangeTaskStatusUseCase {
         .map(amount -> amount.max(BigDecimal.ZERO))
         .orElse(BigDecimal.ZERO);
 
-    boolean isHard = task.getDifficulty() == TaskDifficulty.HARD;
+    // Usa o snapshot imutável de dificuldade da conclusão para evitar dessincronização se a tarefa foi editada depois
+    boolean isHard = latestTx.getDifficultySnapshot().orElse(task.getDifficulty()) == TaskDifficulty.HARD;
     boolean isHardcore = task.isHardcoreModeEnabled();
     boolean hasCompletedChecklist = latestTx.getChecklistCompletedSnapshot()
         .orElseGet(() -> task.getChecklist() != null
@@ -336,7 +343,7 @@ public class ChangeTaskStatusUseCase {
       LocalDateTime previousCompletedAt = null;
       if (latestTxs.size() > 1 && latestTxs.get(1).getCreatedAt() != null) {
         previousCompletedAt = latestTxs.get(1).getCreatedAt()
-            .atZone(systemZone)
+            .atZone(storageZone)
             .withZoneSameInstant(userZone)
             .toLocalDateTime();
       }

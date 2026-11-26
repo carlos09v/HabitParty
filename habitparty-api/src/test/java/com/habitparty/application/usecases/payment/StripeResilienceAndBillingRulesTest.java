@@ -58,7 +58,7 @@ class StripeResilienceAndBillingRulesTest {
     PaymentEventRepository eventRepo = mock(PaymentEventRepository.class);
     PaymentGatewayPort gatewayPort = mock(PaymentGatewayPort.class);
 
-    when(eventRepo.existsByEventId(any())).thenReturn(false);
+    when(eventRepo.claimEvent(any(), any(), any())).thenReturn(true);
     when(userRepo.findByIdForUpdate(recurringUserId)).thenReturn(Optional.of(recurringUser));
     when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -102,7 +102,7 @@ class StripeResilienceAndBillingRulesTest {
     PaymentEventRepository eventRepo = mock(PaymentEventRepository.class);
     PaymentGatewayPort gatewayPort = mock(PaymentGatewayPort.class);
 
-    when(eventRepo.existsByEventId(any())).thenReturn(false);
+    when(eventRepo.claimEvent(any(), any(), any())).thenReturn(true);
     when(userRepo.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
     when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -127,9 +127,8 @@ class StripeResilienceAndBillingRulesTest {
     PaymentEventRepository eventRepo = mock(PaymentEventRepository.class);
     PaymentGatewayPort gatewayPort = mock(PaymentGatewayPort.class);
 
-    when(eventRepo.existsByEventId(any())).thenReturn(false);
+    when(eventRepo.claimEvent(any(), any(), any())).thenReturn(true);
     when(userRepo.findByIdForUpdate(missingUserId)).thenReturn(Optional.empty());
-    when(userRepo.findById(missingUserId)).thenReturn(Optional.empty());
 
     ProcessStripeWebhookUseCase webhookUseCase = new ProcessStripeWebhookUseCase(
         userRepo, eventRepo, gatewayPort);

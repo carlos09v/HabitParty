@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { serverApi } from "@/api/server";
+import { getServerAuthToken, serverApi } from "@/api/server";
 import { FREE_ACTIVE_WORKSPACE_LIMIT } from "@/constants/routine";
 import { getRequestLocale } from "@/i18n/request";
 import {
@@ -7,45 +7,58 @@ import {
   getFocusInitialRecords,
   getRawFocusActivities,
 } from "@/services/focusService";
+import { getRawInventoryItems } from "@/services/inventoryService";
+import { getRewardsData } from "@/services/rewardService";
+import { getFriendsOverview } from "@/services/socialService";
 import { fetchAllWorkspacesBoards } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
 import { resolveActiveWorkspace } from "@/services/workspaceService";
 import type {
   DashboardColumnOption,
+  DashboardFocusRecordSummary,
+  DashboardRewardsBridgeSummary,
+  DashboardTransactionSummary,
+  DashboardUserSummary,
   DashboardWorkspaceOption,
   TransactionHistoryDTO,
+  WeeklyCalendarTaskSummary,
 } from "@/types/dashboard";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
+import type { FocusActivity } from "@/types/focus";
+import type { FriendsOverviewData } from "@/types/social";
 import type { Task } from "@/types/task";
-import type { UserResponseDTO } from "@/types/user";
 import { getUserTimezoneCookie } from "@/utils/cookies";
 import { calculateWeeklyTaskEarnings } from "@/utils/economy";
 import { mapFocusActivities } from "@/utils/focusMapper";
+import { isDebtReward } from "@/utils/rewardGrouping";
+import { toWeeklyCalendarTaskSummary } from "@/utils/taskMapper";
 
 export interface DashboardData {
   workspaces: DashboardWorkspaceOption[];
   activeWorkspaceId: string;
   initialTasks: Task[];
+  calendarTasks: WeeklyCalendarTaskSummary[];
   initialColumns: DashboardColumnOption[];
   initialAllColumns: DashboardColumnOption[];
-  transactions: TransactionHistoryDTO[];
+  transactions: DashboardTransactionSummary[];
   userBalance: number;
   weeklyEarnings: number;
   weeklySpent: number;
   bars: ReturnType<typeof calculateWeeklyTaskEarnings>["bars"];
+  rewardsBridge: DashboardRewardsBridgeSummary;
   focusActivities: FocusActivity[];
-  focusRecords: FocusRecord[];
-  user: UserResponseDTO | null;
+  focusRecords: DashboardFocusRecordSummary[];
+  friendsOverview: FriendsOverviewData | null;
+  user: DashboardUserSummary | null;
 }
 
-export async function getDashboardTransactions(): Promise<
+async function fetchDashboardTransactionsCached(): Promise<
   TransactionHistoryDTO[]
 > {
   "use cache: private";
   cacheLife("private30");
   cacheTag("transactions");
 
-  const { data } = await serverApi.GET("/transactions", {
+  const { data, error } = await serverApi.GET("/transactions", {
     params: {
       query: {
         tab: "ALL",
@@ -54,7 +67,27 @@ export async function getDashboardTransactions(): Promise<
     },
   });
 
-  return data?.content || [];
+  if (error || !data) {
+    throw new Error("DASHBOARD_TRANSACTIONS_FETCH_FAILED");
+  }
+
+  return data.content || [];
+}
+
+export async function getDashboardTransactions(): Promise<
+  TransactionHistoryDTO[]
+> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    return [];
+  }
+
+  try {
+    return await fetchDashboardTransactionsCached();
+  } catch (err) {
+    console.error("[DashboardService:getDashboardTransactions]", err);
+    return [];
+  }
 }
 
 /**
@@ -72,6 +105,9 @@ export async function getDashboardData(
     rawFocusActivities,
     rawFocusRecords,
     locale,
+    friendsOverview,
+    rewardsData,
+    inventoryItems,
   ] = await Promise.all([
     fetchAllWorkspacesBoards(),
     getCurrentUser(),
@@ -79,6 +115,9 @@ export async function getDashboardData(
     getRawFocusActivities(),
     fetchRawUserFocusRecords(),
     getRequestLocale(),
+    getFriendsOverview(),
+    getRewardsData(),
+    getRawInventoryItems(),
   ]);
 
   const isPremium = user?.isPremium ?? false;
@@ -138,8 +177,37 @@ export async function getDashboardData(
   const initialTasks: Task[] = allBoards.flatMap((b) =>
     b.columns.flatMap((c) => c.tasks),
   );
+  // Alinha WeeklyCalendar com DashboardDailyBriefing excluindo workspaces somente-leitura
+  const calendarTasks: WeeklyCalendarTaskSummary[] = allBoards
+    .filter((b) => !readOnlyWorkspaceIds.has(b.workspaceId))
+    .flatMap((b) =>
+      b.columns.flatMap((c) => c.tasks.map(toWeeklyCalendarTaskSummary)),
+    );
 
   const userBalance = user?.currentCoins ?? 0;
+
+  // Resumo compacto de Recompensas & Mochila (usando serviços já cacheados em paralelo)
+  const regularRewards = (rewardsData?.rewards ?? []).filter(
+    (r) => !isDebtReward(r),
+  );
+  let redeemableCount = 0;
+  for (const reward of regularRewards) {
+    if (reward.price <= userBalance) {
+      redeemableCount += 1;
+    }
+  }
+  let inventoryAvailableCount = 0;
+  for (const item of inventoryItems) {
+    if (item.status === "AVAILABLE" || item.status === "IN_FOCUS") {
+      inventoryAvailableCount += 1;
+    }
+  }
+  const rewardsBridge: DashboardRewardsBridgeSummary = {
+    redeemableCount,
+    totalRewardsCount: regularRewards.length,
+    inventoryAvailableCount,
+  };
+
   const resolvedTimeZone = user?.timezone ?? (await getUserTimezoneCookie());
   const { bars, currentWeekEarnings, currentWeekSpent } =
     calculateWeeklyTaskEarnings(
@@ -149,19 +217,57 @@ export async function getDashboardData(
       resolvedTimeZone,
     );
 
+  const transactionSummaries: DashboardTransactionSummary[] = transactions.map(
+    (tx) => ({
+      id: tx.id,
+      createdAt: tx.createdAt,
+      transactionType: tx.transactionType,
+      xpAmount: tx.xpAmount,
+    }),
+  );
+
+  const focusRecordSummaries: DashboardFocusRecordSummary[] = focusRecords.map(
+    (rec) => ({
+      id: rec.id,
+      focusActivityId: rec.focusActivityId,
+      inventoryItemId: rec.inventoryItemId,
+      startTime: rec.startTime,
+      endTime: rec.endTime,
+      durationMinutes: rec.durationMinutes,
+    }),
+  );
+
+  const userSummary: DashboardUserSummary | null = user
+    ? {
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        isPremium: user.isPremium,
+        timezone: user.timezone,
+        currentStreak: user.currentStreak,
+        dailyFocusGoalMinutes: user.dailyFocusGoalMinutes,
+        totalXp: user.totalXp,
+        currentCoins: user.currentCoins,
+        experienceMode: user.experienceMode,
+      }
+    : null;
+
   return {
     workspaces: workspaceOptions,
     activeWorkspaceId,
     initialTasks,
+    calendarTasks,
     initialColumns,
     initialAllColumns,
-    transactions,
+    transactions: transactionSummaries,
     userBalance,
     weeklyEarnings: currentWeekEarnings,
     weeklySpent: currentWeekSpent,
     bars,
+    rewardsBridge,
     focusActivities,
-    focusRecords,
-    user,
+    focusRecords: focusRecordSummaries,
+    friendsOverview,
+    user: userSummary,
   };
 }

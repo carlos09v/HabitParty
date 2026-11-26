@@ -1,5 +1,4 @@
-import { DEFAULT_POMO_MINUTES } from "@/constants/focus";
-import type { TimerSoundType } from "@/store/soundPreferencesStore";
+import { DEFAULT_POMO_MINUTES } from "@/constants/focusRules";
 import type {
   FocusActivity,
   FocusPhase,
@@ -8,24 +7,42 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 
+const sessionSavedCallbacks = new Set<() => void>();
+
+/**
+ * Registra callback fora do estado reativo da store (evita re-renders na árvore ao montar/desmontar `/focus`).
+ */
+export function registerFocusSessionSavedCallback(cb: () => void): () => void {
+  sessionSavedCallbacks.add(cb);
+  return () => {
+    sessionSavedCallbacks.delete(cb);
+  };
+}
+
+export function notifyFocusSessionSaved(): void {
+  for (const cb of sessionSavedCallbacks) {
+    try {
+      cb();
+    } catch {
+      // Ignora erros de assinantes individuais
+    }
+  }
+}
+
 export interface FocusTimerStoreState extends FocusTimerState {
   phase: FocusPhase;
   lastTickTimestamp: number | null;
   hasTriggeredOvertimeAlert: boolean;
+  /** Duração customizada (em minutos) escolhida via `changeDuration` para o alvo atual, preservada após pausas. */
+  customWorkDurationMinutes: number | null;
   isSavingSession: boolean;
   isCompletingLinkedTask: boolean;
-  onSessionSavedCallback: (() => void) | null;
-
-  // Preferências de Som (delegadas para SoundPreferencesStore)
-  toggleSound: () => void;
-  setTimerSoundType: (type: TimerSoundType) => void;
 
   // Notas da Sessão Atual (não persistem após reset/conclusão)
   sessionNotes: string;
   setSessionNotes: (notes: string) => void;
 
   // Actions
-  setOnSessionSavedCallback: (cb: (() => void) | null) => void;
   toggleTimer: () => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
@@ -81,6 +98,21 @@ export type FocusStoreSetter = (
 export type FocusStoreGetter = () => FocusTimerStoreState;
 
 /**
+ * Resolve a duração de trabalho (em segundos) do alvo atual, respeitando eventual
+ * ajuste customizado feito via `changeDuration` durante a sessão.
+ */
+export function resolveWorkDurationSeconds(state: {
+  customWorkDurationMinutes?: number | null;
+  target?: FocusTimerState["target"];
+}): number {
+  const minutes =
+    state.customWorkDurationMinutes ??
+    state.target?.targetMinutes ??
+    DEFAULT_POMO_MINUTES;
+  return minutes * 60;
+}
+
+/**
  * Helper unificado para gerar o estado base de timer parado/resetado,
  * evitando repetição dos mesmos campos em múltiplos métodos da store.
  */
@@ -95,9 +127,9 @@ export function buildIdleTimerPatch(
     secondsRemaining: durationSeconds,
     totalDurationSeconds: durationSeconds,
     elapsedSeconds: 0,
-    startedAt: null,
     lastTickTimestamp: null,
     hasTriggeredOvertimeAlert: false,
+    sessionNotes: "",
     ...overrides,
   };
 }

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { FocusContainer } from "@/components/focus/FocusContainer";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
-import { getFocusPageData } from "@/services/focusService";
+import {
+  getFocusCriticalPageData,
+  getFocusInitialHistoryBundle,
+} from "@/services/focusService";
 import { getCurrentUser } from "@/services/userService";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,6 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 type PageProps = {
   searchParams: Promise<{
     activityId?: string;
+    itemId?: string;
     createActivity?: string;
     linkActivity?: string;
     from?: string;
@@ -24,42 +28,46 @@ type PageProps = {
 
 /**
  * Página Principal do Modo Foco (Server Component)
- * Carrega atividades cadastradas, itens da mochila em foco e histórico inicial de sessões.
+ * Carrega dados críticos (atividades, mochila e tarefas) imediatamente e faz streaming
+ * via `<Suspense>` do resumo agregado (`GET /focus-records/summary`) + 1ª página leve de registros.
  */
 export default async function FocusPage({ searchParams }: PageProps) {
-  const [resolvedSearchParams, focusPageData, user] = await Promise.all([
+  const [resolvedSearchParams, criticalData, user] = await Promise.all([
     searchParams,
-    getFocusPageData(),
+    getFocusCriticalPageData(),
     getCurrentUser(),
   ]);
 
-  const {
-    activities,
-    backpackItems,
-    allInventoryItems,
-    initialRecords,
-    totalRecordsCount,
-    hasMoreRecords,
-    initialLoadedRecordsPage,
-    focusableTasks,
-  } = focusPageData;
+  const initialActivityId = resolvedSearchParams.activityId || null;
+  const userTimeZone = user?.timezone ?? null;
+
+  // Não aguarda o histórico/resumo antes de entregar o HTML inicial do Palco de Foco
+  const historyBundlePromise = getFocusInitialHistoryBundle(
+    criticalData.activities,
+    criticalData.allInventoryItems,
+    {
+      initialActivityId,
+      timeZone: userTimeZone,
+    },
+  );
 
   return (
     <ScopedIntlProvider scope="focus">
       <FocusContainer
-        initialActivities={activities}
-        initialBackpackItems={backpackItems}
-        initialAllInventoryItems={allInventoryItems}
-        initialRecords={initialRecords}
-        initialTotalRecordsCount={totalRecordsCount}
-        initialHasMoreRecords={hasMoreRecords}
-        initialLoadedRecordsPage={initialLoadedRecordsPage}
-        initialFocusableTasks={focusableTasks}
-        initialSelectedActivityId={resolvedSearchParams.activityId || null}
+        initialActivities={criticalData.activities}
+        initialBackpackItems={criticalData.backpackItems}
+        initialAllInventoryItems={criticalData.allInventoryItems}
+        historyBundlePromise={historyBundlePromise}
+        initialFocusableTasks={criticalData.focusableTasks}
+        initialSelectedActivityId={initialActivityId}
+        initialSelectedItemId={resolvedSearchParams.itemId || null}
         initialCreateActivity={resolvedSearchParams.createActivity === "true"}
         initialLinkActivity={resolvedSearchParams.linkActivity === "true"}
         initialFromSource={resolvedSearchParams.from || null}
         initialDailyFocusGoalMinutes={user?.dailyFocusGoalMinutes ?? null}
+        initialTimeZone={userTimeZone}
+        initialIsPremium={Boolean(user?.isPremium)}
+        initialExperienceMode={user?.experienceMode ?? "PRODUCTIVITY"}
       />
     </ScopedIntlProvider>
   );

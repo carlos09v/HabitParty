@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.AchievementRepository;
 import com.habitparty.application.ports.ArtifactRepository;
+import com.habitparty.application.ports.FriendshipRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
@@ -58,6 +59,8 @@ public class GetUserShowcaseUseCase {
   private final UserArtifactRepository userArtifactPort;
   private final TaskRepository taskPort;
   private final Clock clock;
+  private final FriendshipRepository friendshipPort;
+  private final GetUserRetrospectiveUseCase retrospectiveUseCase;
 
   @Autowired
   public GetUserShowcaseUseCase(
@@ -71,7 +74,9 @@ public class GetUserShowcaseUseCase {
       @Nullable ArtifactRepository artifactPort,
       @Nullable UserArtifactRepository userArtifactPort,
       @Nullable TaskRepository taskPort,
-      @Nullable Clock clock) {
+      @Nullable Clock clock,
+      @Nullable FriendshipRepository friendshipPort,
+      @Nullable GetUserRetrospectiveUseCase retrospectiveUseCase) {
     this.userPort = userPort;
     this.achievementPort = achievementPort;
     this.userAchievementPort = userAchievementPort;
@@ -85,6 +90,36 @@ public class GetUserShowcaseUseCase {
     this.userArtifactPort = userArtifactPort;
     this.taskPort = taskPort;
     this.clock = clock != null ? clock : Clock.systemDefaultZone();
+    this.friendshipPort = friendshipPort;
+    this.retrospectiveUseCase = retrospectiveUseCase;
+  }
+
+  public GetUserShowcaseUseCase(
+      UserRepository userPort,
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      @Nullable EffectiveStreakResolver effectiveStreakResolver,
+      @Nullable DailyResetUseCase dailyResetUseCase,
+      @Nullable ArtifactRepository artifactPort,
+      @Nullable UserArtifactRepository userArtifactPort,
+      @Nullable TaskRepository taskPort,
+      @Nullable Clock clock) {
+    this(
+        userPort,
+        achievementPort,
+        userAchievementPort,
+        profileHighlightPort,
+        evaluateUserAchievementsUseCase,
+        effectiveStreakResolver,
+        dailyResetUseCase,
+        artifactPort,
+        userArtifactPort,
+        taskPort,
+        clock,
+        null,
+        null);
   }
 
   public GetUserShowcaseUseCase(
@@ -218,7 +253,96 @@ public class GetUserShowcaseUseCase {
       int highestTaskStreak,
       @Nullable String highestTaskStreakTitle,
       @Nullable TaskType highestTaskStreakType,
-      List<TaskStreakSummary> highlightTaskStreaks) {
+      List<TaskStreakSummary> highlightTaskStreaks,
+      long friendsCount,
+      long pendingFriendRequestsCount,
+      boolean hasSeasonalRetroBanner,
+      @Nullable Integer seasonalRetroYear,
+      List<String> eligibleRetroArchetypes) {
+    public UserShowcaseResult(
+        User user,
+        int effectiveStreak,
+        List<ProfileHighlight> highlights,
+        List<AchievementProgressItem> achievements,
+        int unlockedCount,
+        int totalAchievements,
+        int totalAchievementPoints,
+        int maxPossiblePoints,
+        List<ArtifactProgressItem> artifacts,
+        int unlockedArtifactsCount,
+        int totalArtifactsCount,
+        List<TaskStreakSummary> taskStreaks,
+        int highestTaskStreak,
+        @Nullable String highestTaskStreakTitle,
+        @Nullable TaskType highestTaskStreakType,
+        List<TaskStreakSummary> highlightTaskStreaks,
+        long friendsCount,
+        long pendingFriendRequestsCount,
+        boolean hasSeasonalRetroBanner,
+        @Nullable Integer seasonalRetroYear) {
+      this(
+          user,
+          effectiveStreak,
+          highlights,
+          achievements,
+          unlockedCount,
+          totalAchievements,
+          totalAchievementPoints,
+          maxPossiblePoints,
+          artifacts,
+          unlockedArtifactsCount,
+          totalArtifactsCount,
+          taskStreaks,
+          highestTaskStreak,
+          highestTaskStreakTitle,
+          highestTaskStreakType,
+          highlightTaskStreaks,
+          friendsCount,
+          pendingFriendRequestsCount,
+          hasSeasonalRetroBanner,
+          seasonalRetroYear,
+          List.of());
+    }
+
+    public UserShowcaseResult(
+        User user,
+        int effectiveStreak,
+        List<ProfileHighlight> highlights,
+        List<AchievementProgressItem> achievements,
+        int unlockedCount,
+        int totalAchievements,
+        int totalAchievementPoints,
+        int maxPossiblePoints,
+        List<ArtifactProgressItem> artifacts,
+        int unlockedArtifactsCount,
+        int totalArtifactsCount,
+        List<TaskStreakSummary> taskStreaks,
+        int highestTaskStreak,
+        @Nullable String highestTaskStreakTitle,
+        @Nullable TaskType highestTaskStreakType,
+        List<TaskStreakSummary> highlightTaskStreaks) {
+      this(
+          user,
+          effectiveStreak,
+          highlights,
+          achievements,
+          unlockedCount,
+          totalAchievements,
+          totalAchievementPoints,
+          maxPossiblePoints,
+          artifacts,
+          unlockedArtifactsCount,
+          totalArtifactsCount,
+          taskStreaks,
+          highestTaskStreak,
+          highestTaskStreakTitle,
+          highestTaskStreakType,
+          highlightTaskStreaks,
+          0L,
+          0L,
+          false,
+          null);
+    }
     public UserShowcaseResult(
         User user,
         int effectiveStreak,
@@ -345,7 +469,9 @@ public class GetUserShowcaseUseCase {
         catalog,
         userUnlocks,
         snapshot.artifactCatalog(),
-        snapshot.userArtifacts());
+        snapshot.userArtifacts(),
+        true,
+        true);
   }
 
   /**
@@ -368,6 +494,15 @@ public class GetUserShowcaseUseCase {
    */
   @Transactional(readOnly = true)
   public UserShowcaseResult executeReadOnly(User preloadedUser) {
+    return executeReadOnly(preloadedUser, true);
+  }
+
+  /**
+   * Variante de leitura pura que permite pular a consulta de tarefas recorrentes
+   * quando o visitante não tem permissão para visualizar estatísticas.
+   */
+  @Transactional(readOnly = true)
+  public UserShowcaseResult executeReadOnly(User preloadedUser, boolean includeTaskStreaks) {
     if (preloadedUser == null || preloadedUser.getId() == null) {
       throw new ResourceNotFoundException("Usuário não encontrado.");
     }
@@ -375,7 +510,8 @@ public class GetUserShowcaseUseCase {
     List<ProfileHighlight> highlights = profileHighlightPort.findAllByUserIdOrderByDisplayOrder(userId);
     List<Achievement> catalog = achievementPort.findAllOrdered();
     List<UserAchievement> userUnlocks = userAchievementPort.findAllByUserId(userId);
-    return buildShowcaseResult(preloadedUser, highlights, catalog, userUnlocks, null, null);
+    return buildShowcaseResult(
+        preloadedUser, highlights, catalog, userUnlocks, null, null, false, includeTaskStreaks);
   }
 
   private UserShowcaseResult buildShowcaseResult(
@@ -384,7 +520,9 @@ public class GetUserShowcaseUseCase {
       List<Achievement> catalog,
       List<UserAchievement> userUnlocks,
       List<Artifact> preloadedArtifactCatalog,
-      List<UserArtifact> preloadedUserArtifacts) {
+      List<UserArtifact> preloadedUserArtifacts,
+      boolean includeOwnerBadges,
+      boolean includeTaskStreaks) {
     int highlightsCount = highlights.size();
     Map<UUID, UserAchievement> unlockMap = userUnlocks.stream()
         .collect(Collectors.toMap(UserAchievement::getAchievementId, Function.identity(), (a, b) -> a));
@@ -461,11 +599,13 @@ public class GetUserShowcaseUseCase {
           !ownedFlag || owned.isSeen()));
     }
 
-    List<TaskStreakSummary> allTaskStreaks = buildTaskStreakSummaries(user);
+    List<TaskStreakSummary> allTaskStreaks = includeTaskStreaks
+        ? buildTaskStreakSummaries(user)
+        : List.of();
     Set<String> existingTaskIds = allTaskStreaks.stream()
         .map(s -> s.id().toString())
         .collect(Collectors.toSet());
-    List<ProfileHighlight> effectiveHighlights = taskPort != null
+    List<ProfileHighlight> effectiveHighlights = (includeTaskStreaks && taskPort != null)
         ? highlights.stream()
             .filter(h -> h.getHighlightType() != HighlightType.TASK_STREAK
                 || h.getHighlightKey().filter(existingTaskIds::contains).isPresent())
@@ -492,9 +632,29 @@ public class GetUserShowcaseUseCase {
             .thenComparing(TaskStreakSummary::name, Comparator.reverseOrder()))
         .orElse(null);
 
+    long friendsCount = 0L;
+    long pendingFriendRequestsCount = 0L;
+    Integer seasonalRetroYear = null;
+    List<String> eligibleRetroArchetypes = List.of();
+    if (includeOwnerBadges) {
+      if (friendshipPort != null) {
+        friendsCount = friendshipPort.countAcceptedByUserId(user.getId());
+        pendingFriendRequestsCount = friendshipPort.countIncomingPendingByUserId(user.getId());
+      }
+      if (retrospectiveUseCase != null) {
+        seasonalRetroYear = retrospectiveUseCase.resolveSeasonalBannerYear(user).orElse(null);
+        eligibleRetroArchetypes = retrospectiveUseCase.findEligibleArchetypesForUser(user).stream()
+            .map(Enum::name)
+            .sorted()
+            .toList();
+      }
+    }
+
+    int effectiveStreak = includeTaskStreaks ? effectiveStreakResolver.resolve(user) : 0;
+
     return new UserShowcaseResult(
         user,
-        effectiveStreakResolver.resolve(user),
+        effectiveStreak,
         effectiveHighlights,
         items,
         unlockedCount,
@@ -508,7 +668,12 @@ public class GetUserShowcaseUseCase {
         topTaskRecord != null ? topTaskRecord.highestStreak() : 0,
         topTaskRecord != null ? topTaskRecord.name() : null,
         topTaskRecord != null ? topTaskRecord.taskType() : null,
-        highlightTaskStreaks);
+        highlightTaskStreaks,
+        friendsCount,
+        pendingFriendRequestsCount,
+        seasonalRetroYear != null,
+        seasonalRetroYear,
+        eligibleRetroArchetypes);
   }
 
   /**
@@ -539,7 +704,10 @@ public class GetUserShowcaseUseCase {
     if (taskPort == null || user == null || user.getId() == null) {
       return List.of();
     }
-    List<Task> recurringTasks = taskPort.findRecurringTasksByUserIds(List.of(user.getId()));
+    List<UUID> singleUserId = List.of(user.getId());
+    // Consulta enxuta sem carregar checklists (não utilizados na vitrine)
+    List<Task> recurringTasks = taskPort.findRecurringTasksLightweightByUserIds(singleUserId)
+        .orElseGet(() -> taskPort.findRecurringTasksByUserIds(singleUserId));
     if (recurringTasks == null || recurringTasks.isEmpty()) {
       return List.of();
     }

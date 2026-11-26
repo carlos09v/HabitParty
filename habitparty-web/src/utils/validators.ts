@@ -1,8 +1,10 @@
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
-import type { Task } from "@/types/task";
 import { getTodayDateString } from "./date";
+import { isTaskHardcoreLocked } from "./taskSchedule";
 
+export const FULL_NAME_MAX_LENGTH = 150;
 export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 64;
 
 export type PasswordStrengthKey =
   | "VERY_WEAK"
@@ -14,12 +16,13 @@ export type PasswordStrengthKey =
 export interface PasswordAnalysis {
   score: number; // 0 to 4
   levelKey: PasswordStrengthKey;
-  label: "Muito Fraca" | "Fraca" | "Razoável" | "Boa" | "Forte";
   colorClass: string;
   barBgClass: string;
   hasMinLength: boolean;
   hasUpperCase: boolean;
   hasLowerCase: boolean;
+  /** Alias semântico de `hasNumberOrSpecial` (exige símbolo em `@$!%*?&#`). */
+  hasSpecialChar: boolean;
   hasNumberOrSpecial: boolean;
 }
 
@@ -28,18 +31,18 @@ export function analyzePassword(password: string): PasswordAnalysis {
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   // Alinhado com a regex de CreateUserDTO / ResetPasswordRequestDTO / UpdateUserPasswordDTO no backend
-  const hasNumberOrSpecial = /[@$!%*?&#]/.test(password);
+  const hasSpecialChar = /[@$!%*?&#]/.test(password);
 
   if (!password) {
     return {
       score: 0,
       levelKey: "VERY_WEAK",
-      label: "Muito Fraca",
       colorClass: "text-neutral-400",
       barBgClass: "bg-white/10",
       hasMinLength: false,
       hasUpperCase: false,
       hasLowerCase: false,
+      hasSpecialChar: false,
       hasNumberOrSpecial: false,
     };
   }
@@ -48,58 +51,112 @@ export function analyzePassword(password: string): PasswordAnalysis {
   if (hasMinLength) passedRules++;
   if (hasUpperCase) passedRules++;
   if (hasLowerCase) passedRules++;
-  if (hasNumberOrSpecial) passedRules++;
+  if (hasSpecialChar) passedRules++;
 
   let score = 1;
   let levelKey: PasswordStrengthKey = "WEAK";
-  let label: PasswordAnalysis["label"] = "Fraca";
-  let colorClass = "text-danger-500";
+  let colorClass = "text-danger-400";
   let barBgClass = "bg-danger-500";
 
   if (passedRules <= 1) {
     score = 1;
     levelKey = "WEAK";
-    label = "Fraca";
-    colorClass = "text-danger-500";
+    colorClass = "text-danger-400";
     barBgClass = "bg-danger-500";
   } else if (passedRules === 2) {
     score = 2;
     levelKey = "FAIR";
-    label = "Razoável";
-    colorClass = "text-warning-500";
+    colorClass = "text-warning-400";
     barBgClass = "bg-warning-500";
   } else if (passedRules === 3) {
     score = 3;
     levelKey = "GOOD";
-    label = "Boa";
-    colorClass = "text-gold";
+    colorClass = "text-gold-ink dark:text-gold";
     barBgClass = "bg-gold";
   } else {
     score = 4;
     levelKey = "STRONG";
-    label = "Forte";
-    colorClass = "text-success-500";
+    colorClass = "text-success-400";
     barBgClass = "bg-success-500";
   }
 
   return {
     score,
     levelKey,
-    label,
     colorClass,
     barBgClass,
     hasMinLength,
     hasUpperCase,
     hasLowerCase,
-    hasNumberOrSpecial,
+    hasSpecialChar,
+    hasNumberOrSpecial: hasSpecialChar,
   };
+}
+
+export type FullNameValidationErrorKey =
+  | "fullNameRequired"
+  | "fullNameMaxLength";
+
+export function validateFullName(fullName: string): {
+  isValid: boolean;
+  errorKey?: FullNameValidationErrorKey;
+} {
+  const trimmed = fullName.trim();
+  if (!trimmed) {
+    return { isValid: false, errorKey: "fullNameRequired" };
+  }
+  if (trimmed.length > FULL_NAME_MAX_LENGTH) {
+    return { isValid: false, errorKey: "fullNameMaxLength" };
+  }
+  return { isValid: true };
+}
+
+export type UsernameValidationErrorKey =
+  | "usernameRequired"
+  | "usernameMinLength"
+  | "usernameInvalidChars";
+
+export const USERNAME_MIN_LENGTH = 3;
+export const USERNAME_MAX_LENGTH = 30;
+const USERNAME_PATTERN = /^[a-z0-9_]+$/;
+const BASIC_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function validateEmail(email: string): {
+  isValid: boolean;
+  errorKey?: "emailRequired" | "emailInvalid";
+} {
+  const trimmed = email.trim();
+  if (!trimmed) {
+    return { isValid: false, errorKey: "emailRequired" };
+  }
+  if (!BASIC_EMAIL_PATTERN.test(trimmed)) {
+    return { isValid: false, errorKey: "emailInvalid" };
+  }
+  return { isValid: true };
+}
+
+export function validateUsername(username: string): {
+  isValid: boolean;
+  errorKey?: UsernameValidationErrorKey;
+} {
+  const normalized = username.trim().toLowerCase();
+  if (!normalized) {
+    return { isValid: false, errorKey: "usernameRequired" };
+  }
+  if (normalized.length < USERNAME_MIN_LENGTH) {
+    return { isValid: false, errorKey: "usernameMinLength" };
+  }
+  if (!USERNAME_PATTERN.test(normalized)) {
+    return { isValid: false, errorKey: "usernameInvalidChars" };
+  }
+  return { isValid: true };
 }
 
 export type PasswordValidationErrorKey =
   | "passwordMinLength"
+  | "passwordMaxLength"
   | "passwordUppercase"
-  | "passwordNumberOrSpecial"
-  | "passwordWeak";
+  | "passwordNumberOrSpecial";
 
 /**
  * Valida se uma nova senha atende a todas as políticas de segurança de autenticação.
@@ -120,6 +177,14 @@ export function validateAuthPassword(password: string): {
     };
   }
 
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return {
+      isValid: false,
+      error: `A senha deve ter no máximo ${PASSWORD_MAX_LENGTH} caracteres.`,
+      errorKey: "passwordMaxLength",
+    };
+  }
+
   if (!strength.hasUpperCase) {
     return {
       isValid: false,
@@ -133,15 +198,6 @@ export function validateAuthPassword(password: string): {
       isValid: false,
       error: "A senha deve conter pelo menos um caractere especial (@$!%*?&#).",
       errorKey: "passwordNumberOrSpecial",
-    };
-  }
-
-  if (strength.score < 2) {
-    return {
-      isValid: false,
-      error:
-        "A senha é muito fraca. Inclua letras maiúsculas, minúsculas ou números/símbolos.",
-      errorKey: "passwordWeak",
     };
   }
 
@@ -272,13 +328,15 @@ export function validateHardcoreTodo(options: {
     isGamified = true,
   } = options;
   const t = getUtilityTranslator(locale, "validators.hardcoreTodo");
-  const todayStr = getTodayDateString(new Date(), timeZone);
+  const now = new Date();
+  const todayStr = getTodayDateString(now, timeZone);
+  const normalizedDueDate = dueDate ? dueDate.split("T")[0] : "";
+  const normalizedOriginalDueDate = taskToEdit?.dueDate
+    ? taskToEdit.dueDate.split("T")[0]
+    : "";
 
   const isEditingOverdueHardcore = Boolean(
-    isEditing &&
-      taskToEdit?.isHardcoreModeEnabled &&
-      taskToEdit?.dueDate &&
-      taskToEdit.dueDate < todayStr,
+    isEditing && isTaskHardcoreLocked(taskToEdit, now, timeZone),
   );
 
   if (!isHardcore) {
@@ -290,20 +348,20 @@ export function validateHardcoreTodo(options: {
     return null;
   }
 
-  if (!dueDate) {
+  if (!normalizedDueDate) {
     return isGamified
       ? t("missingDueDateGamified")
       : t("missingDueDateProductivity");
   }
 
-  if (!isEditing && dueDate < todayStr) {
+  if (!isEditing && normalizedDueDate < todayStr) {
     return isGamified ? t("pastDueDateGamified") : t("pastDueDateProductivity");
   }
 
   if (
     isEditingOverdueHardcore &&
-    taskToEdit?.dueDate &&
-    dueDate !== taskToEdit.dueDate
+    normalizedOriginalDueDate &&
+    normalizedDueDate !== normalizedOriginalDueDate
   ) {
     return isGamified
       ? t("changeOverdueDateGamified")
@@ -311,19 +369,4 @@ export function validateHardcoreTodo(options: {
   }
 
   return null;
-}
-
-/**
- * Determina se uma tarefa exige confirmação explícita antes de ser excluída.
- * Exige confirmação apenas quando há subtarefas (checklist), Modo Hardcore ativo
- * ou histórico relevante de ofensiva/execuções (streak / contadores).
- */
-export function shouldConfirmTaskDeletion(task: Task): boolean {
-  const hasChecklist = Boolean(task.checklist && task.checklist.length > 0);
-  const isHardcore = Boolean(task.isHardcoreModeEnabled);
-  const hasStreakOrProgress =
-    (task.streak ?? task.currentStreak ?? 0) > 0 ||
-    (task.positiveCount ?? 0) > 0;
-
-  return hasChecklist || isHardcore || hasStreakOrProgress;
 }

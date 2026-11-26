@@ -1,9 +1,11 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { invalidateSocialDomainTags } from "@/actions/cacheInvalidation";
-import { getErrorMessage } from "@/actions/types";
+import { type ActionState, getErrorMessage } from "@/actions/types";
 import { serverApi } from "@/api/server";
+import { getFriendsOverview } from "@/services/socialService";
 import type {
   FriendsOverviewData,
   RespondFriendRequestResponse,
@@ -14,11 +16,9 @@ import type {
 } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
 
-export async function regenerateFriendCodeAction(): Promise<{
-  success: boolean;
-  user?: UserResponseDTO;
-  error?: string;
-}> {
+export async function regenerateFriendCodeAction(): Promise<
+  ActionState<UserResponseDTO>
+> {
   const t = await getTranslations("settings.privacy");
   try {
     const { data, error } = await serverApi.POST(
@@ -34,7 +34,7 @@ export async function regenerateFriendCodeAction(): Promise<{
 
     invalidateSocialDomainTags(true);
 
-    return { success: true, user: data as UserResponseDTO };
+    return { success: true, data: data as UserResponseDTO };
   } catch (err) {
     return {
       success: false,
@@ -45,11 +45,7 @@ export async function regenerateFriendCodeAction(): Promise<{
 
 export async function updatePrivacySettingsAction(
   payload: UpdatePrivacySettingsPayload,
-): Promise<{
-  success: boolean;
-  user?: UserResponseDTO;
-  error?: string;
-}> {
+): Promise<ActionState<UserResponseDTO>> {
   const t = await getTranslations("settings.privacy");
   try {
     const { data, error } = await serverApi.PATCH("/users/me/privacy", {
@@ -65,7 +61,7 @@ export async function updatePrivacySettingsAction(
 
     invalidateSocialDomainTags(true);
 
-    return { success: true, user: data as UserResponseDTO };
+    return { success: true, data: data as UserResponseDTO };
   } catch (err) {
     return {
       success: false,
@@ -74,25 +70,23 @@ export async function updatePrivacySettingsAction(
   }
 }
 
-export async function getFriendsOverviewAction(): Promise<{
-  success: boolean;
-  data?: FriendsOverviewData;
-  error?: string;
-}> {
+export async function getFriendsOverviewAction(): Promise<
+  ActionState<FriendsOverviewData>
+> {
   const t = await getTranslations("showcase.friends");
   try {
-    const { data, error } = await serverApi.GET("/friends", {
-      cache: "no-store",
-    });
+    // Reutiliza o cache privado com tag "social" (já invalidado por updateTag em mutações),
+    // evitando GET /friends duplicado quando o RSC da página recarregou no mesmo ciclo.
+    const data = await getFriendsOverview();
 
-    if (error || !data) {
+    if (!data) {
       return {
         success: false,
-        error: getErrorMessage(error, t("loadError")),
+        error: t("loadError"),
       };
     }
 
-    return { success: true, data: data as FriendsOverviewData };
+    return { success: true, data };
   } catch (err) {
     return {
       success: false,
@@ -101,15 +95,13 @@ export async function getFriendsOverviewAction(): Promise<{
   }
 }
 
-export async function searchSocialUsersAction(query: string): Promise<{
-  success: boolean;
-  results: SearchSocialUserItem[];
-  error?: string;
-}> {
+export async function searchSocialUsersAction(
+  query: string,
+): Promise<ActionState<SearchSocialUserItem[]>> {
   const t = await getTranslations("showcase.friends");
   try {
     if (!query || query.trim().length < 2) {
-      return { success: true, results: [] };
+      return { success: true, data: [] };
     }
 
     const { data, error } = await serverApi.GET("/friends/search", {
@@ -120,16 +112,14 @@ export async function searchSocialUsersAction(query: string): Promise<{
     if (error || !data) {
       return {
         success: false,
-        results: [],
         error: getErrorMessage(error, t("searchError")),
       };
     }
 
-    return { success: true, results: data as SearchSocialUserItem[] };
+    return { success: true, data: data as SearchSocialUserItem[] };
   } catch (err) {
     return {
       success: false,
-      results: [],
       error: getErrorMessage(err, t("searchError")),
     };
   }
@@ -138,11 +128,7 @@ export async function searchSocialUsersAction(query: string): Promise<{
 export async function sendFriendRequestAction(input: {
   username?: string;
   friendCode?: string;
-}): Promise<{
-  success: boolean;
-  data?: SendFriendRequestResponse;
-  error?: string;
-}> {
+}): Promise<ActionState<SendFriendRequestResponse>> {
   const t = await getTranslations("showcase.friends");
   try {
     const { data, error } = await serverApi.POST("/friends/requests", {
@@ -173,11 +159,7 @@ export async function sendFriendRequestAction(input: {
 export async function respondFriendRequestAction(
   friendshipId: string,
   accept: boolean,
-): Promise<{
-  success: boolean;
-  data?: RespondFriendRequestResponse;
-  error?: string;
-}> {
+): Promise<ActionState<RespondFriendRequestResponse>> {
   const t = await getTranslations("showcase.friends");
   try {
     const { data, error } = await serverApi.PATCH(
@@ -206,10 +188,9 @@ export async function respondFriendRequestAction(
   }
 }
 
-export async function removeFriendshipAction(friendshipId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+export async function removeFriendshipAction(
+  friendshipId: string,
+): Promise<ActionState> {
   const t = await getTranslations("showcase.friends");
   try {
     const { error } = await serverApi.DELETE("/friends/{friendshipId}", {
@@ -234,10 +215,7 @@ export async function removeFriendshipAction(friendshipId: string): Promise<{
   }
 }
 
-export async function blockUserAction(userId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+export async function blockUserAction(userId: string): Promise<ActionState> {
   const t = await getTranslations("showcase.friends");
   try {
     const { error } = await serverApi.POST("/friends/block/{userId}", {
@@ -262,11 +240,9 @@ export async function blockUserAction(userId: string): Promise<{
   }
 }
 
-export async function getMyRetrospectiveAction(year?: number): Promise<{
-  success: boolean;
-  data?: UserRetrospectiveData;
-  error?: string;
-}> {
+export async function getMyRetrospectiveAction(
+  year?: number,
+): Promise<ActionState<UserRetrospectiveData>> {
   const t = await getTranslations("showcase.retrospective");
   try {
     const { data, error } = await serverApi.GET("/showcase/me/retrospective", {
@@ -293,18 +269,14 @@ export async function getMyRetrospectiveAction(year?: number): Promise<{
 export async function getPublicUserRetrospectiveAction(
   username: string,
   year?: number,
-): Promise<{
-  success: boolean;
-  data?: UserRetrospectiveData;
-  error?: string;
-}> {
+): Promise<ActionState<UserRetrospectiveData>> {
   const t = await getTranslations("showcase.retrospective");
   try {
     const { data, error } = await serverApi.GET(
       "/showcase/users/{username}/retrospective",
       {
         params: {
-          path: { username: decodeURIComponent(username) },
+          path: { username },
           ...(year ? { query: { year } } : {}),
         },
         cache: "no-store",
@@ -329,19 +301,26 @@ export async function getPublicUserRetrospectiveAction(
 
 export async function markSocialNotificationsSeenAction(
   notificationId?: string,
-): Promise<{ success: boolean }> {
+): Promise<ActionState> {
+  const t = await getTranslations("showcase.friends");
   try {
     const { error } = await serverApi.POST("/friends/notifications/seen", {
       body: notificationId ? { notificationId } : {},
     });
 
     if (error) {
-      return { success: false };
+      return {
+        success: false,
+        error: getErrorMessage(error, t("loadError")),
+      };
     }
 
-    invalidateSocialDomainTags();
+    updateTag("social");
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (err) {
+    return {
+      success: false,
+      error: getErrorMessage(err, t("loadError")),
+    };
   }
 }

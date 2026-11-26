@@ -166,6 +166,8 @@ export async function deleteReward(
     invalidateRewardDomainTags();
     if (deleteHistory) {
       updateTag("transactions");
+      updateTag("retrospective");
+      updateTag("showcase");
     }
     return { success: true };
   } catch (err) {
@@ -204,20 +206,12 @@ export async function reorderRewards(
   }
 }
 
-export async function redeemReward(
-  rewardId: string,
-  quantity = 1,
-): Promise<ActionState> {
+export async function redeemReward(rewardId: string): Promise<ActionState> {
   const t = await getTranslations("rewards.actions");
   try {
-    const safeQuantity =
-      Number.isFinite(quantity) && quantity >= 1
-        ? Math.min(50, Math.floor(quantity))
-        : 1;
     const { error } = await serverApi.POST("/rewards/{rewardId}/redeem", {
       params: {
         path: { rewardId },
-        query: safeQuantity > 1 ? { quantity: safeQuantity } : undefined,
       },
     });
 
@@ -313,6 +307,8 @@ export async function deleteRewardGroup(
     invalidateRewardDomainTags();
     if (deleteHistory) {
       updateTag("transactions");
+      updateTag("retrospective");
+      updateTag("showcase");
     }
     return { success: true };
   } catch (err) {

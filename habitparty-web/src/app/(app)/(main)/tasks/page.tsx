@@ -12,10 +12,7 @@ import {
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getTasksBoardData } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
-import {
-  getVisibleColumnsCookieName,
-  parseVisibleColumnsCookie,
-} from "@/utils/columnVisibility";
+import { readVisibleColumnsFromCookieStore } from "@/utils/columnVisibility";
 
 interface TasksPageProps {
   searchParams?: Promise<{
@@ -41,19 +38,20 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const shouldOpenCreateColumn = resolvedSearchParams.createColumn === "true";
   const targetColumnId = resolvedSearchParams.columnId;
 
-  const [{ activeWorkspace, initialColumns }, user] = await Promise.all([
-    getTasksBoardData(paramWorkspaceId || cookieWorkspaceId),
-    getCurrentUser(),
-  ]);
+  const [{ workspaces, activeWorkspace, initialColumns }, user] =
+    await Promise.all([
+      getTasksBoardData(paramWorkspaceId || cookieWorkspaceId),
+      getCurrentUser(),
+    ]);
 
   const isPremium = user?.isPremium ?? false;
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
   const workspaceId = activeWorkspace?.id || null;
 
-  const cookieVal = workspaceId
-    ? cookieStore.get(getVisibleColumnsCookieName(workspaceId))?.value
-    : undefined;
-  const parsedCookieIds = parseVisibleColumnsCookie(cookieVal);
+  const parsedCookieIds = readVisibleColumnsFromCookieStore(
+    cookieStore,
+    workspaceId,
+  );
 
   const initialVisibleColumnIds = resolveVisibleColumnIds(
     initialColumns.map((c) => c.id),
@@ -74,6 +72,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             targetColumnId={targetColumnId}
             isPremium={isPremium}
             workspaceId={workspaceId}
+            initialWorkspaces={workspaces}
           />
         </Suspense>
       </PageWrapper>

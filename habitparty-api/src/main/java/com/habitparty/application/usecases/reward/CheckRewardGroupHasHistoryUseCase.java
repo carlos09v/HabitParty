@@ -1,7 +1,9 @@
 package com.habitparty.application.usecases.reward;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,17 +34,42 @@ public class CheckRewardGroupHasHistoryUseCase {
       throw new DomainValidationException("Informe ao menos uma recompensa para verificação.");
     }
     Set<UUID> uniqueIds = new LinkedHashSet<>(rewardIds);
+    Map<UUID, Reward> rewardsById = loadRewardsByIds(uniqueIds);
+
     for (UUID rewardId : uniqueIds) {
-      Reward reward = rewardPort.findById(rewardId)
-          .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada!"));
+      Reward reward = rewardsById.get(rewardId);
+      if (reward == null) {
+        throw new ResourceNotFoundException("Recompensa não encontrada!");
+      }
       reward.validateOwnership(userIdLogado);
     }
 
-    for (UUID rewardId : uniqueIds) {
-      if (transactionPort.existsByReferenceIdAndUserId(rewardId, userIdLogado)) {
-        return true;
-      }
-    }
-    return false;
+    return transactionPort.existsAnyByReferenceIdsAndUserId(uniqueIds, userIdLogado)
+        .orElseGet(() -> {
+          for (UUID rewardId : uniqueIds) {
+            if (transactionPort.existsByReferenceIdAndUserId(rewardId, userIdLogado)) {
+              return true;
+            }
+          }
+          return false;
+        });
+  }
+
+  private Map<UUID, Reward> loadRewardsByIds(Set<UUID> rewardIds) {
+    Map<UUID, Reward> map = new HashMap<>(rewardIds.size());
+    rewardPort.findAllByIds(rewardIds).ifPresentOrElse(
+        rewards -> {
+          for (Reward reward : rewards) {
+            if (reward != null && reward.getId() != null) {
+              map.put(reward.getId(), reward);
+            }
+          }
+        },
+        () -> {
+          for (UUID rewardId : rewardIds) {
+            rewardPort.findById(rewardId).ifPresent(reward -> map.put(rewardId, reward));
+          }
+        });
+    return map;
   }
 }

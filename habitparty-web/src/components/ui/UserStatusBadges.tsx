@@ -31,7 +31,7 @@ export function UserRoleBadge({
           className,
         )}
       >
-        <Shield size={11} className="shrink-0" />
+        <Shield size={11} className="shrink-0" aria-hidden="true" />
         {adminLabel}
       </span>
     );
@@ -48,7 +48,7 @@ export function UserRoleBadge({
         className,
       )}
     >
-      <UserIcon size={11} className="shrink-0" />
+      <UserIcon size={11} className="shrink-0" aria-hidden="true" />
       {userLabel}
     </span>
   );
@@ -71,11 +71,11 @@ export function UserPlanBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold whitespace-nowrap shrink-0 bg-gold/20 text-amber-800 dark:text-gold border border-gold/40 shadow-2xs",
+          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold whitespace-nowrap shrink-0 bg-gold/20 text-gold-ink dark:text-gold border border-gold/40 shadow-2xs",
           className,
         )}
       >
-        <Crown size={11} className="stroke-2 shrink-0" />
+        <Crown size={11} className="stroke-2 shrink-0" aria-hidden="true" />
         {premiumLabel}
       </span>
     );
@@ -88,7 +88,11 @@ export function UserPlanBadge({
         className,
       )}
     >
-      <Sparkles size={11} className="text-neutral-400 shrink-0" />
+      <Sparkles
+        size={11}
+        className="text-neutral-400 shrink-0"
+        aria-hidden="true"
+      />
       {freeLabel}
     </span>
   );
@@ -114,16 +118,16 @@ export function UserVerifiedBadge({
       className={cn(
         "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-label-m font-bold uppercase tracking-wider whitespace-nowrap shrink-0 border",
         isVerified
-          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/35"
-          : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35",
+          ? "bg-success-500/15 text-success-400 border-success-500/35"
+          : "bg-amber-500/15 text-gold-ink dark:text-amber-300 border-amber-500/35",
         className,
       )}
       title={title}
     >
       {isVerified ? (
-        <CheckCircle2 size={10} className="shrink-0" />
+        <CheckCircle2 size={10} className="shrink-0" aria-hidden="true" />
       ) : (
-        <Clock size={10} className="shrink-0" />
+        <Clock size={10} className="shrink-0" aria-hidden="true" />
       )}
       {isVerified ? verifiedLabel : unverifiedLabel}
     </span>

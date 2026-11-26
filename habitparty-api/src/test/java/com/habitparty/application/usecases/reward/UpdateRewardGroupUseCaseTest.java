@@ -110,7 +110,6 @@ class UpdateRewardGroupUseCaseTest {
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(freeUser));
     when(rewardRepository.findAllByUserId(userId)).thenReturn(userRewards);
-    when(rewardRepository.getMaxOrderIndex(userId)).thenReturn(12);
     when(rewardRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
     UpdateRewardGroupCommand command = new UpdateRewardGroupCommand(
@@ -172,7 +171,6 @@ class UpdateRewardGroupUseCaseTest {
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(freeUser));
     when(rewardRepository.findAllByUserId(userId)).thenReturn(List.of(v1, v2));
-    when(rewardRepository.getMaxOrderIndex(userId)).thenReturn(1);
 
     UpdateRewardGroupCommand command = new UpdateRewardGroupCommand(
         List.of(v1.getId(), v2.getId()),

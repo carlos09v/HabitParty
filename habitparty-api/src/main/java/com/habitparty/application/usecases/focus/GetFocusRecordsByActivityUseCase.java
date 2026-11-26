@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
@@ -12,6 +13,7 @@ import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional(readOnly = true)
 public class GetFocusRecordsByActivityUseCase {
   private final FocusRecordRepository port;
   private final FocusActivityRepository focusActivityPort;

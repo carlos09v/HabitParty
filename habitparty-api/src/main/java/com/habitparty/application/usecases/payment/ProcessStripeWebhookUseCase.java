@@ -62,18 +62,31 @@ public class ProcessStripeWebhookUseCase {
   }
 
   private void processEvent(PaymentWebhookEvent event) {
-    if (event.eventId() != null && paymentEventRepository.existsByEventId(event.eventId())) {
-      log.info("Evento de pagamento {} já processado anteriormente. Ignorando reprocessamento.", event.eventId());
-      return;
+    String eventTypeName = (event instanceof PaymentWebhookEvent.IgnoredEvent ignored && ignored.eventType() != null)
+        ? ignored.eventType()
+        : event.getClass().getSimpleName();
+
+    // Claim atômico (INSERT ... ON CONFLICT DO NOTHING) para eliminar corrida entre entregas paralelas do Stripe
+    if (event.eventId() != null) {
+      UUID initialUserId = extractEventUserId(event);
+      boolean claimed = paymentEventRepository.claimEvent(event.eventId(), eventTypeName, initialUserId);
+      if (!claimed) {
+        log.info("Evento de pagamento {} já processado anteriormente. Ignorando reprocessamento.", event.eventId());
+        return;
+      }
     }
 
     if (event instanceof PaymentWebhookEvent.CheckoutCompleted checkout && checkout.sessionId() != null) {
-      if (paymentEventRepository.existsByEventId("session_" + checkout.sessionId())) {
+      boolean sessionClaimed = paymentEventRepository.claimEvent(
+          "session_" + checkout.sessionId(),
+          "CheckoutSessionCompleted",
+          checkout.userId());
+      if (!sessionClaimed) {
         log.info("Sessão de checkout {} já teve seus benefícios processados anteriormente. Ignorando duplicidade.", checkout.sessionId());
         if (event.eventId() != null) {
           paymentEventRepository.recordEvent(
               event.eventId(),
-              event.getClass().getSimpleName(),
+              eventTypeName,
               checkout.userId(),
               PaymentEventStatus.IGNORED,
               "Sessão já processada anteriormente via confirmação síncrona"
@@ -85,7 +98,6 @@ public class ProcessStripeWebhookUseCase {
 
     UUID resolvedUserId = null;
     PaymentEventStatus status = PaymentEventStatus.PROCESSED;
-    String errorMessage = null;
 
     switch (event) {
       case PaymentWebhookEvent.CheckoutCompleted checkout -> {
@@ -118,31 +130,33 @@ public class ProcessStripeWebhookUseCase {
     if (event instanceof PaymentWebhookEvent.CheckoutCompleted checkout
         && checkout.sessionId() != null
         && status == PaymentEventStatus.PROCESSED) {
-      if (paymentEventRepository.existsByEventId("session_" + checkout.sessionId())) {
-        log.info("Sessão de checkout {} já teve seus benefícios processados concorrentemente.", checkout.sessionId());
-      } else {
-        paymentEventRepository.recordEvent(
-            "session_" + checkout.sessionId(),
-            "CheckoutSessionCompleted",
-            resolvedUserId,
-            PaymentEventStatus.PROCESSED,
-            null
-        );
-      }
+      paymentEventRepository.recordEvent(
+          "session_" + checkout.sessionId(),
+          "CheckoutSessionCompleted",
+          resolvedUserId,
+          PaymentEventStatus.PROCESSED,
+          null
+      );
     }
 
     if (event.eventId() != null) {
-      String typeName = (event instanceof PaymentWebhookEvent.IgnoredEvent ignored && ignored.eventType() != null)
-          ? ignored.eventType()
-          : event.getClass().getSimpleName();
       paymentEventRepository.recordEvent(
           event.eventId(),
-          typeName,
+          eventTypeName,
           resolvedUserId,
           status,
-          errorMessage
+          null
       );
     }
+  }
+
+  private UUID extractEventUserId(PaymentWebhookEvent event) {
+    return switch (event) {
+      case PaymentWebhookEvent.CheckoutCompleted c -> c.userId();
+      case PaymentWebhookEvent.SubscriptionUpdated u -> u.userId();
+      case PaymentWebhookEvent.SubscriptionDeleted d -> d.userId();
+      case PaymentWebhookEvent.IgnoredEvent ignored -> null;
+    };
   }
 
   private UUID handleCheckoutCompleted(PaymentWebhookEvent.CheckoutCompleted checkout) {
@@ -152,13 +166,6 @@ public class ProcessStripeWebhookUseCase {
     if (user == null) {
       log.error("Usuário não encontrado para a sessão de checkout: {}", checkout.sessionId());
       return null;
-    }
-
-    // Revalida idempotência após adquirir o lock exclusivo do usuário (evita crédito duplo Pix em corrida)
-    if (checkout.sessionId() != null && paymentEventRepository.existsByEventId("session_" + checkout.sessionId())) {
-      log.info("Sessão {} já foi aplicada ao usuário {} sob lock exclusivo. Pulando crédito duplicado.",
-          checkout.sessionId(), user.getId());
-      return user.getId();
     }
 
     if (checkout.customerId() != null && !checkout.customerId().isBlank()) {
@@ -224,6 +231,23 @@ public class ProcessStripeWebhookUseCase {
       return null;
     }
 
+    String status = subUpdated.status();
+    String currentSubId = user.getStripeSubscriptionId();
+    boolean isDifferentSubscription = currentSubId != null && !currentSubId.isBlank()
+        && subUpdated.subscriptionId() != null && !subUpdated.subscriptionId().isBlank()
+        && !currentSubId.equals(subUpdated.subscriptionId());
+    boolean isRevocationStatus = "past_due".equalsIgnoreCase(status)
+        || "unpaid".equalsIgnoreCase(status)
+        || "canceled".equalsIgnoreCase(status);
+
+    // Evita que evento fora de ordem de uma assinatura antiga revogue uma nova assinatura ativa
+    if (isDifferentSubscription && isRevocationStatus && user.hasActiveRecurringSubscription()) {
+      log.info(
+          "Ignorando evento de revogação ({}) para assinatura antiga {} do usuário {}; assinatura ativa atual é {}.",
+          status, subUpdated.subscriptionId(), user.getId(), currentSubId);
+      return user.getId();
+    }
+
     user.setStripeSubscriptionId(subUpdated.subscriptionId());
     if (subUpdated.customerId() != null) {
       user.setStripeCustomerId(subUpdated.customerId());
@@ -239,7 +263,6 @@ public class ProcessStripeWebhookUseCase {
       }
     }
 
-    String status = subUpdated.status();
     if ("active".equalsIgnoreCase(status) || "trialing".equalsIgnoreCase(status)) {
       user.syncActiveSubscription(
           subUpdated.customerId(),
@@ -278,6 +301,16 @@ public class ProcessStripeWebhookUseCase {
       return null;
     }
 
+    String currentSubId = user.getStripeSubscriptionId();
+    if (currentSubId != null && !currentSubId.isBlank()
+        && subDeleted.subscriptionId() != null && !subDeleted.subscriptionId().isBlank()
+        && !currentSubId.equals(subDeleted.subscriptionId())) {
+      log.info(
+          "Ignorando exclusão fora de ordem da assinatura antiga {} do usuário {}; assinatura atual é {}.",
+          subDeleted.subscriptionId(), user.getId(), currentSubId);
+      return user.getId();
+    }
+
     user.revokeOnPaymentFailure(SubscriptionStatus.CANCELED);
     userRepository.save(user);
     log.info("Assinatura do usuário {} cancelada com sucesso.", user.getId());
@@ -289,10 +322,6 @@ public class ProcessStripeWebhookUseCase {
       Optional<User> lockedOpt = userRepository.findByIdForUpdate(userId);
       if (lockedOpt.isPresent()) {
         return lockedOpt;
-      }
-      Optional<User> fallbackOpt = userRepository.findById(userId);
-      if (fallbackOpt.isPresent()) {
-        return fallbackOpt;
       }
     }
 

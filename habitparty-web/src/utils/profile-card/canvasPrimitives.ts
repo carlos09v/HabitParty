@@ -1,31 +1,37 @@
+import { getUserInitials } from "@/components/ui/UserAvatar";
 import {
   type AvatarPresetOption,
   resolveAvatarPreset,
-} from "@/constants/cosmetics";
+} from "@/constants/avatarPresets";
+import { resolveAvatarSrc } from "@/utils/avatarUrl";
 import { FRAME_GRADIENTS } from "./palettes";
 import type { ProfileCardRenderInput, ThemePalette } from "./types";
 
 const MAX_CACHED_IMAGES = 24;
-const imageCache = new Map<string, HTMLImageElement | null>();
+const imageCache = new Map<string, HTMLImageElement>();
 const inflightImages = new Map<string, Promise<HTMLImageElement | null>>();
 
 export function resolveImageSource(url?: string | null): string | null {
-  if (!url) return null;
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("data:")
-  ) {
-    return url;
-  }
-  if (url.startsWith("/")) {
-    const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-    return base ? `${base}${url}` : url;
-  }
-  return url;
+  return resolveAvatarSrc(url);
 }
 
-function setCachedImage(key: string, value: HTMLImageElement | null): void {
+function appendCorsCacheBuster(url: string): string {
+  if (url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (!parsed.searchParams.has("hp_cors")) {
+      parsed.searchParams.set("hp_cors", "1");
+    }
+    return parsed.toString();
+  } catch {
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}hp_cors=1`;
+  }
+}
+
+function setCachedImage(key: string, value: HTMLImageElement): void {
   if (imageCache.size >= MAX_CACHED_IMAGES) {
     const oldestKey = imageCache.keys().next().value;
     if (oldestKey) imageCache.delete(oldestKey);
@@ -33,15 +39,16 @@ function setCachedImage(key: string, value: HTMLImageElement | null): void {
   imageCache.set(key, value);
 }
 
-/** Loads a CORS-safe image with deduplication and bounded in-memory caching. */
+/** Loads a CORS-safe image with deduplication and bounded in-memory caching (never caches failures). */
 export async function loadCorsSafeImage(
   url?: string | null,
 ): Promise<HTMLImageElement | null> {
   const resolved = resolveImageSource(url);
   if (!resolved || typeof window === "undefined") return null;
 
-  if (imageCache.has(resolved)) {
-    return imageCache.get(resolved) ?? null;
+  const cached = imageCache.get(resolved);
+  if (cached) {
+    return cached;
   }
 
   const inflight = inflightImages.get(resolved);
@@ -52,12 +59,19 @@ export async function loadCorsSafeImage(
   const promise = new Promise<HTMLImageElement | null>((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
+    let settled = false;
     const finish = (result: HTMLImageElement | null) => {
+      if (settled) return;
+      settled = true;
       inflightImages.delete(resolved);
-      setCachedImage(resolved, result);
-      resolve(result);
+      if (result && result.naturalWidth > 0 && result.naturalHeight > 0) {
+        setCachedImage(resolved, result);
+        resolve(result);
+      } else {
+        resolve(null);
+      }
     };
-    const timer = globalThis.setTimeout(() => finish(null), 2500);
+    const timer = globalThis.setTimeout(() => finish(null), 3500);
     img.onload = () => {
       globalThis.clearTimeout(timer);
       finish(img);
@@ -66,7 +80,7 @@ export async function loadCorsSafeImage(
       globalThis.clearTimeout(timer);
       finish(null);
     };
-    img.src = resolved;
+    img.src = appendCorsCacheBuster(resolved);
   });
 
   inflightImages.set(resolved, promise);
@@ -94,14 +108,14 @@ function truncateTextToWidth(
   if (ctx.measureText(text).width <= maxWidth) {
     return { text, truncated: false };
   }
-  let output = text;
+  const chars = Array.from(text);
   while (
-    output.length > minLength &&
-    ctx.measureText(`${output}…`).width > maxWidth
+    chars.length > minLength &&
+    ctx.measureText(`${chars.join("")}…`).width > maxWidth
   ) {
-    output = output.slice(0, -1);
+    chars.pop();
   }
-  return { text: `${output}…`, truncated: true };
+  return { text: `${chars.join("")}…`, truncated: true };
 }
 
 export function drawTruncatedText(
@@ -122,19 +136,32 @@ export function wrapTextLines(
   maxLines: number,
 ): string[] {
   const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
+  if (words.length === 0 || maxLines <= 0) return [];
 
   const lines: string[] = [];
   let current = "";
+  let overflowed = false;
 
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const next = current ? `${current} ${word}` : word;
     if (ctx.measureText(next).width <= maxWidth) {
       current = next;
+    } else if (lines.length === maxLines - 1) {
+      // Última linha disponível: acumula o restante para truncar a linha completa com reticências
+      current = next;
+      overflowed = true;
+      break;
     } else {
-      if (current) lines.push(current);
-      current = word;
-      if (lines.length === maxLines - 1) break;
+      if (current) {
+        lines.push(current);
+        current = word;
+      } else {
+        // Palavra individual maior que maxWidth
+        const { text: cut } = truncateTextToWidth(ctx, word, maxWidth);
+        lines.push(cut);
+        current = "";
+      }
     }
   }
 
@@ -149,8 +176,10 @@ export function wrapTextLines(
       last,
       maxWidth,
     );
-    if (truncated || words.join(" ").length > lines.join(" ").length) {
+    if (truncated) {
       lines[maxLines - 1] = truncatedLast;
+    } else if (overflowed && !last.endsWith("…")) {
+      lines[maxLines - 1] = truncateTextToWidth(ctx, `${last}…`, maxWidth).text;
     }
   }
 
@@ -366,24 +395,29 @@ export function drawAvatar(
 ): void {
   const activeFrameColors =
     frameId && frameId !== "none" ? FRAME_GRADIENTS[frameId] : undefined;
-  const ringColors =
-    activeFrameColors ?? (isPremium ? ["#FACC15", "#F59E0B"] : null);
 
   ctx.save();
-  if (ringColors) {
+  if (activeFrameColors) {
     const ringGrad = ctx.createLinearGradient(
       cx - radius,
       cy - radius,
       cx + radius,
       cy + radius,
     );
-    ringGrad.addColorStop(0, ringColors[0]);
-    ringGrad.addColorStop(1, ringColors[1]);
+    ringGrad.addColorStop(0, activeFrameColors[0]);
+    ringGrad.addColorStop(1, activeFrameColors[1]);
 
     ctx.beginPath();
     ctx.arc(cx, cy, radius + 5, 0, Math.PI * 2);
     ctx.fillStyle = ringGrad;
     ctx.fill();
+  } else if (isPremium) {
+    // Anel sutil para membros Premium sem moldura explícita ("none"), distinto de `cosmic_gold`
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + 2.5, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(250, 204, 21, 0.72)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
 
   ctx.beginPath();
@@ -410,8 +444,12 @@ export function drawAvatar(
     ctx.stroke();
 
     drawPresetVectorEmblem(ctx, cx, cy, radius, resolvedPreset);
-  } else if (avatarImg) {
-    const imgRatio = avatarImg.width / avatarImg.height;
+  } else if (
+    avatarImg &&
+    avatarImg.naturalWidth > 0 &&
+    avatarImg.naturalHeight > 0
+  ) {
+    const imgRatio = avatarImg.naturalWidth / avatarImg.naturalHeight;
     const targetSize = radius * 2;
     let drawW = targetSize;
     let drawH = targetSize;
@@ -424,12 +462,7 @@ export function drawAvatar(
   } else {
     ctx.fillStyle = palette.avatarFallbackBg;
     ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-    const initials =
-      name
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((part) => part.charAt(0).toUpperCase())
-        .join("") || "HP";
+    const initials = getUserInitials(name);
     ctx.fillStyle = palette.textPrimary;
     ctx.font = "800 36px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
@@ -547,7 +580,7 @@ export function drawCardHeaderAndIdentity(
   const brandWidth = ctx.measureText(
     input.labels.brandName.toUpperCase(),
   ).width;
-  drawBadgePill(
+  const headerBadgeWidth = drawBadgePill(
     ctx,
     input.labels.headerBadge,
     54 + brandWidth + 18,
@@ -557,6 +590,7 @@ export function drawCardHeaderAndIdentity(
     palette.gold,
   );
 
+  const leftLimit = 54 + brandWidth + 18 + headerBadgeWidth + 16;
   let rightCursor = width - 54;
   if (
     input.includeFriendCode &&
@@ -565,50 +599,56 @@ export function drawCardHeaderAndIdentity(
   ) {
     const codeText = `${input.labels.friendCodeLabel}: ${input.user.friendCode}`;
     ctx.font = "800 13px monospace";
-    const badgeWidth = ctx.measureText(codeText).width + 26;
-    rightCursor -= badgeWidth;
-    drawBadgePill(
-      ctx,
-      codeText,
-      rightCursor,
-      topY,
-      palette.panelBg,
-      palette.goldBorder,
-      palette.textPrimary,
-      "800 13px monospace",
-    );
-    rightCursor -= 10;
+    const badgeWidth = ctx.measureText(codeText).width + 24;
+    if (rightCursor - badgeWidth >= leftLimit) {
+      rightCursor -= badgeWidth;
+      drawBadgePill(
+        ctx,
+        codeText,
+        rightCursor,
+        topY,
+        palette.panelBg,
+        palette.goldBorder,
+        palette.textPrimary,
+        "800 13px monospace",
+      );
+      rightCursor -= 10;
+    }
   }
 
   if (input.user.isPremium) {
     ctx.font = "800 13px system-ui, -apple-system, sans-serif";
     const badgeWidth = ctx.measureText(input.labels.vipLabel).width + 24;
-    rightCursor -= badgeWidth;
-    drawBadgePill(
-      ctx,
-      input.labels.vipLabel,
-      rightCursor,
-      topY,
-      palette.goldSoftBg,
-      palette.goldBorder,
-      palette.gold,
-    );
-    rightCursor -= 10;
+    if (rightCursor - badgeWidth >= leftLimit) {
+      rightCursor -= badgeWidth;
+      drawBadgePill(
+        ctx,
+        input.labels.vipLabel,
+        rightCursor,
+        topY,
+        palette.goldSoftBg,
+        palette.goldBorder,
+        palette.gold,
+      );
+      rightCursor -= 10;
+    }
   }
 
   if (input.user.isFounder) {
     ctx.font = "800 13px system-ui, -apple-system, sans-serif";
     const badgeWidth = ctx.measureText(input.labels.founderLabel).width + 24;
-    rightCursor -= badgeWidth;
-    drawBadgePill(
-      ctx,
-      input.labels.founderLabel,
-      rightCursor,
-      topY,
-      "rgba(139, 92, 246, 0.18)",
-      "rgba(167, 139, 250, 0.55)",
-      palette.textPrimary,
-    );
+    if (rightCursor - badgeWidth >= leftLimit) {
+      rightCursor -= badgeWidth;
+      drawBadgePill(
+        ctx,
+        input.labels.founderLabel,
+        rightCursor,
+        topY,
+        "rgba(139, 92, 246, 0.18)",
+        "rgba(167, 139, 250, 0.55)",
+        palette.textPrimary,
+      );
+    }
   }
 
   const identityY = 112;
@@ -643,8 +683,16 @@ export function drawCardHeaderAndIdentity(
   const handleText = `@${input.user.username}`;
   ctx.fillStyle = palette.textMuted;
   ctx.font = "600 18px system-ui, -apple-system, sans-serif";
-  const handleWidth = ctx.measureText(handleText).width;
-  ctx.fillText(handleText, infoX, identityY + 46);
+  const maxHandleW = input.equippedTitleLabel?.trim()
+    ? Math.min(infoMaxW * 0.55, infoMaxW - 140)
+    : infoMaxW;
+  const { text: truncatedHandle } = truncateTextToWidth(
+    ctx,
+    handleText,
+    maxHandleW,
+  );
+  const handleWidth = ctx.measureText(truncatedHandle).width;
+  ctx.fillText(truncatedHandle, infoX, identityY + 46);
 
   if (
     input.equippedTitleLabel &&
@@ -712,11 +760,12 @@ export function drawCardHeaderAndIdentity(
     levelBoxW - 70,
   );
 
+  const clampedPercent = Math.min(100, Math.max(0, input.levelProgressPercent));
   ctx.fillStyle = palette.gold;
   ctx.font = "900 16px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "right";
   ctx.fillText(
-    `${Math.round(input.levelProgressPercent)}%`,
+    `${Math.round(clampedPercent)}%`,
     levelBoxX + levelBoxW - 18,
     identityY + 42,
   );
@@ -729,16 +778,15 @@ export function drawCardHeaderAndIdentity(
   ctx.fillStyle = palette.barTrack;
   ctx.fill();
 
-  const fillW = Math.max(
-    12,
-    (barW * Math.min(100, Math.max(0, input.levelProgressPercent))) / 100,
-  );
-  const barGrad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
-  barGrad.addColorStop(0, "#F59E0B");
-  barGrad.addColorStop(1, "#FACC15");
-  drawRoundedRect(ctx, barX, barY, fillW, 10, 5);
-  ctx.fillStyle = barGrad;
-  ctx.fill();
+  if (clampedPercent > 0) {
+    const fillW = Math.max(8, (barW * clampedPercent) / 100);
+    const barGrad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+    barGrad.addColorStop(0, "#F59E0B");
+    barGrad.addColorStop(1, "#FACC15");
+    drawRoundedRect(ctx, barX, barY, fillW, 10, 5);
+    ctx.fillStyle = barGrad;
+    ctx.fill();
+  }
 }
 
 export function drawCardFooter(

@@ -13,9 +13,15 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
@@ -23,20 +29,27 @@ import com.habitparty.adapters.out.persistence.mappers.UserMapper;
 import com.habitparty.adapters.out.persistence.repository.UserJpaRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
-import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserRole;
+import com.habitparty.infrastructure.CacheConfig;
 
 @Component
 public class UserAdapter implements UserRepository {
   private final UserJpaRepository userRepository;
   private final UserMapper userMapper;
+  private CacheManager cacheManager;
 
   public UserAdapter(UserJpaRepository userRepository, UserMapper userMapper) {
     this.userRepository = userRepository;
     this.userMapper = userMapper;
   }
 
+  @Autowired(required = false)
+  public void setCacheManager(@Nullable CacheManager cacheManager) {
+    this.cacheManager = cacheManager;
+  }
+
   @Override
+  @CacheEvict(cacheNames = CacheConfig.USER_TIMEZONES_CACHE, key = "#user.id", condition = "#user != null && #user.id != null")
   public User save(User user) {
     if (user.getFriendCode() == null || user.getFriendCode().isBlank()) {
       user.setFriendCode(generateUniqueFriendCode());
@@ -55,7 +68,7 @@ public class UserAdapter implements UserRepository {
   private String generateUniqueFriendCode() {
     for (int attempt = 0; attempt < 10; attempt++) {
       String candidate = User.generateRandomFriendCode();
-      if (!userRepository.existsByFriendCodeIgnoreCase(candidate)) {
+      if (!userRepository.existsByFriendCode(candidate)) {
         return candidate;
       }
     }
@@ -96,6 +109,16 @@ public class UserAdapter implements UserRepository {
     }
 
     userRepository.saveAll(entitiesToSave);
+    if (cacheManager != null) {
+      Cache tzCache = cacheManager.getCache(CacheConfig.USER_TIMEZONES_CACHE);
+      if (tzCache != null) {
+        for (User user : users) {
+          if (user != null && user.getId() != null) {
+            tzCache.evict(user.getId());
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -166,6 +189,7 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  @CacheEvict(cacheNames = CacheConfig.USER_TIMEZONES_CACHE, key = "#id", condition = "#id != null")
   public void deleteById(UUID id) {
     userRepository.deleteById(id);
   }
@@ -203,8 +227,32 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
-  public Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Boolean emailVerified, Pageable pageable) {
-    return userRepository.searchUsers(search, role, isPremium, isFounder, emailVerified, pageable)
+  public Optional<AdminUserStatsSummary> summarizeAdminUserStats() {
+    UserJpaRepository.AdminUserStatsProjection stats = userRepository.summarizeAdminUserStats();
+    if (stats == null) {
+      return Optional.of(new AdminUserStatsSummary(0L, 0L, 0L, 0L, 0L, 0L));
+    }
+    long total = stats.getTotalUsers();
+    long premium = stats.getPremiumUsers() != null ? stats.getPremiumUsers() : 0L;
+    long free = Math.max(0L, total - premium);
+    long founders = stats.getFounderUsers() != null ? stats.getFounderUsers() : 0L;
+    long admins = stats.getAdminUsers() != null ? stats.getAdminUsers() : 0L;
+    long verified = stats.getVerifiedUsers() != null ? stats.getVerifiedUsers() : 0L;
+    return Optional.of(new AdminUserStatsSummary(total, free, premium, founders, admins, verified));
+  }
+
+  @Override
+  public Page<User> searchUsers(
+      String search,
+      UserRole role,
+      Boolean isPremium,
+      Boolean isFounder,
+      Boolean emailVerified,
+      Pageable pageable) {
+    String searchPattern = (search != null && !search.isBlank())
+        ? "%" + escapeLikePattern(search.trim().toLowerCase(Locale.ROOT)) + "%"
+        : null;
+    return userRepository.searchUsers(searchPattern, role, isPremium, isFounder, emailVerified, pageable)
         .map(userMapper::toDomain);
   }
 
@@ -226,7 +274,7 @@ public class UserAdapter implements UserRepository {
     if (normalized == null) {
       return Optional.empty();
     }
-    return userRepository.findByFriendCodeIgnoreCase(normalized).map(userMapper::toDomain);
+    return userRepository.findByFriendCode(normalized).map(userMapper::toDomain);
   }
 
   @Override
@@ -235,7 +283,7 @@ public class UserAdapter implements UserRepository {
     if (normalized == null) {
       return false;
     }
-    return userRepository.existsByFriendCodeIgnoreCase(normalized);
+    return userRepository.existsByFriendCode(normalized);
   }
 
   @Override
@@ -249,7 +297,7 @@ public class UserAdapter implements UserRepository {
       return List.of();
     }
     String exactCode = !trimmed.startsWith("@") ? User.normalizeFriendCode(trimmed) : null;
-    String pattern = "%" + cleanedUsername.toLowerCase(Locale.ROOT) + "%";
+    String pattern = "%" + escapeLikePattern(cleanedUsername.toLowerCase(Locale.ROOT)) + "%";
     int safeLimit = Math.max(1, Math.min(limit, 30));
     return userRepository.searchSocialUsers(
             excludeUserId,
@@ -262,10 +310,22 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  @Cacheable(
+      cacheNames = CacheConfig.USER_TIMEZONES_CACHE,
+      key = "#id",
+      condition = "#id != null",
+      unless = "#result == null")
   public Optional<String> findTimezoneById(UUID id) {
     if (id == null) {
       return Optional.empty();
     }
     return userRepository.findTimezoneById(id);
+  }
+
+  static String escapeLikePattern(String raw) {
+    return raw
+        .replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_");
   }
 }

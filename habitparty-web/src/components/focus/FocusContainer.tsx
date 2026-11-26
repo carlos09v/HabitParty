@@ -4,39 +4,37 @@ import { BarChart2, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import {
-  getFocusActivityRecordsPage,
-  getFocusRecordsPage,
-} from "@/actions/focusActions";
-import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
-import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
-  dispatchTaskFocusRecorded,
-  useFocusTaskSync,
-} from "@/hooks/useFocusTaskSync";
-import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+  ExperienceModeFallbackProvider,
+  useExperienceMode,
+} from "@/hooks/useExperienceMode";
+import { useFocusRecordsState } from "@/hooks/useFocusRecordsState";
+import { useFocusTargetController } from "@/hooks/useFocusTargetController";
+import { useFocusTaskSync } from "@/hooks/useFocusTaskSync";
+import { useFocusContainerTimerSlice } from "@/hooks/useFocusTimer";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
+import type { FocusInitialHistoryBundle } from "@/services/focusService";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
   FocusableTaskItem,
   FocusRecord,
-  FocusRecordType,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { cn, removeBrowserQueryParam } from "@/utils";
-import { getTodayDateString } from "@/utils/date";
-import {
-  calculateProductiveMinutesForDate,
-  calculateRewardableMinutesForDate,
-} from "@/utils/focusDailyYield";
-import { mapFocusRecords } from "@/utils/focusMapper";
+import type { ExperienceMode } from "@/types/ui";
+import { cn } from "@/utils/cn";
 import { FocusMain } from "./FocusMain";
 import { FocusSidebarRight } from "./sidebar-right/FocusSidebarRight";
+import { FocusSidebarRightSkeleton } from "./sidebar-right/FocusSidebarRightSkeleton";
 
 const FocusManualRecordModal = dynamic(
   () =>
@@ -54,55 +52,201 @@ const SwitchFocusTargetModal = dynamic(
   { ssr: false },
 );
 
-const SwitchTimerModeModal = dynamic(
-  () =>
-    import("./modals/SwitchTimerModeModal").then(
-      (mod) => mod.SwitchTimerModeModal,
-    ),
-  { ssr: false },
-);
-
 function preloadFocusContainerModalChunks() {
   void import("./modals/FocusManualRecordModal");
   void import("./modals/SwitchFocusTargetModal");
-  void import("./modals/SwitchTimerModeModal");
+}
+
+interface SyncedTodayStats {
+  todaySummary: { minutes: number; sessionsCount: number };
+  todayRewardableMinutes: number;
+  todayDurationByActivityId: Record<string, number>;
+  allRecords: FocusRecord[];
+}
+
+interface RecordsMutationBridge {
+  onRecordUpdated: (updated: FocusRecord) => void;
+  onActivityDeleted: (activityId: string, deleteHistory: boolean) => void;
+}
+
+interface FocusSidebarStreamProps {
+  historyBundlePromise: Promise<FocusInitialHistoryBundle>;
+  initialActivities: FocusActivity[];
+  initialAllInventoryItems: InventoryItemResponseDTO[];
+  initialDailyFocusGoalMinutes: number | null;
+  initialTimeZone: string | null;
+  filterActivityId: string | null;
+  className: string;
+  onAddRecord: () => void;
+  onOptionsClick: () => void;
+  onEditRecord: (record: FocusRecord) => void;
+  onClearSelectedActivity: () => void;
+  onSyncTodayStats: (stats: SyncedTodayStats) => void;
+  mutationBridgeRef: React.RefObject<RecordsMutationBridge>;
+}
+
+/**
+ * Resolve `historyBundlePromise` dentro da fronteira `<Suspense>`, permitindo que o Palco de Foco
+ * seja entregue imediatamente no primeiro chunk HTML enquanto a sidebar de histórico faz streaming.
+ */
+function FocusSidebarStreamSection({
+  historyBundlePromise,
+  initialActivities,
+  initialAllInventoryItems,
+  initialDailyFocusGoalMinutes,
+  initialTimeZone,
+  filterActivityId,
+  className,
+  onAddRecord,
+  onOptionsClick,
+  onEditRecord,
+  onClearSelectedActivity,
+  onSyncTodayStats,
+  mutationBridgeRef,
+}: FocusSidebarStreamProps) {
+  const bundle = use(historyBundlePromise);
+
+  const recordsState = useFocusRecordsState({
+    initialActivities,
+    initialAllInventoryItems,
+    initialRecords: bundle.initialRecords,
+    initialSummary: bundle.initialSummary,
+    initialSummaryActivityId: bundle.initialSummaryActivityId,
+    initialTotalRecordsCount: bundle.totalRecordsCount,
+    initialHasMoreRecords: bundle.hasMoreRecords,
+    initialLoadedRecordsPage: bundle.initialLoadedRecordsPage,
+    initialRecordsPageSize: bundle.initialRecordsPageSize,
+    initialTimeZone,
+    selectedActivityId: filterActivityId,
+  });
+
+  const {
+    weekOffset,
+    handlePrevWeek,
+    handleNextWeek,
+    handleResetWeek,
+    selectedActivity,
+    recentRecords,
+    metrics,
+    weeklyDays,
+    totalWeekMinutes,
+    weekLabel,
+    weekDateRange,
+  } = recordsState.analytics;
+
+  useEffect(() => {
+    mutationBridgeRef.current = {
+      onRecordUpdated: recordsState.handleRecordUpdated,
+      onActivityDeleted: recordsState.handleActivityDeleted,
+    };
+  }, [
+    mutationBridgeRef,
+    recordsState.handleRecordUpdated,
+    recordsState.handleActivityDeleted,
+  ]);
+
+  useEffect(() => {
+    onSyncTodayStats({
+      todaySummary: {
+        minutes: metrics.todayFocusMinutes,
+        sessionsCount: metrics.todayRecordsCount,
+      },
+      todayRewardableMinutes: recordsState.todayRewardableMinutes,
+      todayDurationByActivityId: recordsState.todayDurationByActivityId,
+      allRecords: recordsState.allRecords,
+    });
+  }, [
+    onSyncTodayStats,
+    metrics.todayFocusMinutes,
+    metrics.todayRecordsCount,
+    recordsState.todayRewardableMinutes,
+    recordsState.todayDurationByActivityId,
+    recordsState.allRecords,
+  ]);
+
+  return (
+    <FocusSidebarRight
+      metrics={metrics}
+      todayProductiveMinutes={recordsState.todayProductiveMinutes}
+      todayRewardableMinutes={recordsState.todayRewardableMinutes}
+      dailyFocusGoalMinutes={initialDailyFocusGoalMinutes}
+      weeklyDays={weeklyDays}
+      totalWeekMinutes={totalWeekMinutes}
+      recentRecords={recentRecords}
+      totalRecordsCount={recordsState.displayedTotalRecordsCount}
+      isPartialTotalWindow={recordsState.isPartialTotalWindow}
+      hasMoreRecords={recordsState.hasMoreRecordsToShow}
+      isLoadingMoreRecords={recordsState.isLoadingMoreRecords}
+      onShowMoreRecords={recordsState.handleShowMoreRecords}
+      weekOffset={weekOffset}
+      weekLabel={weekLabel}
+      weekDateRange={weekDateRange}
+      onPrevWeek={handlePrevWeek}
+      onNextWeek={handleNextWeek}
+      onResetWeek={handleResetWeek}
+      onAddRecord={onAddRecord}
+      onOptionsClick={onOptionsClick}
+      onEditRecord={onEditRecord}
+      onDeleteRecord={recordsState.handleDeleteRecord}
+      onRecordUpdated={recordsState.handleRecordUpdated}
+      selectedActivityName={selectedActivity?.name}
+      onClearSelectedActivity={onClearSelectedActivity}
+      className={className}
+    />
+  );
 }
 
 interface FocusContainerProps {
   initialActivities: FocusActivity[];
   initialBackpackItems: InventoryItemResponseDTO[];
   initialAllInventoryItems?: InventoryItemResponseDTO[];
-  initialRecords: FocusRecord[];
-  initialTotalRecordsCount?: number;
-  initialHasMoreRecords?: boolean;
-  initialLoadedRecordsPage?: number;
+  historyBundlePromise: Promise<FocusInitialHistoryBundle>;
   initialFocusableTasks?: FocusableTaskItem[];
   initialSelectedActivityId?: string | null;
+  initialSelectedItemId?: string | null;
   initialCreateActivity?: boolean;
   initialLinkActivity?: boolean;
   initialFromSource?: string | null;
   initialDailyFocusGoalMinutes?: number | null;
+  initialTimeZone?: string | null;
+  initialIsPremium?: boolean;
+  initialExperienceMode?: ExperienceMode;
 }
 
-export function FocusContainer({
+export function FocusContainer(props: FocusContainerProps) {
+  return (
+    <ExperienceModeFallbackProvider
+      mode={props.initialExperienceMode ?? "PRODUCTIVITY"}
+    >
+      <FocusContainerContent {...props} />
+    </ExperienceModeFallbackProvider>
+  );
+}
+
+const EMPTY_DURATION_MAP: Record<string, number> = {};
+const EMPTY_RECORDS: FocusRecord[] = [];
+
+function FocusContainerContent({
   initialActivities,
   initialBackpackItems,
   initialAllInventoryItems = [],
-  initialRecords,
-  initialTotalRecordsCount,
-  initialHasMoreRecords = false,
-  initialLoadedRecordsPage = 0,
+  historyBundlePromise,
   initialFocusableTasks = [],
   initialSelectedActivityId = null,
+  initialSelectedItemId = null,
   initialCreateActivity = false,
   initialLinkActivity = false,
   initialFromSource = null,
   initialDailyFocusGoalMinutes = null,
+  initialTimeZone = null,
+  initialIsPremium = false,
 }: FocusContainerProps) {
   const t = useTranslations("focus.container");
   const { isGamified } = useExperienceMode();
   const router = useRouter();
-  const is_Premium = useUserStore((s) => s.is_Premium);
+  const isPremium = useUserStore((s) =>
+    s.user ? s.is_Premium : initialIsPremium,
+  );
   useIdlePreload(preloadFocusContainerModalChunks);
 
   const [focusableTasks, setFocusableTasks] = useState<FocusableTaskItem[]>(
@@ -146,26 +290,72 @@ export function FocusContainer({
     onFocusRecorded: handleTaskFocusRecordedFromFocus,
   });
 
-  const urlActivityId = initialSelectedActivityId || null;
-  const shouldOpenLinkActivityModal = initialLinkActivity;
-
-  // Atividade selecionada para filtro de métricas (não interfere no timer ativo)
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    urlActivityId,
+  // Filtro explícito de métricas da sidebar direita (desacoplado da seleção de alvo no palco)
+  const [filterActivityId, setFilterActivityId] = useState<string | null>(
+    () => {
+      if (!initialSelectedActivityId) return null;
+      const actIndex = initialActivities.findIndex(
+        (a) => a.id === initialSelectedActivityId,
+      );
+      if (actIndex === -1) return null;
+      return initialSelectedActivityId;
+    },
   );
-  const [selectedBackpackItemId, setSelectedBackpackItemId] = useState<
-    string | null
-  >(null);
-  const lastAppliedUrlActivityIdRef = useRef<string | null>(null);
-
-  const clearActivityQueryParam = useCallback(() => {
-    removeBrowserQueryParam("activityId");
-  }, []);
 
   // Aba mobile ativa (< xl): "timer" para Timer & Sessão, "metrics" para Métricas & Histórico
   const [mobileTab, setMobileTab] = useState<"timer" | "metrics">("timer");
+  const mobileTabRefs = useRef<
+    Partial<Record<"timer" | "metrics", HTMLButtonElement | null>>
+  >({});
 
-  // Modal centralizado de registro manual e edição compartilhado entre Main e Sidebar
+  const handleMobileTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const order = ["timer", "metrics"] as const;
+    const currentIdx = order.indexOf(mobileTab);
+    let nextIdx = -1;
+    if (e.key === "ArrowRight") {
+      nextIdx = (currentIdx + 1) % order.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIdx = (currentIdx - 1 + order.length) % order.length;
+    } else if (e.key === "Home") {
+      nextIdx = 0;
+    } else if (e.key === "End") {
+      nextIdx = order.length - 1;
+    }
+    if (nextIdx === -1) return;
+    e.preventDefault();
+    const nextTab = order[nextIdx];
+    setMobileTab(nextTab);
+    mobileTabRefs.current[nextTab]?.focus();
+  };
+
+  // Estatísticas do dia espelhadas da seção streamed da sidebar para o Palco e Cards
+  const [syncedStats, setSyncedStats] = useState<SyncedTodayStats>({
+    todaySummary: { minutes: 0, sessionsCount: 0 },
+    todayRewardableMinutes: 0,
+    todayDurationByActivityId: EMPTY_DURATION_MAP,
+    allRecords: EMPTY_RECORDS,
+  });
+  const mutationBridgeRef = useRef<RecordsMutationBridge>({
+    onRecordUpdated: () => {},
+    onActivityDeleted: () => {},
+  });
+
+  const handleSyncTodayStats = useCallback((stats: SyncedTodayStats) => {
+    setSyncedStats(stats);
+  }, []);
+
+  const handleRecordUpdated = useCallback((updated: FocusRecord) => {
+    mutationBridgeRef.current.onRecordUpdated(updated);
+  }, []);
+
+  const handleActivityDeleted = useCallback(
+    (activityId: string, deleteHistory: boolean) => {
+      mutationBridgeRef.current.onActivityDeleted(activityId, deleteHistory);
+    },
+    [],
+  );
+
+  // Modal centralizado de registro manual e edição
   const [manualRecordModalOpen, setManualRecordModalOpen] = useState(false);
   const [editingFocusRecord, setEditingFocusRecord] =
     useState<FocusRecord | null>(null);
@@ -176,844 +366,47 @@ export function FocusContainer({
     string | undefined
   >();
 
-  // Estado para confirmação de troca de alvo enquanto timer está ativo
-  const [pendingSwitchTarget, setPendingSwitchTarget] = useState<{
-    type: "activity" | "item" | "task";
-    activity?: FocusActivity;
-    item?: InventoryItemResponseDTO;
-    task?: { id: string; title: string };
-  } | null>(null);
-
-  // Estado para confirmação de troca de modo (Pomodoro <-> Cronômetro)
-  const [pendingSwitchMode, setPendingSwitchMode] =
-    useState<FocusRecordType | null>(null);
+  const clearSelectedBackpackItemRef = useRef<() => void>(() => {});
 
   const handleSessionSaved = useCallback(() => {
-    setSelectedActivityId(null);
-    setSelectedBackpackItemId(null);
+    setFilterActivityId(null);
+    clearSelectedBackpackItemRef.current();
   }, []);
 
-  // Controles e ações do timer desacoplados de variáveis de ticking a cada segundo e de sessionNotes.
-  const {
-    isActive,
-    isPaused,
-    mode,
-    phase = "WORK",
-    target,
-    hasElapsedSeconds,
-    resumeTimer,
-    changeMode,
-    startFocusActivity,
-    startFocusItem,
-    startFocusTask,
-    selectActivityTarget,
-    selectItemTarget,
-    selectTaskTarget,
-    unlinkTaskFromTarget,
-    resetTarget,
-    transferTarget,
-    syncTargetMetadata,
-    completeSession,
-  } = useFocusTimerControls({
+  // Fatia enxuta do timer (protegida contra mismatch de hidratação SSR)
+  const timer = useFocusContainerTimerSlice({
     onSessionSaved: handleSessionSaved,
   });
 
-  const [extraRecords, setExtraRecords] = useState<FocusRecord[]>([]);
-  const [editedRecordsById, setEditedRecordsById] = useState<
-    Record<string, FocusRecord>
-  >({});
-  const [deletedActivityIds, setDeletedActivityIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [deletedRecordIds, setDeletedRecordIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [preservedActivityIds, setPreservedActivityIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [loadedRecordsPage, setLoadedRecordsPage] = useState(
-    initialLoadedRecordsPage,
-  );
-  const [hasMoreServerRecords, setHasMoreServerRecords] = useState(
-    initialHasMoreRecords,
-  );
-  const [totalServerRecords, setTotalServerRecords] = useState(
-    initialTotalRecordsCount ?? initialRecords.length,
-  );
-  const [activityPagination, setActivityPagination] = useState<
-    Record<
-      string,
-      { nextPage: number; hasMore: boolean; totalElements: number }
-    >
-  >({});
-  const [isLoadingMoreRecords, setIsLoadingMoreRecords] = useState(false);
-  const hasPaginatedBeyondInitialRef = useRef(false);
-
-  useEffect(() => {
-    setEditedRecordsById({});
-    setDeletedActivityIds(new Set());
-    setDeletedRecordIds(new Set());
-    setPreservedActivityIds(new Set());
-    setActivityPagination({});
-    setTotalServerRecords(initialTotalRecordsCount ?? initialRecords.length);
-    if (!hasPaginatedBeyondInitialRef.current) {
-      setLoadedRecordsPage(initialLoadedRecordsPage);
-      setHasMoreServerRecords(initialHasMoreRecords);
-    }
-  }, [
-    initialRecords,
-    initialHasMoreRecords,
-    initialLoadedRecordsPage,
-    initialTotalRecordsCount,
-  ]);
-
-  const allRecords = useMemo(() => {
-    const transformRecord = (rec: FocusRecord): FocusRecord | null => {
-      if (deletedRecordIds.has(rec.id)) {
-        return null;
-      }
-      if (rec.focusActivityId && deletedActivityIds.has(rec.focusActivityId)) {
-        return null;
-      }
-      const patched = editedRecordsById[rec.id] ?? rec;
-      if (
-        patched.focusActivityId &&
-        preservedActivityIds.has(patched.focusActivityId)
-      ) {
-        return {
-          ...patched,
-          focusActivityId: undefined,
-          activityName: undefined,
-          activityIcon: undefined,
-        };
-      }
-      return patched;
-    };
-
-    const seen = new Set<string>();
-    const merged: FocusRecord[] = [];
-    for (const rawList of [initialRecords, extraRecords]) {
-      for (const rawRec of rawList) {
-        if (seen.has(rawRec.id)) continue;
-        seen.add(rawRec.id);
-        const transformed = transformRecord(rawRec);
-        if (transformed) merged.push(transformed);
-      }
-    }
-    const withEndMs = merged.map((rec) => ({
-      rec,
-      endMs: Date.parse(rec.endTime) || 0,
-    }));
-    withEndMs.sort((a, b) => b.endMs - a.endMs);
-    return withEndMs.map((item) => item.rec);
-  }, [
-    initialRecords,
-    extraRecords,
-    editedRecordsById,
-    deletedRecordIds,
-    deletedActivityIds,
-    preservedActivityIds,
-  ]);
-
-  const allRecordsRef = useRef(allRecords);
-  useEffect(() => {
-    allRecordsRef.current = allRecords;
-  }, [allRecords]);
-
-  const {
-    weekOffset,
-    handlePrevWeek,
-    handleNextWeek,
-    handleResetWeek,
-    selectedActivity,
-    recentRecords,
-    relevantRecordsCount,
-    showMoreRecords,
-    metrics,
-    weeklyDays,
-    totalWeekMinutes,
-    weekLabel,
-    weekDateRange,
-  } = useFocusAnalytics({
+  const targetController = useFocusTargetController({
     initialActivities,
-    initialRecords: allRecords,
-    selectedActivityId,
+    initialBackpackItems,
+    focusableTasks,
+    initialSelectedActivityId,
+    initialSelectedItemId,
+    isPremium,
+    isGamified,
+    timer,
+    filterActivityId,
+    setFilterActivityId,
   });
 
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
-
-  const { todayProductiveMinutes, todayRewardableMinutes } = useMemo(() => {
-    const todayStr = getTodayDateString(new Date(), userTimeZone);
-    return {
-      todayProductiveMinutes: calculateProductiveMinutesForDate(
-        allRecords,
-        todayStr,
-        userTimeZone,
-      ),
-      todayRewardableMinutes: calculateRewardableMinutesForDate(
-        allRecords,
-        todayStr,
-        userTimeZone,
-        "endTime",
-      ),
+  useEffect(() => {
+    clearSelectedBackpackItemRef.current = () => {
+      targetController.setSelectedBackpackItemId(null);
     };
-  }, [allRecords, userTimeZone]);
-
-  const selectedActivityPagination = selectedActivityId
-    ? activityPagination[selectedActivityId]
-    : undefined;
-
-  const hasMoreRecordsToShow = selectedActivityId
-    ? recentRecords.length < relevantRecordsCount ||
-      (hasMoreServerRecords && (selectedActivityPagination?.hasMore ?? true))
-    : recentRecords.length < relevantRecordsCount || hasMoreServerRecords;
-
-  const displayedTotalRecordsCount = selectedActivityId
-    ? selectedActivityPagination
-      ? Math.max(relevantRecordsCount, selectedActivityPagination.totalElements)
-      : relevantRecordsCount
-    : Math.max(totalServerRecords, allRecords.length);
-
-  const handleShowMoreRecords = useCallback(async () => {
-    const nextVisibleTarget = recentRecords.length + 10;
-    const serverHasMoreForCurrentScope = selectedActivityId
-      ? hasMoreServerRecords && (selectedActivityPagination?.hasMore ?? true)
-      : hasMoreServerRecords;
-
-    if (
-      recentRecords.length < relevantRecordsCount &&
-      (nextVisibleTarget <= relevantRecordsCount ||
-        !serverHasMoreForCurrentScope)
-    ) {
-      showMoreRecords(10);
-      return;
-    }
-
-    if (!serverHasMoreForCurrentScope || isLoadingMoreRecords) {
-      showMoreRecords(10);
-      return;
-    }
-
-    setIsLoadingMoreRecords(true);
-    try {
-      if (selectedActivityId) {
-        const nextPage =
-          selectedActivityPagination?.nextPage ??
-          Math.floor(relevantRecordsCount / 20);
-        const res = await getFocusActivityRecordsPage(
-          selectedActivityId,
-          nextPage,
-        );
-        if (!res.success || !res.data) {
-          toast.error(!res.success ? res.error : t("loadMoreRecordsError"));
-          return;
-        }
-
-        const mapped = mapFocusRecords(
-          res.data.records,
-          initialActivities,
-          userTimeZone,
-          initialBackpackItems,
-        );
-        if (mapped.length > 0) {
-          setExtraRecords((prev) => [...prev, ...mapped]);
-        }
-        setActivityPagination((prev) => ({
-          ...prev,
-          [selectedActivityId]: {
-            nextPage: res.data.currentPage + 1,
-            hasMore: res.data.hasMore,
-            totalElements: res.data.totalElements,
-          },
-        }));
-        showMoreRecords(10);
-        return;
-      }
-
-      const res = await getFocusRecordsPage(loadedRecordsPage + 1, 100);
-      if (!res.success || !res.data) {
-        toast.error(!res.success ? res.error : t("loadMoreRecordsError"));
-        return;
-      }
-
-      hasPaginatedBeyondInitialRef.current = true;
-      const mapped = mapFocusRecords(
-        res.data.records,
-        initialActivities,
-        userTimeZone,
-        initialBackpackItems,
-      );
-      if (mapped.length > 0) {
-        setExtraRecords((prev) => [...prev, ...mapped]);
-      }
-      setLoadedRecordsPage(res.data.currentPage);
-      setHasMoreServerRecords(res.data.hasMore);
-      setTotalServerRecords(res.data.totalElements);
-      showMoreRecords(10);
-    } finally {
-      setIsLoadingMoreRecords(false);
-    }
-  }, [
-    recentRecords.length,
-    relevantRecordsCount,
-    selectedActivityId,
-    selectedActivityPagination,
-    hasMoreServerRecords,
-    isLoadingMoreRecords,
-    loadedRecordsPage,
-    initialActivities,
-    initialBackpackItems,
-    userTimeZone,
-    showMoreRecords,
-    t,
-  ]);
-
-  // Há tempo de foco real pendente de decisão apenas na fase WORK com segundos decorridos (> 0s)
-  const hasUnsavedWorkSession = phase === "WORK" && hasElapsedSeconds;
-
-  // Sincroniza atividade vinda da URL (ex: clique no widget do Dashboard /focus?activityId=...)
-  useEffect(() => {
-    if (!urlActivityId) {
-      lastAppliedUrlActivityIdRef.current = null;
-      return;
-    }
-
-    if (lastAppliedUrlActivityIdRef.current === urlActivityId) {
-      return;
-    }
-
-    const actIndex = initialActivities.findIndex((a) => a.id === urlActivityId);
-    if (actIndex === -1) return;
-
-    const isActLocked = !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
-    if (isActLocked) return;
-
-    lastAppliedUrlActivityIdRef.current = urlActivityId;
-    setSelectedActivityId(urlActivityId);
-    setSelectedBackpackItemId(null);
-
-    if (!isActive && !hasElapsedSeconds) {
-      selectActivityTarget(initialActivities[actIndex]);
-    }
-  }, [
-    urlActivityId,
-    initialActivities,
-    is_Premium,
-    isActive,
-    hasElapsedSeconds,
-    selectActivityTarget,
-  ]);
-
-  // Sincroniza o alvo com os dados reais do servidor
-  useEffect(() => {
-    const preferredIndex = urlActivityId
-      ? initialActivities.findIndex((a) => a.id === urlActivityId)
-      : -1;
-    const isPreferredValid =
-      preferredIndex !== -1 &&
-      (is_Premium || preferredIndex < MAX_FOCUS_ACTIVITIES_FREE);
-    const defaultActivity = isPreferredValid
-      ? initialActivities[preferredIndex]
-      : initialActivities[0];
-
-    if (!target) {
-      if (!isActive && !hasElapsedSeconds && defaultActivity) {
-        selectActivityTarget(defaultActivity);
-        setSelectedActivityId(
-          isPreferredValid
-            ? defaultActivity.id
-            : (prev) => prev ?? defaultActivity.id,
-        );
-      }
-      return;
-    }
-
-    if (target.type === "inventory") {
-      const currentItem = initialBackpackItems.find(
-        (item) => item.inventoryItemId === target.id,
-      );
-      if (!currentItem) {
-        resetTarget();
-        if (defaultActivity) {
-          selectActivityTarget(defaultActivity);
-          setSelectedActivityId(defaultActivity.id);
-        }
-      } else {
-        syncTargetMetadata({
-          id: currentItem.inventoryItemId,
-          name: currentItem.rewardName,
-          icon: currentItem.rewardIcon,
-          remainingSeconds: currentItem.remainingSeconds ?? undefined,
-        });
-      }
-    } else if (target.type === "activity") {
-      const actIndex = initialActivities.findIndex(
-        (act) => act.id === target.id,
-      );
-      const existsInActivities = actIndex !== -1;
-      const isActLocked = !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
-
-      if (!existsInActivities || isActLocked) {
-        resetTarget();
-        if (defaultActivity) {
-          selectActivityTarget(defaultActivity);
-          setSelectedActivityId(defaultActivity.id);
-        }
-      } else {
-        const currentAct = initialActivities[actIndex];
-        syncTargetMetadata({
-          id: currentAct.id,
-          name: currentAct.name,
-          icon: currentAct.icon,
-          targetMinutes: currentAct.targetTimeMinutes,
-        });
-        if (target.taskId) {
-          const linkedTask = focusableTasks.find(
-            (tItem) => tItem.id === target.taskId,
-          );
-          if (!linkedTask) {
-            unlinkTaskFromTarget();
-          } else if (linkedTask.title !== target.taskName) {
-            syncTargetMetadata({
-              id: currentAct.id,
-              taskId: linkedTask.id,
-              taskName: linkedTask.title,
-            });
-          }
-        }
-      }
-    } else if (target.type === "task") {
-      const currentTask = focusableTasks.find(
-        (tItem) => tItem.id === target.id,
-      );
-      if (currentTask) {
-        syncTargetMetadata({
-          id: currentTask.id,
-          name: currentTask.title,
-          taskId: currentTask.id,
-          taskName: currentTask.title,
-        });
-      } else {
-        resetTarget();
-        if (defaultActivity) {
-          selectActivityTarget(defaultActivity);
-          setSelectedActivityId(defaultActivity.id);
-        }
-      }
-    }
-  }, [
-    target,
-    urlActivityId,
-    isActive,
-    hasElapsedSeconds,
-    initialBackpackItems,
-    initialActivities,
-    focusableTasks,
-    is_Premium,
-    resetTarget,
-    selectActivityTarget,
-    syncTargetMetadata,
-    unlinkTaskFromTarget,
-  ]);
-
-  const handleSelectActivity = useCallback(
-    (activityId: string | null) => {
-      setSelectedActivityId(activityId);
-      if (activityId) {
-        setSelectedBackpackItemId(null);
-        if (urlActivityId && activityId !== urlActivityId) {
-          clearActivityQueryParam();
-        }
-      } else {
-        clearActivityQueryParam();
-      }
-
-      if (!isActive && !hasElapsedSeconds && activityId) {
-        const actIndex = initialActivities.findIndex(
-          (a) => a.id === activityId,
-        );
-        const isActLocked =
-          !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
-        if (actIndex !== -1 && !isActLocked) {
-          selectActivityTarget(initialActivities[actIndex]);
-        }
-      }
-    },
-    [
-      urlActivityId,
-      clearActivityQueryParam,
-      isActive,
-      hasElapsedSeconds,
-      initialActivities,
-      is_Premium,
-      selectActivityTarget,
-    ],
-  );
-
-  const handleSelectBackpackItem = useCallback(
-    (item: InventoryItemResponseDTO | null) => {
-      if (!item) {
-        setSelectedBackpackItemId(null);
-        return;
-      }
-      const itemId = item.inventoryItemId || null;
-      const isDeselecting =
-        itemId !== null && selectedBackpackItemId === itemId;
-
-      if (isDeselecting) {
-        setSelectedBackpackItemId(null);
-        return;
-      }
-
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(itemId);
-
-      if (!isActive && !hasElapsedSeconds) {
-        selectItemTarget(item);
-      }
-    },
-    [selectedBackpackItemId, isActive, hasElapsedSeconds, selectItemTarget],
-  );
-
-  const handleStartFocusActivity = useCallback(
-    (act: FocusActivity) => {
-      const actIndex = initialActivities.findIndex((a) => a.id === act.id);
-      if (!is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE) {
-        toast.error(
-          isGamified
-            ? t("lockedActivityToast")
-            : t("lockedActivityToastProductivity"),
-        );
-        return;
-      }
-
-      if (target?.id === act.id && hasUnsavedWorkSession) {
-        setSelectedActivityId(act.id);
-        setSelectedBackpackItemId(null);
-        syncTargetMetadata({
-          id: act.id,
-          name: act.name,
-          icon: act.icon,
-          targetMinutes: act.targetTimeMinutes,
-        });
-        if (isPaused) {
-          resumeTimer();
-        }
-        return;
-      }
-
-      if (hasUnsavedWorkSession && target?.id !== act.id) {
-        setPendingSwitchTarget({ type: "activity", activity: act });
-        return;
-      }
-      setSelectedActivityId(act.id);
-      setSelectedBackpackItemId(null);
-      startFocusActivity(act);
-    },
-    [
-      initialActivities,
-      is_Premium,
-      isGamified,
-      t,
-      target?.id,
-      hasUnsavedWorkSession,
-      syncTargetMetadata,
-      isPaused,
-      resumeTimer,
-      startFocusActivity,
-    ],
-  );
-
-  const handleStartFocusItem = useCallback(
-    (item: InventoryItemResponseDTO) => {
-      if (target?.id === item.inventoryItemId && hasUnsavedWorkSession) {
-        setSelectedActivityId(null);
-        setSelectedBackpackItemId(item.inventoryItemId || null);
-        syncTargetMetadata({
-          id: item.inventoryItemId,
-          name: item.rewardName,
-          icon: item.rewardIcon,
-        });
-        if (isPaused) {
-          resumeTimer();
-        }
-        return;
-      }
-
-      if (hasUnsavedWorkSession && target?.id !== item.inventoryItemId) {
-        setPendingSwitchTarget({ type: "item", item });
-        return;
-      }
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(item.inventoryItemId || null);
-      startFocusItem(item);
-    },
-    [
-      target?.id,
-      hasUnsavedWorkSession,
-      syncTargetMetadata,
-      isPaused,
-      resumeTimer,
-      startFocusItem,
-    ],
-  );
-
-  const handleStartFocusTask = useCallback(
-    (task: { id: string; title: string }) => {
-      // Vincula micro-tarefa em sessão de Atividade apenas se não houver outra tarefa vinculada com tempo não salvo
-      if (
-        target?.type === "activity" &&
-        (!target.taskId || target.taskId === task.id || !hasUnsavedWorkSession)
-      ) {
-        selectTaskTarget(task);
-        return;
-      }
-
-      // Se houver uma sessão ativa com tempo decorrido, solicita confirmação de troca
-      if (hasUnsavedWorkSession && target?.id !== task.id) {
-        setPendingSwitchTarget({ type: "task", task });
-        return;
-      }
-
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(null);
-      startFocusTask(task);
-    },
-    [target, hasUnsavedWorkSession, selectTaskTarget, startFocusTask],
-  );
-
-  const handleTransferTarget = useCallback(() => {
-    if (!pendingSwitchTarget) return;
-    if (
-      pendingSwitchTarget.type === "activity" &&
-      pendingSwitchTarget.activity
-    ) {
-      transferTarget(pendingSwitchTarget.activity);
-      setSelectedActivityId(pendingSwitchTarget.activity.id);
-    } else if (
-      pendingSwitchTarget.type === "task" &&
-      pendingSwitchTarget.task
-    ) {
-      selectTaskTarget(pendingSwitchTarget.task);
-      if (isPaused || !isActive) {
-        resumeTimer();
-      }
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(null);
-    }
-    setPendingSwitchTarget(null);
-  }, [
-    pendingSwitchTarget,
-    transferTarget,
-    selectTaskTarget,
-    isPaused,
-    isActive,
-    resumeTimer,
-  ]);
-
-  const applyPendingTargetSwitch = useCallback(
-    (targetToStart: NonNullable<typeof pendingSwitchTarget>) => {
-      if (targetToStart.type === "activity" && targetToStart.activity) {
-        setSelectedActivityId(targetToStart.activity.id);
-        startFocusActivity(targetToStart.activity);
-      } else if (targetToStart.type === "item" && targetToStart.item) {
-        setSelectedActivityId(null);
-        startFocusItem(targetToStart.item);
-      } else if (targetToStart.type === "task" && targetToStart.task) {
-        setSelectedActivityId(null);
-        setSelectedBackpackItemId(null);
-        startFocusTask(targetToStart.task);
-      }
-      setPendingSwitchTarget(null);
-    },
-    [startFocusActivity, startFocusItem, startFocusTask],
-  );
-
-  const handleSaveAndStartNew = useCallback(async (): Promise<boolean> => {
-    const targetToStart = pendingSwitchTarget;
-    if (!targetToStart) return false;
-
-    const saved = await completeSession();
-    if (!saved) {
-      return false;
-    }
-
-    applyPendingTargetSwitch(targetToStart);
-    return true;
-  }, [pendingSwitchTarget, completeSession, applyPendingTargetSwitch]);
-
-  const handleDiscardAndStartNew = useCallback(() => {
-    if (!pendingSwitchTarget) return;
-    applyPendingTargetSwitch(pendingSwitchTarget);
-  }, [pendingSwitchTarget, applyPendingTargetSwitch]);
-
-  const handleChangeMode = useCallback(
-    (newMode: FocusRecordType) => {
-      if (newMode === mode) return;
-
-      if (hasUnsavedWorkSession) {
-        setPendingSwitchMode(newMode);
-        return;
-      }
-
-      changeMode(newMode);
-    },
-    [mode, hasUnsavedWorkSession, changeMode],
-  );
-
-  const handleConfirmSwitchMode = useCallback(() => {
-    if (!pendingSwitchMode) return;
-    changeMode(pendingSwitchMode);
-    setPendingSwitchMode(null);
-  }, [pendingSwitchMode, changeMode]);
-
-  const handleDeleteRecord = useCallback(
-    async (recordId: string, deleteHistory: boolean) => {
-      const deletedRecord = allRecords.find((r) => r.id === recordId);
-      await executeDeleteFocusRecord(
-        recordId,
-        {
-          success: t("deleteRecordSuccess"),
-          error: t("deleteRecordError"),
-        },
-        () => {
-          setDeletedRecordIds((prev) => new Set(prev).add(recordId));
-          setExtraRecords((prev) => prev.filter((r) => r.id !== recordId));
-          setEditedRecordsById((prev) => {
-            if (!(recordId in prev)) return prev;
-            const next = { ...prev };
-            delete next[recordId];
-            return next;
-          });
-          setTotalServerRecords((prev) => Math.max(0, prev - 1));
-          const activityId = deletedRecord?.focusActivityId;
-          if (activityId) {
-            setActivityPagination((prev) => {
-              const current = prev[activityId];
-              if (!current) return prev;
-              return {
-                ...prev,
-                [activityId]: {
-                  ...current,
-                  totalElements: Math.max(0, current.totalElements - 1),
-                },
-              };
-            });
-          }
-          if (deletedRecord?.taskId) {
-            dispatchTaskFocusRecorded({
-              taskId: deletedRecord.taskId,
-              durationMinutes: -Math.max(1, deletedRecord.durationMinutes),
-              cycles: -(deletedRecord.completedPomos ?? 0),
-            });
-          }
-        },
-        deleteHistory,
-        deletedRecord,
-      );
-    },
-    [allRecords, t],
-  );
-
-  const handleRecordUpdated = useCallback((updatedRecord: FocusRecord) => {
-    const previousRecord = allRecordsRef.current.find(
-      (r) => r.id === updatedRecord.id,
-    );
-
-    setEditedRecordsById((prev) => ({
-      ...prev,
-      [updatedRecord.id]: updatedRecord,
-    }));
-
-    setExtraRecords((prev) =>
-      prev.some((r) => r.id === updatedRecord.id)
-        ? prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r))
-        : prev,
-    );
-
-    const oldActivityId = previousRecord?.focusActivityId;
-    const newActivityId = updatedRecord.focusActivityId;
-    if (previousRecord && oldActivityId !== newActivityId) {
-      setActivityPagination((prev) => {
-        const hasOld = Boolean(oldActivityId && prev[oldActivityId]);
-        const hasNew = Boolean(newActivityId && prev[newActivityId]);
-        if (!hasOld && !hasNew) return prev;
-        const next = { ...prev };
-        if (oldActivityId && next[oldActivityId]) {
-          next[oldActivityId] = {
-            ...next[oldActivityId],
-            totalElements: Math.max(0, next[oldActivityId].totalElements - 1),
-          };
-        }
-        if (newActivityId && next[newActivityId]) {
-          next[newActivityId] = {
-            ...next[newActivityId],
-            totalElements: next[newActivityId].totalElements + 1,
-          };
-        }
-        return next;
-      });
-    }
-  }, []);
-
-  const handleActivityDeleted = useCallback(
-    (activityId: string, deleteHistory: boolean) => {
-      if (deleteHistory) {
-        const affectedRecords = allRecords.filter(
-          (r) => r.focusActivityId === activityId,
-        );
-        if (typeof window !== "undefined") {
-          const taskDeltas = new Map<
-            string,
-            { minutes: number; pomos: number }
-          >();
-          for (const rec of affectedRecords) {
-            if (!rec.taskId) continue;
-            const prev = taskDeltas.get(rec.taskId) ?? { minutes: 0, pomos: 0 };
-            taskDeltas.set(rec.taskId, {
-              minutes: prev.minutes + Math.max(1, rec.durationMinutes),
-              pomos: prev.pomos + (rec.completedPomos ?? 0),
-            });
-          }
-          taskDeltas.forEach((delta, taskId) => {
-            dispatchTaskFocusRecorded({
-              taskId,
-              durationMinutes: -delta.minutes,
-              cycles: -delta.pomos,
-            });
-          });
-        }
-        setDeletedActivityIds((prev) => new Set(prev).add(activityId));
-        setExtraRecords((prev) =>
-          prev.filter((r) => r.focusActivityId !== activityId),
-        );
-        setTotalServerRecords((prev) =>
-          Math.max(0, prev - affectedRecords.length),
-        );
-        setActivityPagination((prev) => {
-          if (!(activityId in prev)) return prev;
-          const next = { ...prev };
-          delete next[activityId];
-          return next;
-        });
-      } else {
-        setPreservedActivityIds((prev) => new Set(prev).add(activityId));
-      }
-      router.refresh();
-    },
-    [allRecords, router],
-  );
+  }, [targetController.setSelectedBackpackItemId]);
 
   const handleOpenManualRecordModal = useCallback(
     (params?: { activityId?: string; itemId?: string }) => {
       setEditingFocusRecord(null);
       setManualInitialActivityId(
-        params?.activityId ?? selectedActivityId ?? undefined,
+        params?.activityId ?? filterActivityId ?? undefined,
       );
       setManualInitialItemId(params?.itemId);
       setManualRecordModalOpen(true);
     },
-    [selectedActivityId],
+    [filterActivityId],
   );
 
   const handleOpenEditRecordModal = useCallback((record: FocusRecord) => {
@@ -1031,56 +424,75 @@ export function FocusContainer({
     router.push("/history?tab=FOCUS");
   }, [router]);
 
-  const handleClearSelectedActivity = useCallback(() => {
-    handleSelectActivity(null);
-  }, [handleSelectActivity]);
+  const { handleToggleActivityFilter } = targetController;
 
-  const todaySummary = useMemo(
-    () => ({
-      minutes: metrics.todayFocusMinutes,
-      sessionsCount: metrics.todayRecordsCount,
-    }),
-    [metrics.todayFocusMinutes, metrics.todayRecordsCount],
+  const handleClearSelectedActivity = useCallback(() => {
+    handleToggleActivityFilter(null);
+  }, [handleToggleActivityFilter]);
+
+  const sidebarVisibilityClass = useMemo(
+    () => (mobileTab === "metrics" ? "flex flex-1 w-full" : "hidden xl:flex"),
+    [mobileTab],
   );
 
   return (
     <div className="flex flex-col xl:flex-row h-full w-full overflow-hidden bg-background">
       {/* Abas Mobile (< xl) */}
       <div className="xl:hidden flex items-center justify-center p-2.5 bg-surface/60 border-b border-primary/20 shrink-0 z-20">
-        <div className="flex items-center p-1 rounded-xl bg-primary-dark/40 border border-white/10 w-full max-w-sm">
+        <div
+          role="tablist"
+          aria-label={t("tabs.ariaLabel")}
+          onKeyDown={handleMobileTabKeyDown}
+          className="flex items-center p-1 rounded-xl bg-primary-dark/40 border border-white/10 w-full max-w-sm"
+        >
           <button
+            ref={(el) => {
+              mobileTabRefs.current.timer = el;
+            }}
             type="button"
+            role="tab"
+            aria-selected={mobileTab === "timer"}
+            tabIndex={mobileTab === "timer" ? 0 : -1}
             onClick={() => setMobileTab("timer")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
+              "relative flex-1 flex items-center justify-center gap-2 min-h-9 py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
               mobileTab === "timer"
-                ? "bg-primary text-white shadow-sm"
+                ? "bg-primary text-white shadow-sm after:content-[''] after:absolute after:inset-x-3 after:bottom-0.5 after:border-b-2 after:border-gold"
                 : "text-neutral-400 hover:text-white hover:bg-white/5",
             )}
           >
-            <Timer size={14} />
+            <Timer size={14} aria-hidden="true" />
             <span>{t("tabs.timer")}</span>
-            {isActive && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+            {timer.isActive && (
+              <span
+                aria-hidden="true"
+                className="w-2 h-2 rounded-full bg-emerald-400 motion-safe:animate-pulse ml-0.5"
+              />
             )}
           </button>
           <button
+            ref={(el) => {
+              mobileTabRefs.current.metrics = el;
+            }}
             type="button"
+            role="tab"
+            aria-selected={mobileTab === "metrics"}
+            tabIndex={mobileTab === "metrics" ? 0 : -1}
             onClick={() => setMobileTab("metrics")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
+              "relative flex-1 flex items-center justify-center gap-2 min-h-9 py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
               mobileTab === "metrics"
-                ? "bg-primary text-white shadow-sm"
+                ? "bg-primary text-white shadow-sm after:content-[''] after:absolute after:inset-x-3 after:bottom-0.5 after:border-b-2 after:border-gold"
                 : "text-neutral-400 hover:text-white hover:bg-white/5",
             )}
           >
-            <BarChart2 size={14} />
+            <BarChart2 size={14} aria-hidden="true" />
             <span>{t("tabs.metrics")}</span>
           </button>
         </div>
       </div>
 
-      {/* Área Central Principal */}
+      {/* Área Central Principal (renderizada imediatamente sem aguardar histórico/resumo) */}
       <div
         className={cn(
           "flex-1 min-h-0 min-w-0 h-full",
@@ -1093,57 +505,51 @@ export function FocusContainer({
           activities={initialActivities}
           backpackItems={initialBackpackItems}
           focusableTasks={focusableTasks}
-          todaySummary={todaySummary}
-          todayRewardableMinutes={todayRewardableMinutes}
-          isPremium={is_Premium}
-          selectedActivityId={selectedActivityId}
-          selectedBackpackItemId={selectedBackpackItemId}
-          onSelectActivity={handleSelectActivity}
-          onSelectBackpackItem={handleSelectBackpackItem}
-          onStartFocusActivity={handleStartFocusActivity}
-          onStartFocusItem={handleStartFocusItem}
-          onStartFocusTask={handleStartFocusTask}
-          onChangeMode={handleChangeMode}
+          todaySummary={syncedStats.todaySummary}
+          todayRewardableMinutes={syncedStats.todayRewardableMinutes}
+          todayDurationByActivityId={syncedStats.todayDurationByActivityId}
+          isPremium={isPremium}
+          selectedActivityId={filterActivityId}
+          selectedBackpackItemId={targetController.selectedBackpackItemId}
+          onSelectActivity={targetController.handleSelectActivityStage}
+          onToggleActivityFilter={targetController.handleToggleActivityFilter}
+          onSelectBackpackItem={targetController.handleSelectBackpackItem}
+          onStartFocusActivity={targetController.handleStartFocusActivity}
+          onStartFocusItem={targetController.handleStartFocusItem}
+          onStartFocusTask={targetController.handleStartFocusTask}
+          onChangeMode={targetController.handleChangeMode}
           onOpenManualRecord={handleOpenManualRecordModal}
           onActivityDeleted={handleActivityDeleted}
           initialCreateActivity={initialCreateActivity}
-          initialLinkActivity={shouldOpenLinkActivityModal}
+          initialLinkActivity={initialLinkActivity}
           initialFromSource={initialFromSource}
         />
       </div>
 
-      {/* Sidebar Direita de Visão Geral, Gráfico e Histórico */}
-      <FocusSidebarRight
-        metrics={metrics}
-        todayProductiveMinutes={todayProductiveMinutes}
-        todayRewardableMinutes={todayRewardableMinutes}
-        dailyFocusGoalMinutes={initialDailyFocusGoalMinutes}
-        weeklyDays={weeklyDays}
-        totalWeekMinutes={totalWeekMinutes}
-        recentRecords={recentRecords}
-        totalRecordsCount={displayedTotalRecordsCount}
-        hasMoreRecords={hasMoreRecordsToShow}
-        isLoadingMoreRecords={isLoadingMoreRecords}
-        onShowMoreRecords={handleShowMoreRecords}
-        weekOffset={weekOffset}
-        weekLabel={weekLabel}
-        weekDateRange={weekDateRange}
-        onPrevWeek={handlePrevWeek}
-        onNextWeek={handleNextWeek}
-        onResetWeek={handleResetWeek}
-        onAddRecord={handleAddRecordSidebar}
-        onOptionsClick={handleOpenHistoryOptions}
-        onEditRecord={handleOpenEditRecordModal}
-        onDeleteRecord={handleDeleteRecord}
-        onRecordUpdated={handleRecordUpdated}
-        selectedActivityName={selectedActivity?.name}
-        onClearSelectedActivity={handleClearSelectedActivity}
-        className={cn(
-          mobileTab === "metrics" ? "flex flex-1 w-full" : "hidden xl:flex",
-        )}
-      />
+      {/* Sidebar Direita com Streaming via Suspense */}
+      <Suspense
+        fallback={
+          <FocusSidebarRightSkeleton className={sidebarVisibilityClass} />
+        }
+      >
+        <FocusSidebarStreamSection
+          historyBundlePromise={historyBundlePromise}
+          initialActivities={initialActivities}
+          initialAllInventoryItems={initialAllInventoryItems}
+          initialDailyFocusGoalMinutes={initialDailyFocusGoalMinutes}
+          initialTimeZone={initialTimeZone}
+          filterActivityId={filterActivityId}
+          className={sidebarVisibilityClass}
+          onAddRecord={handleAddRecordSidebar}
+          onOptionsClick={handleOpenHistoryOptions}
+          onEditRecord={handleOpenEditRecordModal}
+          onClearSelectedActivity={handleClearSelectedActivity}
+          onSyncTodayStats={handleSyncTodayStats}
+          mutationBridgeRef={mutationBridgeRef}
+        />
+      </Suspense>
 
-      {/* Modal Centralizado de Inserção / Edição de Registro Manual (Carregado sob demanda) */}
+      {/* Modal Centralizado de Inserção / Edição de Registro Manual */}
       {manualRecordModalOpen && (
         <FocusManualRecordModal
           isOpen={manualRecordModalOpen}
@@ -1157,7 +563,7 @@ export function FocusContainer({
           backpackItems={initialBackpackItems}
           allInventoryItems={initialAllInventoryItems}
           focusableTasks={focusableTasks}
-          records={allRecords}
+          records={syncedStats.allRecords}
           editingRecord={editingFocusRecord}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
@@ -1165,39 +571,29 @@ export function FocusContainer({
         />
       )}
 
-      {/* Modal para Confirmação de Troca de Sessão Ativa (Carregado sob demanda) */}
-      {pendingSwitchTarget !== null && (
+      {/* Modal para Confirmação de Troca de Sessão Ativa */}
+      {targetController.pendingSwitchTarget !== null && (
         <SwitchFocusTargetModal
-          isOpen={pendingSwitchTarget !== null}
-          onClose={() => setPendingSwitchTarget(null)}
-          currentName={target?.name || t("fallbacks.currentSession")}
+          isOpen={targetController.pendingSwitchTarget !== null}
+          onClose={() => targetController.setPendingSwitchTarget(null)}
+          currentName={timer.target?.name || t("fallbacks.currentSession")}
           newTargetName={
-            pendingSwitchTarget?.type === "activity"
-              ? pendingSwitchTarget.activity?.name || t("fallbacks.newActivity")
-              : pendingSwitchTarget?.type === "item"
-                ? pendingSwitchTarget.item?.rewardName ||
+            targetController.pendingSwitchTarget?.type === "activity"
+              ? targetController.pendingSwitchTarget.activity?.name ||
+                t("fallbacks.newActivity")
+              : targetController.pendingSwitchTarget?.type === "item"
+                ? targetController.pendingSwitchTarget.item?.rewardName ||
                   t("fallbacks.focusItem")
-                : pendingSwitchTarget?.task?.title ||
+                : targetController.pendingSwitchTarget?.task?.title ||
                   t("fallbacks.currentSession")
           }
-          isCurrentInventory={target?.type === "inventory"}
-          isCurrentTask={target?.type === "task"}
-          isNewInventory={pendingSwitchTarget?.type === "item"}
-          isNewTask={pendingSwitchTarget?.type === "task"}
-          onTransfer={handleTransferTarget}
-          onSaveAndStartNew={handleSaveAndStartNew}
-          onDiscardAndStartNew={handleDiscardAndStartNew}
-        />
-      )}
-
-      {/* Modal para Confirmação de Troca de Modo com Timer Ativo */}
-      {pendingSwitchMode && (
-        <SwitchTimerModeModal
-          isOpen={pendingSwitchMode !== null}
-          onClose={() => setPendingSwitchMode(null)}
-          currentMode={mode}
-          newMode={pendingSwitchMode}
-          onConfirm={handleConfirmSwitchMode}
+          isCurrentInventory={timer.target?.type === "inventory"}
+          isCurrentTask={timer.target?.type === "task"}
+          isNewInventory={targetController.pendingSwitchTarget?.type === "item"}
+          isNewTask={targetController.pendingSwitchTarget?.type === "task"}
+          onTransfer={targetController.handleTransferTarget}
+          onSaveAndStartNew={targetController.handleSaveAndStartNew}
+          onDiscardAndStartNew={targetController.handleDiscardAndStartNew}
         />
       )}
     </div>

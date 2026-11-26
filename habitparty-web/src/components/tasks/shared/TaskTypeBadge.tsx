@@ -52,8 +52,8 @@ export function TaskTypeBadge({
       className={cn(
         "rounded font-semibold border max-w-full shrink-0 uppercase transition-colors inline-flex items-center gap-1 leading-none",
         isCompact
-          ? "px-1.5 py-0.5 text-label-s tracking-normal leading-tight"
-          : "px-2 py-0.5 text-label-m tracking-wide shadow-2xs",
+          ? "h-[18px] px-1.5 text-label-s tracking-normal"
+          : "h-[20px] px-2 text-label-m tracking-wide shadow-2xs",
         typeMeta.color,
         className,
       )}

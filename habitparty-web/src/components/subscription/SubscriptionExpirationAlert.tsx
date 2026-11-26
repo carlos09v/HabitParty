@@ -2,10 +2,9 @@
 
 import { AlertTriangle, Clock, Crown, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
 import type { components } from "@/api/schema";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import type { AppLocale } from "@/i18n/config";
+import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/utils";
 import { getSubscriptionExpirationInfo } from "@/utils/subscription";
 
@@ -22,7 +21,7 @@ export function SubscriptionExpirationAlert({
 }: SubscriptionExpirationAlertProps) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("subscriptionAlert");
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
   const info = getSubscriptionExpirationInfo(user, locale);
 
   // Exibe apenas se estiver expirando em até 7 dias
@@ -34,85 +33,76 @@ export function SubscriptionExpirationAlert({
   const isUrgent = info.isUrgent;
 
   return (
-    <>
-      <aside
-        aria-label={t("ariaLabel")}
-        className={cn(
-          "rounded-xl p-2.5 border transition-colors duration-300 flex flex-col gap-1.5",
-          isLastDay
-            ? "bg-danger-500/10 border-danger-500/40 shadow-glow-danger-xs"
-            : isUrgent
-              ? "bg-orange-500/10 border-orange-500/35 shadow-glow-gold-xs"
-              : "bg-gold/10 border-gold/30",
-          className,
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border",
-              isLastDay
-                ? "bg-danger-500/20 border-danger-500/40 text-danger-400 animate-pulse"
-                : isUrgent
-                  ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
-                  : "bg-gold/20 border-gold/40 text-gold",
-            )}
-          >
-            {isLastDay ? (
-              <AlertTriangle size={13} className="stroke-2" />
-            ) : isUrgent ? (
-              <Clock size={13} className="stroke-2" />
-            ) : (
-              <Sparkles size={13} className="stroke-2" />
-            )}
-          </div>
-
-          <div className="flex flex-col min-w-0 flex-1">
-            <span
-              className={cn(
-                "text-xs font-bold leading-tight truncate",
-                isLastDay
-                  ? "text-danger-300"
-                  : isUrgent
-                    ? "text-orange-300"
-                    : "text-gold",
-              )}
-            >
-              {isLastDay
-                ? `🚨 ${info.formattedRemaining}`
-                : t("remainingOfPremium", {
-                    remaining: info.formattedRemaining,
-                  })}
-            </span>
-            <span className="text-[10px] text-neutral-400 leading-tight truncate">
-              {isLastDay ? t("lastDayHint") : t("normalHint")}
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsUpgradeModalOpen(true)}
+    <aside
+      aria-label={t("ariaLabel")}
+      className={cn(
+        "rounded-xl p-2.5 border transition-colors duration-300 flex flex-col gap-1.5",
+        isLastDay
+          ? "bg-danger-500/10 border-danger-500/40 shadow-glow-danger-xs"
+          : isUrgent
+            ? "bg-orange-500/10 border-orange-500/35 shadow-glow-gold-xs"
+            : "bg-gold/10 border-gold/30",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <div
           className={cn(
-            "w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition-[transform,background-color,color] flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98",
+            "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border",
             isLastDay
-              ? "bg-danger-500 hover:bg-danger-hover text-white"
+              ? "bg-danger-500/20 border-danger-500/40 text-danger-400 animate-pulse"
               : isUrgent
-                ? "bg-orange-500 hover:bg-orange-600 text-white"
-                : "bg-gold hover:bg-gold-hover text-on-gold",
+                ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                : "bg-gold/20 border-gold/40 text-gold",
           )}
         >
-          <Crown size={12} className="shrink-0 stroke-2" />
-          <span>{t("renewButton")}</span>
-        </button>
-      </aside>
+          {isLastDay ? (
+            <AlertTriangle size={13} className="stroke-2" />
+          ) : isUrgent ? (
+            <Clock size={13} className="stroke-2" />
+          ) : (
+            <Sparkles size={13} className="stroke-2" />
+          )}
+        </div>
 
-      {isUpgradeModalOpen && (
-        <UpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      )}
-    </>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span
+            className={cn(
+              "text-xs font-bold leading-tight truncate",
+              isLastDay
+                ? "text-danger-300"
+                : isUrgent
+                  ? "text-orange-300"
+                  : "text-gold",
+            )}
+          >
+            {isLastDay
+              ? `🚨 ${info.formattedRemaining}`
+              : t("remainingOfPremium", {
+                  remaining: info.formattedRemaining,
+                })}
+          </span>
+          <span className="text-[10px] text-neutral-400 leading-tight truncate">
+            {isLastDay ? t("lastDayHint") : t("normalHint")}
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={openUpgradeModal}
+        className={cn(
+          "w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition-[transform,background-color,color] flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98",
+          isLastDay
+            ? "bg-danger-500 hover:bg-danger-hover text-white"
+            : isUrgent
+              ? "bg-orange-500 hover:bg-orange-600 text-white"
+              : "bg-gold hover:bg-gold-hover text-on-gold",
+        )}
+      >
+        <Crown size={12} className="shrink-0 stroke-2" />
+        <span>{t("renewButton")}</span>
+      </button>
+    </aside>
   );
 }

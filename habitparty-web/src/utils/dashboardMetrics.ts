@@ -1,10 +1,12 @@
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
-import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
-import type { FocusRecord } from "@/types/focus";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
+import type {
+  DashboardFocusRecordSummary,
+  DashboardTransactionSummary,
+  WeeklyCalendarTaskSummary,
+} from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import {
   DEFAULT_TIMEZONE,
@@ -107,11 +109,12 @@ export function isTaskScheduledForDate(
     }
 
     const parts = parseDateParts(dateIso);
-    if (!parts) return true;
+    if (!parts) return false;
     const dateObj = new Date(Date.UTC(parts.year, parts.month, parts.day));
     const repeatType = (task.repeatType || "DAILY").toUpperCase();
     const repeatEvery = Math.max(1, task.repeatEvery ?? 1);
-    const anchorParts = parseDateParts(dueIso || startIso);
+    const anchorParts = parseDateParts(startIso || dueIso);
+    const hasExplicitStart = Boolean(startIso);
 
     if (repeatType === "DAILY") {
       if (repeatEvery > 1 && anchorParts) {
@@ -123,7 +126,8 @@ export function isTaskScheduledForDate(
         const diffDays = Math.round(
           (dateObj.getTime() - anchorMs) / 86_400_000,
         );
-        return diffDays >= 0 && diffDays % repeatEvery === 0;
+        if (hasExplicitStart && diffDays < 0) return false;
+        return ((diffDays % repeatEvery) + repeatEvery) % repeatEvery === 0;
       }
       return true;
     }
@@ -149,7 +153,8 @@ export function isTaskScheduledForDate(
           (getMondayUtcMs(dateObj) - getMondayUtcMs(anchorObj)) /
             (7 * 86_400_000),
         );
-        return diffWeeks >= 0 && diffWeeks % repeatEvery === 0;
+        if (hasExplicitStart && diffWeeks < 0) return false;
+        return ((diffWeeks % repeatEvery) + repeatEvery) % repeatEvery === 0;
       }
       return true;
     }
@@ -173,7 +178,10 @@ export function isTaskScheduledForDate(
           targetOrdinalWeek === startOrdinalWeek
         );
       }
-      return parts.day === startParts.day;
+      const lastDayOfTargetMonth = new Date(
+        Date.UTC(parts.year, parts.month + 1, 0),
+      ).getUTCDate();
+      return parts.day === Math.min(startParts.day, lastDayOfTargetMonth);
     }
 
     if (repeatType === "YEARLY") {
@@ -182,7 +190,11 @@ export function isTaskScheduledForDate(
       const yearsDiff = parts.year - startParts.year;
       if (yearsDiff < 0 || (repeatEvery > 1 && yearsDiff % repeatEvery !== 0))
         return false;
-      return parts.month === startParts.month && parts.day === startParts.day;
+      if (parts.month !== startParts.month) return false;
+      const lastDayOfTargetMonth = new Date(
+        Date.UTC(parts.year, parts.month + 1, 0),
+      ).getUTCDate();
+      return parts.day === Math.min(startParts.day, lastDayOfTargetMonth);
     }
 
     return true;
@@ -238,20 +250,25 @@ export function hasAnyTaskCompletedOnDate(
 }
 
 export function getTodayXp(
-  transactions: TransactionHistoryResponseDTO[] = [],
+  transactions: DashboardTransactionSummary[] = [],
   now: Date = new Date(),
   timeZone?: string | null,
 ): number {
   const todayKey = getTodayDateString(now, timeZone);
 
-  return transactions.reduce((acc, tx) => {
-    if (!tx.createdAt || (tx.xpAmount ?? 0) <= 0) return acc;
+  const total = transactions.reduce((acc, tx) => {
+    if (!tx.createdAt) return acc;
+    const xp = tx.xpAmount ?? 0;
+    if (xp === 0) return acc;
+    if (!tx.isReversal && xp < 0) return acc;
     const d = parseServerDate(tx.createdAt);
     if (d && getDateKeyInTimeZone(d, timeZone) === todayKey) {
-      return acc + (tx.xpAmount ?? 0);
+      return acc + (tx.isReversal ? -Math.abs(xp) : xp);
     }
     return acc;
   }, 0);
+
+  return Math.max(0, total);
 }
 
 /**
@@ -297,8 +314,6 @@ export interface WeeklyCalendarDayItem {
   dayNumber: number;
   isoString: string;
   isToday: boolean;
-  isPast: boolean;
-  isFuture: boolean;
   hasStreak: boolean;
   dueTodosCount: number;
   scheduledCount: number;
@@ -311,18 +326,18 @@ export interface WeeklyCalendarDayItem {
  */
 export function buildWeeklyCalendarData(
   tasks: WeeklyCalendarTaskSummary[],
-  transactions: TransactionHistoryResponseDTO[],
+  transactions: DashboardTransactionSummary[],
   weekOffset: number,
   todayIso: string,
   baseDate: Date = new Date(),
   locale: AppLocale = "pt-BR",
   timeZone?: string | null,
-  focusRecords: FocusRecord[] = [],
+  focusRecords: DashboardFocusRecordSummary[] = [],
   todayFocusMinutesOverride = 0,
+  streakRevertedDate?: string | null,
 ): {
   weekDays: WeeklyCalendarDayItem[];
   weekRangeLabel: string;
-  streakDaysInWeek: number;
 } {
   const baseParts = getDatePartsInTimeZone(baseDate, timeZone);
   const baseUtcMs = Date.UTC(
@@ -337,11 +352,13 @@ export function buildWeeklyCalendarData(
   const endOfWeek = new Date(startOfWeekUtcMs + 6 * dayMs);
   const shortWeekDays = getShortWeekDays(locale);
   const shortMonths = getShortMonths(locale);
+  const tCal = getUtilityTranslator(locale, "dashboard.weeklyCalendar");
 
   const taskCompletedDates = new Set<string>();
   for (const tx of transactions) {
     if (
       tx.createdAt &&
+      !tx.isReversal &&
       tx.transactionType &&
       TASK_COMPLETION_TRANSACTION_TYPES.has(tx.transactionType)
     ) {
@@ -364,10 +381,14 @@ export function buildWeeklyCalendarData(
     taskCompletedDates.add(todayIso);
   }
 
+  if (streakRevertedDate) {
+    taskCompletedDates.delete(streakRevertedDate);
+  }
+
   const focusMinutesByDate = new Map<string, number>();
   for (const rec of focusRecords) {
     if (rec.inventoryItemId) continue;
-    const rawDate = rec.startTime || rec.endTime;
+    const rawDate = rec.endTime || rec.startTime;
     if (!rawDate) continue;
     const dateKey = toLocalDateKey(rawDate, timeZone);
     if (!dateKey) continue;
@@ -394,7 +415,26 @@ export function buildWeeklyCalendarData(
     }
   }
 
-  let streakDaysInWeek = 0;
+  // Pré-indexa To-Dos por data em O(T) e separa Dailies uma única vez
+  const dueTodosByDate = new Map<string, number>();
+  const scheduledTodosByDate = new Map<string, number>();
+  const dailyTasks: WeeklyCalendarTaskSummary[] = [];
+  for (const t of tasks) {
+    const type = normalizeTaskType(t);
+    if (type === "todo") {
+      const dueIso = t.dueDate?.split("T")[0];
+      if (!dueIso) continue;
+      scheduledTodosByDate.set(
+        dueIso,
+        (scheduledTodosByDate.get(dueIso) ?? 0) + 1,
+      );
+      if (!t.completed) {
+        dueTodosByDate.set(dueIso, (dueTodosByDate.get(dueIso) ?? 0) + 1);
+      }
+    } else if (type === "daily") {
+      dailyTasks.push(t);
+    }
+  }
 
   const weekDays: WeeklyCalendarDayItem[] = shortWeekDays.map(
     (shortName, index) => {
@@ -408,26 +448,20 @@ export function buildWeeklyCalendarData(
         dayNumber,
       );
       const isToday = isoString === todayIso;
-      const isPast = isoString < todayIso;
-      const isFuture = isoString > todayIso;
-
       const hasStreak = activityDates.has(isoString);
-      if (hasStreak) {
-        streakDaysInWeek++;
+
+      const dueTodosCount = dueTodosByDate.get(isoString) ?? 0;
+      let scheduledDailies = 0;
+      for (const daily of dailyTasks) {
+        if (
+          isTaskScheduledForDate(daily, isoString, { includeHabits: false })
+        ) {
+          scheduledDailies++;
+        }
       }
+      const scheduledCount =
+        (scheduledTodosByDate.get(isoString) ?? 0) + scheduledDailies;
 
-      const dueTodosCount = tasks.filter(
-        (t) =>
-          normalizeTaskType(t) === "todo" &&
-          !t.completed &&
-          t.dueDate?.split("T")[0] === isoString,
-      ).length;
-
-      const scheduledCount = tasks.filter((t) =>
-        isTaskScheduledForDate(t, isoString, { includeHabits: false }),
-      ).length;
-
-      const tCal = getUtilityTranslator(locale, "dashboard.weeklyCalendar");
       const parts: string[] = [
         tCal("dayHeader", {
           weekDay: shortName,
@@ -451,8 +485,6 @@ export function buildWeeklyCalendarData(
         dayNumber,
         isoString,
         isToday,
-        isPast,
-        isFuture,
         hasStreak,
         dueTodosCount,
         scheduledCount,
@@ -474,7 +506,6 @@ export function buildWeeklyCalendarData(
   return {
     weekDays,
     weekRangeLabel,
-    streakDaysInWeek,
   };
 }
 
@@ -486,13 +517,13 @@ export const TASK_COMPLETION_TRANSACTION_TYPES = new Set([
 ]);
 
 export function getLatestTaskCompletionCreatedAt(
-  transactions: TransactionHistoryResponseDTO[] = [],
+  transactions: DashboardTransactionSummary[] = [],
 ): string | null {
   let latestCreatedAt: string | null = null;
   let latestTimestamp = -1;
 
   for (const tx of transactions) {
-    if (!tx.createdAt || !tx.transactionType) continue;
+    if (!tx.createdAt || !tx.transactionType || tx.isReversal) continue;
     if (!TASK_COMPLETION_TRANSACTION_TYPES.has(tx.transactionType)) continue;
     const parsed = parseServerDate(tx.createdAt);
     const ts = parsed?.getTime() ?? -1;
@@ -511,7 +542,7 @@ export function getLatestTaskCompletionCreatedAt(
  * para contabilizar a ofensiva diária mesmo em tarefas fora da lista de hoje.
  */
 export function hasCompletedTaskInTransactionsToday(
-  transactions: TransactionHistoryResponseDTO[] = [],
+  transactions: DashboardTransactionSummary[] = [],
   now: Date = new Date(),
   timeZone?: string | null,
 ): boolean {

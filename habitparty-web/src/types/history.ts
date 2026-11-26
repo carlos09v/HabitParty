@@ -7,9 +7,27 @@ export type PageTransactionHistoryResponseDTO =
 export type TransactionHistoryResponseDTO =
   components["schemas"]["TransactionHistoryResponseDTO"];
 
+export type TransactionHistorySummaryDTO =
+  components["schemas"]["TransactionHistorySummaryDTO"];
+
 export type HistoryTabId = "ALL" | "TASKS" | "SHOPPING" | "BACKPACK" | "FOCUS";
 
-export type HistoryPeriodFilter = "ALL" | "TODAY" | "7DAYS" | "30DAYS";
+export type HistoryPeriodFilter =
+  | "ALL"
+  | "TODAY"
+  | "7DAYS"
+  | "30DAYS"
+  | "THIS_MONTH"
+  | "LAST_MONTH"
+  | "CUSTOM";
+
+export type HistoryDirectionFilter = "ALL" | "IN" | "OUT";
+
+export type HistorySortOption =
+  | "NEWEST"
+  | "OLDEST"
+  | "HIGHEST_GOLD"
+  | "LOWEST_GOLD";
 
 export interface HistoryTab {
   id: HistoryTabId;
@@ -45,5 +63,6 @@ export interface HistoryPageSummary {
   goldEarned: number;
   goldSpent: number;
   xpEarned: number;
+  xpLost: number;
   totalCount: number;
 }

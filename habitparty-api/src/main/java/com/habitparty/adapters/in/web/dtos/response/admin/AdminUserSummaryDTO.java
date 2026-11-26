@@ -1,12 +1,10 @@
 package com.habitparty.adapters.in.web.dtos.response.admin;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 import com.habitparty.application.ports.projections.AdminUserSummaryProjection;
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserRole;
 
@@ -31,12 +29,6 @@ public record AdminUserSummaryDTO(
     long estimatedStorageBytes,
     String estimatedStorageFormatted
 ) {
-  private static OffsetDateTime toUtcOffsetDateTime(LocalDateTime raw) {
-    return raw != null
-        ? raw.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
-        : null;
-  }
-
   public static AdminUserSummaryDTO fromProjection(AdminUserSummaryProjection p) {
     return new AdminUserSummaryDTO(
         p.id(),
@@ -48,10 +40,10 @@ public record AdminUserSummaryDTO(
         p.isPremium(),
         p.isFounder(),
         p.emailVerified(),
-        toUtcOffsetDateTime(p.emailVerifiedAt()),
+        UtcDateTimeMapper.toUtcOffsetDateTime(p.emailVerifiedAt()),
         p.subscriptionStatus(),
-        toUtcOffsetDateTime(p.subscriptionEndsAt()),
-        toUtcOffsetDateTime(p.createdAt()),
+        UtcDateTimeMapper.toUtcOffsetDateTime(p.subscriptionEndsAt()),
+        UtcDateTimeMapper.toUtcOffsetDateTime(p.createdAt()),
         p.emailsSentThisMonth(),
         p.activeEmailReminders(),
         p.totalTasksCount(),

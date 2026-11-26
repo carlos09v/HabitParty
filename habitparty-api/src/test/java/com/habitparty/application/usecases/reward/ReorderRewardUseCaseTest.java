@@ -112,4 +112,56 @@ class ReorderRewardUseCaseTest {
     assertEquals(0, debt1.getOrder_index());
     assertEquals(1, debt2.getOrder_index());
   }
+
+  @Test
+  void shouldPreserveOmittedRewardsWhenReceivingPartialReorderPayload() {
+    UUID userId = UUID.randomUUID();
+    Reward first = new Reward(UUID.randomUUID(), userId, "A", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 0, "gift", null, RewardCategory.NONE, null, null);
+    Reward second = new Reward(UUID.randomUUID(), userId, "B", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 1, "gift", null, RewardCategory.NONE, null, null);
+    Reward third = new Reward(UUID.randomUUID(), userId, "C", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 2, "gift", null, RewardCategory.NONE, null, null);
+    Reward fourth = new Reward(UUID.randomUUID(), userId, "D", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 3, "gift", null, RewardCategory.NONE, null, null);
+
+    when(rewardRepository.findAllByUserId(userId)).thenReturn(List.of(first, second, third, fourth));
+
+    // Payload parcial trocando apenas os índices 2 e 3 (A e B omitidos devem permanecer em 0 e 1)
+    useCase.execute(userId, List.of(
+        new RewardOrderCommand(fourth.getId(), 2),
+        new RewardOrderCommand(third.getId(), 3)
+    ));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Reward>> captor = ArgumentCaptor.forClass(List.class);
+    verify(rewardRepository).saveAll(captor.capture());
+    assertEquals(2, captor.getValue().size());
+    assertEquals(0, first.getOrder_index());
+    assertEquals(1, second.getOrder_index());
+    assertEquals(2, fourth.getOrder_index());
+    assertEquals(3, third.getOrder_index());
+  }
+
+  @Test
+  void shouldPlacePartialPayloadCommandsRelativeToPinnedDebts() {
+    UUID userId = UUID.randomUUID();
+    Reward debt = new Reward(UUID.randomUUID(), userId, "Dívida", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 0, "alert", null, RewardCategory.DEBT, null, null);
+    Reward first = new Reward(UUID.randomUUID(), userId, "A", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 1, "gift", null, RewardCategory.NONE, null, null);
+    Reward second = new Reward(UUID.randomUUID(), userId, "B", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 2, "gift", null, RewardCategory.NONE, null, null);
+    Reward third = new Reward(UUID.randomUUID(), userId, "C", BigDecimal.TEN, List.of(), RewardType.SINGLE_USE, 3, "gift", null, RewardCategory.NONE, null, null);
+
+    when(rewardRepository.findAllByUserId(userId)).thenReturn(List.of(debt, first, second, third));
+
+    // Troca apenas B (2) e C (3) com dívida fixada em 0
+    useCase.execute(userId, List.of(
+        new RewardOrderCommand(third.getId(), 2),
+        new RewardOrderCommand(second.getId(), 3)
+    ));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Reward>> captor = ArgumentCaptor.forClass(List.class);
+    verify(rewardRepository).saveAll(captor.capture());
+    assertEquals(2, captor.getValue().size());
+    assertEquals(0, debt.getOrder_index());
+    assertEquals(1, first.getOrder_index());
+    assertEquals(2, third.getOrder_index());
+    assertEquals(3, second.getOrder_index());
+  }
 }

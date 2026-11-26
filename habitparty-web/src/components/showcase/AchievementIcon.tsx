@@ -155,7 +155,6 @@ const ACHIEVEMENT_ICON_MAP: Record<string, LucideIcon> = {
   crownstar: Crown,
   trophygold: Trophy,
   flamegold: Flame,
-  flamesolar: Flame,
   hourglassgold: Hourglass,
   sparklesgold: Sparkles,
 };

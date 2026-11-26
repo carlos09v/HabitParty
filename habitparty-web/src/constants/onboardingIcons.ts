@@ -1,0 +1,51 @@
+import {
+  BatteryLow,
+  Brain,
+  Briefcase,
+  CalendarCheck,
+  Clock,
+  Coffee,
+  Compass,
+  Flame,
+  GraduationCap,
+  Kanban,
+  type LucideIcon,
+  Moon,
+  Repeat,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Sun,
+  Target,
+  Timer,
+  User,
+  Zap,
+} from "lucide-react";
+import type { OnboardingIconKey } from "@/types/onboarding";
+
+/**
+ * Mapa único de ícones para preferências de rotina e onboarding,
+ * compartilhado entre o wizard `/firstStep` e `RoutinePreferencesCard` em `/settings`.
+ */
+export const ONBOARDING_ICON_MAP: Record<OnboardingIconKey, LucideIcon> = {
+  Target,
+  Sparkles,
+  User,
+  GraduationCap,
+  Briefcase,
+  Timer,
+  Flame,
+  Kanban,
+  CalendarCheck,
+  Coffee,
+  Clock,
+  Smartphone,
+  Repeat,
+  BatteryLow,
+  Zap,
+  Brain,
+  Sun,
+  Compass,
+  Moon,
+  ShieldCheck,
+};

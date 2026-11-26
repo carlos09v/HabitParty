@@ -27,7 +27,7 @@ public class ReorderBoardColumnUseCase {
     this.workspacePort = workspacePort;
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }

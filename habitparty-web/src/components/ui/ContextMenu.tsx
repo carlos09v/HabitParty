@@ -1,11 +1,19 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
+import { useEscapeStack } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
 import type { ContextMenuItem, ContextMenuProps } from "@/types/ui";
 import { cn } from "@/utils";
+import { resolveTopmostPortalContainer } from "@/utils/portal";
 
 export type { ContextMenuItem, ContextMenuProps };
 
@@ -18,8 +26,24 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const mounted = useIsClient();
   const menuRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const [adjustedPos, setAdjustedPos] = useState(position);
   const [openSubmenuKey, setOpenSubmenuKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const handleEscapeClose = useCallback(() => {
+    onCloseRef.current();
+    const prevEl = previouslyFocusedRef.current;
+    if (prevEl?.isConnected) {
+      prevEl.focus({ preventScroll: true });
+    }
+  }, []);
+
+  useEscapeStack(menuRef, handleEscapeClose, isOpen);
 
   // Reset submenu state whenever menu closes
   useEffect(() => {
@@ -49,9 +73,32 @@ export function ContextMenu({
     setAdjustedPos({ x: newX, y: newY });
   }, [isOpen, position, openSubmenuKey, items]);
 
-  // Handle click outside, scroll, and escape
+  // Handle click outside, external scroll, and arrow/home/end keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const getEnabledItems = () =>
+      menuRef.current
+        ? Array.from(
+            menuRef.current.querySelectorAll<HTMLButtonElement>(
+              '[role="menuitem"]:not([disabled])',
+            ),
+          )
+        : [];
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      const enabled = getEnabledItems();
+      if (enabled.length > 0) {
+        enabled[0].focus({ preventScroll: true });
+      } else {
+        menuRef.current?.focus({ preventScroll: true });
+      }
+    });
 
     const handlePointerDown = (e: Event) => {
       if (
@@ -59,18 +106,50 @@ export function ContextMenu({
         e.target instanceof Node &&
         !menuRef.current.contains(e.target)
       ) {
-        onClose();
+        onCloseRef.current();
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
+      if (
+        e.key === "ArrowDown" ||
+        e.key === "ArrowUp" ||
+        e.key === "Home" ||
+        e.key === "End"
+      ) {
+        const enabled = getEnabledItems();
+        if (enabled.length === 0) return;
+        e.preventDefault();
+
+        const currentIndex = enabled.indexOf(
+          document.activeElement as HTMLButtonElement,
+        );
+        if (e.key === "Home") {
+          enabled[0].focus();
+        } else if (e.key === "End") {
+          enabled[enabled.length - 1].focus();
+        } else if (e.key === "ArrowDown") {
+          const nextIndex =
+            currentIndex < 0 ? 0 : (currentIndex + 1) % enabled.length;
+          enabled[nextIndex].focus();
+        } else if (e.key === "ArrowUp") {
+          const prevIndex =
+            currentIndex <= 0 ? enabled.length - 1 : currentIndex - 1;
+          enabled[prevIndex].focus();
+        }
       }
     };
 
-    const handleScroll = () => {
-      onClose();
+    const handleScroll = (e: Event) => {
+      // Ignora rolagem interna do próprio menu ou de seus submenus
+      if (
+        menuRef.current &&
+        e.target instanceof Node &&
+        menuRef.current.contains(e.target)
+      ) {
+        return;
+      }
+      onCloseRef.current();
     };
 
     // Use capturing phase so outside click/tap is caught immediately
@@ -80,24 +159,29 @@ export function ContextMenu({
     window.addEventListener("scroll", handleScroll, true);
 
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       window.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("contextmenu", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !mounted) return null;
+
+  const portalContainer = resolveTopmostPortalContainer();
+  if (!portalContainer) return null;
 
   return createPortal(
     <div
       ref={menuRef}
+      tabIndex={-1}
       style={{
         top: `${adjustedPos.y}px`,
         left: `${adjustedPos.x}px`,
       }}
       className={cn(
-        "fixed z-[999] min-w-[150px] max-w-[calc(100vw-16px)] max-h-[calc(100dvh-16px)] overflow-y-auto overscroll-contain custom-scrollbar bg-popover border border-primary/40 rounded-lg p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100",
+        "fixed z-[999] min-w-[150px] max-w-[calc(100vw-16px)] max-h-[calc(100dvh-16px)] overflow-y-auto overscroll-contain custom-scrollbar bg-popover border border-primary/40 rounded-lg p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 focus:outline-none",
         className,
       )}
       role="menu"
@@ -232,6 +316,6 @@ export function ContextMenu({
         })}
       </div>
     </div>,
-    document.body,
+    portalContainer,
   );
 }

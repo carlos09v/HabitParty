@@ -3,6 +3,7 @@ import {
   normalizeTaskDifficulty,
   normalizeTaskType,
 } from "@/constants/task";
+import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
 import type {
   BoardColumn,
   BoardColumnResponseDTO,
@@ -35,6 +36,7 @@ const IMPORTANCE_MAP: Record<string, HabitImportance> = {
 };
 
 const PRIORITY_MAP: Record<string, HabitImportance> = {
+  LOW: "low",
   Low: "low",
   MEDIUM: "normal",
   HIGH: "high",
@@ -178,30 +180,96 @@ export function mapWorkspaceToBoardColumns(
 ): BoardColumn[] {
   if (!workspace.columns) return [];
 
-  return workspace.columns.map((col: BoardColumnResponseDTO) => {
-    const mappedTasks = (col.tasks || []).map((t) =>
-      mapTaskResponseToTask(t, col.id || "", timeZone, {
-        id: workspace.id,
-        name: workspace.name,
-      }),
-    );
-    const { archivedTotalCount, archivedCompletedCount } =
-      computeArchivedColumnCounts(
-        mappedTasks,
-        col.totalTasks,
-        col.completedTasks,
+  return workspace.columns
+    .map((col: BoardColumnResponseDTO) => {
+      const mappedTasks = (col.tasks || []).map((t) =>
+        mapTaskResponseToTask(t, col.id || "", timeZone, {
+          id: workspace.id,
+          name: workspace.name,
+        }),
       );
+      const { archivedTotalCount, archivedCompletedCount } =
+        computeArchivedColumnCounts(
+          mappedTasks,
+          col.totalTasks,
+          col.completedTasks,
+        );
 
+      return {
+        id: col.id || "",
+        title: col.name || "",
+        order: col.orderIndex || 0,
+        icon: col.icon || "sun",
+        tasks: mappedTasks,
+        archivedTotalCount,
+        archivedCompletedCount,
+      };
+    })
+    .sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Normaliza os campos de agendamento de um Afazer (To-Do), garantindo consistência
+ * entre `dueDate`, `dueTime`, `startTime`, `dueEndTime` e `isAllDay` em criação e edição.
+ */
+export function normalizeTaskScheduleFields(
+  task: Pick<
+    Task,
+    "dueDate" | "dueTime" | "startTime" | "dueEndTime" | "isAllDay"
+  >,
+  isTodo: boolean,
+  timeZone?: string | null,
+): {
+  dueDate?: string;
+  dueTime?: string;
+  startTime?: string;
+  dueEndTime?: string;
+  isAllDay: boolean;
+} {
+  if (!isTodo) {
     return {
-      id: col.id || "",
-      title: col.name || "",
-      order: col.orderIndex || 0,
-      icon: col.icon || "sun",
-      tasks: mappedTasks,
-      archivedTotalCount,
-      archivedCompletedCount,
+      dueDate: undefined,
+      dueTime: undefined,
+      startTime: undefined,
+      dueEndTime: undefined,
+      isAllDay: false,
     };
-  });
+  }
+
+  const resolvedIsAllDay = Boolean(task.isAllDay);
+  const resolvedStartTime =
+    !resolvedIsAllDay && task.startTime
+      ? task.startTime.slice(0, 5)
+      : undefined;
+  const rawDueEndTime =
+    !resolvedIsAllDay && task.dueEndTime
+      ? task.dueEndTime.slice(0, 5)
+      : undefined;
+  const resolvedDueTime =
+    !resolvedIsAllDay && !resolvedStartTime && task.dueTime
+      ? task.dueTime.slice(0, 5)
+      : undefined;
+  const effectiveStartForEnd = resolvedStartTime || resolvedDueTime;
+  const resolvedDueEndTime =
+    effectiveStartForEnd &&
+    rawDueEndTime &&
+    rawDueEndTime > effectiveStartForEnd
+      ? rawDueEndTime
+      : undefined;
+  const hasAnyTimeOrEvent = Boolean(
+    resolvedDueTime || resolvedStartTime || resolvedIsAllDay,
+  );
+  const resolvedDueDate =
+    task.dueDate ||
+    (hasAnyTimeOrEvent ? getTodayDateString(new Date(), timeZone) : undefined);
+
+  return {
+    dueDate: resolvedDueDate,
+    dueTime: resolvedDueDate ? resolvedDueTime : undefined,
+    startTime: resolvedDueDate ? resolvedStartTime : undefined,
+    dueEndTime: resolvedDueDate ? resolvedDueEndTime : undefined,
+    isAllDay: resolvedDueDate ? resolvedIsAllDay : false,
+  };
 }
 
 /**
@@ -222,33 +290,7 @@ export function buildUpdateTaskPayload(
   const priority = (merged.priority as TaskPriorityOption) || "NONE";
   const difficulty = normalizeTaskDifficulty(merged.difficulty);
   const isTodo = !isHabit && !isDaily;
-  const resolvedIsAllDay = isTodo && Boolean(merged.isAllDay);
-  const resolvedStartTime =
-    isTodo && !resolvedIsAllDay && merged.startTime
-      ? merged.startTime.slice(0, 5)
-      : undefined;
-  const rawDueEndTime =
-    isTodo && !resolvedIsAllDay && merged.dueEndTime
-      ? merged.dueEndTime.slice(0, 5)
-      : undefined;
-  const resolvedDueTime =
-    isTodo && !resolvedIsAllDay && !resolvedStartTime && merged.dueTime
-      ? merged.dueTime.slice(0, 5)
-      : undefined;
-  const effectiveStartForEnd = resolvedStartTime || resolvedDueTime;
-  const resolvedDueEndTime =
-    effectiveStartForEnd &&
-    rawDueEndTime &&
-    rawDueEndTime > effectiveStartForEnd
-      ? rawDueEndTime
-      : undefined;
-  const hasAnyTimeOrEvent = Boolean(
-    resolvedDueTime || resolvedStartTime || resolvedIsAllDay,
-  );
-  const resolvedDueDate = isTodo
-    ? merged.dueDate ||
-      (hasAnyTimeOrEvent ? getTodayDateString(new Date(), timeZone) : undefined)
-    : undefined;
+  const schedule = normalizeTaskScheduleFields(merged, isTodo, timeZone);
 
   const payload: UpdateTaskDTO = {
     name: merged.title,
@@ -257,11 +299,11 @@ export function buildUpdateTaskPayload(
     priority,
     difficulty,
     tags: merged.tags && merged.tags.length > 0 ? merged.tags : undefined,
-    dueDate: resolvedDueDate,
-    dueTime: resolvedDueDate ? resolvedDueTime : undefined,
-    startTime: resolvedDueDate ? resolvedStartTime : undefined,
-    dueEndTime: resolvedDueDate ? resolvedDueEndTime : undefined,
-    isAllDay: resolvedDueDate ? resolvedIsAllDay : false,
+    dueDate: schedule.dueDate,
+    dueTime: schedule.dueTime,
+    startTime: schedule.startTime,
+    dueEndTime: schedule.dueEndTime,
+    isAllDay: schedule.isAllDay,
     ...(isHabit && {
       habitType: merged.habitType || "POSITIVE",
       resetCounter: merged.resetCounter || "DAILY",
@@ -284,11 +326,10 @@ export function buildUpdateTaskPayload(
         monthlyOption: merged.monthlyOption || "DAY_OF_THE_MONTH",
       }),
     }),
-    ...(!isHabit &&
-      !isDaily && {
-        reminderType: merged.reminderType || "NONE",
-        sendEmailReminder: Boolean(merged.sendEmailReminder),
-      }),
+    ...(isTodo && {
+      reminderType: merged.reminderType || "NONE",
+      sendEmailReminder: Boolean(merged.sendEmailReminder),
+    }),
   };
 
   return payload;
@@ -305,6 +346,7 @@ export function buildCreateTaskPayloadFromTask(
   const isHabit = resolvedType === "habit";
   const isDaily = resolvedType === "daily";
   const isTodo = resolvedType === "todo";
+  const schedule = normalizeTaskScheduleFields(task, isTodo, timeZone);
 
   return {
     name: task.title,
@@ -334,40 +376,23 @@ export function buildCreateTaskPayloadFromTask(
     }),
     ...(isTodo && {
       priority: (task.priority as TaskPriorityOption) || "NONE",
-      dueDate:
-        task.dueDate ||
-        (task.dueTime || task.startTime || task.isAllDay
-          ? getTodayDateString(new Date(), timeZone)
-          : undefined),
-      dueTime:
-        !task.isAllDay && !task.startTime && task.dueTime
-          ? task.dueTime.slice(0, 5)
-          : undefined,
-      startTime:
-        !task.isAllDay && task.startTime
-          ? task.startTime.slice(0, 5)
-          : undefined,
-      dueEndTime:
-        !task.isAllDay &&
-        (task.startTime || task.dueTime) &&
-        task.dueEndTime &&
-        task.dueEndTime.slice(0, 5) >
-          (task.startTime || task.dueTime || "").slice(0, 5)
-          ? task.dueEndTime.slice(0, 5)
-          : undefined,
-      isAllDay: Boolean(task.isAllDay),
+      dueDate: schedule.dueDate,
+      dueTime: schedule.dueTime,
+      startTime: schedule.startTime,
+      dueEndTime: schedule.dueEndTime,
+      isAllDay: schedule.isAllDay,
       reminderType: task.reminderType || "NONE",
       sendEmailReminder: Boolean(task.sendEmailReminder),
     }),
   };
 }
 
-function getIsoWeekInfo(
-  date: Date,
-  timeZone?: string | null,
+function getIsoWeekFromCalendarDate(
+  year: number,
+  monthOneBased: number,
+  day: number,
 ): { year: number; week: number } {
-  const parts = getDatePartsInTimeZone(date, timeZone);
-  const utc = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const utc = new Date(Date.UTC(year, monthOneBased - 1, day));
   const dayNum = utc.getUTCDay() || 7;
   utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
@@ -375,6 +400,39 @@ function getIsoWeekInfo(
     ((utc.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7,
   );
   return { year: utc.getUTCFullYear(), week };
+}
+
+function isSameHabitResetPeriod(
+  lastDate: Date,
+  now: Date,
+  counter: string,
+  timeZone?: string | null,
+): boolean {
+  const lastParts = getDatePartsInTimeZone(lastDate, timeZone);
+  const nowParts = getDatePartsInTimeZone(now, timeZone);
+  if (counter === "WEEKLY") {
+    const lastWeek = getIsoWeekFromCalendarDate(
+      lastParts.year,
+      lastParts.month,
+      lastParts.day,
+    );
+    const currWeek = getIsoWeekFromCalendarDate(
+      nowParts.year,
+      nowParts.month,
+      nowParts.day,
+    );
+    return lastWeek.year === currWeek.year && lastWeek.week === currWeek.week;
+  }
+  if (counter === "MONTHLY") {
+    return (
+      lastParts.year === nowParts.year && lastParts.month === nowParts.month
+    );
+  }
+  return (
+    lastParts.year === nowParts.year &&
+    lastParts.month === nowParts.month &&
+    lastParts.day === nowParts.day
+  );
 }
 
 function isHabitStreakActiveForDelta(
@@ -394,30 +452,41 @@ function isHabitStreakActiveForDelta(
   }
 
   const counter = (task.resetCounter || "DAILY").toUpperCase();
+  const lastParts = getDatePartsInTimeZone(lastDate, timeZone);
+  const nowParts = getDatePartsInTimeZone(now, timeZone);
+
   if (counter === "WEEKLY") {
-    const last = getIsoWeekInfo(lastDate, timeZone);
-    const curr = getIsoWeekInfo(now, timeZone);
+    const last = getIsoWeekFromCalendarDate(
+      lastParts.year,
+      lastParts.month,
+      lastParts.day,
+    );
+    const curr = getIsoWeekFromCalendarDate(
+      nowParts.year,
+      nowParts.month,
+      nowParts.day,
+    );
     if (
       last.year > curr.year ||
       (last.year === curr.year && last.week >= curr.week)
     ) {
       return true;
     }
-    const nextWeekDate = new Date(lastDate.getTime() + 7 * 86_400_000);
-    const nextWeek = getIsoWeekInfo(nextWeekDate, timeZone);
+    // Soma 7 dias em calendário UTC para evitar desvios em semanas com transição de horário de verão (DST)
+    const nextWeek = getIsoWeekFromCalendarDate(
+      lastParts.year,
+      lastParts.month,
+      lastParts.day + 7,
+    );
     return nextWeek.year === curr.year && nextWeek.week === curr.week;
   }
   if (counter === "MONTHLY") {
-    const nowParts = getDatePartsInTimeZone(now, timeZone);
-    const lastParts = getDatePartsInTimeZone(lastDate, timeZone);
     const monthsDiff =
       (nowParts.year - lastParts.year) * 12 +
       (nowParts.month - lastParts.month);
     return monthsDiff <= 1;
   }
 
-  const lastParts = getDatePartsInTimeZone(lastDate, timeZone);
-  const nowParts = getDatePartsInTimeZone(now, timeZone);
   const lastUtc = Date.UTC(lastParts.year, lastParts.month - 1, lastParts.day);
   const todayUtc = Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day);
   const diffDays = Math.round((todayUtc - lastUtc) / 86_400_000);
@@ -448,15 +517,17 @@ export function computeOptimisticHabitDelta(
       : (task.negativeCount ?? 0);
 
   const now = new Date();
-  const todayIso = getTodayDateString(now, timeZone);
   const parsedLast = task.lastCompletedAt
     ? parseServerDate(task.lastCompletedAt)
     : null;
-  const lastIso = parsedLast ? getTodayDateString(parsedLast, timeZone) : null;
+  const counter = (task.resetCounter || "DAILY").toUpperCase();
+  const alreadyCompletedInCurrentPeriod = Boolean(
+    parsedLast && isSameHabitResetPeriod(parsedLast, now, counter, timeZone),
+  );
 
   let nextStreak = task.streak ?? 0;
   if (delta > 0 && currentPositive === 0) {
-    if (lastIso === todayIso && nextStreak > 0) {
+    if (alreadyCompletedInCurrentPeriod && nextStreak > 0) {
       nextStreak = task.streak ?? 1;
     } else if (isHabitStreakActiveForDelta(task, now, timeZone)) {
       nextStreak = (task.streak ?? 0) + 1;
@@ -573,6 +644,13 @@ export function buildQuickCreateTaskPayload(
     const habitType = extraPayload?.habitType || "POSITIVE";
     const resetCounter = extraPayload?.resetCounter || "DAILY";
     const importanceType = extraPayload?.importanceType || "NORMAL";
+    const reward = calculateTaskReward({
+      taskType: "HABIT",
+      difficulty: "EASY",
+      importanceType,
+      resetCounter,
+      timeZone,
+    });
 
     return {
       payload: {
@@ -594,10 +672,13 @@ export function buildQuickCreateTaskPayload(
         highestStreak: 0,
         positiveCount: 0,
         negativeCount: 0,
-        type: "HABIT",
+        type: "habit",
         habitType,
         resetCounter,
         importanceType,
+        importance: IMPORTANCE_MAP[importanceType] ?? "normal",
+        rewardXp: reward.xp,
+        rewardGold: reward.gold,
         priority: extraPayload?.priority || "NONE",
         difficulty: "EASY",
         isHardcoreModeEnabled: false,
@@ -615,6 +696,12 @@ export function buildQuickCreateTaskPayload(
     const monthlyOption = extraPayload?.monthlyOption || "DAY_OF_THE_MONTH";
     const difficulty = extraPayload?.difficulty || "MEDIUM";
     const priority = extraPayload?.priority || "NONE";
+    const reward = calculateTaskReward({
+      taskType: "DAILY",
+      difficulty,
+      repeatType,
+      timeZone,
+    });
 
     return {
       payload: {
@@ -638,12 +725,14 @@ export function buildQuickCreateTaskPayload(
         highestStreak: 0,
         positiveCount: 0,
         negativeCount: 0,
-        type: "DAILY",
+        type: "daily",
         startDate,
         repeatType,
         repeatEvery,
         daysOfWeek: repeatType === "WEEKLY" ? daysOfWeek : undefined,
         monthlyOption: repeatType === "MONTHLY" ? monthlyOption : undefined,
+        rewardXp: reward.xp,
+        rewardGold: reward.gold,
         priority,
         difficulty,
         isHardcoreModeEnabled: false,
@@ -660,6 +749,12 @@ export function buildQuickCreateTaskPayload(
   const dueDate =
     extraPayload?.dueDate ||
     (dueTime ? getTodayDateString(new Date(), timeZone) : undefined);
+  const reward = calculateTaskReward({
+    taskType: "TODO",
+    difficulty,
+    dueDate,
+    timeZone,
+  });
 
   return {
     payload: {
@@ -677,10 +772,12 @@ export function buildQuickCreateTaskPayload(
       title,
       columnId: targetColumnId,
       completed: false,
-      streak: 0,
+      streak: undefined,
       positiveCount: 0,
       negativeCount: 0,
-      type: "TODO",
+      type: "todo",
+      rewardXp: reward.xp,
+      rewardGold: reward.gold,
       priority,
       difficulty,
       dueDate,
@@ -725,7 +822,13 @@ export function resetTaskOnMidnightRollover(
   if (type === "habit") {
     const resetCounter = (task.resetCounter ?? "daily").toLowerCase();
     if (resetCounter === "daily") {
-      return { ...task, completed: false, hasClaimedReward: false };
+      return {
+        ...task,
+        completed: false,
+        hasClaimedReward: false,
+        positiveCount: 0,
+        negativeCount: 0,
+      };
     }
     const parts = getDatePartsInTimeZone(referenceDate, timeZone);
     const utcDayOfWeek = new Date(
@@ -735,7 +838,13 @@ export function resetTaskOnMidnightRollover(
       (resetCounter === "weekly" && utcDayOfWeek === 1) ||
       (resetCounter === "monthly" && parts.day === 1);
     if (shouldReset) {
-      return { ...task, completed: false, hasClaimedReward: false };
+      return {
+        ...task,
+        completed: false,
+        hasClaimedReward: false,
+        positiveCount: 0,
+        negativeCount: 0,
+      };
     }
   }
   return task;
@@ -818,4 +927,85 @@ export function isTaskInReadOnlyScope(
     (task.workspaceId && readOnlyWorkspaceIds.has(task.workspaceId)) ||
       (effectiveColumnId && readOnlyColumnIds.has(effectiveColumnId)),
   );
+}
+
+/**
+ * Critério unificado de tarefa considerada cumprida para métricas de progresso
+ * (Kanban, DashboardListSummary e WelcomeCard).
+ */
+export function isTaskConsideredDone(
+  task: Pick<Task, "type" | "taskType" | "completed" | "positiveCount">,
+): boolean {
+  if (normalizeTaskType(task) === "habit") {
+    return (task.positiveCount ?? 0) > 0 || Boolean(task.completed);
+  }
+  return Boolean(task.completed);
+}
+
+/**
+ * Converte uma Task (ou resumo existente) no contrato enxuto usado pelo WeeklyCalendar
+ * e pelo `optimisticDashboardStore`, evitando serialização desnecessária entre RSC e cliente.
+ */
+export function toWeeklyCalendarTaskSummary(
+  task: Task | WeeklyCalendarTaskSummary,
+): WeeklyCalendarTaskSummary {
+  return {
+    id: task.id,
+    type: task.type,
+    taskType: task.taskType,
+    habitType: task.habitType,
+    resetCounter: task.resetCounter,
+    completed: task.completed,
+    dueDate: task.dueDate,
+    startDate: task.startDate,
+    repeatType: task.repeatType,
+    repeatEvery: task.repeatEvery,
+    daysOfWeek: task.daysOfWeek,
+    monthlyOption: task.monthlyOption,
+    lastCompletedAt: task.lastCompletedAt,
+  };
+}
+
+/**
+ * Atualiza uma única tarefa dentro da lista de colunas preservando a referência de todas
+ * as colunas intocadas (evitando re-renders em massa de `React.memo(RoutineColumn)`).
+ */
+export function mapTaskInColumns(
+  columns: BoardColumn[],
+  taskId: string,
+  updater: (task: Task) => Task,
+): BoardColumn[] {
+  let changed = false;
+  const nextColumns = columns.map((col) => {
+    const taskIdx = col.tasks.findIndex((t) => t.id === taskId);
+    if (taskIdx === -1) return col;
+    const prevTask = col.tasks[taskIdx];
+    const nextTask = updater(prevTask);
+    if (nextTask === prevTask) return col;
+    changed = true;
+    const nextTasks = col.tasks.slice();
+    nextTasks[taskIdx] = nextTask;
+    return { ...col, tasks: nextTasks };
+  });
+  return changed ? nextColumns : columns;
+}
+
+/**
+ * Remove uma tarefa da lista de colunas preservando a referência de todas as colunas intocadas.
+ */
+export function removeTaskFromColumns(
+  columns: BoardColumn[],
+  taskId: string,
+): BoardColumn[] {
+  let changed = false;
+  const nextColumns = columns.map((col) => {
+    const hasTask = col.tasks.some((t) => t.id === taskId);
+    if (!hasTask) return col;
+    changed = true;
+    return {
+      ...col,
+      tasks: col.tasks.filter((t) => t.id !== taskId),
+    };
+  });
+  return changed ? nextColumns : columns;
 }

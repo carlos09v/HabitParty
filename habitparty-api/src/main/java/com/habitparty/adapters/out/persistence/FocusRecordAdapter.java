@@ -44,7 +44,12 @@ public class FocusRecordAdapter implements FocusRecordRepository {
 
   @Override
   public FocusRecord save(FocusRecord record) {
-    FocusRecordJpaEntity entity = mapper.toEntity(record);
+    FocusRecordJpaEntity entity = repository.findById(record.getId())
+        .map(existing -> {
+          mapper.updateEntityFromDomain(existing, record);
+          return existing;
+        })
+        .orElseGet(() -> mapper.toEntity(record));
     FocusRecordJpaEntity savedEntity = repository.save(entity);
     return mapper.toDomain(savedEntity);
   }
@@ -64,13 +69,6 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   @Override
   public List<FocusRecord> findAllByFocusActivityId(UUID focusActivityId) {
     return repository.findAllByFocusActivityIdOrderByStartTimeDesc(focusActivityId).stream()
-        .map(mapper::toDomain)
-        .toList();
-  }
-
-  @Override
-  public List<FocusRecord> findAllByInventoryItemId(UUID inventoryItemId) {
-    return repository.findAllByInventoryItemIdOrderByStartTimeDesc(inventoryItemId).stream()
         .map(mapper::toDomain)
         .toList();
   }
@@ -116,6 +114,14 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   }
 
   @Override
+  public void nullifyTaskIds(Collection<UUID> taskIds) {
+    if (taskIds == null || taskIds.isEmpty()) {
+      return;
+    }
+    repository.nullifyTaskIdIn(taskIds);
+  }
+
+  @Override
   public Page<FocusRecord> findAllByFocusActivityId(UUID focusActivityId, int page, int size) {
     PageRequest pageRequest = PageRequest.of(page, size);
     return repository.findAllByFocusActivityIdOrderByStartTimeDesc(focusActivityId, pageRequest)
@@ -148,18 +154,21 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     return sumFocusMinutesOnDate(userId, today, effectiveZone);
   }
 
+  // Intervalo semi-aberto [startOfDay, nextDayStart) no fuso do Clock para evitar
+  // arredondamento de .999999999 para 00:00:00 de D+1 no TIMESTAMP(6) do PostgreSQL.
   private LocalDateTime[] resolveServerDayRange(LocalDate targetDate, ZoneId userZone) {
     ZoneId effectiveZone = userZone != null ? userZone : clock.getZone();
     LocalDate effectiveDate = targetDate != null ? targetDate : LocalDate.now(clock.withZone(effectiveZone));
+    ZoneId storageZone = clock.getZone();
     LocalDateTime startOfDay = effectiveDate.atTime(LocalTime.MIN)
         .atZone(effectiveZone)
-        .withZoneSameInstant(ZoneId.systemDefault())
+        .withZoneSameInstant(storageZone)
         .toLocalDateTime();
-    LocalDateTime endOfDay = effectiveDate.atTime(23, 59, 59, 999999999)
+    LocalDateTime nextDayStart = effectiveDate.plusDays(1).atTime(LocalTime.MIN)
         .atZone(effectiveZone)
-        .withZoneSameInstant(ZoneId.systemDefault())
+        .withZoneSameInstant(storageZone)
         .toLocalDateTime();
-    return new LocalDateTime[] {startOfDay, endOfDay};
+    return new LocalDateTime[] {startOfDay, nextDayStart};
   }
 
   @Override
@@ -224,7 +233,7 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     if (taskId == null) {
       return false;
     }
-    return repository.existsStandaloneByTaskId(taskId);
+    return repository.existsByTaskIdAndFocusActivityIdIsNull(taskId);
   }
 
   @Override
@@ -240,16 +249,51 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   }
 
   @Override
-  public java.util.Optional<LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
+  public Optional<List<RetrospectiveFocusBucket>> aggregateForRetrospective(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endExclusive, int minActiveDayMinutes) {
+    if (userId == null || startInclusive == null || endExclusive == null) {
+      return Optional.of(List.of());
+    }
+    List<Object[]> rows = repository.aggregateForRetrospective(
+        userId, startInclusive, endExclusive, minActiveDayMinutes);
+    List<RetrospectiveFocusBucket> buckets = new java.util.ArrayList<>(rows.size());
+    for (Object[] row : rows) {
+      buckets.add(new RetrospectiveFocusBucket(
+          ((Number) row[0]).intValue(),
+          ((Number) row[1]).intValue(),
+          ((Number) row[2]).intValue(),
+          ((Number) row[3]).intValue(),
+          ((Number) row[4]).intValue(),
+          ((Number) row[5]).intValue(),
+          ((Number) row[6]).intValue(),
+          ((Number) row[7]).intValue(),
+          row[8] instanceof Number n && n.intValue() > 0));
+    }
+    return Optional.of(buckets);
+  }
+
+  @Override
+  public Optional<List<FocusRecord>> findAllProductiveByUserIds(Collection<UUID> userIds) {
+    if (userIds == null || userIds.isEmpty()) {
+      return Optional.of(List.of());
+    }
+    return Optional.of(repository.findAllByUserIdInAndInventoryItemIdIsNullOrderByStartTimeDesc(userIds)
+        .stream()
+        .map(mapper::toDomain)
+        .toList());
+  }
+
+  @Override
+  public Optional<LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
     return findEarliestEndTimeByUserId(userId);
   }
 
   @Override
-  public java.util.Optional<LocalDateTime> findEarliestEndTimeByUserId(UUID userId) {
+  public Optional<LocalDateTime> findEarliestEndTimeByUserId(UUID userId) {
     if (userId == null) {
-      return java.util.Optional.empty();
+      return Optional.empty();
     }
-    return java.util.Optional.ofNullable(repository.findEarliestProductiveEndTimeByUserId(userId));
+    return Optional.ofNullable(repository.findEarliestProductiveEndTimeByUserId(userId));
   }
 
   @Override
@@ -308,5 +352,21 @@ public class FocusRecordAdapter implements FocusRecordRepository {
         recordId,
         Math.max(0, xpEarned),
         coinsEarned != null ? coinsEarned : BigDecimal.ZERO);
+  }
+
+  @Override
+  public List<FocusAnalyticsEntry> findProductiveAnalyticsEntriesByUserId(UUID userId) {
+    if (userId == null) {
+      return List.of();
+    }
+    return repository.findProductiveAnalyticsByUserId(userId).stream()
+        .map(row -> new FocusAnalyticsEntry(
+            row.getFocusActivityId(),
+            row.getEndTime(),
+            row.getDurationMinutes(),
+            row.getCompletedPomos() != null ? Math.max(0, row.getCompletedPomos()) : 0,
+            row.getXpEarned() != null ? Math.max(0, row.getXpEarned()) : 0,
+            row.getCoinsEarned() != null ? row.getCoinsEarned() : BigDecimal.ZERO))
+        .toList();
   }
 }

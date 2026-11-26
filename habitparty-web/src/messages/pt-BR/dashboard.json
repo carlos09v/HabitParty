@@ -28,6 +28,7 @@
     "streakStartBadge": "1 tarefa ou 30m foco 🔥",
     "streakRemainingHours": "⏳ Restam {hours}h (1 tarefa ou 30m foco)",
     "streakSecuredBadge": "Ofensiva garantida hoje! 🔥",
+    "streakCardJumpTitle": "Ver calendário semanal e histórico da ofensiva",
     "dailyTasksLabel": "Tarefas do Dia",
     "completedCount": "{completed}/{total} Concluídas",
     "noTasksTodayBadge": "Sem metas hoje",
@@ -38,11 +39,22 @@
     "pendingCountBadge": "{count} {count, plural, one {pendente} other {pendentes}}",
     "xpEarnedLabel": "XP Conquistado",
     "xpEarnedLabelGamified": "XP Conquistado",
-    "xpEarnedLabelProductivity": "Pontos de Foco",
+    "xpEarnedLabelProductivity": "Pontos Hoje",
     "todayGainsTitle": "Pontos de experiência acumulados hoje",
     "todayGainsBadge": "Ganhos de hoje ✨",
     "todayGainsBadgeGamified": "Ganhos de hoje ✨",
-    "todayGainsBadgeProductivity": "Foco de hoje ✨"
+    "todayGainsBadgeProductivity": "Rendimentos de hoje ✨",
+    "overdueAlertTitle": "{count, plural, one {# tarefa atrasada — clique para ver} other {# tarefas atrasadas — clique para ver}}",
+    "overdueAlertBadge": "{count, plural, one {# atrasada} other {# atrasadas}}",
+    "quickAddTaskCta": "Nova Tarefa",
+    "quickFocusCta": "Focar",
+    "levelShort": "Nv.{level}",
+    "focusTodayLabel": "Foco Hoje",
+    "focusGoalProgressTitle": "Tempo focado hoje: {current} de {goal} da meta diária",
+    "focusCardTitle": "Abrir Palco de Foco e acompanhar sessões de hoje",
+    "focusGoalAriaLabel": "Progresso da meta diária de foco: {percent}%",
+    "focusActiveBadge": "Em ritmo de foco ⏱️",
+    "focusStartBadge": "Iniciar sessão ⏱️"
   },
   "emptyWorkspace": {
     "title": "Bem-vindo(a) ao seu Quartel-General! 🚀",
@@ -97,7 +109,10 @@
     "deleteModalDescPrefix": "Tem certeza de que deseja excluir a coluna",
     "deleteModalDescSuffix": "? Esta ação é irreversível e todas as tarefas desta coluna serão removidas permanentemente.",
     "deleteModalConfirm": "Excluir Coluna",
-    "deleteModalCancel": "Cancelar"
+    "deleteModalCancel": "Cancelar",
+    "filterListAria": "Filtrar tarefas pela lista {name}",
+    "filterListTitle": "Filtrar tarefas de \"{name}\" abaixo",
+    "clearFilterListTitle": "Remover filtro da lista \"{name}\""
   },
   "tasksPanel": {
     "title": "Suas Tarefas",
@@ -155,12 +170,31 @@
     "easy": "Fácil",
     "medium": "Médio",
     "hard": "Difícil",
+    "priorityLabel": "Prioridade",
+    "allPriorities": "Todas as prioridades",
+    "priorityHigh": "Alta",
+    "priorityMedium": "Média",
+    "priorityLow": "Baixa",
+    "priorityNone": "Sem prioridade",
+    "tagsLabel": "Tags",
+    "allTagsOption": "Todas",
+    "tagLabel": "Tag",
+    "activeFiltersAria": "Filtros ativos",
+    "removeFilterAria": "Remover filtro {label}: {value}",
+    "clearAllFilters": "Limpar tudo",
+    "hideCompletedChip": "Concluídas ocultas",
     "sortByLabel": "Ordenar por",
-    "sortDefault": "Padrão (Data / Prazo)",
+    "sortDefault": "Padrão (Prioridade & Prazo)",
+    "sortDueDate": "Prazo (Mais próximo primeiro)",
     "sortDifficulty": "Dificuldade (Maior primeiro)",
     "sortPriority": "Prioridade (Alta primeiro)",
     "sortReward": "Maior Recompensa (XP/Gold)",
-    "hideCompletedLabel": "Ocultar tarefas concluídas"
+    "hideCompletedLabel": "Ocultar tarefas concluídas",
+    "searchPlaceholder": "Buscar tarefas...",
+    "searchAriaLabel": "Buscar tarefas por título, descrição ou tag",
+    "clearSearchAria": "Limpar busca",
+    "currentWorkspaceOnly": "Ambiente atual",
+    "currentWorkspaceOnlyTitle": "Alternar entre todos os ambientes e apenas o ambiente ativo"
   },
   "taskTable": {
     "ariaLabel": "Lista de tarefas",
@@ -172,6 +206,7 @@
     "colSchedule": "Frequência/Prazo",
     "colActions": "Ações",
     "paginationItemLabel": "tarefas",
+    "itemsPerPageLabel": "Por página:",
     "emptyFallbackTitle": "Nenhuma tarefa encontrada",
     "emptyFallbackDesc": "Não encontramos tarefas para o filtro selecionado.",
     "emptyDateTitle": "Tudo limpo nesta data! 🎉",
@@ -206,6 +241,11 @@
       "nodate": {
         "title": "Nenhuma tarefa sem prazo",
         "description": "Todas as suas tarefas possuem uma data de entrega definida."
+      },
+      "filtered": {
+        "title": "Nenhuma tarefa corresponde aos filtros",
+        "description": "Tente limpar a busca ou ajustar os filtros ativos.",
+        "action": "Limpar filtros"
       }
     }
   },
@@ -349,6 +389,9 @@
       "edit": "Editar",
       "duplicate": "Duplicar",
       "delete": "Excluir",
+      "moveToColumn": "Mover para coluna",
+      "moveLeft": "Mover coluna à esquerda",
+      "moveRight": "Mover coluna à direita",
       "insertLeft": "Inserir coluna à esquerda",
       "insertRight": "Inserir coluna à direita",
       "layout": "Layout",
@@ -384,6 +427,10 @@
       "habitPenalty": "Penalidade de hábito registrada!",
       "deleteError": "Erro ao excluir tarefa no servidor.",
       "deleteSuccess": "Tarefa \"{title}\" excluída com sucesso!",
+      "deleteUndoToast": "Tarefa \"{title}\" excluída",
+      "undoAction": "Desfazer",
+      "deleteRestoredToast": "Tarefa \"{title}\" restaurada!",
+      "moveTaskSuccess": "Tarefa movida para \"{column}\"!",
       "duplicateColumnError": "Coluna de destino não encontrada para duplicação.",
       "duplicateError": "Erro ao duplicar tarefa.",
       "duplicateSuccess": "Tarefa \"{title}\" duplicada com sucesso!"
@@ -423,6 +470,7 @@
         "this_month": "Mês"
       },
       "empty": "Nenhuma atividade cadastrada.",
+      "createFirstCta": "Criar atividade",
       "lockedPreservedTitle": "{count} {count, plural, one {atividade preservada} other {atividades preservadas}} do período Premium. Reative o plano Premium para cronometrar!",
       "lockedCount": "{count} {count, plural, one {atividade bloqueada} other {atividades bloqueadas}}",
       "upgradeTitle": "Assine o plano Premium para criar até 6 atividades de foco!",
@@ -447,7 +495,10 @@
         "questionSuffix": "? O histórico de sessões anteriores continuará preservado.",
         "confirm": "Sim, excluir",
         "cancel": "Cancelar"
-      }
+      },
+      "periodTotalTitle": "Total focado no período: {duration}",
+      "startFocusAria": "Iniciar foco em {name}",
+      "pauseFocusAria": "Pausar foco em {name}"
     },
     "economyWidget": {
       "title": "Economia",
@@ -464,7 +515,16 @@
       "legendEarnings": "Ganhos",
       "legendSpent": "Gastos",
       "leisureEquivalenceLabel": "Equivale em lazer",
-      "walletTitleProductivityWithLeisure": "Ver extrato completo de transações • Equivalente a {duration} de lazer"
+      "walletTitleProductivityWithLeisure": "Ver extrato completo de transações • Equivalente a {duration} de lazer",
+      "emptyTitle": "Sem movimentações nas últimas semanas",
+      "emptyHint": "Conclua tarefas ou sessões de foco para começar a acumular moedas.",
+      "rewardsBridgeRedeemableTitle": "{count, plural, one {# recompensa disponível para resgate} other {# recompensas disponíveis para resgate}}",
+      "rewardsBridgeStoreTitle": "Abrir loja de recompensas",
+      "rewardsBridgeStoreLabel": "Recompensas",
+      "rewardsBridgeStoreLabelProductivity": "Lazer",
+      "rewardsBridgeBackpackTitle": "{count, plural, one {# item pronto para usar na mochila} other {# itens prontos para usar na mochila}}",
+      "rewardsBridgeBackpackLabel": "Mochila",
+      "rewardsBridgeBackpackLabelProductivity": "Disponível"
     },
     "partyWidget": {
       "title": "Party & Amigos",

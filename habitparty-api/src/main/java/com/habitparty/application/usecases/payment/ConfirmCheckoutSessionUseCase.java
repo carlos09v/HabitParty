@@ -51,18 +51,26 @@ public class ConfirmCheckoutSessionUseCase {
       return Optional.empty();
     }
 
-    PaymentWebhookEvent.CheckoutCompleted effectiveCheckout = (checkout.userId() == null)
-        ? new PaymentWebhookEvent.CheckoutCompleted(
-            checkout.eventId(),
-            checkout.sessionId(),
-            checkout.mode(),
-            checkout.customerId(),
-            checkout.subscriptionId(),
-            userId,
-            checkout.customerEmail(),
-            checkout.days(),
-            checkout.metadata())
-        : checkout;
+    PaymentWebhookEvent.CheckoutCompleted effectiveCheckout = checkout;
+    if (checkout.userId() == null) {
+      // Sem metadata userId, exige correspondência verificada de stripeCustomerId ou e-mail verificado
+      Optional<User> callerOpt = userRepository.findById(userId);
+      if (callerOpt.isEmpty() || !matchesAuthenticatedCaller(callerOpt.get(), checkout)) {
+        log.warn("Sessão de checkout {} sem userId rejeitada por não corresponder ao usuário autenticado {}.",
+            sessionId, userId);
+        return Optional.empty();
+      }
+      effectiveCheckout = new PaymentWebhookEvent.CheckoutCompleted(
+          checkout.eventId(),
+          checkout.sessionId(),
+          checkout.mode(),
+          checkout.customerId(),
+          checkout.subscriptionId(),
+          userId,
+          checkout.customerEmail(),
+          checkout.days(),
+          checkout.metadata());
+    }
 
     try {
       processStripeWebhookUseCase.execute(effectiveCheckout);
@@ -78,5 +86,19 @@ public class ConfirmCheckoutSessionUseCase {
 
     log.warn("Sessão {} processada, mas o usuário {} não consta com status Premium ativo.", sessionId, userId);
     return Optional.empty();
+  }
+
+  private boolean matchesAuthenticatedCaller(User caller, PaymentWebhookEvent.CheckoutCompleted checkout) {
+    if (checkout.customerId() != null
+        && !checkout.customerId().isBlank()
+        && caller.getStripeCustomerId() != null
+        && caller.getStripeCustomerId().equals(checkout.customerId())) {
+      return true;
+    }
+    return caller.isEmailVerified()
+        && checkout.customerEmail() != null
+        && !checkout.customerEmail().isBlank()
+        && caller.getEmail() != null
+        && caller.getEmail().equalsIgnoreCase(checkout.customerEmail().trim());
   }
 }

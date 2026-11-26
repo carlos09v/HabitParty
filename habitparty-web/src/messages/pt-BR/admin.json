@@ -12,6 +12,7 @@
     "subtitle": "Monitore o consumo de e-mails via Resend, espaço em disco do banco de dados e controle o uso de recursos por usuário.",
     "refreshButton": "Atualizar Dados",
     "refreshedMessage": "Dados administrativos atualizados com sucesso!",
+    "refreshError": "Não foi possível atualizar os dados administrativos.",
     "userDetailLoadError": "Não foi possível carregar os detalhes do usuário.",
     "roleUpdateError": "Erro ao alterar o papel do usuário.",
     "promotedMessage": "Usuário {fullName} promovido a Administrador!",
@@ -72,6 +73,8 @@
       "unverifiedTitle": "E-mail pendente de verificação"
     },
     "searchPlaceholder": "Buscar por nome, @user ou e-mail...",
+    "filterTabsAriaLabel": "Filtrar usuários por categoria",
+    "tableAriaLabel": "Tabela de usuários cadastrados",
     "loading": "Carregando dados...",
     "headers": {
       "user": "Usuário",
@@ -112,7 +115,8 @@
       "makeUser": "Tornar USER",
       "makeAdmin": "Tornar ADMIN",
       "demoteTitle": "Rebaixar para Usuário Comum",
-      "promoteTitle": "Promover a Administrador"
+      "promoteTitle": "Promover a Administrador",
+      "selfDemoteDisabledTitle": "Você não pode remover seus próprios privilégios de administrador"
     },
     "pagination": {
       "itemLabel": "usuários",

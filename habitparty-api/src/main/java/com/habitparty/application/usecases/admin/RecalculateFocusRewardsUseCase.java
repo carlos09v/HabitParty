@@ -3,7 +3,10 @@ package com.habitparty.application.usecases.admin;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,8 @@ import com.habitparty.core.domain.enums.UserLevel;
  */
 @Service
 public class RecalculateFocusRewardsUseCase {
+
+  private static final int USER_BATCH_SIZE = 200;
 
   public record RecalculationResult(
       boolean dryRun,
@@ -69,57 +74,91 @@ public class RecalculateFocusRewardsUseCase {
     int totalXpAdded = 0;
     BigDecimal totalCoinsAdded = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
-    ZoneId storageZone = ZoneId.systemDefault();
+    // Nunca faz fallback para userRepository.findAll() (evita carregar toda a tabela users na heap)
     List<UUID> productiveUserIds = focusRecordRepository.findDistinctProductiveUserIds();
-    List<User> users = (productiveUserIds != null && !productiveUserIds.isEmpty())
-        ? userRepository.findAllByIds(productiveUserIds)
-        : userRepository.findAll();
+    if (productiveUserIds == null || productiveUserIds.isEmpty()) {
+      return new RecalculationResult(
+          dryRun, timestampsSynced, 0L, 0L, 0, totalCoinsAdded);
+    }
 
-    for (User user : users) {
-      if (user == null || user.getId() == null) {
-        continue;
-      }
-      List<FocusRecord> records = focusRecordRepository.findAllByUserId(user.getId());
-      if (records == null || records.isEmpty()) {
-        continue;
-      }
+    ZoneId storageZone = ZoneId.systemDefault();
 
-      ZoneId userZone = user.resolveZoneId(storageZone);
-      UserRecalculationPlan plan = FocusRewardRecalculationPlanner.planForUser(
-          records, userZone, storageZone);
-      if (!plan.hasChanges()) {
+    for (int start = 0; start < productiveUserIds.size(); start += USER_BATCH_SIZE) {
+      List<UUID> idSlice = productiveUserIds.subList(
+          start, Math.min(start + USER_BATCH_SIZE, productiveUserIds.size()));
+      List<User> users = userRepository.findAllByIds(idSlice);
+      if (users == null || users.isEmpty()) {
         continue;
       }
 
-      usersAffected++;
-      recordsUpgraded += plan.adjustments().size();
-      totalXpAdded += plan.totalXpDelta();
-      totalCoinsAdded = totalCoinsAdded.add(plan.totalCoinsDelta()).setScale(2, RoundingMode.HALF_UP);
+      // Carrega em lote todos os registros produtivos do slice de usuários (elimina N+1)
+      Map<UUID, List<FocusRecord>> recordsByUserId = loadRecordsByUserId(idSlice);
+      List<User> dirtyUsers = new ArrayList<>();
+      List<User> usersForAchievementEval = new ArrayList<>();
+      Map<UUID, UserLevel> reachedLevelByUserId = new HashMap<>();
 
-      if (dryRun) {
-        continue;
-      }
+      for (User user : users) {
+        if (user == null || user.getId() == null) {
+          continue;
+        }
+        List<FocusRecord> records = recordsByUserId != null
+            ? recordsByUserId.getOrDefault(user.getId(), List.of())
+            : focusRecordRepository.findAllByUserId(user.getId());
+        if (records == null || records.isEmpty()) {
+          continue;
+        }
 
-      for (RecordAdjustment adj : plan.adjustments()) {
-        focusRecordRepository.updateFocusRewards(adj.recordId(), adj.newXp(), adj.newCoins());
-        transactionHistoryRepository.updateFocusRewardSnapshot(
-            adj.recordId(), user.getId(), adj.newXp(), adj.newCoins());
-      }
+        ZoneId userZone = user.resolveZoneId(storageZone);
+        UserRecalculationPlan plan = FocusRewardRecalculationPlanner.planForUser(
+            records, userZone, storageZone);
+        if (!plan.hasChanges()) {
+          continue;
+        }
 
-      UserLevel levelBefore = user.getCurrentLevel();
-      if (plan.totalXpDelta() > 0) {
-        user.addXp(plan.totalXpDelta());
-      }
-      if (plan.totalCoinsDelta().compareTo(BigDecimal.ZERO) > 0) {
-        user.addCoins(plan.totalCoinsDelta());
-      }
-      UserLevel levelAfter = user.getCurrentLevel();
-      userRepository.save(user);
+        usersAffected++;
+        recordsUpgraded += plan.adjustments().size();
+        totalXpAdded += plan.totalXpDelta();
+        totalCoinsAdded = totalCoinsAdded.add(plan.totalCoinsDelta()).setScale(2, RoundingMode.HALF_UP);
 
-      if (evaluateUserAchievementsUseCase != null) {
-        evaluateUserAchievementsUseCase.execute(user);
+        if (dryRun) {
+          continue;
+        }
+
+        for (RecordAdjustment adj : plan.adjustments()) {
+          focusRecordRepository.updateFocusRewards(adj.recordId(), adj.newXp(), adj.newCoins());
+          transactionHistoryRepository.updateFocusRewardSnapshot(
+              adj.recordId(), user.getId(), adj.newXp(), adj.newCoins());
+        }
+
+        UserLevel levelBefore = user.getCurrentLevel();
+        if (plan.totalXpDelta() > 0) {
+          user.addXp(plan.totalXpDelta());
+        }
+        if (plan.totalCoinsDelta().compareTo(BigDecimal.ZERO) > 0) {
+          user.addCoins(plan.totalCoinsDelta());
+        }
+        UserLevel levelAfter = user.getCurrentLevel();
+        dirtyUsers.add(user);
+        usersForAchievementEval.add(user);
         if (levelAfter.ordinal() > levelBefore.ordinal()) {
-          evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(user.getId(), levelAfter);
+          reachedLevelByUserId.put(user.getId(), levelAfter);
+        }
+      }
+
+      if (!dryRun && !dirtyUsers.isEmpty()) {
+        if (dirtyUsers.size() == 1) {
+          userRepository.save(dirtyUsers.get(0));
+        } else {
+          userRepository.saveAll(dirtyUsers);
+        }
+        if (evaluateUserAchievementsUseCase != null) {
+          for (User updatedUser : usersForAchievementEval) {
+            evaluateUserAchievementsUseCase.execute(updatedUser);
+            UserLevel reached = reachedLevelByUserId.get(updatedUser.getId());
+            if (reached != null) {
+              evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(updatedUser.getId(), reached);
+            }
+          }
         }
       }
     }
@@ -131,5 +170,19 @@ public class RecalculateFocusRewardsUseCase {
         usersAffected,
         totalXpAdded,
         totalCoinsAdded);
+  }
+
+  private Map<UUID, List<FocusRecord>> loadRecordsByUserId(List<UUID> userIds) {
+    return focusRecordRepository.findAllProductiveByUserIds(userIds)
+        .map(allRecords -> {
+          Map<UUID, List<FocusRecord>> grouped = new HashMap<>(userIds.size());
+          for (FocusRecord rec : allRecords) {
+            if (rec != null && rec.getUserId() != null) {
+              grouped.computeIfAbsent(rec.getUserId(), k -> new ArrayList<>()).add(rec);
+            }
+          }
+          return grouped;
+        })
+        .orElse(null);
   }
 }

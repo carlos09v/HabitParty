@@ -1,6 +1,7 @@
 "use client";
 
-import { type RefObject, useLayoutEffect, useState } from "react";
+import { type RefObject, useState } from "react";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 
 export interface AnchoredPopoverOptions {
   preferredSide?: "left" | "right";
@@ -93,53 +94,58 @@ export function useAnchoredPopoverPosition(
       : { top: 0, left: 0 },
   );
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isOpen || !anchorRect || !mounted) return;
-    if (typeof window !== "undefined" && window.innerWidth < 640) return;
 
     let rafId: number | null = null;
 
-    const recalculate = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(() => {
-        rafId = null;
-        const actualHeight = popoverRef.current?.offsetHeight || popoverHeight;
-        const nextPos = calculateAnchoredPosition(anchorRect, actualHeight, {
-          preferredSide,
-          popoverWidth,
-          popoverHeight: actualHeight,
-          margin,
-        });
+    const applyPosition = () => {
+      if (typeof window !== "undefined" && window.innerWidth < 640) return;
+      const actualHeight = popoverRef.current?.offsetHeight || popoverHeight;
+      const nextPos = calculateAnchoredPosition(anchorRect, actualHeight, {
+        preferredSide,
+        popoverWidth,
+        popoverHeight: actualHeight,
+        margin,
+      });
 
-        setPosition((prev) => {
-          if (prev.top === nextPos.top && prev.left === nextPos.left) {
-            return prev;
-          }
-          return nextPos;
-        });
+      setPosition((prev) => {
+        if (prev.top === nextPos.top && prev.left === nextPos.left) {
+          return prev;
+        }
+        return nextPos;
       });
     };
 
-    recalculate();
+    const scheduleRecalculate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        applyPosition();
+      });
+    };
+
+    // Calcula sincronamente antes da pintura inicial para evitar salto de 1 frame
+    applyPosition();
 
     // Recalcula quando o conteúdo do popover cresce/encolhe (ex: novas subtarefas)
-    // ou quando a janela é redimensionada, evitando que ele ultrapasse a borda inferior da tela.
+    // ou quando a janela é redimensionada (inclusive transição mobile → desktop).
     const element = popoverRef.current;
     const resizeObserver =
       typeof ResizeObserver !== "undefined" && element
-        ? new ResizeObserver(() => recalculate())
+        ? new ResizeObserver(() => scheduleRecalculate())
         : null;
     if (resizeObserver && element) {
       resizeObserver.observe(element);
     }
-    window.addEventListener("resize", recalculate);
+    window.addEventListener("resize", scheduleRecalculate);
 
     return () => {
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId);
       }
       resizeObserver?.disconnect();
-      window.removeEventListener("resize", recalculate);
+      window.removeEventListener("resize", scheduleRecalculate);
     };
   }, [
     isOpen,

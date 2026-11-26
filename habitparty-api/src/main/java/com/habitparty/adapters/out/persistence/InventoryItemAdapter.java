@@ -1,8 +1,12 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -30,8 +34,13 @@ public class InventoryItemAdapter implements InventoryItemRepository {
 
   @Override
   public InventoryItem save(InventoryItem item) {
-    // Salva no banco e converte a resposta de volta para Domínio
-    InventoryItemJpaEntity savedEntity = repository.save(mapper.toEntity(item));
+    InventoryItemJpaEntity entity = repository.findById(item.getId())
+        .map(existing -> {
+          mapper.updateEntityFromDomain(existing, item);
+          return existing;
+        })
+        .orElseGet(() -> mapper.toEntity(item));
+    InventoryItemJpaEntity savedEntity = repository.save(entity);
     return mapper.toDomain(savedEntity);
   }
 
@@ -41,19 +50,39 @@ public class InventoryItemAdapter implements InventoryItemRepository {
   }
 
   @Override
+  public Optional<InventoryItem> findByIdForUpdate(UUID id) {
+    return repository.findByIdForUpdate(id).map(mapper::toDomain);
+  }
+
+  @Override
   public int countByUserId(UUID userId) {
-    return repository.countByUser_IdAndStatusIn(userId, ACTIVE_BACKPACK_STATUSES);
+    return repository.countByUserIdAndStatusIn(userId, ACTIVE_BACKPACK_STATUSES);
   }
 
   @Override
   public List<InventoryItem> saveAll(List<InventoryItem> items) {
-    // Converte a lista de Domínio para lista de JPA e salva tudo em lote!
-    List<InventoryItemJpaEntity> entities = items.stream()
-        .map(mapper::toEntity)
+    if (items == null || items.isEmpty()) {
+      return List.of();
+    }
+    List<UUID> ids = items.stream()
+        .map(InventoryItem::getId)
+        .filter(Objects::nonNull)
         .toList();
+    Map<UUID, InventoryItemJpaEntity> existingById = repository.findAllById(ids).stream()
+        .collect(Collectors.toMap(InventoryItemJpaEntity::getId, Function.identity(), (a, b) -> a));
+
+    List<InventoryItemJpaEntity> entities = new ArrayList<>(items.size());
+    for (InventoryItem item : items) {
+      InventoryItemJpaEntity entity = existingById.get(item.getId());
+      if (entity != null) {
+        mapper.updateEntityFromDomain(entity, item);
+      } else {
+        entity = mapper.toEntity(item);
+      }
+      entities.add(entity);
+    }
 
     List<InventoryItemJpaEntity> savedEntities = repository.saveAll(entities);
-
     return savedEntities.stream()
         .map(mapper::toDomain)
         .toList();
@@ -61,7 +90,7 @@ public class InventoryItemAdapter implements InventoryItemRepository {
 
   @Override
   public List<InventoryItem> findByUserIdAndStatusIn(UUID userId, List<InventoryItemStatus> statuses) {
-    return repository.findByUser_IdAndStatusInOrderByOrderIndexAscAcquiredAtDesc(userId, statuses)
+    return repository.findByUserIdAndStatusInOrderByOrderIndexAscAcquiredAtDesc(userId, statuses)
         .stream()
         .map(mapper::toDomain)
         .collect(Collectors.toList());

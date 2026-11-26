@@ -63,12 +63,37 @@ public class UpdateRewardGroupUseCase {
     }
 
     Set<UUID> sourceIdSet = new LinkedHashSet<>(command.sourceRewardIds());
-    List<Reward> sourceRewards = new ArrayList<>();
+    List<UUID> missingSourceIds = new ArrayList<>();
+    for (UUID sourceId : sourceIdSet) {
+      if (!userRewardsById.containsKey(sourceId)) {
+        missingSourceIds.add(sourceId);
+      }
+    }
+    Map<UUID, Reward> missingRewardsById = new HashMap<>();
+    if (!missingSourceIds.isEmpty()) {
+      port.findAllByIds(missingSourceIds).ifPresentOrElse(
+          rewards -> {
+            for (Reward r : rewards) {
+              if (r != null && r.getId() != null) {
+                missingRewardsById.put(r.getId(), r);
+              }
+            }
+          },
+          () -> {
+            for (UUID missingId : missingSourceIds) {
+              port.findById(missingId).ifPresent(r -> missingRewardsById.put(missingId, r));
+            }
+          });
+    }
+
+    List<Reward> sourceRewards = new ArrayList<>(sourceIdSet.size());
     for (UUID sourceId : sourceIdSet) {
       Reward found = userRewardsById.get(sourceId);
       if (found == null) {
-        Reward foreign = port.findById(sourceId)
-            .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada!"));
+        Reward foreign = missingRewardsById.get(sourceId);
+        if (foreign == null) {
+          throw new ResourceNotFoundException("Recompensa não encontrada!");
+        }
         foreign.validateOwnership(userIdLogado);
         found = foreign;
       }
@@ -102,9 +127,7 @@ public class UpdateRewardGroupUseCase {
         : sourceRewards.get(0).getIcon().orElse(null);
 
     Set<UUID> seenVariantIds = new HashSet<>();
-    int nextOrderIndex = Math.max(
-        port.getMaxOrderIndex(userIdLogado),
-        userRewards.stream().mapToInt(Reward::getOrder_index).max().orElse(-1));
+    int nextOrderIndex = userRewards.stream().mapToInt(Reward::getOrder_index).max().orElse(-1);
 
     List<Reward> resultingGroupRewards = new ArrayList<>();
     for (UpdateRewardGroupCommand.VariantItem variant : command.variants()) {
@@ -176,38 +199,19 @@ public class UpdateRewardGroupUseCase {
 
     int newGroupCount = RewardGrouping.countRegularDistinctGroups(simulatedFinalRewards);
     int newDebtCount = RewardGrouping.countActiveDebts(simulatedFinalRewards);
-    if (newDebtCount > previousDebtCount && newDebtCount > RewardGrouping.MAX_ACTIVE_DEBTS) {
-      throw new LimitExceededException(
-          "Limite máximo de " + RewardGrouping.MAX_ACTIVE_DEBTS
-              + " dívidas ativas atingido. Quite uma dívida antes de registrar outra.");
-    }
-    int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
-    if (newGroupCount > previousGroupCount && newGroupCount > maxCards) {
-      throw new LimitExceededException(user.isPremium()
-          ? "Limite de " + RewardGrouping.PREMIUM_MAX_REWARD_CARDS
-              + " cards de recompensa por usuário atingido no plano premium."
-          : "Limite de " + RewardGrouping.FREE_MAX_REWARD_CARDS
-              + " cards de recompensa por usuário atingido no plano gratuito.");
-    }
+    RewardLimitValidator.assertNewDebtWithinLimit(previousDebtCount, newDebtCount);
+    RewardLimitValidator.assertRewardCardQuotaForUpdate(user.isPremium(), previousGroupCount, newGroupCount);
 
     for (Reward resultItem : resultingGroupRewards) {
       String groupKey = RewardGrouping.groupKey(resultItem);
-      if (RewardGrouping.countGroupVariants(simulatedFinalRewards, groupKey)
-          > RewardGrouping.MAX_VARIANTS_PER_GROUP) {
-        throw new LimitExceededException(
-            "Este card já atingiu o limite máximo de "
-                + RewardGrouping.MAX_VARIANTS_PER_GROUP
-                + " pacotes.");
-      }
+      RewardLimitValidator.assertGroupVariantLimit(RewardGrouping.countGroupVariants(simulatedFinalRewards, groupKey));
       RewardPackageLevel pkg = resultItem.getPackageLevel().orElse(RewardPackageLevel.NONE);
-      if (RewardGrouping.findConflictingPackageTier(
-              simulatedFinalRewards, groupKey, pkg, resultItem.getId())
-          .isPresent()) {
-        throw new DomainValidationException(
-            "Cada card pode ter apenas um pacote de nível "
-                + RewardGrouping.formatPackageLevelLabel(pkg)
-                + ".");
-      }
+      RewardLimitValidator.assertNoConflictingPackageTier(
+          simulatedFinalRewards,
+          groupKey,
+          pkg,
+          resultItem.getId(),
+          "Cada card pode ter apenas um pacote de nível %s.");
     }
 
     List<UUID> removedIds = new ArrayList<>();
@@ -221,8 +225,10 @@ public class UpdateRewardGroupUseCase {
       if (command.deleteRemovedHistory()) {
         transactionPort.deleteAllByReferenceIdsAndUserId(removedIds, userIdLogado);
       }
-      for (UUID removedId : removedIds) {
-        port.deleteById(removedId);
+      if (port.deleteAllByIds(removedIds, userIdLogado).isEmpty()) {
+        for (UUID removedId : removedIds) {
+          port.deleteById(removedId);
+        }
       }
     }
 

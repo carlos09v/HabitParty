@@ -1,17 +1,15 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useMemo, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { createFocusRecord, updateFocusRecord } from "@/actions/focusActions";
+import { useState } from "react";
 import {
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_MANUAL_FOCUS_MINUTES,
-} from "@/constants/focus";
+} from "@/constants/focusRules";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { dispatchTaskFocusRecorded } from "@/hooks/useFocusTaskSync";
+import { useFocusManualSubmission } from "@/hooks/useFocusManualSubmission";
+import { useFocusManualTimeWindow } from "@/hooks/useFocusManualTimeWindow";
 import type { AppLocale } from "@/i18n/config";
-import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
@@ -20,33 +18,25 @@ import type {
   FocusRecordType,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import {
-  computeTimeWindowFromDuration,
-  formatDateParts,
-  formatTimeHHMM,
-  getDateKeyInTimeZone,
-  getDatePartsInTimeZone,
-  getTodayDateString,
-  hasTimeZoneSuffix,
-  minutesToTimeHHMM,
-  parseLocalDate,
-  parseServerDate,
-  parseTimeToMinutes,
-  toLocalISOString,
-} from "@/utils/date";
-import { formatCoins } from "@/utils/economy";
 import { calculateRewardableMinutesForDate } from "@/utils/focusDailyYield";
 import {
   getItemRemainingMinutes,
   isBackpackItemTimeDepleted,
 } from "@/utils/focusFormatters";
-import { mapFocusRecordDtoToRecord } from "@/utils/focusMapper";
+import {
+  formatSignedCoins,
+  formatSignedInt,
+} from "@/utils/focusRecordPostSave";
+import {
+  estimatePomosFromMinutes,
+  parseRecordDateParts,
+  resolveItemEffectiveMinutesHelper,
+  resolveRecordDurationSeconds,
+} from "@/utils/focusRecordTimeWindow";
 import {
   calculateFocusRewardEstimate,
   toFocusRewardEstimate,
 } from "@/utils/focusRewards";
-import { awardUserRewards, deductUserPenalty } from "@/utils/gamification";
-import { soundEffects } from "@/utils/soundEffects";
 
 interface UseFocusManualRecordFormParams {
   isOpen: boolean;
@@ -64,116 +54,16 @@ interface UseFocusManualRecordFormParams {
   onClose: () => void;
 }
 
-interface ParsedRecordDateParts {
-  dateKey: string;
-  timeHHMM: string;
-  wallIso: string;
-  timestampMs: number | null;
-  hasExplicitTz: boolean;
-}
-
-function formatWallUtc(dt: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${formatDateParts(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())}T${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}`;
-}
-
-function parseWallIsoToUtcMs(wallIso: string): number | null {
-  const [datePart, timePart = "00:00:00"] = wallIso.split("T");
-  const [y, m, d] = datePart.split("-").map(Number);
-  const [hh = 0, mm = 0, ss = 0] = timePart.split(":").map(Number);
-  if (
-    !y ||
-    !m ||
-    !d ||
-    Number.isNaN(hh) ||
-    Number.isNaN(mm) ||
-    Number.isNaN(ss)
-  ) {
-    return null;
-  }
-  return Date.UTC(y, m - 1, d, hh, mm, ss);
-}
-
-function parseRecordDateParts(
-  dateStr: string,
-  timeZone?: string | null,
-): ParsedRecordDateParts {
-  const trimmed = dateStr.trim();
-  if (!hasTimeZoneSuffix(trimmed)) {
-    const normalized = trimmed.replace(" ", "T");
-    const [datePart = "", timePart = "00:00:00"] = normalized.split("T");
-    const [hh = "00", mm = "00", ss = "00"] = timePart.split(":");
-    const pad2 = (s: string) => s.padStart(2, "0").slice(0, 2);
-    const localDate = parseLocalDate(normalized);
-    return {
-      dateKey: datePart,
-      timeHHMM: `${pad2(hh)}:${pad2(mm)}`,
-      wallIso: `${datePart}T${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`,
-      timestampMs: localDate ? localDate.getTime() : null,
-      hasExplicitTz: false,
-    };
-  }
-  const parsed = parseServerDate(trimmed);
-  if (!parsed) {
-    const now = new Date();
-    return {
-      dateKey: getTodayDateString(now, timeZone),
-      timeHHMM: formatTimeHHMM(now, timeZone),
-      wallIso: toLocalISOString(now, timeZone),
-      timestampMs: now.getTime(),
-      hasExplicitTz: true,
-    };
-  }
-  return {
-    dateKey: getDateKeyInTimeZone(parsed, timeZone),
-    timeHHMM: formatTimeHHMM(parsed, timeZone),
-    wallIso: toLocalISOString(parsed, timeZone),
-    timestampMs: parsed.getTime(),
-    hasExplicitTz: true,
-  };
-}
-
-function estimatePomosFromMinutes(mins: number): number {
-  if (mins <= 45) return 1;
-  if (mins <= 60) return 2;
-  return Math.max(1, Math.round(mins / 30));
-}
-
-function formatSignedInt(val: number): string {
-  return val > 0 ? `+${val}` : `${val}`;
-}
-
-function formatSignedCoins(val: number, locale: AppLocale): string {
-  const sign = val > 0 ? "+" : val < 0 ? "-" : "";
-  return `${sign}${formatCoins(Math.abs(val), { locale })}`;
-}
-
-function resolveRecordDurationSeconds(record: FocusRecord): number {
-  const startParsed = hasTimeZoneSuffix(record.startTime)
-    ? parseServerDate(record.startTime)
-    : parseLocalDate(record.startTime);
-  const endParsed = hasTimeZoneSuffix(record.endTime)
-    ? parseServerDate(record.endTime)
-    : parseLocalDate(record.endTime);
-  if (startParsed && endParsed) {
-    const diffSecs = Math.round(
-      (endParsed.getTime() - startParsed.getTime()) / 1000,
-    );
-    if (diffSecs > 0) {
-      return diffSecs;
-    }
-  }
-  return Math.max(0, (record.durationMinutes || 0) * 60);
-}
-
 /**
- * Hook de controle do formulário de inserção e edição manual de foco.
- * Otimizado com estado inicial síncrono, useTransition e integração de recompensas unificada.
+ * Orquestrador do formulário de inserção e edição manual de foco.
+ * Compõe `useFocusManualTimeWindow` (duração/janela/meia-noite) e `useFocusManualSubmission`
+ * (validação inline acessível + persistência).
  */
 export function useFocusManualRecordForm({
   activities,
   backpackItems,
   allInventoryItems = [],
+  focusableTasks = [],
   records = [],
   editingRecord = null,
   initialActivityId,
@@ -188,7 +78,6 @@ export function useFocusManualRecordForm({
   const { isGamified } = useExperienceMode();
   const isPremium = useUserStore((s) => s.is_Premium);
   const userTimeZone = useUserStore((s) => s.user?.timezone);
-  const [isPending, startTransition] = useTransition();
 
   const isEditMode = Boolean(editingRecord);
   const isOrphanedFreeSession = Boolean(
@@ -198,38 +87,25 @@ export function useFocusManualRecordForm({
       !editingRecord.taskId,
   );
 
-  const [initialUserTz] = useState(() => userTimeZone);
-  const [mountDate] = useState(() => new Date());
-
-  const editingStartParts = useMemo(
-    () =>
-      editingRecord
-        ? parseRecordDateParts(editingRecord.startTime, initialUserTz)
-        : null,
-    [editingRecord, initialUserTz],
-  );
-  const editingEndParts = useMemo(
-    () =>
-      editingRecord
-        ? parseRecordDateParts(editingRecord.endTime, initialUserTz)
-        : null,
-    [editingRecord, initialUserTz],
-  );
-  const editingOldDurationSeconds = useMemo(
-    () => (editingRecord ? resolveRecordDurationSeconds(editingRecord) : 0),
-    [editingRecord],
-  );
-  const editingInitialDurationMinutes = useMemo(() => {
-    if (!editingRecord) return 0;
-    return Math.max(
-      1,
-      editingRecord.durationMinutes ||
-        Math.round(editingOldDurationSeconds / 60) ||
+  const editingStartParts = editingRecord
+    ? parseRecordDateParts(editingRecord.startTime, userTimeZone)
+    : null;
+  const editingEndParts = editingRecord
+    ? parseRecordDateParts(editingRecord.endTime, userTimeZone)
+    : null;
+  const editingOldDurationSeconds = editingRecord
+    ? resolveRecordDurationSeconds(editingRecord)
+    : 0;
+  const editingInitialDurationMinutes = editingRecord
+    ? Math.max(
         1,
-    );
-  }, [editingRecord, editingOldDurationSeconds]);
+        editingRecord.durationMinutes ||
+          Math.round(editingOldDurationSeconds / 60) ||
+          1,
+      )
+    : 0;
 
-  const selectableActivities = useMemo(() => {
+  const selectableActivities = (() => {
     const base = isPremium
       ? activities
       : activities.slice(0, MAX_FOCUS_ACTIVITIES_FREE);
@@ -245,9 +121,9 @@ export function useFocusManualRecordForm({
       }
     }
     return base;
-  }, [activities, isPremium, editingRecord?.focusActivityId]);
+  })();
 
-  const availableBackpackItems = useMemo(() => {
+  const availableBackpackItems = (() => {
     const editingItemId = editingRecord?.inventoryItemId;
     const base = backpackItems.filter(
       (item) =>
@@ -275,14 +151,7 @@ export function useFocusManualRecordForm({
       ];
     }
     return base;
-  }, [
-    backpackItems,
-    allInventoryItems,
-    editingRecord?.inventoryItemId,
-    editingRecord?.itemName,
-    editingRecord?.itemIcon,
-    t,
-  ]);
+  })();
 
   const defaultInitActivity = !editingRecord
     ? (selectableActivities.find((a) => a.id === initialActivityId) ??
@@ -296,11 +165,15 @@ export function useFocusManualRecordForm({
     return initialItemId ? "ITEM" : "ACTIVITY";
   });
 
-  const [selectedActivityId, setSelectedActivityId] = useState<string>(() =>
-    editingRecord
-      ? (editingRecord.focusActivityId ?? "")
-      : (defaultInitActivity?.id ?? ""),
-  );
+  const [selectedActivityId, setSelectedActivityId] = useState<string>(() => {
+    if (editingRecord) {
+      return editingRecord.focusActivityId ?? "";
+    }
+    if (initialTaskId && !initialActivityId) {
+      return "";
+    }
+    return defaultInitActivity?.id ?? "";
+  });
 
   const [selectedItemId, setSelectedItemId] = useState<string>(() => {
     if (editingRecord) {
@@ -325,7 +198,29 @@ export function useFocusManualRecordForm({
       : defaultInitActivity?.recordType || "POMO",
   );
 
-  const [durationMinutes, setDurationMinutes] = useState<number>(() => {
+  const [notes, setNotes] = useState(() => editingRecord?.notes ?? "");
+
+  const resolveItemEffectiveMinutes = (
+    itemId: string,
+    itemsList: InventoryItemResponseDTO[] = availableBackpackItems,
+  ): number =>
+    resolveItemEffectiveMinutesHelper({
+      itemId,
+      itemsList,
+      isEditMode,
+      editingRecord,
+      editingOldDurationSeconds,
+    });
+
+  const selectedItem = availableBackpackItems.find(
+    (b) => b.inventoryItemId === selectedItemId,
+  );
+  const selectedItemMinutes = resolveItemEffectiveMinutes(selectedItemId);
+  const selectedActivity = selectableActivities.find(
+    (a) => a.id === selectedActivityId,
+  );
+
+  const initialDurationMinutes = (() => {
     if (editingRecord) {
       return editingInitialDurationMinutes;
     }
@@ -337,13 +232,9 @@ export function useFocusManualRecordForm({
       if (mins > 0) return mins;
     }
     return defaultInitActivity?.targetTimeMinutes || 35;
-  });
+  })();
 
-  const [durationInput, setDurationInput] = useState<string>(() =>
-    String(durationMinutes),
-  );
-
-  const [completedPomos, setCompletedPomos] = useState<number>(() => {
+  const initialCompletedPomos = (() => {
     if (editingRecord) {
       if (editingRecord.recordType === "POMO") {
         return editingRecord.completedPomos ?? 0;
@@ -357,239 +248,33 @@ export function useFocusManualRecordForm({
       return estimatePomosFromMinutes(defaultInitActivity.targetTimeMinutes);
     }
     return 1;
+  })();
+
+  const timeWindow = useFocusManualTimeWindow({
+    userTimeZone,
+    targetType,
+    recordType,
+    selectedItemMinutes,
+    isEditMode,
+    editingRecord,
+    editingStartParts,
+    editingEndParts,
+    editingInitialDurationMinutes,
+    initialDurationMinutes,
+    initialCompletedPomos,
   });
 
-  const [sessionDate, setSessionDate] = useState<string>(
-    () =>
-      editingEndParts?.dateKey ?? getTodayDateString(mountDate, initialUserTz),
-  );
-  const [endTimeStr, setEndTimeStr] = useState<string>(
-    () => editingEndParts?.timeHHMM ?? formatTimeHHMM(mountDate, initialUserTz),
-  );
-  const [startTimeStr, setStartTimeStr] = useState<string>(() => {
-    if (editingStartParts) {
-      return editingStartParts.timeHHMM;
-    }
-    const initialEnd = formatTimeHHMM(mountDate, initialUserTz);
-    return computeTimeWindowFromDuration(initialEnd, durationMinutes)
-      .startTimeStr;
-  });
-  const [notes, setNotes] = useState(() => editingRecord?.notes ?? "");
-
-  const resolveItemEffectiveMinutes = useCallback(
-    (
-      itemId: string,
-      itemsList: InventoryItemResponseDTO[] = availableBackpackItems,
-    ): number => {
-      const item = itemsList.find((b) => b.inventoryItemId === itemId);
-      if (!item) return 0;
-      if (
-        isEditMode &&
-        editingRecord?.inventoryItemId &&
-        itemId === editingRecord.inventoryItemId
-      ) {
-        if (
-          item.remainingSeconds !== undefined &&
-          item.remainingSeconds !== null
-        ) {
-          const effectiveSeconds =
-            Math.max(0, item.remainingSeconds) + editingOldDurationSeconds;
-          return Math.max(1, Math.floor(effectiveSeconds / 60));
-        }
-        return 0;
-      }
-      return getItemRemainingMinutes(item.remainingSeconds);
-    },
-    [
-      availableBackpackItems,
-      isEditMode,
-      editingRecord?.inventoryItemId,
-      editingOldDurationSeconds,
-    ],
+  const filteredRecordsForYield = editingRecord
+    ? records.filter((r) => r.id !== editingRecord.id)
+    : records;
+  const priorFocusMinutesForDate = calculateRewardableMinutesForDate(
+    filteredRecordsForYield,
+    timeWindow.sessionDate,
+    userTimeZone,
+    "endTime",
   );
 
-  const selectedItem = useMemo(() => {
-    return availableBackpackItems.find(
-      (b) => b.inventoryItemId === selectedItemId,
-    );
-  }, [availableBackpackItems, selectedItemId]);
-
-  const selectedItemMinutes = useMemo(
-    () => resolveItemEffectiveMinutes(selectedItemId),
-    [resolveItemEffectiveMinutes, selectedItemId],
-  );
-
-  const selectedActivity = useMemo(() => {
-    return selectableActivities.find((a) => a.id === selectedActivityId);
-  }, [selectableActivities, selectedActivityId]);
-
-  const syncPomosFromMinutes = (
-    mins: number,
-    overrideRecordType?: FocusRecordType,
-  ) => {
-    const activeRecordType = overrideRecordType ?? recordType;
-    if (activeRecordType === "POMO") {
-      setCompletedPomos(estimatePomosFromMinutes(mins));
-    }
-  };
-
-  const applyDurationAndPomos = (
-    mins: number,
-    overrideRecordType?: FocusRecordType,
-  ) => {
-    setDurationMinutes(mins);
-    setDurationInput(String(mins));
-    syncPomosFromMinutes(mins, overrideRecordType);
-  };
-
-  const resolveMaxDurationLimit = (
-    overrideMaxDuration?: number,
-    overrideTargetType?: "ACTIVITY" | "ITEM",
-  ) => {
-    if (overrideMaxDuration && overrideMaxDuration > 0) {
-      return overrideMaxDuration;
-    }
-    const activeTargetType = overrideTargetType ?? targetType;
-    if (activeTargetType === "ITEM" && selectedItemMinutes > 0) {
-      return selectedItemMinutes;
-    }
-    return MAX_MANUAL_FOCUS_MINUTES;
-  };
-
-  const syncDurationWithWindow = (
-    nextDuration: number,
-    overrideRecordType?: FocusRecordType,
-    overrideMaxDuration?: number,
-    overrideTargetType?: "ACTIVITY" | "ITEM",
-  ) => {
-    const maxLimit = resolveMaxDurationLimit(
-      overrideMaxDuration,
-      overrideTargetType,
-    );
-    const clamped = Math.max(0, Math.min(maxLimit, nextDuration));
-    setDurationMinutes(clamped);
-    setDurationInput(String(clamped));
-    if (clamped >= 1) {
-      const window = computeTimeWindowFromDuration(endTimeStr, clamped);
-      setStartTimeStr(window.startTimeStr);
-      setEndTimeStr(window.endTimeStr);
-      syncPomosFromMinutes(clamped, overrideRecordType);
-    }
-  };
-
-  const handleDurationInputChange = (raw: string) => {
-    if (raw === "") {
-      setDurationInput("");
-      setDurationMinutes(0);
-      return;
-    }
-    const parsed = Number.parseInt(raw, 10);
-    if (Number.isNaN(parsed)) {
-      return;
-    }
-    syncDurationWithWindow(parsed);
-  };
-
-  const handleDurationStep = (delta: number) => {
-    syncDurationWithWindow(Math.max(1, durationMinutes + delta));
-  };
-
-  const handleStartTimeChange = (nextStart: string) => {
-    const startMins = parseTimeToMinutes(nextStart);
-    const endMins = parseTimeToMinutes(endTimeStr);
-    if (startMins === null || endMins === null) {
-      setStartTimeStr(nextStart);
-      return;
-    }
-
-    const maxLimit = resolveMaxDurationLimit();
-    if (endMins > startMins) {
-      const rawDiff = endMins - startMins;
-      if (rawDiff > maxLimit) {
-        setStartTimeStr(nextStart);
-        setEndTimeStr(minutesToTimeHHMM(startMins + maxLimit));
-        applyDurationAndPomos(maxLimit);
-      } else {
-        setStartTimeStr(nextStart);
-        applyDurationAndPomos(rawDiff);
-      }
-      return;
-    }
-
-    if (startMins >= 1439) {
-      setStartTimeStr(minutesToTimeHHMM(1438));
-      setEndTimeStr(minutesToTimeHHMM(1439));
-      applyDurationAndPomos(1);
-      return;
-    }
-
-    const desiredDuration = Math.max(
-      1,
-      Math.min(maxLimit, durationMinutes || 1),
-    );
-    const nextEndMins = Math.min(1439, startMins + desiredDuration);
-    setStartTimeStr(nextStart);
-    setEndTimeStr(minutesToTimeHHMM(nextEndMins));
-    applyDurationAndPomos(nextEndMins - startMins);
-  };
-
-  const handleEndTimeChange = (nextEnd: string) => {
-    const startMins = parseTimeToMinutes(startTimeStr);
-    const endMins = parseTimeToMinutes(nextEnd);
-    if (startMins === null || endMins === null) {
-      setEndTimeStr(nextEnd);
-      return;
-    }
-
-    const maxLimit = resolveMaxDurationLimit();
-    if (endMins > startMins) {
-      const rawDiff = endMins - startMins;
-      if (rawDiff > maxLimit) {
-        setStartTimeStr(minutesToTimeHHMM(endMins - maxLimit));
-        setEndTimeStr(nextEnd);
-        applyDurationAndPomos(maxLimit);
-      } else {
-        setEndTimeStr(nextEnd);
-        applyDurationAndPomos(rawDiff);
-      }
-      return;
-    }
-
-    if (endMins <= 0) {
-      setStartTimeStr(minutesToTimeHHMM(0));
-      setEndTimeStr(minutesToTimeHHMM(1));
-      applyDurationAndPomos(1);
-      return;
-    }
-
-    const desiredDuration = Math.max(
-      1,
-      Math.min(maxLimit, durationMinutes || 1),
-    );
-    const nextStartMins = Math.max(0, endMins - desiredDuration);
-    setStartTimeStr(minutesToTimeHHMM(nextStartMins));
-    setEndTimeStr(nextEnd);
-    applyDurationAndPomos(endMins - nextStartMins);
-  };
-
-  const maxDate = useMemo(() => {
-    return getTodayDateString(new Date(), userTimeZone);
-  }, [userTimeZone]);
-
-  // Minutos elegíveis já contabilizados na data selecionada (excluindo o registro em edição)
-  const priorFocusMinutesForDate = useMemo(() => {
-    const filteredRecords = editingRecord
-      ? records.filter((r) => r.id !== editingRecord.id)
-      : records;
-    return calculateRewardableMinutesForDate(
-      filteredRecords,
-      sessionDate,
-      userTimeZone,
-      "endTime",
-    );
-  }, [records, editingRecord, sessionDate, userTimeZone]);
-
-  const effectivePomoTargetMinutes = useMemo(() => {
+  const effectivePomoTargetMinutes = (() => {
     if (recordType !== "POMO") return undefined;
     if (
       editingRecord &&
@@ -599,41 +284,25 @@ export function useFocusManualRecordForm({
       return editingRecord.pomoTargetMinutes;
     }
     return selectedActivity?.targetTimeMinutes;
-  }, [
-    recordType,
-    editingRecord,
-    selectedActivityId,
-    selectedActivity?.targetTimeMinutes,
-  ]);
+  })();
 
-  const estimatedRewards = useMemo(() => {
-    return calculateFocusRewardEstimate(
-      targetType,
-      recordType,
-      durationMinutes,
-      completedPomos,
-      priorFocusMinutesForDate,
-      locale,
-      effectivePomoTargetMinutes,
-      isGamified,
-    );
-  }, [
+  const estimatedRewards = calculateFocusRewardEstimate(
     targetType,
     recordType,
-    durationMinutes,
-    completedPomos,
+    timeWindow.durationMinutes,
+    timeWindow.completedPomos,
     priorFocusMinutesForDate,
     locale,
     effectivePomoTargetMinutes,
     isGamified,
-  ]);
+  );
 
-  const rewardEstimate = useMemo(() => {
+  const rewardEstimate = (() => {
     const baseEstimate = toFocusRewardEstimate(
       estimatedRewards,
       {
-        durationMinutes,
-        completedPomos,
+        durationMinutes: timeWindow.durationMinutes,
+        completedPomos: timeWindow.completedPomos,
         recordType,
         locale,
       },
@@ -654,7 +323,7 @@ export function useFocusManualRecordForm({
       xpDelta === 0 && coinsDelta === 0
         ? t("editDeltaNoChange")
         : isGamified
-          ? `${formatSignedInt(xpDelta)} XP • ${formatSignedCoins(coinsDelta, locale)} 🪙`
+          ? `${formatSignedInt(xpDelta)} XP • ${formatSignedCoins(coinsDelta, locale)} ${t("coinsUnitShort")}`
           : `${formatSignedInt(xpDelta)} pts • ${formatSignedCoins(coinsDelta, locale)}`;
 
     const nextBreakdown = [
@@ -683,20 +352,46 @@ export function useFocusManualRecordForm({
       breakdown: nextBreakdown,
       notices: nextNotices,
     };
-  }, [
-    estimatedRewards,
-    durationMinutes,
-    completedPomos,
-    recordType,
+  })();
+
+  const translator = (key: string, values?: Record<string, string | number>) =>
+    t(key as never, values as never);
+
+  const submission = useFocusManualSubmission({
+    t: translator,
     locale,
-    editingRecord,
-    targetType,
     isGamified,
-    t,
-  ]);
+    userTimeZone,
+    targetType,
+    isOrphanedFreeSession,
+    hasFocusableTasks: focusableTasks.length > 0,
+    selectedActivityId,
+    selectedTaskId,
+    selectedItemId,
+    selectedItemMinutes,
+    selectableActivities,
+    availableBackpackItems,
+    recordType,
+    durationMinutes: timeWindow.durationMinutes,
+    completedPomos: timeWindow.completedPomos,
+    effectivePomoTargetMinutes,
+    sessionDate: timeWindow.sessionDate,
+    startTimeStr: timeWindow.startTimeStr,
+    endTimeStr: timeWindow.endTimeStr,
+    notes,
+    maxLimit: timeWindow.resolveMaxDurationLimit(),
+    editingRecord,
+    editingStartParts,
+    editingEndParts,
+    editingInitialDurationMinutes,
+    onSuccess,
+    onRecordUpdated,
+    onClose,
+  });
 
   const handleTargetTypeChange = (type: "ACTIVITY" | "ITEM") => {
     if (isEditMode) return;
+    submission.resetValidation();
     setTargetType(type);
     if (type === "ITEM") {
       const item =
@@ -706,10 +401,12 @@ export function useFocusManualRecordForm({
       if (item) {
         setSelectedItemId(item.inventoryItemId || "");
         const mins = getItemRemainingMinutes(item.remainingSeconds);
-        if (mins > 0) syncDurationWithWindow(mins, recordType, mins, "ITEM");
+        if (mins > 0) {
+          timeWindow.syncDurationWithWindow(mins, recordType, mins, "ITEM");
+        }
       }
-    } else if (durationMinutes > MAX_MANUAL_FOCUS_MINUTES) {
-      syncDurationWithWindow(
+    } else if (timeWindow.durationMinutes > MAX_MANUAL_FOCUS_MINUTES) {
+      timeWindow.syncDurationWithWindow(
         MAX_MANUAL_FOCUS_MINUTES,
         recordType,
         MAX_MANUAL_FOCUS_MINUTES,
@@ -720,15 +417,13 @@ export function useFocusManualRecordForm({
 
   const handleSelectActivity = (actId: string) => {
     setSelectedActivityId(actId);
-    if (isEditMode) {
-      return;
-    }
+    if (isEditMode) return;
     const act = selectableActivities.find((a) => a.id === actId);
     if (act?.recordType) {
       setRecordType(act.recordType);
     }
     if (act?.targetTimeMinutes) {
-      syncDurationWithWindow(
+      timeWindow.syncDurationWithWindow(
         act.targetTimeMinutes,
         act.recordType ?? recordType,
         MAX_MANUAL_FOCUS_MINUTES,
@@ -741,466 +436,30 @@ export function useFocusManualRecordForm({
     setSelectedItemId(itemId);
     const itemMins = resolveItemEffectiveMinutes(itemId);
     if (isEditMode) {
-      if (itemMins > 0 && durationMinutes > itemMins) {
-        syncDurationWithWindow(itemMins, recordType, itemMins, "ITEM");
+      if (itemMins > 0 && timeWindow.durationMinutes > itemMins) {
+        timeWindow.syncDurationWithWindow(
+          itemMins,
+          recordType,
+          itemMins,
+          "ITEM",
+        );
       }
       return;
     }
     if (itemMins > 0) {
-      syncDurationWithWindow(itemMins, recordType, itemMins, "ITEM");
+      timeWindow.syncDurationWithWindow(itemMins, recordType, itemMins, "ITEM");
     }
   };
 
   const handleRecordTypeChange = (nextType: FocusRecordType) => {
     setRecordType(nextType);
-    if (nextType === "POMO" && completedPomos <= 0 && durationMinutes > 0) {
-      syncPomosFromMinutes(durationMinutes, "POMO");
-    }
-  };
-
-  const handlePresetSelect = (minutes: number) => {
-    syncDurationWithWindow(minutes);
-  };
-
-  const handleDurationChange = (minutes: number) => {
-    syncDurationWithWindow(minutes);
-  };
-
-  const handleCompletedPomosStep = (delta: number) => {
-    const minPomos = isEditMode ? 0 : 1;
-    setCompletedPomos((prev) => Math.max(minPomos, Math.min(50, prev + delta)));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
     if (
-      targetType === "ACTIVITY" &&
-      !isOrphanedFreeSession &&
-      !selectedActivityId &&
-      !selectedTaskId
+      nextType === "POMO" &&
+      timeWindow.completedPomos <= 0 &&
+      timeWindow.durationMinutes > 0
     ) {
-      toast.error(t("toasts.selectActivityRequired"));
-      return;
+      timeWindow.syncPomosFromMinutes(timeWindow.durationMinutes, "POMO");
     }
-
-    if (targetType === "ITEM" && !selectedItemId) {
-      toast.error(
-        t(isGamified ? "toasts.noBackpackItems" : "toasts.noInventoryItems"),
-      );
-      return;
-    }
-
-    if (durationMinutes <= 0) {
-      toast.error(t("toasts.invalidDuration"));
-      return;
-    }
-
-    if (
-      targetType === "ITEM" &&
-      selectedItemMinutes > 0 &&
-      durationMinutes > selectedItemMinutes
-    ) {
-      toast.error(
-        t("toasts.exceedsItemBalance", { minutes: selectedItemMinutes }),
-      );
-      return;
-    }
-
-    if (targetType === "ACTIVITY") {
-      const now = new Date();
-      const activeTz = useUserStore.getState().user?.timezone;
-      const todayStr = getTodayDateString(now, activeTz);
-      const baseDateStr = sessionDate || todayStr;
-      if (baseDateStr > todayStr) {
-        toast.error(t("toasts.futureDateNotAllowed"));
-        return;
-      }
-      if (baseDateStr === todayStr) {
-        const endMins = parseTimeToMinutes(endTimeStr);
-        const nowParts = getDatePartsInTimeZone(now, activeTz);
-        const nowMins = nowParts.hour * 60 + nowParts.minute;
-        if (endMins !== null && endMins > nowMins) {
-          toast.error(t("toasts.futureEndTimeNotAllowed"));
-          return;
-        }
-      }
-    }
-
-    startTransition(async () => {
-      try {
-        const now = new Date();
-        const activeTz = useUserStore.getState().user?.timezone;
-        let startTime: string;
-        let endTime: string;
-        const todayDateKey = getTodayDateString(now, activeTz);
-        let isSessionToday = true;
-
-        const isEditingSameTimeWindow = Boolean(
-          editingRecord &&
-            editingStartParts &&
-            editingEndParts &&
-            sessionDate === editingEndParts.dateKey &&
-            startTimeStr === editingStartParts.timeHHMM &&
-            endTimeStr === editingEndParts.timeHHMM &&
-            durationMinutes === editingInitialDurationMinutes,
-        );
-
-        if (targetType === "ITEM") {
-          if (
-            editingRecord &&
-            durationMinutes === editingInitialDurationMinutes &&
-            editingStartParts &&
-            editingEndParts
-          ) {
-            startTime = editingStartParts.wallIso;
-            endTime = editingEndParts.wallIso;
-          } else if (editingRecord && editingEndParts) {
-            endTime = editingEndParts.wallIso;
-            const durationMs = durationMinutes * 60 * 1000;
-            if (editingEndParts.hasExplicitTz && editingEndParts.timestampMs) {
-              startTime = toLocalISOString(
-                new Date(editingEndParts.timestampMs - durationMs),
-                activeTz,
-              );
-            } else {
-              const endWallMs = parseWallIsoToUtcMs(editingEndParts.wallIso);
-              startTime =
-                endWallMs !== null
-                  ? formatWallUtc(new Date(endWallMs - durationMs))
-                  : toLocalISOString(
-                      new Date(now.getTime() - durationMs),
-                      activeTz,
-                    );
-            }
-          } else {
-            endTime = toLocalISOString(now, activeTz);
-            startTime = toLocalISOString(
-              new Date(now.getTime() - durationMinutes * 60 * 1000),
-              activeTz,
-            );
-          }
-        } else if (
-          isEditingSameTimeWindow &&
-          editingStartParts &&
-          editingEndParts
-        ) {
-          startTime = editingStartParts.wallIso;
-          endTime = editingEndParts.wallIso;
-          isSessionToday = editingEndParts.dateKey === todayDateKey;
-        } else {
-          const baseDateStr = sessionDate || todayDateKey;
-          isSessionToday = baseDateStr === todayDateKey;
-          const [y, m, d] = baseDateStr.split("-").map(Number);
-          const startMins = parseTimeToMinutes(startTimeStr);
-          const endMins = parseTimeToMinutes(endTimeStr);
-
-          if (startMins !== null && endMins !== null && endMins > startMins) {
-            startTime = formatWallUtc(
-              new Date(
-                Date.UTC(
-                  y,
-                  m - 1,
-                  d,
-                  Math.floor(startMins / 60),
-                  startMins % 60,
-                  0,
-                ),
-              ),
-            );
-            endTime = formatWallUtc(
-              new Date(
-                Date.UTC(
-                  y,
-                  m - 1,
-                  d,
-                  Math.floor(endMins / 60),
-                  endMins % 60,
-                  0,
-                ),
-              ),
-            );
-          } else {
-            const nowParts = getDatePartsInTimeZone(now, activeTz);
-            const fallbackEndMins =
-              endMins ?? nowParts.hour * 60 + nowParts.minute;
-            const endUtc = new Date(
-              Date.UTC(
-                y,
-                m - 1,
-                d,
-                Math.floor(fallbackEndMins / 60),
-                fallbackEndMins % 60,
-                0,
-              ),
-            );
-            const startUtc = new Date(
-              endUtc.getTime() - durationMinutes * 60 * 1000,
-            );
-            startTime = formatWallUtc(startUtc);
-            endTime = formatWallUtc(endUtc);
-          }
-        }
-
-        const resolvedCompletedPomos =
-          targetType !== "ITEM" && recordType === "POMO" ? completedPomos : 0;
-        const resolvedPomoTargetMinutes =
-          targetType !== "ITEM" && recordType === "POMO"
-            ? effectivePomoTargetMinutes
-            : undefined;
-
-        if (editingRecord) {
-          const res = await updateFocusRecord(editingRecord.id, {
-            focusActivityId:
-              targetType === "ACTIVITY" && selectedActivityId
-                ? selectedActivityId
-                : undefined,
-            taskId:
-              targetType === "ACTIVITY" && selectedTaskId
-                ? selectedTaskId
-                : undefined,
-            inventoryItemId: targetType === "ITEM" ? selectedItemId : undefined,
-            recordType: targetType === "ITEM" ? "STOPWATCH" : recordType,
-            completedPomos: resolvedCompletedPomos,
-            pomoTargetMinutes: resolvedPomoTargetMinutes,
-            startTime,
-            endTime,
-            notes: notes.trim(),
-          });
-
-          if (res.success && res.data) {
-            const matchedActivity =
-              targetType === "ACTIVITY" && selectedActivityId
-                ? selectableActivities.find((a) => a.id === selectedActivityId)
-                : undefined;
-            const matchedItem =
-              targetType === "ITEM" && selectedItemId
-                ? availableBackpackItems.find(
-                    (b) => b.inventoryItemId === selectedItemId,
-                  )
-                : undefined;
-            const mappedUpdated = mapFocusRecordDtoToRecord(
-              res.data,
-              matchedActivity,
-              activeTz,
-              matchedItem,
-            );
-
-            const oldTaskId = editingRecord.taskId;
-            const newTaskId =
-              targetType === "ACTIVITY" && selectedTaskId
-                ? selectedTaskId
-                : undefined;
-            const oldTaskMins = Math.max(1, editingRecord.durationMinutes);
-            const oldTaskPomos = editingRecord.completedPomos ?? 0;
-            const newTaskMins = Math.max(
-              1,
-              Number(res.data.durationMinutes ?? durationMinutes),
-            );
-            const newTaskPomos = resolvedCompletedPomos;
-
-            if (oldTaskId && oldTaskId === newTaskId) {
-              const minsDelta = newTaskMins - oldTaskMins;
-              const pomosDelta = newTaskPomos - oldTaskPomos;
-              if (minsDelta !== 0 || pomosDelta !== 0) {
-                dispatchTaskFocusRecorded({
-                  taskId: newTaskId,
-                  durationMinutes: minsDelta,
-                  cycles: pomosDelta,
-                });
-              }
-            } else {
-              if (oldTaskId) {
-                dispatchTaskFocusRecorded({
-                  taskId: oldTaskId,
-                  durationMinutes: -oldTaskMins,
-                  cycles: -oldTaskPomos,
-                });
-              }
-              if (newTaskId) {
-                dispatchTaskFocusRecorded({
-                  taskId: newTaskId,
-                  durationMinutes: newTaskMins,
-                  cycles: newTaskPomos,
-                });
-              }
-            }
-
-            if (targetType === "ACTIVITY") {
-              const wasOnToday = editingEndParts?.dateKey === todayDateKey;
-              const oldFocusMins = Math.max(0, editingRecord.durationMinutes);
-              const newFocusMins = Math.max(
-                0,
-                Number(res.data.durationMinutes ?? durationMinutes),
-              );
-              const todayFocusDelta =
-                (isSessionToday ? newFocusMins : 0) -
-                (wasOnToday ? oldFocusMins : 0);
-              if (todayFocusDelta !== 0) {
-                useUserStore
-                  .getState()
-                  .adjustFocusMinutesToday(todayFocusDelta, todayDateKey);
-              }
-
-              const oldXp = editingRecord.xpEarned ?? 0;
-              const oldCoins = Number(editingRecord.coinsEarned ?? 0);
-              const newXp = Number(res.data.xpEarned ?? 0);
-              const newCoins = Number(res.data.coinsEarned ?? 0);
-              const xpDelta = newXp - oldXp;
-              const coinsDelta = Math.round((newCoins - oldCoins) * 100) / 100;
-
-              let didLevelUp = false;
-              if (xpDelta > 0 || coinsDelta > 0) {
-                const rewardResult = awardUserRewards(
-                  Math.max(0, xpDelta),
-                  Math.max(0, coinsDelta),
-                );
-                didLevelUp = rewardResult.didLevelUp;
-              }
-              if (xpDelta < 0 || coinsDelta < 0) {
-                deductUserPenalty(
-                  Math.max(0, -xpDelta),
-                  Math.max(0, -coinsDelta),
-                );
-              }
-
-              if (!didLevelUp) {
-                soundEffects.playCreateSound();
-                const hasPositiveDelta = xpDelta > 0 || coinsDelta > 0;
-                const hasNegativeDelta = xpDelta < 0 || coinsDelta < 0;
-                if (hasNegativeDelta) {
-                  toast.success(
-                    t(
-                      isGamified
-                        ? "toasts.recordUpdatedWithAdjustment"
-                        : "toasts.recordUpdatedWithAdjustmentProductivity",
-                      {
-                        xp: formatSignedInt(xpDelta),
-                        coins: formatSignedCoins(coinsDelta, locale),
-                      },
-                    ),
-                  );
-                } else if (hasPositiveDelta) {
-                  toast.success(
-                    t(
-                      isGamified
-                        ? "toasts.recordUpdatedWithGain"
-                        : "toasts.recordUpdatedWithGainProductivity",
-                      {
-                        xp: `${xpDelta}`,
-                        coins: formatCoins(coinsDelta, { locale }),
-                      },
-                    ),
-                  );
-                } else {
-                  toast.success(t("toasts.recordUpdated"));
-                }
-              }
-            } else {
-              soundEffects.playCreateSound();
-              toast.success(t("toasts.itemRecordUpdated"));
-            }
-
-            useUserStore.getState().triggerAchievementCheck();
-            onRecordUpdated?.(mappedUpdated);
-            onSuccess?.();
-            onClose();
-          } else {
-            toast.error(
-              (!res.success ? res.error : undefined) ||
-                t("toasts.updateFailed"),
-            );
-          }
-          return;
-        }
-
-        const res = await createFocusRecord({
-          focusActivityId:
-            targetType === "ACTIVITY" && selectedActivityId
-              ? selectedActivityId
-              : undefined,
-          taskId:
-            targetType === "ACTIVITY" && selectedTaskId
-              ? selectedTaskId
-              : undefined,
-          inventoryItemId: targetType === "ITEM" ? selectedItemId : undefined,
-          recordType: targetType === "ITEM" ? "STOPWATCH" : recordType,
-          completedPomos: resolvedCompletedPomos,
-          pomoTargetMinutes: resolvedPomoTargetMinutes,
-          startTime,
-          endTime,
-          notes: notes.trim() || undefined,
-        });
-
-        if (res.success) {
-          const xp = Number(res.data?.xpEarned ?? 0);
-          const coins = Number(res.data?.coinsEarned ?? 0);
-
-          if (targetType === "ACTIVITY" && selectedTaskId) {
-            dispatchTaskFocusRecorded({
-              taskId: selectedTaskId,
-              durationMinutes: Math.max(
-                1,
-                Number(res.data?.durationMinutes ?? durationMinutes),
-              ),
-              cycles: resolvedCompletedPomos,
-            });
-          }
-
-          if (targetType === "ACTIVITY") {
-            const rewardResult = awardUserRewards(xp, coins);
-            if (isSessionToday) {
-              const savedDuration = Math.max(
-                1,
-                Number(res.data?.durationMinutes ?? durationMinutes),
-              );
-              useUserStore
-                .getState()
-                .recordFocusMinutesToday(savedDuration, todayDateKey);
-            }
-            if (xp > 0 || coins > 0) {
-              useOptimisticDashboardStore.getState().addTransaction({
-                xpAmount: xp,
-                goldAmount: coins,
-                transactionType: "FOCUS_COMPLETED",
-              });
-            }
-            if (!rewardResult.didLevelUp) {
-              soundEffects.playCreateSound();
-              if (xp > 0 || coins > 0) {
-                toast.success(
-                  t(
-                    isGamified
-                      ? "toasts.recordSavedWithRewards"
-                      : "toasts.recordSavedWithRewardsProductivity",
-                    {
-                      xp,
-                      coins: formatCoins(coins, { locale }),
-                    },
-                  ),
-                );
-              } else {
-                toast.success(t("toasts.recordSaved"));
-              }
-            }
-          } else {
-            soundEffects.playCreateSound();
-            toast.success(t("toasts.itemTimeLogged"));
-          }
-
-          if (targetType === "ITEM" || (xp <= 0 && coins <= 0)) {
-            useUserStore.getState().triggerAchievementCheck();
-          }
-
-          onSuccess?.();
-          onClose();
-        } else {
-          toast.error(res.error || t("toasts.saveFailed"));
-        }
-      } catch {
-        toast.error(t("toasts.unexpectedError"));
-      }
-    });
   };
 
   return {
@@ -1219,30 +478,32 @@ export function useFocusManualRecordForm({
     handleSelectBackpackItem,
     recordType,
     setRecordType: handleRecordTypeChange,
-    durationMinutes,
-    durationInput,
-    handleDurationInputChange,
-    handleDurationStep,
-    setDurationMinutes: handleDurationChange,
-    startTimeStr,
-    endTimeStr,
-    handleStartTimeChange,
-    handleEndTimeChange,
-    completedPomos,
-    setCompletedPomos,
-    maxDate,
-    sessionDate,
-    setSessionDate,
+    durationMinutes: timeWindow.durationMinutes,
+    durationInput: timeWindow.durationInput,
+    handleDurationInputChange: timeWindow.handleDurationInputChange,
+    handleDurationStep: timeWindow.handleDurationStep,
+    setDurationMinutes: timeWindow.handleDurationChange,
+    startTimeStr: timeWindow.startTimeStr,
+    endTimeStr: timeWindow.endTimeStr,
+    crossesMidnight: timeWindow.crossesMidnight,
+    handleStartTimeChange: timeWindow.handleStartTimeChange,
+    handleEndTimeChange: timeWindow.handleEndTimeChange,
+    completedPomos: timeWindow.completedPomos,
+    setCompletedPomos: timeWindow.setCompletedPomos,
+    maxDate: timeWindow.maxDate,
+    sessionDate: timeWindow.sessionDate,
+    setSessionDate: timeWindow.setSessionDate,
     notes,
     setNotes,
-    isSubmitting: isPending,
+    isSubmitting: submission.isSubmitting,
+    fieldErrors: submission.fieldErrors,
     selectedItem,
     selectedItemMinutes,
     resolveItemEffectiveMinutes,
     selectedActivity,
     rewardEstimate,
-    handlePresetSelect,
-    handleCompletedPomosStep,
-    handleSubmit,
+    handlePresetSelect: timeWindow.handlePresetSelect,
+    handleCompletedPomosStep: timeWindow.handleCompletedPomosStep,
+    handleSubmit: submission.handleSubmit,
   };
 }

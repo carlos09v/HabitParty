@@ -29,6 +29,9 @@
     "defaultWorkspaceName": "Ambiente",
     "readOnlyCreateColumnToast": "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas listas!",
     "readOnlyCreateTaskToast": "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
+    "readOnlyModifyTaskToast": "Este ambiente está em modo somente leitura (Bloqueado). Reative o plano Premium para alterar tarefas!",
+    "readOnlyReorderToast": "Este ambiente está em modo somente leitura (Bloqueado). Reative o plano Premium para reordenar tarefas e colunas!",
+    "readOnlyColumnActionToast": "Este ambiente está em modo somente leitura (Bloqueado). Reative o plano Premium para editar ou excluir colunas!",
     "readOnlyMoveSourceToast": "Este ambiente está em modo somente leitura (Bloqueado). Reative o plano Premium para mover listas dele!",
     "readOnlyMoveTargetToast": "O ambiente \"{workspace}\" está em modo somente leitura (Bloqueado). Reative o plano Premium para mover listas para ele!",
     "readOnlyTitle": "Ambiente em Modo Somente Leitura (Bloqueado 👑)",
@@ -57,11 +60,19 @@
     "storeDragging": "Guardar",
     "columnsLabel": "Colunas",
     "visibleCountBadge": "{count, plural, one {# visível} other {# visíveis}}",
+    "surplusTotalBadge": "{total} no ambiente",
     "newColumnFreeLimitTitle": "Limite de {max} listas atingido (plano Free)",
     "newColumnMaxReachedTitle": "Limite de {max} listas atingido",
+    "newColumnReadOnlyTitle": "Ambiente em modo somente leitura (reative o Premium)",
     "newColumnCreateTitle": "Criar nova coluna",
     "newColumnButton": "Criar coluna",
     "newTaskButton": "Adicionar Tarefa",
+    "newTaskCreateTitle": "Adicionar nova tarefa",
+    "newTaskNoColumnsTitle": "Crie uma lista primeiro para adicionar tarefas",
+    "newTaskReadOnlyTitle": "Ambiente em modo somente leitura",
+    "activeFiltersAria": "Filtros ativos",
+    "removeFilterAria": "Remover filtro {label}: {value}",
+    "clearAllFilters": "Limpar tudo",
     "alignment": {
       "ariaLabel": "Alinhamento das colunas no quadro",
       "prefixLabel": "Alinhar",
@@ -128,6 +139,7 @@
     "maxColumnsReachedTitle": "Limite máximo de {max} colunas atingido",
     "newColumnButton": "Nova Coluna",
     "unlockMoreColumnsButton": "Desbloquear mais colunas",
+    "readOnlyUnlockButton": "Modo leitura • VIP",
     "emptyState": "Nenhuma coluna cadastrada neste workspace.",
     "createFirstColumnButton": "Criar primeira coluna",
     "taskSingular": "tarefa",
@@ -157,7 +169,19 @@
     "noColumnsDescription": "Crie sua primeira coluna (ex: A Fazer, Em Andamento, Rotinas) para começar a organizar suas tarefas e manter o foco.",
     "createFirstColumnButton": "Criar Primeira Coluna",
     "allHiddenTitle": "Todas as colunas estão ocultas",
-    "allHiddenDescription": "Abra o gerenciador de colunas na barra de filtros para reexibi-las no quadro."
+    "allHiddenDescription": "Abra o gerenciador de colunas na barra de filtros para reexibi-las no quadro.",
+    "mobileColumnsNavAria": "Navegar entre listas"
+  },
+  "dnd": {
+    "instructions": "Para mover um item, pressione Espaço. Use as setas para reposicionar, Espaço para soltar ou Esc para cancelar.",
+    "dragStart": "Item \"{item}\" selecionado para mover.",
+    "dragOver": "Movendo \"{item}\" sobre \"{target}\".",
+    "dragOverNone": "\"{item}\" fora de uma área de soltura.",
+    "dragEnd": "\"{item}\" solto em \"{target}\".",
+    "dragEndUnchanged": "\"{item}\" solto na posição atual.",
+    "dragCancel": "Movimentação de \"{item}\" cancelada.",
+    "storeColumnTarget": "guardar coluna",
+    "dragColumnHandleAria": "Arrastar coluna {title} para reordenar"
   },
   "column": {
     "optionsAria": "Opções da coluna {title}",
@@ -170,6 +194,8 @@
     "loadArchivedCompletedError": "Não foi possível carregar as tarefas concluídas antigas.",
     "emptyState": "Nenhuma tarefa aqui",
     "emptyStateCta": "Clique para criar a primeira tarefa",
+    "allDoneEmptyTitle": "Todas as tarefas concluídas!",
+    "allDoneEmptyCta": "+ Nova tarefa",
     "addTaskFooterButton": "Adicionar tarefa"
   },
   "quickAdd": {
@@ -183,6 +209,7 @@
     "habitPlaceholder": "Qual hábito cultivar? (Enter)",
     "dailyPlaceholder": "Qual sua rotina? (Enter)",
     "todoPlaceholder": "O que precisa ser feito? (Enter)",
+    "titleInputAria": "Título da nova tarefa",
     "dueLabel": "Prazo:",
     "dueNoDate": "Sem data",
     "dueToday": "Hoje",
@@ -401,6 +428,7 @@
       "singleDueTimeHint": "Horário único funciona como prazo final. Para um evento com duração, defina também o Término.",
       "eventTimeRangeHint": "Evento das {start} às {end} — fica \"Em andamento\" nesse período e só atrasa após {end}.",
       "reminderLabel": "Lembrete",
+      "reminderRequiresDueDate": "Defina um prazo primeiro para ativar lembretes",
       "inAppReminderAlertInfo": "Você receberá um alerta nas notificações do app ({when}). Se quiser também receber por e-mail, marque a opção abaixo.",
       "reminders": {
         "NONE": "Sem lembrete",
@@ -483,7 +511,10 @@
   },
   "detailsPopover": {
     "dialogAria": "Detalhes rápidos da tarefa",
+    "readOnlyNotice": "Ambiente em modo somente leitura — visualização apenas.",
+    "readOnlyUpgradeCta": "Desbloquear",
     "titlePlaceholder": "Título da tarefa...",
+    "titleInputAria": "Título da tarefa",
     "descriptionLabel": "Descrição",
     "descriptionPlaceholder": "Adicione uma descrição ou anotações...",
     "doneEditing": "Concluir",
@@ -508,6 +539,7 @@
       "closeAria": "Fechar",
       "closeTitle": "Fechar",
       "dateFrozenTitle": "Data congelada: prazo expirado no Modo Hardcore",
+      "dateReadOnlyTitle": "Ambiente em modo somente leitura",
       "noDueDate": "Sem prazo",
       "dueTimeBadge": "Hora",
       "clearDueTime": "Sem hora",
@@ -574,6 +606,8 @@
       "deleteHistoryHint": "Remove também o registro desta sessão do extrato do Histórico. O estorno de XP e moedas já respeita o piso do seu nível e nunca deixa o saldo negativo.",
       "deleteRecordSuccess": "Registro de foco removido com sucesso!",
       "deleteRecordError": "Erro ao excluir registro de foco.",
+      "loadErrorTitle": "Não foi possível carregar o histórico de foco.",
+      "retryButton": "Tentar novamente",
       "paginationItemLabel": "sessões"
     },
     "footer": {
@@ -597,6 +631,8 @@
       "editFull": "Editar completo",
       "duplicate": "Duplicar",
       "deleteTask": "Excluir tarefa",
+      "openLinkButton": "Abrir link",
+      "maxLengthToast": "Limite de {max} caracteres atingido. O conteúdo excedente não foi aplicado.",
       "rewardsLabelProductivity": "Rendimento"
     }
   },

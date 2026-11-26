@@ -14,6 +14,7 @@ import type {
   TaskPriorityOption,
   TaskTypeOption,
 } from "./task";
+import type { WorkspaceResponseDTO } from "./workspace";
 
 export type BoardAlignment = "left" | "center" | "right";
 export type ColumnWidthPreset = "compact" | "normal" | "wide";
@@ -43,6 +44,7 @@ export interface InitialTaskFormData {
 
 export interface TaskRowProps {
   task: Task;
+  className?: string;
   isSelected?: boolean;
   isReadOnly?: boolean;
   activeFilter?: string;
@@ -80,12 +82,14 @@ export interface TaskDetailsPopoverProps {
   onEdit?: (task: Task) => void;
   onDuplicate?: (task: Task) => void;
   isDuplicating?: boolean;
+  isReadOnly?: boolean;
   onOpenFocusHistory?: (task: Task) => void;
 }
 
 export interface TaskDetailsFooterProps {
   task?: Task;
   columnTitle?: string;
+  isReadOnly?: boolean;
   onDeleteTask: () => void;
   onDuplicateTask?: () => void;
   isDuplicating?: boolean;
@@ -112,6 +116,7 @@ export interface TasksBoardContainerProps {
   targetColumnId?: string;
   isPremium?: boolean;
   workspaceId?: string | null;
+  initialWorkspaces?: WorkspaceResponseDTO[];
 }
 
 export interface TasksBoardModalsProps {
@@ -121,6 +126,7 @@ export interface TasksBoardModalsProps {
   availableTags?: string[];
   maxColumns: number;
   isPremium: boolean;
+  workspaceId?: string | null;
   columnModalState: {
     isOpen: boolean;
     columnToEdit?: BoardColumn | null;
@@ -189,13 +195,7 @@ export interface TasksBoardModalsProps {
     position: { x: number; y: number };
     column: BoardColumn | null;
   };
-  setColumnContextMenu: Dispatch<
-    SetStateAction<{
-      isOpen: boolean;
-      position: { x: number; y: number };
-      column: BoardColumn | null;
-    }>
-  >;
+  onCloseColumnContextMenu: () => void;
   columnToDelete: BoardColumn | null;
   setColumnToDelete: (col: BoardColumn | null) => void;
   isDeletingColumn: boolean;
@@ -215,6 +215,12 @@ export interface TasksBoardModalsProps {
   ) => boolean | undefined;
   handleHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
+  quickFocus?: ReturnType<
+    typeof import("@/hooks/useQuickFocusTask").useQuickFocusTask
+  >;
+  onOpenEditTask?: (task: Task, columnId?: string) => void;
+  onOpenCreateColumn?: () => void;
+  ensureWriteAccess?: (errorMessage: string) => boolean;
   isColumnsDrawerOpen: boolean;
   setIsColumnsDrawerOpen: (open: boolean) => void;
   toggleColumnVisibility: (id: string) => void;
@@ -229,6 +235,11 @@ export interface TasksBoardModalsProps {
     targetWorkspaceName: string,
   ) => Promise<boolean>;
   onMoveLockedWorkspace?: (reason: "source" | "target", name?: string) => void;
+  onMoveTaskToColumn?: (task: Task, targetColumnId: string) => void;
+  onMoveColumnDirection?: (
+    column: BoardColumn,
+    direction: "left" | "right",
+  ) => void;
 }
 
 export interface RoutineBoardProps {
@@ -240,6 +251,9 @@ export interface RoutineBoardProps {
   alignment?: BoardAlignment;
   columnWidths?: Record<string, ColumnWidthPreset>;
   getColumnWidthClass?: (columnId: string) => string;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
+  onManageColumns?: () => void;
   onAddColumn?: () => void;
   onAddTaskToColumn?: (
     columnId: string,
@@ -256,21 +270,23 @@ export interface RoutineBoardProps {
     completed: boolean,
   ) => boolean | undefined;
   onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
+  onStartFocus?: (task: Task) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   forceExpandCompleted?: boolean;
   activeDraggedTaskId?: string | null;
+  isReadOnly?: boolean;
   onQuickCreateTask?: (
     title: string,
     columnId: string,
     taskType?: TaskTypeOption,
     extraPayload?: Partial<CreateTaskDTO>,
-  ) => Promise<void>;
+  ) => Promise<boolean | undefined> | Promise<void>;
 }
 
 export interface RoutineColumnProps {
   column: BoardColumn;
-  columnIndex: number;
   isSelected?: boolean;
+  isReadOnly?: boolean;
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
   widthPreset?: ColumnWidthPreset;
@@ -285,7 +301,7 @@ export interface RoutineColumnProps {
     columnId: string,
     taskType?: TaskTypeOption,
     extraPayload?: Partial<CreateTaskDTO>,
-  ) => Promise<void>;
+  ) => Promise<boolean | undefined> | Promise<void>;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
@@ -295,6 +311,7 @@ export interface RoutineColumnProps {
     completed: boolean,
   ) => boolean | undefined;
   onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
+  onStartFocus?: (task: Task) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   forceExpandCompleted?: boolean;
   activeDraggedTaskId?: string | null;
@@ -307,19 +324,33 @@ export interface RoutineTaskListProps {
   selectedColumnId?: string | null;
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
+  isReadOnly?: boolean;
+  forceExpandCompleted?: boolean;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
+  onManageColumns?: () => void;
+  onAddColumn?: () => void;
   onAddTaskToColumn: (
     columnId: string,
     initialType?: TaskTypeOption,
     initialTitle?: string,
     initialValues?: InitialTaskFormData,
   ) => void;
+  onQuickCreateTask?: (
+    title: string,
+    columnId: string,
+    taskType?: TaskTypeOption,
+    extraPayload?: Partial<CreateTaskDTO>,
+  ) => Promise<boolean | undefined> | Promise<void>;
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
+  onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
   onToggleComplete: (taskId: string, completed: boolean) => boolean | undefined;
   onHabitChange: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
+  activeDraggedTaskId?: string | null;
   dndState?: {
     sensors: ReturnType<typeof import("@dnd-kit/core").useSensors>;
     activeColumn: BoardColumn | null;
@@ -339,15 +370,24 @@ export interface RoutineTaskListSectionProps {
   selectedColumnId?: string | null;
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
+  isReadOnly?: boolean;
+  forceExpandCompleted?: boolean;
   onAddTaskToColumn: (
     columnId: string,
     initialType?: TaskTypeOption,
     initialTitle?: string,
     initialValues?: InitialTaskFormData,
   ) => void;
+  onQuickCreateTask?: (
+    title: string,
+    columnId: string,
+    taskType?: TaskTypeOption,
+    extraPayload?: Partial<CreateTaskDTO>,
+  ) => Promise<boolean | undefined> | Promise<void>;
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
+  onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
   onToggleComplete: (taskId: string, completed: boolean) => boolean | undefined;
   onHabitChange: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
@@ -363,7 +403,7 @@ export interface RoutineQuickAddFormProps {
     columnId: string,
     type: TaskTypeOption,
     extraPayload?: Partial<CreateTaskDTO>,
-  ) => Promise<void> | void;
+  ) => Promise<boolean | undefined> | Promise<void> | void;
   onOpenDetailedForm?: (
     columnId: string,
     type: TaskTypeOption,
@@ -379,6 +419,7 @@ export interface RoutineColumnsDrawerProps {
   visibleColumnIds: string[];
   maxColumns: number;
   isPremium: boolean;
+  isReadOnly?: boolean;
   onToggleVisibility: (columnId: string) => void;
   onShowAll: () => void;
   onOpenCreateColumn: () => void;
@@ -389,6 +430,7 @@ export interface RoutineColumnsDrawerProps {
 export interface CreateBoardColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
+  workspaceId?: string | null;
   columnToEdit?: BoardColumn | null;
   insertTarget?: ColumnInsertTarget | null;
   onSuccess?: (
@@ -440,7 +482,9 @@ export interface RoutineFiltersProps {
   onOpenCreateTask?: () => void;
   maxColumns?: number;
   isPremium?: boolean;
+  isReadOnly?: boolean;
   canCreateColumn?: boolean;
+  canCreateTask?: boolean;
   visibleColumnIds?: string[];
   totalColumnsCount?: number;
   onOpenColumnsDrawer?: () => void;
@@ -452,6 +496,7 @@ export interface RoutineTaskCardProps {
   task: Task;
   columnId: string;
   isSelected?: boolean;
+  isReadOnly?: boolean;
   isDeleteChecking?: boolean;
   isCompact?: boolean;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
@@ -462,6 +507,7 @@ export interface RoutineTaskCardProps {
   ) => boolean | undefined;
   onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
+  onStartFocus?: (task: Task) => void;
   isOverlay?: boolean;
 }
 

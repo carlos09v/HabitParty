@@ -186,7 +186,7 @@ export async function deleteChecklistItem(
  */
 export async function cloneTaskChecklistItems(
   newTaskId: string,
-  items?: { name?: string; isRewarded?: boolean }[],
+  items?: { name?: string; isRewarded?: boolean; isCompleted?: boolean }[],
   options?: { skipInvalidation?: boolean },
 ): Promise<ChecklistItemResponseDTO[]> {
   if (!items || items.length === 0) return [];
@@ -196,6 +196,7 @@ export async function cloneTaskChecklistItems(
   // Sequencial intencionalmente: ChecklistItemJpaEntity não possui orderIndex no banco,
   // portanto a ordem de exibição depende diretamente da ordem de inserção.
   const createdItems: ChecklistItemResponseDTO[] = [];
+  const pendingCompletedToggles: Array<{ index: number; itemId: string }> = [];
   for (const item of validItems) {
     try {
       const { data } = await serverApi.POST("/tasks/{taskId}/checklists", {
@@ -206,11 +207,38 @@ export async function cloneTaskChecklistItems(
         },
       });
       if (data) {
-        createdItems.push(data as ChecklistItemResponseDTO);
+        const created = data as ChecklistItemResponseDTO;
+        const pushIndex = createdItems.push(created) - 1;
+        if (item.isCompleted && created.id) {
+          pendingCompletedToggles.push({
+            index: pushIndex,
+            itemId: created.id,
+          });
+        }
       }
     } catch (err) {
       console.error("[ChecklistAction:Clone]", err);
     }
+  }
+
+  if (pendingCompletedToggles.length > 0) {
+    await Promise.all(
+      pendingCompletedToggles.map(async ({ index, itemId }) => {
+        try {
+          const { data: toggled } = await serverApi.PATCH(
+            "/tasks/checklists/{itemId}/toggle",
+            {
+              params: { path: { itemId } },
+            },
+          );
+          if (toggled) {
+            createdItems[index] = toggled as ChecklistItemResponseDTO;
+          }
+        } catch (err) {
+          console.error("[ChecklistAction:CloneToggle]", err);
+        }
+      }),
+    );
   }
 
   if (!options?.skipInvalidation) {

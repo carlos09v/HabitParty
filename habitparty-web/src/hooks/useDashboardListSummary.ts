@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   deleteBoardColumn,
@@ -9,6 +9,9 @@ import {
 } from "@/actions/boardColumnActions";
 import type { ColumnMoveWorkspaceOption } from "@/components/tasks/shared";
 import { resolveDashboardVisibleColumnIds } from "@/constants/routine";
+import { useContextMenu } from "@/hooks/useContextMenu";
+import { useLatestRef } from "@/hooks/useLatestRef";
+import { useUIStore } from "@/store/uiStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type {
   DashboardColumnOption,
@@ -20,12 +23,12 @@ import {
   readVisibleColumnsStorage,
   removeVisibleColumnIfPresent,
 } from "@/utils/columnVisibility";
+import { isTaskConsideredDone } from "@/utils/taskMapper";
 
 export function useDashboardListSummary({
-  initialColumns,
   initialVisibleColumnIds,
-  columns: controlledColumns,
-  onColumnsChange,
+  columns,
+  onColumnsChange: setColumns,
   onColumnDeleted,
   workspaces = [],
   onColumnMoved,
@@ -37,7 +40,6 @@ export function useDashboardListSummary({
   tasks,
 }: Pick<
   DashboardListSummaryProps,
-  | "initialColumns"
   | "initialVisibleColumnIds"
   | "columns"
   | "onColumnsChange"
@@ -52,18 +54,10 @@ export function useDashboardListSummary({
   | "tasks"
 >) {
   const t = useTranslations("dashboard.listSummary");
-  const [internalColumns, setInternalColumns] =
-    useState<DashboardColumnOption[]>(initialColumns);
-  const columns = controlledColumns ?? internalColumns;
-  const setColumns = onColumnsChange ?? setInternalColumns;
 
   const [savedVisibleIds, setSavedVisibleIds] = useState<string[] | null>(
     () => initialVisibleColumnIds ?? null,
   );
-
-  useEffect(() => {
-    setInternalColumns(initialColumns);
-  }, [initialColumns]);
 
   useEffect(() => {
     if (!activeWorkspaceId) {
@@ -75,9 +69,7 @@ export function useDashboardListSummary({
       setSavedVisibleIds(stored);
       return;
     }
-    if (initialVisibleColumnIds) {
-      setSavedVisibleIds(initialVisibleColumnIds);
-    }
+    setSavedVisibleIds(initialVisibleColumnIds ?? null);
   }, [activeWorkspaceId, initialVisibleColumnIds]);
 
   const activeColumns = useMemo(() => {
@@ -98,7 +90,7 @@ export function useDashboardListSummary({
     : 0;
   const isLimitReached = columns.length >= maxColumns;
 
-  // Pré-computa contadores por coluna em uma única passagem O(T) em vez de O(C * T)
+  // Pré-computa contadores por coluna em uma única passagem O(T) usando critério unificado (inclui hábitos positivos)
   const columnCountsMap = useMemo(() => {
     if (!tasks) return null;
     const map = new Map<string, { completed: number; total: number }>();
@@ -106,95 +98,83 @@ export function useDashboardListSummary({
       if (!task.columnId) continue;
       const entry = map.get(task.columnId) || { completed: 0, total: 0 };
       entry.total += 1;
-      if (task.completed) entry.completed += 1;
+      if (isTaskConsideredDone(task)) entry.completed += 1;
       map.set(task.columnId, entry);
     }
     return map;
   }, [tasks]);
 
-  const [contextMenu, setContextMenu] = useState<{
-    isOpen: boolean;
-    position: { x: number; y: number };
-    column: BoardColumn | null;
-  }>({
-    isOpen: false,
-    position: { x: 0, y: 0 },
-    column: null,
-  });
+  const {
+    contextMenu: rawContextMenu,
+    openContextMenu,
+    toggleFromButton,
+    closeContextMenu,
+  } = useContextMenu<BoardColumn>();
 
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
   const [columnToEdit, setColumnToEdit] = useState<BoardColumn | null>(null);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [columnToDelete, setColumnToDelete] = useState<BoardColumn | null>(
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
+  const movingColumnIdsRef = useRef<Set<string>>(new Set());
 
-  const ensureWritable = () => {
+  const ensureWritable = useCallback(() => {
     if (isReadOnly) {
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       toast.error(t("readOnlyActionError"));
       return false;
     }
     return true;
-  };
+  }, [isReadOnly, openUpgradeModal, t]);
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = useCallback(() => {
     if (!ensureWritable()) return;
     if (activeWorkspaceId && !useWorkspaceStore.getState().activeWorkspaceId) {
       useWorkspaceStore.getState().setActiveWorkspaceId(activeWorkspaceId);
     }
     setColumnToEdit(null);
     setIsColumnModalOpen(true);
-  };
+  }, [activeWorkspaceId, ensureWritable]);
 
-  const buildBoardColumn = (column: DashboardColumnOption): BoardColumn => ({
-    id: column.id || "",
-    title: column.name || t("untitled"),
-    order: column.orderIndex ?? 0,
-    icon: column.icon || "sun",
-    tasks: [],
-  });
+  const buildBoardColumn = useCallback(
+    (column: DashboardColumnOption): BoardColumn => ({
+      id: column.id || "",
+      title: column.name || t("untitled"),
+      order: column.orderIndex ?? 0,
+      icon: column.icon || "sun",
+      tasks: [],
+    }),
+    [t],
+  );
 
-  const handleContextMenu = (
-    e: React.MouseEvent,
-    column: DashboardColumnOption,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-      column: buildBoardColumn(column),
-    });
-  };
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, column: DashboardColumnOption) => {
+      openContextMenu(e, buildBoardColumn(column));
+    },
+    [buildBoardColumn, openContextMenu],
+  );
 
-  const handleMenuButtonClick = (
-    e: React.MouseEvent<HTMLButtonElement>,
-    column: DashboardColumnOption,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const isSameOpen =
-      contextMenu.isOpen && contextMenu.column?.id === (column.id || "");
-    if (isSameOpen) {
-      setContextMenu((prev) => ({ ...prev, isOpen: false, column: null }));
-      return;
-    }
-    const rect = e.currentTarget.getBoundingClientRect();
-    setContextMenu({
-      isOpen: true,
-      position: { x: rect.left, y: rect.bottom + 4 },
-      column: buildBoardColumn(column),
-    });
-  };
+  const handleMenuButtonClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, column: DashboardColumnOption) => {
+      toggleFromButton(
+        e,
+        buildBoardColumn(column),
+        (current, next) => current?.id === next.id,
+      );
+    },
+    [buildBoardColumn, toggleFromButton],
+  );
 
   const handleDeleteConfirm = async () => {
-    if (!columnToDelete?.id) return;
+    if (!columnToDelete?.id || isDeletingRef.current) return;
     if (!ensureWritable()) {
       setColumnToDelete(null);
       return;
     }
+    isDeletingRef.current = true;
     setIsDeleting(true);
     try {
       const res = await deleteBoardColumn(columnToDelete.id);
@@ -212,6 +192,7 @@ export function useDashboardListSummary({
         deletedId,
         remainingIds,
         savedVisibleIds,
+        maxColumns,
       );
       if (nextVisibleIds) {
         setSavedVisibleIds(nextVisibleIds);
@@ -222,6 +203,7 @@ export function useDashboardListSummary({
     } catch {
       toast.error(t("deleteColumnUnexpectedError"));
     } finally {
+      isDeletingRef.current = false;
       setIsDeleting(false);
     }
   };
@@ -277,14 +259,13 @@ export function useDashboardListSummary({
   };
 
   const prevCreateTriggerRef = useRef(createColumnTrigger);
-  const handleOpenCreateModalRef = useRef(handleOpenCreateModal);
-  handleOpenCreateModalRef.current = handleOpenCreateModal;
+  const handleOpenCreateModalRef = useLatestRef(handleOpenCreateModal);
   useEffect(() => {
     if (createColumnTrigger > prevCreateTriggerRef.current) {
       prevCreateTriggerRef.current = createColumnTrigger;
       handleOpenCreateModalRef.current();
     }
-  }, [createColumnTrigger]);
+  }, [createColumnTrigger, handleOpenCreateModalRef]);
 
   const availableTargetWorkspaces = useMemo<ColumnMoveWorkspaceOption[]>(
     () =>
@@ -309,7 +290,7 @@ export function useDashboardListSummary({
             workspace: name || t("defaultWorkspaceName"),
           }),
     );
-    setIsUpgradeModalOpen(true);
+    openUpgradeModal();
   };
 
   const handleMoveColumnToWorkspace = async (
@@ -317,6 +298,7 @@ export function useDashboardListSummary({
     targetWorkspaceId: string,
     targetWorkspaceName: string,
   ) => {
+    if (movingColumnIdsRef.current.has(col.id)) return;
     if (isReadOnly) {
       handleMoveLockedWorkspace("source");
       return;
@@ -328,7 +310,8 @@ export function useDashboardListSummary({
       return;
     }
 
-    setContextMenu((prev) => ({ ...prev, isOpen: false, column: null }));
+    closeContextMenu();
+    movingColumnIdsRef.current.add(col.id);
 
     try {
       const response = await moveBoardColumnToWorkspace(col.id, {
@@ -350,15 +333,21 @@ export function useDashboardListSummary({
         col.id,
         remainingIds,
         savedVisibleIds,
+        maxColumns,
       );
       if (nextVisibleIds) {
         setSavedVisibleIds(nextVisibleIds);
       }
 
-      setColumns(nextColumns);
+      appendVisibleColumnIfSpaceAllows(targetWorkspaceId, col.id, maxColumns);
+
       const resolvedWorkspaceName =
         targetWorkspaceName || targetWs?.name || t("defaultWorkspaceName");
-      onColumnMoved?.(col.id, targetWorkspaceId, resolvedWorkspaceName);
+      if (onColumnMoved) {
+        onColumnMoved(col.id, targetWorkspaceId, resolvedWorkspaceName);
+      } else {
+        setColumns(nextColumns);
+      }
 
       toast.success(
         t("moveColumnSuccess", {
@@ -368,6 +357,8 @@ export function useDashboardListSummary({
       );
     } catch {
       toast.error(t("moveColumnUnexpectedError"));
+    } finally {
+      movingColumnIdsRef.current.delete(col.id);
     }
   };
 
@@ -378,14 +369,17 @@ export function useDashboardListSummary({
     isLimitReached,
     columnCountsMap,
     availableTargetWorkspaces,
-    contextMenu,
-    setContextMenu,
+    contextMenu: {
+      isOpen: rawContextMenu.isOpen,
+      position: rawContextMenu.position,
+      column: rawContextMenu.data,
+    },
+    closeContextMenu,
     columnToEdit,
     isColumnModalOpen,
     setIsColumnModalOpen,
     setColumnToEdit,
-    isUpgradeModalOpen,
-    setIsUpgradeModalOpen,
+    openUpgradeModal,
     columnToDelete,
     setColumnToDelete,
     isDeleting,

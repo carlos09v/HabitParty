@@ -1,6 +1,8 @@
 package com.habitparty.core.domain.entities;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -33,8 +35,9 @@ public class UserStats {
   private int totalOnTimeTodosCompleted;
   private int totalCleanHabitCycles;
   private int totalActivityGoalsMet;
-  private java.time.LocalDate lastStreakDate;
+  private LocalDate lastStreakDate;
   private LocalDateTime updatedAt;
+  private transient Clock clock = Clock.systemDefaultZone();
 
   /** Janela "Coruja da Meia-Noite": sessões que terminam entre 23:00 e 04:59 (horário local do usuário). */
   public static final int NIGHT_OWL_START_HOUR = 23;
@@ -122,34 +125,27 @@ public class UserStats {
     );
   }
 
-  public UserLevel getCurrentLevel() {
-    UserLevel[] allLevels = UserLevel.values();
-    UserLevel levelCalculado = allLevels[0];
+  public UserStats withClock(Clock clock) {
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+    return this;
+  }
 
-    for (UserLevel level : allLevels) {
-      if (this.totalXp >= level.getMinXpRequired()) {
-        levelCalculado = level;
-      } else {
-        break;
-      }
-    }
-    return levelCalculado;
+  private void touch() {
+    this.updatedAt = LocalDateTime.now(this.clock != null ? this.clock : Clock.systemDefaultZone());
+  }
+
+  public UserLevel getCurrentLevel() {
+    return UserLevel.calculateLevel(this.totalXp);
   }
 
   public UserLevel getNextLevel() {
-    UserLevel current = getCurrentLevel();
-    UserLevel[] allLevels = UserLevel.values();
-    int currentIndex = current.ordinal();
-
-    if (currentIndex < allLevels.length - 1) {
-      return allLevels[currentIndex + 1];
-    }
-    return current;
+    return getCurrentLevel().getNextLevel();
   }
 
   public int getXpToNextLevel() {
-    UserLevel nextLevel = getNextLevel();
-    if (this.getCurrentLevel() == nextLevel) {
+    UserLevel current = getCurrentLevel();
+    UserLevel nextLevel = current.getNextLevel();
+    if (current == nextLevel) {
       return 0;
     }
     return nextLevel.getMinXpRequired() - this.totalXp;
@@ -160,7 +156,7 @@ public class UserStats {
       throw new DomainValidationException("O XP a ser adicionado deve ser maior que zero.");
     }
     this.totalXp += xpToAdd;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void removeXp(int xpToRemove) {
@@ -168,7 +164,7 @@ public class UserStats {
       throw new DomainValidationException("O XP a ser removido deve ser maior que zero.");
     }
     this.totalXp = Math.max(0, this.totalXp - xpToRemove);
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void applyPenalty(BigDecimal penaltyAmount, int xpPenalty) {
@@ -181,7 +177,7 @@ public class UserStats {
       int xpAfterPenalty = this.totalXp - xpPenalty;
       this.totalXp = Math.max(minXpForCurrentLevel, xpAfterPenalty);
     }
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void incrementStreak() {
@@ -189,14 +185,14 @@ public class UserStats {
     if (this.currentStreak > this.highestStreak) {
       this.highestStreak = this.currentStreak;
     }
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   /**
    * Incrementa o streak global de forma idempotente para a data civil {@code streakDate}.
    * Se a ofensiva já foi contabilizada nesta mesma data ou em data posterior, não incrementa novamente.
    */
-  public boolean incrementStreakForDate(java.time.LocalDate streakDate) {
+  public boolean incrementStreakForDate(LocalDate streakDate) {
     if (streakDate == null) {
       incrementStreak();
       return true;
@@ -209,34 +205,34 @@ public class UserStats {
       this.highestStreak = this.currentStreak;
     }
     this.lastStreakDate = streakDate;
-    this.updatedAt = LocalDateTime.now();
+    touch();
     return true;
   }
 
   /**
    * Reverte o incremento de +1 streak ganho hoje quando a única sessão produtiva do dia é excluída.
    */
-  public boolean revertTodayStreakIncrement(java.time.LocalDate todayDate) {
+  public boolean revertTodayStreakIncrement(LocalDate todayDate) {
     if (todayDate == null || !todayDate.equals(this.lastStreakDate) || this.currentStreak <= 0) {
       return false;
     }
     this.currentStreak -= 1;
     this.lastStreakDate = this.currentStreak > 0 ? todayDate.minusDays(1) : null;
-    this.updatedAt = LocalDateTime.now();
+    touch();
     return true;
   }
 
   public void resetStreak() {
     this.currentStreak = 0;
     this.lastStreakDate = null;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
-  public java.time.LocalDate getLastStreakDate() {
+  public LocalDate getLastStreakDate() {
     return lastStreakDate;
   }
 
-  public void setLastStreakDate(java.time.LocalDate lastStreakDate) {
+  public void setLastStreakDate(LocalDate lastStreakDate) {
     this.lastStreakDate = lastStreakDate;
   }
 
@@ -244,7 +240,7 @@ public class UserStats {
     if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
       this.currentCoins = this.currentCoins.add(amount);
       this.totalGoldEarned = this.totalGoldEarned.add(amount);
-      this.updatedAt = LocalDateTime.now();
+      touch();
     }
   }
 
@@ -254,7 +250,7 @@ public class UserStats {
       if (this.currentCoins.compareTo(BigDecimal.ZERO) < 0) {
         this.currentCoins = BigDecimal.ZERO;
       }
-      this.updatedAt = LocalDateTime.now();
+      touch();
     }
   }
 
@@ -266,7 +262,7 @@ public class UserStats {
       throw new DomainValidationException("Você não tem moedas suficientes para resgatar esta recompensa.");
     }
     this.currentCoins = this.currentCoins.subtract(amountToSpend);
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   // --- CONTADORES DE CONQUISTAS E VITRINE ---
@@ -287,7 +283,7 @@ public class UserStats {
     if (isHardcore) {
       this.totalHardcoreTasksCompleted += safeUnits;
     }
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public record TaskReversalOutcome(
@@ -367,7 +363,7 @@ public class UserStats {
       this.totalOnTimeTodosCompleted = Math.max(0, this.totalOnTimeTodosCompleted - 1);
     }
 
-    this.updatedAt = LocalDateTime.now();
+    touch();
     return new TaskReversalOutcome(xpReverted, coinsReverted, xpFullyReverted && coinsFullyReverted);
   }
 
@@ -382,7 +378,7 @@ public class UserStats {
     if (completedPomos > 0) {
       this.totalPomodorosCompleted += completedPomos;
     }
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   /**
@@ -392,7 +388,7 @@ public class UserStats {
     if (xpToRevert > 0) {
       int minXpForCurrentLevel = this.getCurrentLevel().getMinXpRequired();
       this.totalXp = Math.max(minXpForCurrentLevel, this.totalXp - xpToRevert);
-      this.updatedAt = LocalDateTime.now();
+      touch();
     }
   }
 
@@ -409,7 +405,7 @@ public class UserStats {
       if (this.totalGoldEarned.compareTo(BigDecimal.ZERO) < 0) {
         this.totalGoldEarned = BigDecimal.ZERO;
       }
-      this.updatedAt = LocalDateTime.now();
+      touch();
     }
   }
 
@@ -426,7 +422,7 @@ public class UserStats {
       this.totalPomodorosCompleted = Math.max(0, this.totalPomodorosCompleted - completedPomos);
     }
 
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   /**
@@ -441,7 +437,7 @@ public class UserStats {
     revertFocusXpOnly(xpToRevert);
     revertFocusCoinsOnly(coinsToRevert);
     revertFocusActivityCounters(durationMinutes, completedPomos);
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   /**
@@ -472,60 +468,60 @@ public class UserStats {
     if (startHour >= EARLY_BIRD_START_HOUR && startHour < EARLY_BIRD_END_HOUR) {
       this.totalEarlyFocusSessions = Math.max(0, this.totalEarlyFocusSessions + delta);
     }
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordCouponDepleted() {
     this.totalCouponsDepleted += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordWorkspaceCreated() {
     this.totalWorkspacesCreated += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordChecklistTaskCompleted() {
     this.totalChecklistTasksCompleted += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordOnTimeTodoCompleted() {
     this.totalOnTimeTodosCompleted += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordCleanHabitCycle() {
     this.totalCleanHabitCycles += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordActivityGoalMet() {
     this.totalActivityGoalsMet += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void revertActivityGoalMet() {
     if (this.totalActivityGoalsMet > 0) {
       this.totalActivityGoalsMet -= 1;
-      this.updatedAt = LocalDateTime.now();
+      touch();
     }
   }
 
   public void recordRewardRedeemed() {
     this.totalRewardsRedeemed += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void recordMysteryBoxOpened() {
     this.totalMysteryBoxesOpened += 1;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public void addAchievementPoints(int points) {
     if (points > 0) {
       this.achievementPoints += points;
-      this.updatedAt = LocalDateTime.now();
+      touch();
     }
   }
 
@@ -543,7 +539,7 @@ public class UserStats {
 
   public void setCurrentCoins(BigDecimal currentCoins) {
     this.currentCoins = currentCoins;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public BigDecimal getTotalGoldEarned() {
@@ -552,7 +548,7 @@ public class UserStats {
 
   public void setTotalGoldEarned(BigDecimal totalGoldEarned) {
     this.totalGoldEarned = totalGoldEarned;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public int getTotalXp() {
@@ -561,7 +557,7 @@ public class UserStats {
 
   public void setTotalXp(int totalXp) {
     this.totalXp = totalXp;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public int getCurrentStreak() {
@@ -570,7 +566,7 @@ public class UserStats {
 
   public void setCurrentStreak(int currentStreak) {
     this.currentStreak = currentStreak;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public int getHighestStreak() {
@@ -579,7 +575,7 @@ public class UserStats {
 
   public void setHighestStreak(int highestStreak) {
     this.highestStreak = highestStreak;
-    this.updatedAt = LocalDateTime.now();
+    touch();
   }
 
   public int getTotalTasksCompleted() {

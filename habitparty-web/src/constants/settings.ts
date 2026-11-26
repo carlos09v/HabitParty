@@ -60,8 +60,11 @@ export function isValidSettingsTab(val?: string | null): val is SettingsTabId {
   return VALID_SETTINGS_TABS.includes(val as SettingsTabId);
 }
 
-export function resolveSettingsTab(val?: string | null): SettingsTabId {
-  return isValidSettingsTab(val) ? val : "profile";
+export function resolveSettingsTab(
+  val?: string | string[] | null,
+): SettingsTabId {
+  const first = Array.isArray(val) ? val[0] : val;
+  return isValidSettingsTab(first) ? first : "profile";
 }
 
 export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionConfig<ExperienceMode>[] =

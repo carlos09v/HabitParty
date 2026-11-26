@@ -1,34 +1,28 @@
 "use client";
 
-import { Save, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import {
-  type FormEvent,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { type FormEvent, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { updateUserProfileAction } from "@/actions/userActions";
+import { useRegisterSettingsDirty } from "@/components/settings/SettingsDirtyContext";
+import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { GENDER_OPTIONS } from "@/constants/settings";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
+import { useSyncedSettingsForm } from "@/hooks/useSyncedSettingsForm";
 import { useUserStore } from "@/store/userStore";
 import type { GenderType, ProfileFormProps } from "@/types/settings";
 import type { UpdateUserDTO } from "@/types/user";
-import { cn } from "@/utils";
 import { getMaxBirthDateString } from "@/utils/date";
 import { MIN_USER_AGE, validateBirthDate } from "@/utils/validators";
 
-function resolveInitialBirthDate(
-  user?: {
-    birthDate?: string | null;
-    gender?: string | null;
-  } | null,
-): string {
-  return user?.birthDate || "";
+interface ProfileFormValues extends Record<string, unknown> {
+  fullName: string;
+  birthDate: string;
+  gender: GenderType | undefined;
 }
 
 export function ProfileForm({ initialUser }: ProfileFormProps) {
@@ -36,21 +30,32 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
   const tGender = useTranslations("settings.profileForm.genderOptions");
   const tValidation = useTranslations("auth.validation");
 
-  const storeUser = useUserStore((s) => s.user);
-  const user = storeUser || initialUser;
+  const resolvedUser = useResolvedUser(initialUser);
+  const userId = resolvedUser?.id;
+  const serverFullName = resolvedUser?.fullName ?? "";
+  const serverBirthDate = resolvedUser?.birthDate ?? "";
+  const serverGender = resolvedUser?.gender;
+  const userTimezone = resolvedUser?.timezone;
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
 
   const maxBirthDate = useMemo(
-    () => getMaxBirthDateString(MIN_USER_AGE, new Date(), user?.timezone),
-    [user?.timezone],
+    () => getMaxBirthDateString(MIN_USER_AGE, new Date(), userTimezone),
+    [userTimezone],
   );
 
-  const [fullName, setFullName] = useState(user?.fullName || "");
-  const [birthDate, setBirthDate] = useState(() =>
-    resolveInitialBirthDate(user),
+  const persisted = useMemo<ProfileFormValues>(
+    () => ({
+      fullName: serverFullName,
+      birthDate: serverBirthDate,
+      gender: serverGender,
+    }),
+    [serverFullName, serverBirthDate, serverGender],
   );
-  const [gender, setGender] = useState<GenderType | undefined>(user?.gender);
 
+  const { values, setField, markSaved } = useSyncedSettingsForm(persisted, {
+    resetKey: userId,
+  });
+  const { fullName, birthDate, gender } = values;
   const [isPending, startTransition] = useTransition();
 
   const localizedGenderOptions = useMemo(
@@ -62,38 +67,19 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
     [tGender],
   );
 
-  // Sincroniza o formulário sempre que o usuário do store/prop atualizar
-  useEffect(() => {
-    if (user) {
-      if (user.fullName !== undefined) setFullName(user.fullName);
-      if (user.birthDate !== undefined)
-        setBirthDate(resolveInitialBirthDate(user));
-      if (user.gender !== undefined) setGender(user.gender);
-    }
-  }, [user]);
+  const hasChanges =
+    fullName.trim() !== serverFullName.trim() ||
+    (birthDate || "") !== (serverBirthDate || "") ||
+    ((gender as string) || "") !== ((serverGender as string) || "");
 
-  // Detecta se houve qualquer alteração real nos campos em relação aos dados atuais do usuário
-  const hasChanges = useMemo(() => {
-    const currentFullName = fullName.trim();
-    const currentBirthDate = birthDate || "";
-    const currentGender = (gender as string) || "";
-
-    const originalFullName = (user?.fullName || "").trim();
-    const originalBirthDate = resolveInitialBirthDate(user);
-    const originalGender = (user?.gender as string) || "";
-
-    return (
-      currentFullName !== originalFullName ||
-      currentBirthDate !== originalBirthDate ||
-      currentGender !== originalGender
-    );
-  }, [fullName, birthDate, gender, user]);
+  useRegisterSettingsDirty("profile-form", hasChanges);
 
   const canSubmit =
     hasChanges && fullName.trim().length > 0 && fullName.trim().length <= 150;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
 
     if (!hasChanges) {
       toast.info(t("noChangesToast"));
@@ -115,7 +101,7 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
         birthDate,
         undefined,
         undefined,
-        user?.timezone,
+        userTimezone,
       );
       if (!birthDateValidation.isValid) {
         toast.error(
@@ -127,6 +113,7 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
       }
     }
 
+    const submitted: ProfileFormValues = { fullName, birthDate, gender };
     const payload: UpdateUserDTO = {
       fullName: fullName.trim(),
       ...(birthDate ? { birthDate } : {}),
@@ -137,6 +124,15 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
       const res = await updateUserProfileAction(payload);
       if (res.success) {
         toast.success(t("successToast"));
+        const nextFullName =
+          res.data?.fullName ?? payload.fullName ?? submitted.fullName.trim();
+        const nextBirthDate = res.data?.birthDate ?? payload.birthDate ?? "";
+        const nextGender = res.data?.gender ?? payload.gender;
+        markSaved(submitted, {
+          fullName: nextFullName,
+          birthDate: nextBirthDate,
+          gender: nextGender,
+        });
         if (res.data) {
           updateUserPartial(res.data);
         } else {
@@ -159,12 +155,14 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
         <div className="md:col-span-2">
           <Input
             id="fullName"
+            name="fullName"
+            autoComplete="name"
             label={t("fullNameLabel")}
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => setField("fullName", e.target.value)}
             placeholder={t("fullNamePlaceholder")}
             maxLength={150}
-            icon={<UserIcon size={18} />}
+            icon={<UserIcon size={18} aria-hidden="true" />}
             required
           />
           <span className="text-tiny text-neutral-400 mt-1 block text-right">
@@ -176,12 +174,13 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
         <div>
           <DatePicker
             id="birthDate"
+            name="birthDate"
             label={t("birthdayLabel")}
             value={birthDate}
-            onChange={setBirthDate}
+            onChange={(val) => setField("birthDate", val)}
             placeholder={t("birthdayPlaceholder")}
             maxDate={maxBirthDate}
-            allowClear={!user?.birthDate}
+            allowClear={!serverBirthDate}
           />
         </div>
 
@@ -189,35 +188,27 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
         <div>
           <Select
             id="gender"
+            name="gender"
             label={t("genderLabel")}
             placeholder={t("genderPlaceholder")}
             value={gender || ""}
             options={localizedGenderOptions}
-            onChange={(val) => setGender((val || undefined) as GenderType)}
+            onChange={(val) =>
+              setField("gender", (val || "PREFER_NOT_TO_SAY") as GenderType)
+            }
           />
         </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
-        <button
+        <SettingsSaveButton
           type="submit"
-          disabled={isPending || !canSubmit}
-          className={cn(
-            "w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md px-6 py-2.5 text-sm",
-            "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
-            "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
-          )}
+          label={t("save")}
+          savingLabel={t("saving")}
+          isPending={isPending}
+          disabled={!canSubmit}
           title={!hasChanges ? t("noChangesTitle") : t("save")}
-        >
-          {isPending ? (
-            t("saving")
-          ) : (
-            <>
-              <Save size={16} />
-              {t("save")}
-            </>
-          )}
-        </button>
+        />
       </div>
     </form>
   );

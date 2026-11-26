@@ -1,4 +1,6 @@
 import { useTranslations } from "next-intl";
+import { cn } from "@/utils";
+import { CATALOG_ROW_GRID_CLASS } from "@/utils/catalogLayout";
 
 export interface ItemRowHeaderProps {
   mode?: "reward" | "inventory";
@@ -9,7 +11,10 @@ export function ItemRowHeader({ mode = "reward" }: ItemRowHeaderProps) {
 
   return (
     <div
-      className="hidden md:grid grid-cols-[minmax(0,3.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_auto] xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.7fr)_minmax(0,1.1fr)_auto] items-center text-xs font-semibold text-neutral-400 border-b border-white/10 select-none gap-2.5 xl:gap-4 px-3.5 xl:px-4 py-2"
+      className={cn(
+        "hidden text-xs font-semibold text-neutral-400 border-b border-white/10 select-none py-2",
+        CATALOG_ROW_GRID_CLASS,
+      )}
       aria-hidden="true"
     >
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">

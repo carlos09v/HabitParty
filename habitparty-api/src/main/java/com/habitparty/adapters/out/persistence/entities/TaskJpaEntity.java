@@ -24,20 +24,27 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Version;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "tasks")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Inheritance(strategy = InheritanceType.JOINED) // Heran;ca
-public abstract class TaskJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class TaskJpaEntity extends BaseUuidJpaEntity {
+
   @Id
+  @ToString.Include
   @Column(name = "task_id")
   private UUID id;
 
@@ -47,6 +54,7 @@ public abstract class TaskJpaEntity {
   @Column(name = "user_id", nullable = false)
   private UUID userId;
 
+  @ToString.Include
   @Column(nullable = false)
   private String name;
 
@@ -59,6 +67,7 @@ public abstract class TaskJpaEntity {
   @Enumerated(EnumType.STRING)
   private TaskPriority priority;
 
+  @Builder.Default
   @JdbcTypeCode(SqlTypes.ARRAY)
   @Column(name = "tags", columnDefinition = "text[]")
   private List<String> tags = new ArrayList<>();
@@ -67,10 +76,12 @@ public abstract class TaskJpaEntity {
   @Column(nullable = false)
   private TaskDifficulty difficulty;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private TaskStatus status;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "task_type", nullable = false)
   private TaskType taskType;
@@ -81,16 +92,23 @@ public abstract class TaskJpaEntity {
   @Column(name = "due_date")
   private LocalDate dueDate;
 
+  @Builder.Default
   @Column(name = "total_focus_minutes", nullable = false)
   private int totalFocusMinutes = 0;
 
+  @Builder.Default
   @Column(name = "focus_cycles_count", nullable = false)
   private int focusCyclesCount = 0;
 
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
-  // Ligação com o Checklist (cascade REMOVE para que deletar a Task apague os itens em cascata)
+  @Version
+  @Setter(AccessLevel.NONE)
+  @Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+  private Long version;
+
+  @Builder.Default
   @OneToMany(mappedBy = "task", cascade = CascadeType.REMOVE)
   private List<ChecklistItemJpaEntity> checklist = new ArrayList<>();
 }

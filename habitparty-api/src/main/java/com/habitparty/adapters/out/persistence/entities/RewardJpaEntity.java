@@ -19,33 +19,34 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "rewards")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class RewardJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class RewardJpaEntity extends BaseUuidJpaEntity {
+
   @Id
-  // @GeneratedValue(strategy = GenerationType.UUID) => O usecase que irá gerar
+  @ToString.Include
   @Column(name = "reward_id")
   private UUID id;
 
-  // Relacionamento N:1 (Muitos rewards pertencem a 1 User)
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserJpaEntity user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
+  @ToString.Include
   @Column(nullable = false, length = 30)
   private String name;
 
@@ -58,10 +59,10 @@ public class RewardJpaEntity {
   @Column(name = "order_index", nullable = false)
   private int orderIndex;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = 10, scale = 2)
   private BigDecimal price;
 
-  // Coluna nativa do Postegre chamada Array (text[])
+  @Builder.Default
   @JdbcTypeCode(SqlTypes.ARRAY)
   @Column(name = "tags", columnDefinition = "text[]")
   private List<String> tags = new ArrayList<>();

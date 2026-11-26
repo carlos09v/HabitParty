@@ -4,32 +4,38 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { type AvatarFrameId, getAvatarFrame } from "@/constants/avatarFrames";
-import { resolveAvatarPreset } from "@/constants/cosmetics";
-import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
-import { cn } from "@/utils";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { resolveAvatarPreset } from "@/constants/avatarPresets";
+import { useActiveAvatarFrame } from "@/store/userStore";
+import { API_ORIGIN_HOST, resolveAvatarSrc } from "@/utils/avatarUrl";
+import { cn } from "@/utils/cn";
 
 /**
- * Resolve URLs relativas vindas do backend (ex: "/uploads/uuid.png")
- * para o endereço completo do servidor da API, preservando URLs absolutas e blobs.
+ * Evita falhas de `next/image` com `blob:`, `data:` ou hosts externos não previstos em `remotePatterns`,
+ * mantendo otimização automática para caminhos locais, Google Avatars e o host da API configurado.
  */
-function resolveAvatarSrc(src?: string | null): string | null {
-  if (!src) return null;
-  const trimmed = src.trim();
-  if (!trimmed) return null;
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("blob:") ||
-    trimmed.startsWith("data:")
-  ) {
-    return trimmed;
+function shouldBypassImageOptimization(src: string): boolean {
+  if (src.startsWith("blob:") || src.startsWith("data:")) {
+    return true;
   }
-  if (trimmed.startsWith("/uploads/")) {
-    return `${API_BASE_URL.replace(/\/$/, "")}${trimmed}`;
+  if (src.startsWith("/")) {
+    return false;
   }
-  return trimmed;
+  try {
+    const parsed = new URL(src);
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "lh3.googleusercontent.com" ||
+      host.endsWith(".googleusercontent.com") ||
+      (API_ORIGIN_HOST && host === API_ORIGIN_HOST.toLowerCase())
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return true;
+  }
 }
 
 export interface UserAvatarProps {
@@ -47,7 +53,14 @@ const SIZE_CLASSES = {
   md: "w-10 h-10 text-sm",
   lg: "w-16 h-16 text-lg",
   xl: "w-20 h-20 sm:w-24 sm:h-24 text-2xl font-bold",
-};
+} as const;
+
+const IMAGE_SIZES = {
+  sm: "32px",
+  md: "40px",
+  lg: "64px",
+  xl: "(max-width: 640px) 80px, 96px",
+} as const;
 
 const PRESET_ICON_SIZES = {
   sm: 15,
@@ -61,12 +74,12 @@ const FRAME_OFFSET_CLASSES = {
   md: "-inset-[2.5px]",
   lg: "-inset-[3.5px]",
   xl: "-inset-[4.5px]",
-};
+} as const;
 
 /**
  * Extrai as iniciais do nome do usuário (ex: "Carlos Vinicius" -> "CV")
  */
-function getInitials(name?: string | null): string {
+export function getUserInitials(name?: string | null): string {
   if (!name || !name.trim()) return "HP";
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) {
@@ -75,19 +88,27 @@ function getInitials(name?: string | null): string {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-export function UserAvatar({
+function StoreFrameAvatar(props: Omit<UserAvatarProps, "frameId">) {
+  const activeFrameId = useActiveAvatarFrame();
+  return <UserAvatarCore {...props} resolvedFrameId={activeFrameId} />;
+}
+
+interface UserAvatarCoreProps extends Omit<UserAvatarProps, "frameId"> {
+  resolvedFrameId: AvatarFrameId;
+}
+
+function UserAvatarCore({
   src,
   name,
   size = "md",
   className,
   hasRing = false,
-  frameId,
   presetId,
-}: UserAvatarProps) {
+  resolvedFrameId,
+}: UserAvatarCoreProps) {
   const tAvatar = useTranslations("ui.avatar");
   const [imageError, setImageError] = useState(false);
-  const activeFrameIdFromStore = useActiveAvatarFrame();
-  const initials = getInitials(name);
+  const initials = getUserInitials(name);
   const sizeClass = SIZE_CLASSES[size];
   const resolvedSrc = resolveAvatarSrc(src);
   const resolvedPreset = resolveAvatarPreset(presetId);
@@ -98,11 +119,6 @@ export function UserAvatar({
   useEffect(() => {
     setImageError(false);
   }, [resolvedSrc]);
-
-  // Se frameId foi explicitamente fornecido, usa ele.
-  // Caso contrário, se hasRing for true, usa a moldura ativa do store.
-  const resolvedFrameId =
-    frameId !== undefined ? frameId : hasRing ? activeFrameIdFromStore : "none";
 
   const frame = getAvatarFrame(resolvedFrameId);
   const hasActiveFrame = frame.id !== "none";
@@ -161,14 +177,10 @@ export function UserAvatar({
             src={resolvedSrc}
             alt={tAvatar("avatarAlt", { name: resolvedAriaName })}
             fill
-            sizes="(max-width: 768px) 100vw, 96px"
+            sizes={IMAGE_SIZES[size]}
             className="object-cover"
             onError={() => setImageError(true)}
-            unoptimized={
-              resolvedSrc.startsWith("http") ||
-              resolvedSrc.startsWith("blob:") ||
-              resolvedSrc.startsWith("data:")
-            }
+            unoptimized={shouldBypassImageOptimization(resolvedSrc)}
           />
         </div>
       );
@@ -195,7 +207,6 @@ export function UserAvatar({
   if (hasActiveFrame) {
     return (
       <div className="relative inline-flex items-center justify-center shrink-0">
-        {/* Moldura circular animada com rotação de luz contínua */}
         <div
           aria-hidden="true"
           className={cn(
@@ -204,7 +215,6 @@ export function UserAvatar({
             FRAME_OFFSET_CLASSES[size],
           )}
         />
-        {/* Pulso de aura e brilho */}
         <div
           aria-hidden="true"
           className={cn(
@@ -214,11 +224,27 @@ export function UserAvatar({
             FRAME_OFFSET_CLASSES[size],
           )}
         />
-        {/* Conteúdo do Avatar sobreposto de forma estática */}
         <div className="relative z-10 shrink-0">{renderContent()}</div>
       </div>
     );
   }
 
   return renderContent();
+}
+
+export function UserAvatar({
+  frameId,
+  hasRing = false,
+  ...rest
+}: UserAvatarProps) {
+  if (frameId === undefined && hasRing) {
+    return <StoreFrameAvatar {...rest} hasRing={hasRing} />;
+  }
+  return (
+    <UserAvatarCore
+      {...rest}
+      hasRing={hasRing}
+      resolvedFrameId={frameId ?? "none"}
+    />
+  );
 }

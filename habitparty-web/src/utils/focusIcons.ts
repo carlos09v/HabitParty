@@ -1,7 +1,10 @@
 import { ListTodo, type LucideIcon, Timer } from "lucide-react";
-import { getFocusIcon } from "@/constants/focus";
+import { getFocusIcon } from "@/constants/focusIcons";
 import type { FocusActiveTarget, FocusRecord } from "@/types/focus";
 import { getRewardIcon } from "@/utils/rewardMapper";
+import { resolveFocusRecordTitle } from "./focusRecordDisplay";
+
+export { resolveFocusRecordTitle };
 
 /**
  * Resolve o ícone Lucide adequado para o alvo ativo do timer de foco
@@ -52,16 +55,7 @@ export function resolveFocusRecordDisplay(
     IconComp = ListTodo;
   }
 
-  const title =
-    record.activityName ||
-    record.taskNameSnapshot ||
-    record.itemName ||
-    fallbackTitle;
-
-  const subtitle =
-    record.activityName && record.taskNameSnapshot
-      ? record.taskNameSnapshot
-      : undefined;
+  const { title, subtitle } = resolveFocusRecordTitle(record, fallbackTitle);
 
   return { title, subtitle, IconComp };
 }

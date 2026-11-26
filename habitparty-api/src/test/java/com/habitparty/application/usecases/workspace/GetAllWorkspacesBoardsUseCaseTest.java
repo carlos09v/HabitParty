@@ -29,6 +29,7 @@ import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.KanbanBoard;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.entities.task.Todo;
 
 @ExtendWith(MockitoExtension.class)
 class GetAllWorkspacesBoardsUseCaseTest {
@@ -92,11 +93,11 @@ class GetAllWorkspacesBoardsUseCaseTest {
     BoardColumn col2Hidden = new BoardColumn(col2HiddenId, userId, ws1Id, "Arquivo", 1, "archive", false);
     BoardColumn col3OtherWs = new BoardColumn(col3OtherWsId, userId, ws2Id, "Sprint", 0, "briefcase", true);
 
-    Task task1 = mock(Task.class);
+    Task task1 = mock(Todo.class);
     when(task1.getBoardColumnId()).thenReturn(col1VisibleId);
-    Task task2 = mock(Task.class);
+    Task task2 = mock(Todo.class);
     when(task2.getBoardColumnId()).thenReturn(col2HiddenId);
-    Task task3 = mock(Task.class);
+    Task task3 = mock(Todo.class);
     when(task3.getBoardColumnId()).thenReturn(col3OtherWsId);
 
     when(workspaceRepository.findAllByUserId(userId)).thenReturn(List.of(ws1, ws2));
@@ -127,7 +128,7 @@ class GetAllWorkspacesBoardsUseCaseTest {
     Workspace ws = new Workspace(wsId, userId, "Foco");
     BoardColumn col = new BoardColumn(colId, userId, wsId, "Hoje", 0, "sun", true);
 
-    Task activeTask = mock(Task.class);
+    Task activeTask = mock(Todo.class);
     when(activeTask.getBoardColumnId()).thenReturn(colId);
 
     LocalDate today = LocalDate.of(2026, 11, 14);

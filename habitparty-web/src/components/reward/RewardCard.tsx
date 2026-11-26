@@ -1,10 +1,7 @@
-"use client";
-
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useMemo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
 import { ItemRow } from "@/components/ui/ItemRow";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardCardProps, RewardGroupContext } from "@/types/reward";
 import { isDebtReward } from "@/utils/rewardGrouping";
 
@@ -13,9 +10,12 @@ function useRewardItemPresentation({
   groupId,
   displayTitle,
   variants,
+  fullGroupContext,
   activeVariantId,
   canAfford = true,
   currentCoins,
+  ownedQuantity,
+  isGamified = true,
   isDeleteChecking = false,
   isRedeeming = false,
   isReorderDisabled,
@@ -25,7 +25,6 @@ function useRewardItemPresentation({
   onContextMenu,
 }: RewardCardProps) {
   const t = useTranslations("rewards.container");
-  const { isGamified } = useExperienceMode();
 
   const isDebt = isDebtReward(reward);
   const effectivePrice = reward.price;
@@ -35,13 +34,23 @@ function useRewardItemPresentation({
       : canAfford;
 
   const groupContext = useMemo<RewardGroupContext | undefined>(() => {
+    if (fullGroupContext && fullGroupContext.variants.length > 1) {
+      return fullGroupContext;
+    }
     if (!variants || variants.length <= 1) return undefined;
     return {
       groupId: groupId ?? reward.id,
       displayTitle: displayTitle || reward.title,
       variants,
     };
-  }, [variants, groupId, displayTitle, reward.id, reward.title]);
+  }, [
+    fullGroupContext,
+    variants,
+    groupId,
+    displayTitle,
+    reward.id,
+    reward.title,
+  ]);
 
   const handleBuy = useCallback(() => {
     onBuy?.(reward);
@@ -91,6 +100,8 @@ function useRewardItemPresentation({
     iconName: reward.icon,
     baseDurationMinutes: reward.baseDurationMinutes,
     price: effectivePrice,
+    ownedQuantity: isDebt ? undefined : ownedQuantity,
+    isGamified,
     variants,
     activeVariantId,
     onSelectVariant: onSelectVariant ? handleSelectVariant : undefined,
@@ -113,7 +124,7 @@ function useRewardItemPresentation({
 }
 
 export const RewardCard = memo(function RewardCard(props: RewardCardProps) {
-  const { sharedItemProps, effectiveCanAfford } =
+  const { sharedItemProps, effectiveCanAfford, insufficientBalanceTitle } =
     useRewardItemPresentation(props);
 
   return (
@@ -121,6 +132,7 @@ export const RewardCard = memo(function RewardCard(props: RewardCardProps) {
       {...sharedItemProps}
       currentCoins={props.currentCoins}
       canAfford={effectiveCanAfford}
+      disabledTitle={!effectiveCanAfford ? insufficientBalanceTitle : undefined}
     />
   );
 });
@@ -134,7 +146,8 @@ export const RewardItemRow = memo(function RewardItemRow(
   return (
     <ItemRow
       {...sharedItemProps}
-      disabled={!effectiveCanAfford}
+      currentCoins={props.currentCoins}
+      canAfford={effectiveCanAfford}
       disabledTitle={!effectiveCanAfford ? insufficientBalanceTitle : undefined}
     />
   );

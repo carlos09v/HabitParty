@@ -8,7 +8,7 @@ import { CONFIGURABLE_WELCOME_CARDS } from "@/constants/welcomeCards";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useWelcomeCards } from "@/store/welcomeCardsStore";
 import type { WelcomeCardStorageKey } from "@/types/settings";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 export function WelcomeCardsSettings() {
   const t = useTranslations("settings.welcomeCards");
@@ -62,17 +62,21 @@ export function WelcomeCardsSettings() {
 
   return (
     <div className="@container flex flex-col gap-5">
-      {/* Barra de Status e Ação Rápida */}
+      {/* Barra de Status e Ação Rápida (reserva altura estável antes da hidratação para evitar CLS) */}
       <div
         className={cn(
-          "rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors p-4",
-          hiddenCount > 0
-            ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
-            : "bg-gold/10 border-gold/30 text-gold",
+          "rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors p-4 min-h-14",
+          !mounted
+            ? "bg-surface/40 border-neutral-700/60 dark:border-white/10 text-neutral-400"
+            : hiddenCount > 0
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+              : "bg-gold/10 border-gold/30 text-gold",
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {hiddenCount > 0 ? (
+          {!mounted ? (
+            <Sparkles size={20} className="shrink-0 opacity-60" />
+          ) : hiddenCount > 0 ? (
             <EyeOff
               size={20}
               className="shrink-0 text-amber-700 dark:text-amber-400"
@@ -82,13 +86,18 @@ export function WelcomeCardsSettings() {
           )}
           <div className="text-sm min-w-0">
             <span className="font-bold">{t("statusLabel")}</span>
-            {hiddenCount === 0
-              ? t("allVisible")
-              : t("statusSummary", { count: hiddenCount, total: totalCards })}
+            {!mounted
+              ? "—"
+              : hiddenCount === 0
+                ? t("allVisible")
+                : t("statusSummary", {
+                    count: hiddenCount,
+                    total: totalCards,
+                  })}
           </div>
         </div>
 
-        {hiddenCount > 0 && (
+        {mounted && hiddenCount > 0 && (
           <button
             type="button"
             onClick={handleRestoreAll}
@@ -131,9 +140,9 @@ export function WelcomeCardsSettings() {
                   </div>
 
                   <div className="flex flex-col min-w-0">
-                    <h4 className="text-body-m font-bold text-neutral-100 truncate">
+                    <h3 className="text-body-m font-bold text-neutral-100 truncate">
                       {getItemText(card.key, "pageName")}
-                    </h4>
+                    </h3>
                     <span className="text-tiny font-mono text-neutral-400">
                       {card.route}
                     </span>
@@ -180,24 +189,12 @@ export function WelcomeCardsSettings() {
               {/* Informações do Banner */}
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-semibold text-amber-700 dark:text-gold/90 truncate">
-                  "{getItemText(card.key, "title")}"
+                  &ldquo;{getItemText(card.key, "title")}&rdquo;
                 </p>
                 <p className="text-xs text-neutral-300 leading-relaxed">
                   {getItemText(card.key, "description")}
                 </p>
               </div>
-
-              {/* Botão de Ação Rápida quando Ocultado */}
-              {isHidden && (
-                <button
-                  type="button"
-                  onClick={() => handleToggle(card.key, true)}
-                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-1"
-                >
-                  <RotateCcw size={13} />
-                  <span>{t("reactivateBtn")}</span>
-                </button>
-              )}
             </div>
           );
         })}

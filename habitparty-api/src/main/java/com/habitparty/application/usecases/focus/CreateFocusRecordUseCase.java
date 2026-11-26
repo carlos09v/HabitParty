@@ -22,6 +22,7 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.application.usecases.user.GlobalStreakSupport;
 import com.habitparty.core.domain.entities.InventoryItem;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.UserStats;
@@ -45,6 +46,7 @@ public class CreateFocusRecordUseCase {
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private Clock clock = Clock.systemUTC();
   private DailyResetUseCase dailyResetUseCase;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   public CreateFocusRecordUseCase(
       FocusRecordRepository port,
@@ -81,6 +83,11 @@ public class CreateFocusRecordUseCase {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
+  @Autowired
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
   @Transactional
   public FocusRecord execute(UUID userIdLogado, CreateFocusRecordCommand command) {
     if (dailyResetUseCase != null) {
@@ -95,6 +102,7 @@ public class CreateFocusRecordUseCase {
           userIdLogado,
           command.taskId(),
           taskPort,
+          workspaceWriteGuard,
           "Repositório de tarefas não disponível para vincular tarefa.");
       taskNameSnapshot = loadedTask.getName();
     }
@@ -239,7 +247,7 @@ public class CreateFocusRecordUseCase {
         java.time.Duration.between(userStartTime.atZone(userZone), userEndTime.atZone(userZone)).toMinutes());
     boolean hasCurrencyRewards = reward.xp() > 0 || reward.coins().compareTo(BigDecimal.ZERO) > 0;
     boolean qualifiesForFocusStats = focusDurationMinutes >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
-    boolean alreadyEarnedStreakToday = userToday.equals(loadedUser.getLastStreakDate());
+    boolean alreadyEarnedStreakToday = loadedUser != null && userToday.equals(loadedUser.getLastStreakDate());
     boolean justReachedStreakFocusTarget = isTodayFocus
         && !alreadyEarnedStreakToday
         && focusDurationMinutes > 0

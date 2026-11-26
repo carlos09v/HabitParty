@@ -1,8 +1,15 @@
 "use client";
 
-import { Flame, PackageOpen, Trash2, Undo2, Zap } from "lucide-react";
+import {
+  CheckCircle2,
+  Flame,
+  PackageOpen,
+  Trash2,
+  Undo2,
+  Zap,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import {
   type Dispatch,
   type SetStateAction,
@@ -10,7 +17,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
 import { toast } from "sonner";
 import {
@@ -23,7 +29,7 @@ import type { ContextMenuItem } from "@/components/ui/ContextMenu";
 import { useContextMenu } from "@/hooks/useContextMenu";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useInFlightSet } from "@/hooks/useInFlightSet";
-import type { AppLocale } from "@/i18n/config";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type {
   InventoryItem,
   InventoryItemType,
@@ -31,16 +37,36 @@ import type {
 } from "@/types/inventory";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { getInventoryItemActionMeta } from "@/utils/inventoryHelpers";
-import { resolveOpenedMysteryBoxMetadata } from "@/utils/inventoryMapper";
+import {
+  buildInventoryStackKey,
+  createBuiltInDropDescriptionResolver,
+  resolveOpenedMysteryBoxMetadata,
+} from "@/utils/inventoryMapper";
 import {
   BACKEND_TO_UI_PACKAGE,
   BACKEND_TO_UI_REWARD_TYPE,
+  UI_TO_BACKEND_PACKAGE,
+  UI_TO_BACKEND_REWARD_TYPE,
 } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface UseInventoryCatalogActionsParams {
   items: InventoryItem[];
   setItems: Dispatch<SetStateAction<InventoryItem[]>>;
+}
+
+function getInventoryInFlightKey(
+  item: Pick<InventoryItem, "id" | "stackKey">,
+): string {
+  return item.stackKey ?? item.id;
+}
+
+function sortStacksByOrderIndex(stacks: InventoryItem[]): InventoryItem[] {
+  return [...stacks].sort(
+    (a, b) =>
+      (a.orderIndex ?? Number.MAX_SAFE_INTEGER) -
+      (b.orderIndex ?? Number.MAX_SAFE_INTEGER),
+  );
 }
 
 function isSameInventoryStackTarget(
@@ -149,24 +175,46 @@ function movePhysicalItemToStatus(
       currentStack.id,
       physicalItemId,
     );
-    return decremented.map((i) =>
-      i.id === existingTargetStack.id
-        ? {
-            ...i,
-            quantity: i.quantity + 1,
-            itemIds: [...(i.itemIds ?? [i.id]), physicalItemId],
-            itemOrderIndexes: [
-              ...(i.itemOrderIndexes ?? [i.orderIndex ?? 0]),
-              physicalOrderIndex,
-            ],
-          }
-        : i,
+    return sortStacksByOrderIndex(
+      decremented.map((i) =>
+        i.id === existingTargetStack.id
+          ? {
+              ...i,
+              quantity: i.quantity + 1,
+              orderIndex: Math.min(
+                i.orderIndex ?? physicalOrderIndex,
+                physicalOrderIndex,
+              ),
+              itemIds: [...(i.itemIds ?? [i.id]), physicalItemId],
+              itemOrderIndexes: [
+                ...(i.itemOrderIndexes ?? [i.orderIndex ?? 0]),
+                physicalOrderIndex,
+              ],
+            }
+          : i,
+      ),
     );
   }
 
+  const nextStackKey = buildInventoryStackKey({
+    rewardId: currentStack.reward.id,
+    rawType:
+      UI_TO_BACKEND_REWARD_TYPE[currentStack.reward.type] || "SINGLE_USE",
+    packageKey:
+      UI_TO_BACKEND_PACKAGE[currentStack.reward.packageLevel || "Nenhum"] ||
+      "NONE",
+    title: currentStack.reward.title,
+    status: targetStatus,
+    remainingSeconds: currentStack.remainingSeconds,
+  });
+
   if (currentStack.quantity <= 1) {
-    return items.map((i) =>
-      i.id === currentStack.id ? { ...i, status: targetStatus } : i,
+    return sortStacksByOrderIndex(
+      items.map((i) =>
+        i.id === currentStack.id
+          ? { ...i, status: targetStatus, stackKey: nextStackKey }
+          : i,
+      ),
     );
   }
 
@@ -175,11 +223,12 @@ function movePhysicalItemToStatus(
     currentStack.id,
     physicalItemId,
   );
-  return [
+  return sortStacksByOrderIndex([
     ...decremented,
     {
       ...currentStack,
       id: physicalItemId,
+      stackKey: nextStackKey,
       inventoryItemId: physicalItemId,
       orderIndex: physicalOrderIndex,
       itemIds: [physicalItemId],
@@ -187,7 +236,20 @@ function movePhysicalItemToStatus(
       quantity: 1,
       status: targetStatus,
     },
-  ];
+  ]);
+}
+
+function findLiveMysteryBoxStack(
+  items: InventoryItem[],
+  openingBox: InventoryItem,
+): InventoryItem | undefined {
+  return items.find(
+    (i) =>
+      i.reward.type === "MysteryBox" &&
+      ((openingBox.stackKey && i.stackKey === openingBox.stackKey) ||
+        i.id === openingBox.id ||
+        i.reward.id === openingBox.reward.id),
+  );
 }
 
 export function useInventoryCatalogActions({
@@ -195,8 +257,8 @@ export function useInventoryCatalogActions({
   setItems,
 }: UseInventoryCatalogActionsParams) {
   const router = useRouter();
-  const locale = useLocale() as AppLocale;
   const t = useTranslations("inventory.container");
+  const tMysteryTiers = useTranslations("rewards.mysteryBox.tiers");
   const { isGamified } = useExperienceMode();
 
   const itemsRef = useRef(items);
@@ -221,13 +283,21 @@ export function useInventoryCatalogActions({
   const [openingBoxItem, setOpeningBoxItem] = useState<InventoryItem | null>(
     null,
   );
+  const [lastWonInventoryItem, setLastWonInventoryItem] =
+    useState<InventoryItem | null>(null);
   const openingBoxItemRef = useRef<InventoryItem | null>(null);
   openingBoxItemRef.current = openingBoxItem;
 
   const [itemToDiscard, setItemToDiscard] = useState<InventoryItem | null>(
     null,
   );
-  const [isDiscarding, startDiscardTransition] = useTransition();
+  const [isDiscarding, setIsDiscarding] = useState(false);
+
+  const [activeReturnConfirm, setActiveReturnConfirm] = useState<{
+    item: InventoryItem;
+    physicalItemId: string;
+  } | null>(null);
+  const [isReturningActive, setIsReturningActive] = useState(false);
 
   const {
     contextMenu: rawContextMenu,
@@ -241,13 +311,37 @@ export function useInventoryCatalogActions({
     item: rawContextMenu.data,
   };
 
+  const resolveDropDescription = useMemo(
+    () => createBuiltInDropDescriptionResolver(tMysteryTiers),
+    [tMysteryTiers],
+  );
+
   const handleOpenMysteryBox = useCallback((item: InventoryItem) => {
+    setLastWonInventoryItem(null);
     setOpeningBoxItem(item);
   }, []);
 
   const handleCloseMysteryBox = useCallback(() => {
     setOpeningBoxItem(null);
+    setLastWonInventoryItem(null);
   }, []);
+
+  const remainingBoxesInOpeningStack = useMemo(() => {
+    if (!openingBoxItem) return 0;
+    const liveStack = findLiveMysteryBoxStack(items, openingBoxItem);
+    return liveStack?.quantity ?? 0;
+  }, [items, openingBoxItem]);
+
+  const handleOpenNextMysteryBox = useCallback(() => {
+    if (!openingBoxItem) return;
+    const liveStack = findLiveMysteryBoxStack(itemsRef.current, openingBoxItem);
+    if (!liveStack || liveStack.quantity <= 0) {
+      handleCloseMysteryBox();
+      return;
+    }
+    setLastWonInventoryItem(null);
+    setOpeningBoxItem(liveStack);
+  }, [openingBoxItem, handleCloseMysteryBox]);
 
   const handleMysteryBoxOpened = useCallback(
     (result: MysteryBoxOpenResult) => {
@@ -258,6 +352,86 @@ export function useInventoryCatalogActions({
       const targetGroupId = sourceBox?.id || openedId || "";
       const consumedBoxItemId =
         sourceBox?.itemIds?.[0] || sourceBox?.inventoryItemId || openedId;
+
+      const rawType: InventoryItemType =
+        result.rewardType === "TIME_BASED" ||
+        result.rewardType === "SINGLE_USE" ||
+        result.rewardType === "MISTERY_BOX"
+          ? result.rewardType
+          : typeof result.remainingMinutes === "number" &&
+              result.remainingMinutes > 0
+            ? "TIME_BASED"
+            : "SINGLE_USE";
+      const mappedType = BACKEND_TO_UI_REWARD_TYPE[rawType] || "SingleUse";
+      const mappedPkg = result.rewardPackageLevel
+        ? BACKEND_TO_UI_PACKAGE[result.rewardPackageLevel]
+        : sourceBox?.reward.packageLevel;
+      const resolvedRemainingSeconds =
+        mappedType === "TimeBased"
+          ? typeof result.remainingSeconds === "number"
+            ? result.remainingSeconds
+            : typeof result.remainingMinutes === "number" &&
+                result.remainingMinutes > 0
+              ? result.remainingMinutes * 60
+              : undefined
+          : undefined;
+      const prizeTitle = result.rewardName || sourceBox?.reward.title || "";
+      const prizeIcon = result.rewardIcon || "gift";
+      const prizeRewardId =
+        result.rewardId || sourceBox?.reward.id || openedId || "";
+      const physicalPrizeId =
+        openedId || consumedBoxItemId || `won-${Date.now()}`;
+
+      const openedMeta = resolveOpenedMysteryBoxMetadata({
+        prizeName: prizeTitle,
+        sourceBoxReward: sourceBox?.reward,
+        getDropDescription: resolveDropDescription,
+      });
+
+      const prizeStackKey = buildInventoryStackKey({
+        rewardId: prizeRewardId,
+        rawType,
+        packageKey: result.rewardPackageLevel || "NONE",
+        title: prizeTitle,
+        status: "AVAILABLE",
+        remainingSeconds: resolvedRemainingSeconds,
+      });
+
+      const constructedWonItem: InventoryItem = {
+        id: physicalPrizeId,
+        stackKey: prizeStackKey,
+        itemIds: [physicalPrizeId],
+        itemOrderIndexes: [
+          sourceBox?.itemOrderIndexes?.[0] ?? sourceBox?.orderIndex ?? 0,
+        ],
+        inventoryItemId: physicalPrizeId,
+        orderIndex:
+          sourceBox?.itemOrderIndexes?.[0] ?? sourceBox?.orderIndex ?? 0,
+        status: "AVAILABLE",
+        quantity: 1,
+        remainingSeconds: resolvedRemainingSeconds,
+        reward: {
+          id: prizeRewardId,
+          title: prizeTitle,
+          description: openedMeta.description,
+          type: mappedType,
+          category: openedMeta.category,
+          price: result.rewardPrice ?? sourceBox?.reward.price ?? 0,
+          baseDurationMinutes:
+            mappedType !== "TimeBased"
+              ? undefined
+              : typeof result.remainingMinutes === "number" &&
+                  result.remainingMinutes > 0
+                ? result.remainingMinutes
+                : resolvedRemainingSeconds !== undefined
+                  ? Math.max(1, Math.ceil(resolvedRemainingSeconds / 60))
+                  : undefined,
+          icon: prizeIcon,
+          packageLevel: mappedPkg,
+        },
+      };
+
+      setLastWonInventoryItem(constructedWonItem);
 
       setItems((prev) => {
         const sourceBoxIndex = prev.findIndex(
@@ -280,33 +454,6 @@ export function useInventoryCatalogActions({
           consumedBoxItemId,
         );
 
-        const rawType: InventoryItemType =
-          result.rewardType === "TIME_BASED" ||
-          result.rewardType === "SINGLE_USE" ||
-          result.rewardType === "MISTERY_BOX"
-            ? result.rewardType
-            : typeof result.remainingMinutes === "number" &&
-                result.remainingMinutes > 0
-              ? "TIME_BASED"
-              : "SINGLE_USE";
-        const mappedType = BACKEND_TO_UI_REWARD_TYPE[rawType] || "SingleUse";
-        const mappedPkg = result.rewardPackageLevel
-          ? BACKEND_TO_UI_PACKAGE[result.rewardPackageLevel]
-          : sourceBox?.reward.packageLevel;
-        const resolvedRemainingSeconds =
-          typeof result.remainingSeconds === "number"
-            ? result.remainingSeconds
-            : typeof result.remainingMinutes === "number" &&
-                result.remainingMinutes > 0
-              ? result.remainingMinutes * 60
-              : undefined;
-        const prizeTitle = result.rewardName || sourceBox?.reward.title || "";
-        const prizeIcon = result.rewardIcon || "gift";
-        const prizeRewardId =
-          result.rewardId || sourceBox?.reward.id || openedId || "";
-        const physicalPrizeId =
-          openedId || consumedBoxItemId || `won-${Date.now()}`;
-
         const prizeStackTarget = {
           status: "AVAILABLE" as const,
           rewardId: prizeRewardId,
@@ -320,83 +467,63 @@ export function useInventoryCatalogActions({
         );
 
         if (existingStackIdx >= 0) {
-          return withoutOpenedBox.map((i, idx) =>
-            idx === existingStackIdx
-              ? {
-                  ...i,
-                  quantity: i.quantity + 1,
-                  itemIds: [...(i.itemIds ?? [i.id]), physicalPrizeId],
-                  itemOrderIndexes: [
-                    ...(i.itemOrderIndexes ?? [i.orderIndex ?? 0]),
-                    consumedOrderIndex,
-                  ],
-                }
-              : i,
+          return sortStacksByOrderIndex(
+            withoutOpenedBox.map((i, idx) =>
+              idx === existingStackIdx
+                ? {
+                    ...i,
+                    quantity: i.quantity + 1,
+                    orderIndex: Math.min(
+                      i.orderIndex ?? consumedOrderIndex,
+                      consumedOrderIndex,
+                    ),
+                    itemIds: [...(i.itemIds ?? [i.id]), physicalPrizeId],
+                    itemOrderIndexes: [
+                      ...(i.itemOrderIndexes ?? [i.orderIndex ?? 0]),
+                      consumedOrderIndex,
+                    ],
+                  }
+                : i,
+            ),
           );
         }
 
-        const openedMeta = resolveOpenedMysteryBoxMetadata({
-          prizeName: prizeTitle,
-          sourceBoxReward: sourceBox?.reward,
-          packageLevel: mappedPkg,
-          locale,
-        });
-
         const newPrizeItem: InventoryItem = {
-          id: physicalPrizeId,
-          itemIds: [physicalPrizeId],
-          itemOrderIndexes: [consumedOrderIndex],
-          inventoryItemId: physicalPrizeId,
+          ...constructedWonItem,
           orderIndex: consumedOrderIndex,
-          status: "AVAILABLE",
-          quantity: 1,
-          remainingSeconds: resolvedRemainingSeconds,
-          reward: {
-            id: prizeRewardId,
-            title: prizeTitle,
-            description: openedMeta.description,
-            type: mappedType,
-            category: openedMeta.category,
-            price: result.rewardPrice ?? sourceBox?.reward.price ?? 0,
-            baseDurationMinutes:
-              typeof result.remainingMinutes === "number" &&
-              result.remainingMinutes > 0
-                ? result.remainingMinutes
-                : resolvedRemainingSeconds !== undefined
-                  ? Math.max(1, Math.ceil(resolvedRemainingSeconds / 60))
-                  : undefined,
-            icon: prizeIcon,
-            packageLevel: mappedPkg,
-          },
+          itemOrderIndexes: [consumedOrderIndex],
         };
 
-        if (sourceBoxIndex < 0) {
-          return [...withoutOpenedBox, newPrizeItem];
-        }
-
-        const boxStackStillExists = withoutOpenedBox.length === prev.length;
-        const insertIndex = Math.min(
-          boxStackStillExists ? sourceBoxIndex + 1 : sourceBoxIndex,
-          withoutOpenedBox.length,
-        );
-        const nextItems = [...withoutOpenedBox];
-        nextItems.splice(insertIndex, 0, newPrizeItem);
-        return nextItems;
+        return sortStacksByOrderIndex([...withoutOpenedBox, newPrizeItem]);
       });
     },
-    [locale, setItems],
+    [resolveDropDescription, setItems],
   );
 
   const handleUseItem = useCallback(
     async (item: InventoryItem) => {
-      if (isItemUsing(item.id) || isItemSending(item.id)) return;
-      setItemUsing(item.id, true);
+      const inFlightKey = getInventoryInFlightKey(item);
+      if (
+        isItemUsing(inFlightKey) ||
+        isItemSending(inFlightKey) ||
+        isItemReturning(inFlightKey)
+      ) {
+        return;
+      }
+      setItemUsing(inFlightKey, true);
       const targetItemId = item.itemIds?.[0] || item.inventoryItemId || item.id;
       try {
         const res = await consumeInventoryItem(targetItemId);
         if (!res.success) {
           toast.error(res.error || t("toasts.useError"));
           return;
+        }
+        const timerState = useFocusTimerStore.getState();
+        if (
+          timerState.target?.type === "inventory" &&
+          timerState.target.id === targetItemId
+        ) {
+          timerState.resetTarget();
         }
         setItems((prev) =>
           removePhysicalItemFromStack(prev, item.id, targetItemId),
@@ -406,16 +533,23 @@ export function useInventoryCatalogActions({
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       } finally {
-        setItemUsing(item.id, false);
+        setItemUsing(inFlightKey, false);
       }
     },
-    [isItemSending, isItemUsing, setItemUsing, setItems, t],
+    [isItemReturning, isItemSending, isItemUsing, setItemUsing, setItems, t],
   );
 
   const handleSendToFocus = useCallback(
     async (item: InventoryItem) => {
-      if (isItemSending(item.id) || isItemUsing(item.id)) return;
-      setItemSending(item.id, true);
+      const inFlightKey = getInventoryInFlightKey(item);
+      if (
+        isItemSending(inFlightKey) ||
+        isItemUsing(inFlightKey) ||
+        isItemReturning(inFlightKey)
+      ) {
+        return;
+      }
+      setItemSending(inFlightKey, true);
       const targetItemId = item.itemIds?.[0] || item.inventoryItemId || item.id;
       try {
         const res = await sendItemToFocus(targetItemId);
@@ -429,23 +563,42 @@ export function useInventoryCatalogActions({
         soundEffects.playTaskCompleteSound();
         toast.success(
           t("toasts.sendToFocusSuccess", { title: item.reward.title }),
+          {
+            action: {
+              label: t("toasts.goToFocusAction"),
+              onClick: () =>
+                router.push(`/focus?from=inventory&itemId=${targetItemId}`),
+            },
+          },
         );
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       } finally {
-        setItemSending(item.id, false);
+        setItemSending(inFlightKey, false);
       }
     },
-    [isItemSending, isItemUsing, setItemSending, setItems, t],
+    [
+      isItemReturning,
+      isItemSending,
+      isItemUsing,
+      router,
+      setItemSending,
+      setItems,
+      t,
+    ],
   );
 
-  const handleReturnToBackpack = useCallback(
-    async (item: InventoryItem) => {
-      if (isItemReturning(item.id)) return;
-      setItemReturning(item.id, true);
-      const targetItemId = item.itemIds?.[0] || item.inventoryItemId || item.id;
+  const executeReturnToBackpack = useCallback(
+    async (
+      item: InventoryItem,
+      physicalItemId: string,
+      shouldResetTimer: boolean,
+    ) => {
+      const inFlightKey = getInventoryInFlightKey(item);
+      if (isItemReturning(inFlightKey)) return false;
+      setItemReturning(inFlightKey, true);
       try {
-        const res = await returnItemToBackpack(targetItemId);
+        const res = await returnItemToBackpack(physicalItemId);
         if (!res.success) {
           toast.error(
             res.error ||
@@ -453,7 +606,11 @@ export function useInventoryCatalogActions({
                 ? t("toasts.returnToBackpackErrorGamified")
                 : t("toasts.returnToBackpackErrorProductivity")),
           );
-          return;
+          return false;
+        }
+
+        if (shouldResetTimer) {
+          useFocusTimerStore.getState().resetTarget();
         }
 
         soundEffects.playTaskCompleteSound();
@@ -467,79 +624,159 @@ export function useInventoryCatalogActions({
               }),
         );
         setItems((prev) =>
-          movePhysicalItemToStatus(prev, item.id, targetItemId, "AVAILABLE"),
+          movePhysicalItemToStatus(prev, item.id, physicalItemId, "AVAILABLE"),
         );
+        return true;
       } catch (_error) {
         toast.error(t("toasts.serverError"));
+        return false;
       } finally {
-        setItemReturning(item.id, false);
+        setItemReturning(inFlightKey, false);
       }
     },
     [isGamified, isItemReturning, setItemReturning, setItems, t],
   );
 
-  const handleConfirmDiscard = useCallback(() => {
-    if (!itemToDiscard) return;
+  const handleReturnToBackpack = useCallback(
+    async (item: InventoryItem) => {
+      const inFlightKey = getInventoryInFlightKey(item);
+      if (isItemReturning(inFlightKey)) return;
+
+      const timerState = useFocusTimerStore.getState();
+      const activeTimerItemId =
+        timerState.target?.type === "inventory" ? timerState.target.id : null;
+      const isTimerActive =
+        timerState.isActive || timerState.elapsedSeconds > 0;
+
+      const candidateIds = item.itemIds?.length
+        ? item.itemIds
+        : [item.inventoryItemId || item.id];
+
+      // Prefere devolver um item ocioso da pilha quando houver mais de 1 unidade no palco
+      const idleId = candidateIds.find((id) => id !== activeTimerItemId);
+      const chosenId = idleId || candidateIds[0];
+
+      if (
+        activeTimerItemId &&
+        chosenId === activeTimerItemId &&
+        isTimerActive
+      ) {
+        setActiveReturnConfirm({ item, physicalItemId: chosenId });
+        return;
+      }
+
+      const shouldResetLoadedIdle = Boolean(
+        activeTimerItemId && chosenId === activeTimerItemId,
+      );
+      await executeReturnToBackpack(item, chosenId, shouldResetLoadedIdle);
+    },
+    [executeReturnToBackpack, isItemReturning],
+  );
+
+  const handleConfirmReturnActive = useCallback(async () => {
+    if (!activeReturnConfirm || isReturningActive) return;
+    setIsReturningActive(true);
+    try {
+      const ok = await executeReturnToBackpack(
+        activeReturnConfirm.item,
+        activeReturnConfirm.physicalItemId,
+        true,
+      );
+      if (ok) {
+        setActiveReturnConfirm(null);
+      }
+    } finally {
+      setIsReturningActive(false);
+    }
+  }, [activeReturnConfirm, executeReturnToBackpack, isReturningActive]);
+
+  const handleConfirmDiscard = useCallback(async () => {
+    if (!itemToDiscard || isDiscarding) return;
     const target = itemToDiscard;
     const targetItemId =
       target.itemIds?.[0] || target.inventoryItemId || target.id;
-    const previousItems = [...itemsRef.current];
 
-    setItems((prev) =>
-      removePhysicalItemFromStack(prev, target.id, targetItemId),
-    );
-    setItemToDiscard(null);
-
-    startDiscardTransition(async () => {
+    setIsDiscarding(true);
+    try {
       const res = await discardInventoryItem(targetItemId);
-      if (res.success) {
-        toast.success(
-          t("toasts.discardSuccess", { title: target.reward.title }),
-        );
-      } else {
-        setItems(previousItems);
+      if (!res.success) {
         toast.error(res.error || t("toasts.discardError"));
+        return;
       }
-    });
-  }, [itemToDiscard, setItems, t]);
+
+      setItems((prev) =>
+        removePhysicalItemFromStack(prev, target.id, targetItemId),
+      );
+      setItemToDiscard(null);
+      toast.success(t("toasts.discardSuccess", { title: target.reward.title }));
+    } catch (_error) {
+      toast.error(t("toasts.serverError"));
+    } finally {
+      setIsDiscarding(false);
+    }
+  }, [itemToDiscard, isDiscarding, setItems, t]);
 
   const contextMenuItems: ContextMenuItem[] = useMemo(() => {
     const target = contextMenu.item;
     if (!target) return [];
 
-    const { isInFocus, isMystery, isCoupon } =
+    const { isInFocus, isDepletedCoupon, isMystery, isCoupon } =
       getInventoryItemActionMeta(target);
+    const targetInFlightKey = getInventoryInFlightKey(target);
+    const targetBusy =
+      usingItemIds.has(targetInFlightKey) ||
+      sendingItemIds.has(targetInFlightKey) ||
+      returningItemIds.has(targetInFlightKey) ||
+      isDiscarding;
 
     if (isInFocus) {
+      if (isDepletedCoupon) {
+        return [
+          {
+            label: t("contextMenu.completeCoupon"),
+            icon: <CheckCircle2 size={15} />,
+            disabled: targetBusy,
+            onClick: () => handleUseItem(target),
+          },
+        ];
+      }
+
+      const primaryPhysicalId =
+        target.itemIds?.[0] || target.inventoryItemId || target.id;
       return [
         {
           label: t("contextMenu.openInFocus"),
           icon: <Flame size={15} />,
-          onClick: () => router.push("/focus?from=inventory"),
+          onClick: () =>
+            router.push(`/focus?from=inventory&itemId=${primaryPhysicalId}`),
         },
         {
           label: isGamified
             ? t("contextMenu.returnToBackpackGamified")
             : t("contextMenu.returnToBackpackProductivity"),
           icon: <Undo2 size={15} />,
-          disabled: returningItemIds.has(target.id),
+          disabled: targetBusy,
           onClick: () => handleReturnToBackpack(target),
         },
       ];
     }
 
     const actions: ContextMenuItem[] = [];
-    const targetBusy =
-      usingItemIds.has(target.id) ||
-      sendingItemIds.has(target.id) ||
-      returningItemIds.has(target.id);
 
-    if (isMystery) {
+    if (isDepletedCoupon) {
+      actions.push({
+        label: t("contextMenu.completeCoupon"),
+        icon: <CheckCircle2 size={15} />,
+        disabled: targetBusy,
+        onClick: () => handleUseItem(target),
+      });
+    } else if (isMystery) {
       actions.push({
         label: isGamified
           ? t("contextMenu.openMysteryBox")
           : t("contextMenu.openMysteryBoxProductivity"),
         icon: <PackageOpen size={15} />,
+        disabled: targetBusy,
         onClick: () => handleOpenMysteryBox(target),
       });
     } else if (isCoupon) {
@@ -570,6 +807,7 @@ export function useInventoryCatalogActions({
       label: t("contextMenu.discardItem"),
       icon: <Trash2 size={15} />,
       variant: "destructive",
+      disabled: targetBusy,
       onClick: () => setItemToDiscard(target),
     });
 
@@ -577,6 +815,7 @@ export function useInventoryCatalogActions({
   }, [
     contextMenu.item,
     isGamified,
+    isDiscarding,
     returningItemIds,
     sendingItemIds,
     usingItemIds,
@@ -591,14 +830,22 @@ export function useInventoryCatalogActions({
   return {
     usingItemIds,
     sendingItemIds,
+    returningItemIds,
     openingBoxItem,
+    lastWonInventoryItem,
+    remainingBoxesInOpeningStack,
     handleOpenMysteryBox,
+    handleOpenNextMysteryBox,
     handleCloseMysteryBox,
     handleMysteryBoxOpened,
     itemToDiscard,
     setItemToDiscard,
     isDiscarding,
     handleConfirmDiscard,
+    activeReturnConfirm,
+    setActiveReturnConfirm,
+    isReturningActive,
+    handleConfirmReturnActive,
     handleUseItem,
     handleSendToFocus,
     contextMenu,

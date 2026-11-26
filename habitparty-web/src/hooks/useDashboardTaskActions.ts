@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 import {
   applyOptimisticHabitChange,
+  applyOptimisticHabitRollback,
   applyOptimisticTaskRollback,
   applyOptimisticTaskToggle,
+  type HabitRollbackState,
   type TaskToggleRollbackState,
   useTaskMutations,
 } from "@/hooks/useTaskMutations";
@@ -36,10 +39,12 @@ export function useDashboardTaskActions({
   onTaskDeleted,
 }: UseDashboardTaskActionsProps) {
   const tasksRef = useRef(tasks);
-  tasksRef.current = tasks;
-
   const columnsRef = useRef(columns);
-  columnsRef.current = columns;
+
+  useIsomorphicLayoutEffect(() => {
+    tasksRef.current = tasks;
+    columnsRef.current = columns;
+  }, [tasks, columns]);
 
   const enrichTaskWorkspace = useCallback(
     (task: Task): Task =>
@@ -81,6 +86,17 @@ export function useDashboardTaskActions({
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId ? applyOptimisticTaskRollback(t, previousState) : t,
+        ),
+      );
+    },
+    [setTasks],
+  );
+
+  const onRollbackHabit = useCallback(
+    (taskId: string, previousState: HabitRollbackState) => {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? applyOptimisticHabitRollback(t, previousState) : t,
         ),
       );
     },
@@ -138,6 +154,7 @@ export function useDashboardTaskActions({
     handleToggleComplete,
     handleHabitChange,
     handleDeleteTask,
+    scheduleUndoDeleteTask,
     handleDuplicateTask,
     duplicatingTaskIds,
   } = useTaskMutations({
@@ -145,6 +162,7 @@ export function useDashboardTaskActions({
     onOptimisticToggle,
     onOptimisticHabit,
     onRollbackToggle,
+    onRollbackHabit,
     onOptimisticDelete,
     onRollbackDelete,
     onTaskDuplicated,
@@ -171,6 +189,7 @@ export function useDashboardTaskActions({
   const handleTaskDetailsUpdate = useCallback(
     (updatedTask: Task) => {
       const enriched = enrichTaskWorkspace(updatedTask);
+      useOptimisticDashboardStore.getState().upsertTask(enriched);
       setTasks((prev) =>
         prev.map((t) => (t.id === enriched.id ? enriched : t)),
       );
@@ -182,6 +201,7 @@ export function useDashboardTaskActions({
     handleToggleComplete,
     handleHabitChange,
     handleDeleteTask,
+    scheduleUndoDeleteTask,
     handleDuplicateTask,
     duplicatingTaskIds,
     handleTaskSaved,

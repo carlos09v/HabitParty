@@ -4,6 +4,12 @@
  */
 export function triggerCelebrationConfetti(x?: number, y?: number) {
   if (typeof document === "undefined") return;
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return;
+  }
 
   const count = 38;
   const colors = [

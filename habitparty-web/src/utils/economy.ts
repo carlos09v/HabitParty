@@ -9,15 +9,18 @@ import {
 } from "@/constants/task";
 import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
-import type { EconomyBarData } from "@/types/dashboard";
+import type {
+  EconomyBarData,
+  OptimisticTransactionDTO,
+} from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import {
   formatDateParts,
   getDateKeyInTimeZone,
   getDatePartsInTimeZone,
-  getTodayDateString,
   parseServerDate,
 } from "./date";
+import { isTaskHardcoreLocked } from "./taskSchedule";
 
 export interface WeeklyEarningsResult {
   bars: EconomyBarData[];
@@ -32,6 +35,25 @@ export interface FormatCoinsOptions {
   maxDecimals?: number;
   /** Idioma para separador decimal e abreviação compacta (padrão: "pt-BR") */
   locale?: AppLocale;
+}
+
+const numberFormatCache = new Map<string, Intl.NumberFormat>();
+
+/**
+ * Reutiliza instâncias de `Intl.NumberFormat` evitando alocações repetidas em listas e tabelas.
+ */
+export function getCachedNumberFormat(
+  locale?: string,
+  options?: Intl.NumberFormatOptions,
+): Intl.NumberFormat {
+  const localeKey = locale || "default";
+  const key = options ? `${localeKey}|${JSON.stringify(options)}` : localeKey;
+  let fmt = numberFormatCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(locale || undefined, options);
+    numberFormatCache.set(key, fmt);
+  }
+  return fmt;
 }
 
 /**
@@ -50,7 +72,7 @@ export function formatCoins(
   const intlLocale = toIntlLocale(locale);
 
   if (compact && Math.abs(num) >= 1000) {
-    return new Intl.NumberFormat(intlLocale, {
+    return getCachedNumberFormat(intlLocale, {
       notation: "compact",
       compactDisplay: "short",
       maximumFractionDigits: 1,
@@ -61,7 +83,7 @@ export function formatCoins(
   const factor = 10 ** maxDecimals;
   const rounded = Math.round(num * factor) / factor;
 
-  return new Intl.NumberFormat(intlLocale, {
+  return getCachedNumberFormat(intlLocale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: maxDecimals,
   }).format(rounded);
@@ -88,6 +110,128 @@ function formatPeriodRange(
       endMonth,
     },
   );
+}
+
+function computeEconomyBarPercent(value: number, maxVal: number): number {
+  if (maxVal <= 0) return 6;
+  return value <= 0 ? 6 : Math.max(12, Math.round((value / maxVal) * 100));
+}
+
+/**
+ * Classifica o impacto de uma transação em ganhos (earnedDelta) e gastos (spentDelta).
+ * Suporta transações sintéticas de estorno (`isReversal: true`) deduzindo de ganhos
+ * sem poluir a barra de gastos.
+ */
+export function classifyTransactionGoldDelta(
+  tx: Pick<
+    OptimisticTransactionDTO,
+    "transactionType" | "goldAmount" | "priceSnapshot" | "isReversal"
+  >,
+): { earnedDelta: number; spentDelta: number } {
+  const gold = tx.goldAmount ?? 0;
+
+  if (tx.isReversal) {
+    return {
+      earnedDelta: -Math.abs(gold),
+      spentDelta: 0,
+    };
+  }
+
+  const isRewardBought =
+    tx.transactionType === "REWARD_BOUGHT" ||
+    tx.transactionType === "DEBT_PAID";
+  const isPenalty = tx.transactionType === "BAD_HABIT_PENALTY";
+
+  if (isRewardBought) {
+    return {
+      earnedDelta: 0,
+      spentDelta: Math.abs(gold !== 0 ? gold : (tx.priceSnapshot ?? 0)),
+    };
+  }
+
+  if (isPenalty) {
+    return {
+      earnedDelta: 0,
+      spentDelta: gold !== 0 ? Math.abs(gold) : 0,
+    };
+  }
+
+  if (gold > 0) {
+    return { earnedDelta: gold, spentDelta: 0 };
+  }
+
+  if (gold < 0) {
+    return { earnedDelta: 0, spentDelta: Math.abs(gold) };
+  }
+
+  return { earnedDelta: 0, spentDelta: 0 };
+}
+
+/**
+ * Aplica transações otimistas da semana atual sobre os dados base do gráfico de Economia,
+ * recalculando proporcionalmente `heightPercent` e `spentHeightPercent` de todas as 4 barras.
+ */
+export function applyOptimisticEconomyDelta(
+  bars: EconomyBarData[],
+  weeklyEarnings: number,
+  weeklySpent: number,
+  optimisticTransactions: OptimisticTransactionDTO[] = [],
+): {
+  bars: EconomyBarData[];
+  weeklyEarnings: number;
+  weeklySpent: number;
+} {
+  if (optimisticTransactions.length === 0) {
+    return { bars, weeklyEarnings, weeklySpent };
+  }
+
+  let optEarnings = 0;
+  let optSpent = 0;
+
+  for (const tx of optimisticTransactions) {
+    const { earnedDelta, spentDelta } = classifyTransactionGoldDelta(tx);
+    optEarnings += earnedDelta;
+    optSpent += spentDelta;
+  }
+
+  const nextWeeklyEarnings = Math.max(0, weeklyEarnings + optEarnings);
+  const nextWeeklySpent = Math.max(0, weeklySpent + optSpent);
+
+  if (bars.length === 0 || (optEarnings === 0 && optSpent === 0)) {
+    return {
+      bars,
+      weeklyEarnings: nextWeeklyEarnings,
+      weeklySpent: nextWeeklySpent,
+    };
+  }
+
+  const updatedValues = bars.map((bar, index) => {
+    if (index !== bars.length - 1) return bar;
+    return {
+      ...bar,
+      gold: Math.max(0, bar.gold + optEarnings),
+      spent: Math.max(0, (bar.spent ?? 0) + optSpent),
+    };
+  });
+
+  let maxVal = 0;
+  for (const bar of updatedValues) {
+    if (bar.gold > maxVal) maxVal = bar.gold;
+    const spentVal = bar.spent ?? 0;
+    if (spentVal > maxVal) maxVal = spentVal;
+  }
+
+  const recalculatedBars: EconomyBarData[] = updatedValues.map((bar) => ({
+    ...bar,
+    heightPercent: computeEconomyBarPercent(bar.gold, maxVal),
+    spentHeightPercent: computeEconomyBarPercent(bar.spent ?? 0, maxVal),
+  }));
+
+  return {
+    bars: recalculatedBars,
+    weeklyEarnings: nextWeeklyEarnings,
+    weeklySpent: nextWeeklySpent,
+  };
 }
 
 /**
@@ -138,24 +282,14 @@ export function calculateWeeklyTaskEarnings(
 
     if (weekIndex === -1) continue;
 
-    const gold = tx.goldAmount ?? 0;
-    const isRewardBought =
-      tx.transactionType === "REWARD_BOUGHT" ||
-      tx.transactionType === "DEBT_PAID";
-    const isPenalty = tx.transactionType === "BAD_HABIT_PENALTY";
+    const { earnedDelta, spentDelta } = classifyTransactionGoldDelta(tx);
+    weekGains[weekIndex] += earnedDelta;
+    weekSpent[weekIndex] += spentDelta;
+  }
 
-    if (isRewardBought) {
-      const spentAmount = Math.abs(gold !== 0 ? gold : (tx.priceSnapshot ?? 0));
-      weekSpent[weekIndex] += spentAmount;
-    } else if (isPenalty) {
-      if (gold < 0) {
-        weekSpent[weekIndex] += Math.abs(gold);
-      }
-    } else if (gold > 0) {
-      weekGains[weekIndex] += gold;
-    } else if (gold < 0) {
-      weekSpent[weekIndex] += Math.abs(gold);
-    }
+  for (let i = 0; i < weekGains.length; i++) {
+    weekGains[i] = Math.max(0, weekGains[i]);
+    weekSpent[i] = Math.max(0, weekSpent[i]);
   }
 
   const maxVal = Math.max(...weekGains, ...weekSpent, 0);
@@ -176,19 +310,8 @@ export function calculateWeeklyTaskEarnings(
   const bars: EconomyBarData[] = weekGains.map((gold, index) => {
     const spent = weekSpent[index];
     const isHighlight = index === 3;
-    const heightPercent =
-      maxVal > 0
-        ? gold === 0
-          ? 6
-          : Math.max(12, Math.round((gold / maxVal) * 100))
-        : 6;
-
-    const spentHeightPercent =
-      maxVal > 0
-        ? spent === 0
-          ? 6
-          : Math.max(12, Math.round((spent / maxVal) * 100))
-        : 6;
+    const heightPercent = computeEconomyBarPercent(gold, maxVal);
+    const spentHeightPercent = computeEconomyBarPercent(spent, maxVal);
 
     const startDate = weekStarts[index];
     const periodLabel = startDate
@@ -483,15 +606,12 @@ export function getTaskRewardBreakdown(
     };
   }
 
-  // To-Do: se for modo Hardcore e estiver atrasado ou com penalidade aplicada, concede apenas 50%
-  const dueDatePart = task.dueDate?.split("T")[0];
-  const isTodoOverdue = Boolean(
-    dueDatePart && dueDatePart < getTodayDateString(new Date(), task.timeZone),
-  );
+  // To-Do: se for modo Hardcore e estiver atrasado (dueDate < today) ou com penalidade aplicada, concede apenas 50%
   const isLateHardcoreTodo =
     normalizedType === "todo" &&
     Boolean(task.isHardcoreModeEnabled) &&
-    (Boolean(task.isPenaltyApplied) || isTodoOverdue);
+    (Boolean(task.isPenaltyApplied) ||
+      isTaskHardcoreLocked(task, new Date(), task.timeZone));
 
   if (isLateHardcoreTodo) {
     const finalXp = Math.max(1, Math.floor(base.xp * 0.5));

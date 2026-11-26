@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import {
   deleteBoardColumn,
@@ -18,6 +24,8 @@ import {
   applyFocusRecordedToTask,
   useFocusTaskSync,
 } from "@/hooks/useFocusTaskSync";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { BoardColumn, Task } from "@/types/task";
 import type { ColumnInsertTarget } from "@/types/task-ui";
 import {
@@ -25,6 +33,7 @@ import {
   persistVisibleColumnsClient,
   readVisibleColumnsStorage,
 } from "@/utils/columnVisibility";
+import { mapTaskInColumns } from "@/utils/taskMapper";
 
 /**
  * Estado do quadro de rotina: colunas, visibilidade e mutações de colunas.
@@ -40,12 +49,12 @@ export function useRoutineColumns(
   onFocusTaskSynced?: (taskId: string, updater: (task: Task) => Task) => void,
 ) {
   const t = useTranslations("tasks.hooks");
-  const [, startTransition] = useTransition();
   const [columns, setColumns] = useState<BoardColumn[]>(initialColumns);
   const [isDeletingColumn, setIsDeletingColumn] = useState(false);
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
   const onFocusTaskSyncedRef = useRef(onFocusTaskSynced);
-  onFocusTaskSyncedRef.current = onFocusTaskSynced;
+  const reorderChainRef = useRef<Promise<void>>(Promise.resolve());
+  const reorderSeqRef = useRef(0);
 
   // 1. Inicializa o estado com a preferência do Cookie (se vinda do SSR) ou com o padrão das primeiras colunas
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() =>
@@ -58,12 +67,18 @@ export function useRoutineColumns(
   );
 
   const columnsRef = useRef(columns);
-  columnsRef.current = columns;
-
   const visibleColumnIdsRef = useRef(visibleColumnIds);
-  visibleColumnIdsRef.current = visibleColumnIds;
+
+  useIsomorphicLayoutEffect(() => {
+    onFocusTaskSyncedRef.current = onFocusTaskSynced;
+    columnsRef.current = columns;
+    visibleColumnIdsRef.current = visibleColumnIds;
+  }, [onFocusTaskSynced, columns, visibleColumnIds]);
 
   const loadedArchivedTaskIdsRef = useRef<Set<string>>(new Set());
+  const consumedTargetColumnIdRef = useRef<string | undefined>(targetColumnId);
+  const isDeletingColumnRef = useRef(false);
+  const movingColumnIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     void workspaceId;
@@ -76,6 +91,10 @@ export function useRoutineColumns(
     }
   }, []);
 
+  const unregisterLoadedArchivedTask = useCallback((taskId: string) => {
+    loadedArchivedTaskIdsRef.current.delete(taskId);
+  }, []);
+
   const persistVisibleColumns = useCallback(
     (ids: string[]) => {
       persistVisibleColumnsClient(workspaceId, ids);
@@ -83,37 +102,56 @@ export function useRoutineColumns(
     [workspaceId],
   );
 
-  // 2. Carrega preferências do localStorage no mount como fallback se o cookie ainda não existia
+  // 2. Carrega preferências do localStorage apenas ao montar/trocar workspace ou limite
+  // (sem reescrever localStorage + cookie a cada refresh de initialColumns).
+  const initialColumnIdsKey = initialColumns.map((c) => c.id).join(",");
+
   useEffect(() => {
     const stored = readVisibleColumnsStorage(workspaceId);
     if (!stored || stored.length === 0) return;
 
-    const allIds = initialColumns.map((c) => c.id);
+    const allIds = initialColumnIdsKey ? initialColumnIdsKey.split(",") : [];
+    const activeTargetForSync =
+      targetColumnId && consumedTargetColumnIdRef.current !== targetColumnId
+        ? targetColumnId
+        : undefined;
     const resolved = resolveVisibleColumnIds(
       allIds,
       stored,
       maxAllowed,
-      targetColumnId,
+      activeTargetForSync,
     );
-    if (resolved.length > 0) {
+    if (resolved.length === 0) return;
+
+    const current = visibleColumnIdsRef.current;
+    const isSame =
+      current.length === resolved.length &&
+      current.every((id, index) => id === resolved[index]);
+    if (!isSame) {
       setVisibleColumnIds(resolved);
+      visibleColumnIdsRef.current = resolved;
       persistVisibleColumns(resolved);
     }
   }, [
     workspaceId,
     maxAllowed,
-    initialColumns,
+    initialColumnIdsKey,
     targetColumnId,
     persistVisibleColumns,
   ]);
 
-  // 3. Sempre que houver ou mudar o targetColumnId (ex: navegação vinda do Dashboard),
-  // garante que a coluna esteja visível imediatamente no quadro
+  // 3. Sempre que houver um NOVO targetColumnId (ex: navegação vinda do Dashboard),
+  // garante que a coluna esteja visível imediatamente — sem re-exibir colunas já ocultadas pelo usuário
   useEffect(() => {
-    if (!targetColumnId) return;
-    const allIds = initialColumns.map((c) => c.id);
+    if (!targetColumnId) {
+      consumedTargetColumnIdRef.current = undefined;
+      return;
+    }
+    if (consumedTargetColumnIdRef.current === targetColumnId) return;
+    const allIds = initialColumnIdsKey ? initialColumnIdsKey.split(",") : [];
     if (!allIds.includes(targetColumnId)) return;
 
+    consumedTargetColumnIdRef.current = targetColumnId;
     setVisibleColumnIds((prev) => {
       if (prev.includes(targetColumnId)) return prev;
       const next = resolveVisibleColumnIds(
@@ -122,10 +160,11 @@ export function useRoutineColumns(
         maxAllowed,
         targetColumnId,
       );
+      visibleColumnIdsRef.current = next;
       persistVisibleColumns(next);
       return next;
     });
-  }, [targetColumnId, initialColumns, maxAllowed, persistVisibleColumns]);
+  }, [targetColumnId, initialColumnIdsKey, maxAllowed, persistVisibleColumns]);
 
   // Sincroniza colunas mantendo tarefas otimistas e arquivadas carregadas sob demanda
   useEffect(() => {
@@ -194,21 +233,11 @@ export function useRoutineColumns(
     onFocusRecorded: (taskId, durationMinutes, cycles) => {
       const updater = (t: Task) =>
         applyFocusRecordedToTask(t, durationMinutes, cycles);
-      setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) => (t.id === taskId ? updater(t) : t)),
-        })),
-      );
+      setColumns((prev) => mapTaskInColumns(prev, taskId, updater));
       onFocusTaskSyncedRef.current?.(taskId, updater);
     },
     onTaskCompleted: (taskId, transformTask) => {
-      setColumns((prev) =>
-        prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.map((t) => (t.id === taskId ? transformTask(t) : t)),
-        })),
-      );
+      setColumns((prev) => mapTaskInColumns(prev, taskId, transformTask));
       onFocusTaskSyncedRef.current?.(taskId, transformTask);
     },
   });
@@ -251,6 +280,7 @@ export function useRoutineColumns(
 
   const ensureColumnVisible = useCallback(
     (columnId: string) => {
+      if (!columnsRef.current.some((c) => c.id === columnId)) return;
       const prev = visibleColumnIdsRef.current;
       if (prev.includes(columnId)) return;
       const next =
@@ -306,9 +336,12 @@ export function useRoutineColumns(
             board_column_id: c.id,
             newIndex: idx,
           }));
+          const fallbackCols = [...currentCols, savedCol];
           startTransition(async () => {
             const res = await updateBoardColumnOrder(workspaceId, payload);
             if (!res?.success) {
+              setColumns(fallbackCols);
+              columnsRef.current = fallbackCols;
               toast.error(res?.error || t("reorderColumnsError"));
             }
           });
@@ -351,8 +384,36 @@ export function useRoutineColumns(
     [maxAllowed, toggleColumnVisibility, workspaceId, persistVisibleColumns, t],
   );
 
+  const removeColumnFromVisible = useCallback(
+    (columnId: string, remainingColumns: BoardColumn[]) => {
+      const remainingIds = remainingColumns.map((c) => c.id);
+      const filtered = visibleColumnIdsRef.current.filter(
+        (id) => id !== columnId && remainingIds.includes(id),
+      );
+
+      // Backfill: se ainda existem colunas ocultas e sobrou vaga até maxAllowed (ex: Free rebaixado 6→5), promove a próxima
+      const nextVisible = [...filtered];
+      const targetVisibleCount = Math.min(remainingIds.length, maxAllowed);
+      if (nextVisible.length < targetVisibleCount) {
+        for (const candidateId of remainingIds) {
+          if (nextVisible.length >= targetVisibleCount) break;
+          if (!nextVisible.includes(candidateId)) {
+            nextVisible.push(candidateId);
+          }
+        }
+      }
+
+      persistVisibleColumns(nextVisible);
+      setVisibleColumnIds(nextVisible);
+      visibleColumnIdsRef.current = nextVisible;
+    },
+    [maxAllowed, persistVisibleColumns],
+  );
+
   const handleDeleteColumn = useCallback(
     async (column: BoardColumn) => {
+      if (isDeletingColumnRef.current) return false;
+      isDeletingColumnRef.current = true;
       setIsDeletingColumn(true);
       try {
         const res = await deleteBoardColumn(column.id);
@@ -361,14 +422,19 @@ export function useRoutineColumns(
           return false;
         }
 
-        setColumns((prev) => {
-          const next = prev.filter((c) => c.id !== column.id);
-          columnsRef.current = next;
-          return next;
-        });
-        if (visibleColumnIdsRef.current.includes(column.id)) {
-          toggleColumnVisibility(column.id);
+        const focusStore = useFocusTimerStore.getState();
+        for (const task of column.tasks) {
+          loadedArchivedTaskIdsRef.current.delete(task.id);
+          focusStore.handleExternalTaskRemovedOrCompleted(task.id);
         }
+
+        const remainingColumns = columnsRef.current.filter(
+          (c) => c.id !== column.id,
+        );
+        setColumns(remainingColumns);
+        columnsRef.current = remainingColumns;
+
+        removeColumnFromVisible(column.id, remainingColumns);
 
         toast.success(t("deleteColumnSuccess", { title: column.title }));
         return true;
@@ -376,10 +442,11 @@ export function useRoutineColumns(
         toast.error(t("deleteColumnUnexpectedError"));
         return false;
       } finally {
+        isDeletingColumnRef.current = false;
         setIsDeletingColumn(false);
       }
     },
-    [toggleColumnVisibility, t],
+    [removeColumnFromVisible, t],
   );
 
   const handleColumnReorder = useCallback(
@@ -391,16 +458,23 @@ export function useRoutineColumns(
         newIndex: idx,
       }));
 
-      startTransition(async () => {
-        const res = await updateBoardColumnOrder(workspaceId, payload);
-        if (!res.success) {
-          if (previousColumns) {
-            columnsRef.current = previousColumns;
-            setColumns(previousColumns);
+      const reorderSeq = ++reorderSeqRef.current;
+      reorderChainRef.current = reorderChainRef.current
+        .then(async () => {
+          const res = await updateBoardColumnOrder(workspaceId, payload);
+          if (!res.success) {
+            if (previousColumns && reorderSeq === reorderSeqRef.current) {
+              startTransition(() => {
+                columnsRef.current = previousColumns;
+                setColumns(previousColumns);
+              });
+            }
+            toast.error(res.error || t("reorderColumnsError"));
           }
-          toast.error(res.error || t("reorderColumnsError"));
-        }
-      });
+        })
+        .catch(() => {
+          toast.error(t("reorderColumnsError"));
+        });
     },
     [workspaceId, t],
   );
@@ -411,6 +485,8 @@ export function useRoutineColumns(
       targetWorkspaceId: string,
       targetWorkspaceName?: string,
     ) => {
+      if (movingColumnIdsRef.current.has(column.id)) return false;
+      movingColumnIdsRef.current.add(column.id);
       try {
         const res = await moveBoardColumnToWorkspace(column.id, {
           targetWorkspaceId,
@@ -426,17 +502,7 @@ export function useRoutineColumns(
         setColumns(remainingColumns);
         columnsRef.current = remainingColumns;
 
-        if (visibleColumnIdsRef.current.includes(column.id)) {
-          let nextVisible = visibleColumnIdsRef.current.filter(
-            (id) => id !== column.id,
-          );
-          if (nextVisible.length === 0 && remainingColumns.length > 0) {
-            nextVisible = [remainingColumns[0].id];
-          }
-          setVisibleColumnIds(nextVisible);
-          visibleColumnIdsRef.current = nextVisible;
-          persistVisibleColumns(nextVisible);
-        }
+        removeColumnFromVisible(column.id, remainingColumns);
 
         appendVisibleColumnIfSpaceAllows(
           targetWorkspaceId,
@@ -454,17 +520,19 @@ export function useRoutineColumns(
       } catch (_error) {
         toast.error(t("moveColumnUnexpectedError"));
         return false;
+      } finally {
+        movingColumnIdsRef.current.delete(column.id);
       }
     },
-    [maxAllowed, persistVisibleColumns, t],
+    [maxAllowed, removeColumnFromVisible, t],
   );
 
   return {
     columns,
     setColumns,
     registerLoadedArchivedTasks,
+    unregisterLoadedArchivedTask,
     visibleColumnIds,
-    setVisibleColumnIds,
     toggleColumnVisibility,
     showAllColumns,
     ensureColumnVisible,

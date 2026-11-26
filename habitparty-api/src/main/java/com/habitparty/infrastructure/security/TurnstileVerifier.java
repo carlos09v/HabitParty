@@ -1,17 +1,24 @@
 package com.habitparty.infrastructure.security;
 
-import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+
+import com.habitparty.infrastructure.ExternalHttpClientConfig;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Verificador do desafio anti-bot Cloudflare Turnstile.
@@ -24,13 +31,29 @@ public class TurnstileVerifier {
   private static final String VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
   private final String secretKey;
-  private final HttpClient httpClient;
+  private final RestClient restClient;
+  private final JsonMapper jsonMapper;
 
-  public TurnstileVerifier(@Value("${turnstile.secret.key:${TURNSTILE_SECRET_KEY:}}") String secretKey) {
+  private record HttpCallResult(int statusCode, String body) {}
+
+  @Autowired
+  public TurnstileVerifier(
+      @Value("${turnstile.secret.key:${TURNSTILE_SECRET_KEY:}}") String secretKey,
+      @Qualifier(ExternalHttpClientConfig.EXTERNAL_REST_CLIENT_BEAN) @Nullable RestClient externalRestClient,
+      @Nullable JsonMapper jsonMapper) {
     this.secretKey = secretKey != null ? secretKey.trim() : "";
-    this.httpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(10))
-        .build();
+    this.restClient = externalRestClient != null ? externalRestClient : buildFallbackRestClient();
+    this.jsonMapper = jsonMapper != null ? jsonMapper : JsonMapper.builder().build();
+  }
+
+  public TurnstileVerifier(String secretKey) {
+    this(secretKey, null, null);
+  }
+
+  private static RestClient buildFallbackRestClient() {
+    JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
+    factory.setReadTimeout(Duration.ofSeconds(10));
+    return RestClient.builder().requestFactory(factory).build();
   }
 
   public boolean isEnabled() {
@@ -54,18 +77,23 @@ public class TurnstileVerifier {
               ? "&remoteip=" + URLEncoder.encode(remoteIp.trim(), StandardCharsets.UTF_8)
               : "");
 
-      HttpRequest request = HttpRequest.newBuilder()
-          .uri(URI.create(VERIFY_URL))
-          .timeout(Duration.ofSeconds(10))
-          .header("Content-Type", "application/x-www-form-urlencoded")
-          .POST(HttpRequest.BodyPublishers.ofString(formBody))
-          .build();
+      HttpCallResult response = restClient.post()
+          .uri(VERIFY_URL)
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+          .body(formBody)
+          .exchange((req, res) -> new HttpCallResult(
+              res.getStatusCode().value(),
+              new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8)));
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      String body = response.body();
-      boolean success = response.statusCode() == 200 && body != null && body.contains("\"success\":true");
+      String body = response != null ? response.body() : null;
+      boolean success = false;
+      if (response != null && response.statusCode() == 200 && body != null && !body.isBlank()) {
+        JsonNode json = jsonMapper.readTree(body);
+        success = json.path("success").asBoolean(false);
+      }
       if (!success) {
-        log.warn("[TurnstileVerifier] Desafio anti-bot recusado pela Cloudflare para IP {}: {}", remoteIp, body);
+        log.warn("[TurnstileVerifier] Desafio anti-bot recusado pela Cloudflare para IP {}: status={}",
+            remoteIp, response != null ? response.statusCode() : -1);
       }
       return success;
     } catch (Exception e) {

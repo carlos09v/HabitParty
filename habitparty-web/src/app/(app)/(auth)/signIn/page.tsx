@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { SignInForm } from "@/components/auth/SignInForm";
+import { isAuthUrlErrorCode } from "@/utils/authRedirect";
 
 export const instant = false;
 
@@ -24,7 +25,9 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       : Promise.resolve({} as { error?: string; returnTo?: string }),
     getTranslations("auth.signIn"),
   ]);
-  const error = resolvedParams.error;
+  const initialErrorCode = isAuthUrlErrorCode(resolvedParams.error)
+    ? resolvedParams.error
+    : undefined;
   const returnTo = resolvedParams.returnTo;
 
   return (
@@ -35,7 +38,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       footerLinkText={t("createAccount")}
       footerLinkHref="/signUp"
     >
-      <SignInForm initialError={error} returnTo={returnTo} />
+      <SignInForm initialErrorCode={initialErrorCode} returnTo={returnTo} />
     </AuthPageShell>
   );
 }

@@ -16,9 +16,11 @@ interface TaskDatePickerProps {
   startTime?: string;
   dueEndTime?: string;
   isAllDay?: boolean;
+  isCompleted?: boolean;
   onDateChange: (newDate: string) => void;
   onEventScheduleChange?: (patch: DatePickerEventSchedulePatch) => void;
   disabled?: boolean;
+  disabledReason?: "hardcore" | "readonly";
 }
 
 /**
@@ -31,9 +33,11 @@ export function TaskDatePicker({
   startTime,
   dueEndTime,
   isAllDay,
+  isCompleted = false,
   onDateChange,
   onEventScheduleChange,
   disabled = false,
+  disabledReason,
 }: TaskDatePickerProps) {
   const t = useTranslations("tasks.detailsPopover.header");
   const locale = useLocale() as AppLocale;
@@ -66,17 +70,23 @@ export function TaskDatePicker({
     ],
   );
 
+  const disabledTitle = !disabled
+    ? undefined
+    : disabledReason === "readonly"
+      ? t("dateReadOnlyTitle")
+      : t("dateFrozenTitle");
+
   return (
     <div
       className="inline-flex items-center gap-1 min-w-0"
-      title={disabled ? t("dateFrozenTitle") : undefined}
+      title={disabledTitle}
     >
       <DatePicker
         value={dueDate}
         onChange={onDateChange}
         variant="badge"
         badgeLabel={dateInfo.label}
-        isOverdue={dateInfo.isOverdue}
+        isOverdue={Boolean(!isCompleted && dateInfo.isOverdue)}
         clearLabel={t("noDueDate")}
         allowClear={!disabled}
         disabled={disabled}

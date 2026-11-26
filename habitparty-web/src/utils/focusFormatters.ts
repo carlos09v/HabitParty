@@ -2,29 +2,22 @@
  * Utilitários centralizados de formatação de tempo e data para as telas de Foco.
  */
 
-export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
-
 import {
+  DEFAULT_CYCLES_UNTIL_LONG_BREAK,
   DEFAULT_LONG_BREAK_MINUTES,
   DEFAULT_SHORT_BREAK_MINUTES,
   FOCUS_REWARD_RULES,
-} from "@/constants/focus";
+} from "@/constants/focusRules";
 import type { AppLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
-import type { DateFormat, TimeFormat } from "@/types/ui";
-import {
-  formatShortDate,
-  formatTimeDisplay,
-  parseLocalDate,
-  parseServerDate,
-} from "./date";
+import { hasTimeZoneSuffix, parseLocalDate, parseServerDate } from "./date";
 
 /**
  * Formata segundos no padrão MM:SS (ex: 25:00 ou 04:05).
  * Se o tempo exceder 60 minutos, formata como HH:MM:SS.
  */
 export function formatFocusTime(seconds: number): string {
-  if (seconds < 0) return "00:00";
+  if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = Math.floor(seconds % 60);
@@ -53,12 +46,14 @@ export function isFocusOvertime(timerState: {
 }): boolean {
   const isBreak =
     timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  const totalDuration = timerState.totalDurationSeconds ?? 0;
   return (
     !isBreak &&
     timerState.mode === "POMO" &&
     timerState.target?.type !== "inventory" &&
+    totalDuration > 0 &&
     timerState.secondsRemaining === 0 &&
-    timerState.elapsedSeconds >= (timerState.totalDurationSeconds ?? 1)
+    timerState.elapsedSeconds >= totalDuration
   );
 }
 
@@ -154,25 +149,107 @@ export function getFocusProgressPercent(timerState: {
   return Math.min(100, Math.max(0, raw));
 }
 
-/**
- * Calcula a duração (em minutos) da próxima pausa considerando o ciclo atual (a cada 4 ciclos, pausa longa).
- */
-export function getNextFocusBreakMinutes(completedCycles = 0): number {
-  return (completedCycles + 1) % 4 === 0
-    ? DEFAULT_LONG_BREAK_MINUTES
-    : DEFAULT_SHORT_BREAK_MINUTES;
+export interface FocusBreakPreferencesInput {
+  shortBreakMinutes?: number;
+  longBreakMinutes?: number;
+  cyclesUntilLongBreak?: number;
+}
+
+export interface FocusBreakPlan {
+  isLongBreak: boolean;
+  minutes: number;
+  phase: "SHORT_BREAK" | "LONG_BREAK";
 }
 
 /**
- * Indica se a sessão atual atingiu o mínimo (60s) para poder ser salva manualmente.
+ * Indica se a contagem de ciclos concluídos corresponde a uma pausa longa.
+ */
+export function isLongBreakCycle(
+  cycleCount: number,
+  cyclesUntilLongBreak = DEFAULT_CYCLES_UNTIL_LONG_BREAK,
+): boolean {
+  const cyclesPerBlock = Math.max(1, cyclesUntilLongBreak);
+  return cycleCount > 0 && cycleCount % cyclesPerBlock === 0;
+}
+
+/**
+ * Resolve tipo, duração e fase da pausa para uma determinada contagem de ciclos concluídos.
+ */
+export function resolveFocusBreakPlan(
+  cycleCount: number,
+  prefs?: FocusBreakPreferencesInput,
+): FocusBreakPlan {
+  const shortBreak = prefs?.shortBreakMinutes ?? DEFAULT_SHORT_BREAK_MINUTES;
+  const longBreak = prefs?.longBreakMinutes ?? DEFAULT_LONG_BREAK_MINUTES;
+  const isLongBreak = isLongBreakCycle(cycleCount, prefs?.cyclesUntilLongBreak);
+  return {
+    isLongBreak,
+    minutes: isLongBreak ? longBreak : shortBreak,
+    phase: isLongBreak ? "LONG_BREAK" : "SHORT_BREAK",
+  };
+}
+
+/**
+ * Calcula a duração (em minutos) da próxima pausa considerando o ciclo atual
+ * e as preferências configuradas (por padrão, pausa longa a cada 4 ciclos).
+ */
+export function getNextFocusBreakMinutes(
+  completedCycles = 0,
+  prefs?: FocusBreakPreferencesInput,
+): number {
+  return resolveFocusBreakPlan(completedCycles + 1, prefs).minutes;
+}
+
+/**
+ * Resolve o ID e o nome da tarefa vinculada a partir do alvo ativo do timer de foco.
+ * Itens de inventário/mochila nunca possuem tarefa vinculada.
+ */
+export function resolveLinkedTask(
+  target?: {
+    type?: "activity" | "inventory" | "task";
+    id?: string;
+    name?: string;
+    taskId?: string;
+    taskName?: string;
+  } | null,
+): { taskId?: string; taskName?: string } {
+  if (!target || target.type === "inventory") {
+    return {};
+  }
+  const taskId =
+    target.taskId || (target.type === "task" ? target.id : undefined);
+  const taskName =
+    target.taskName || (target.type === "task" ? target.name : undefined);
+  return { taskId, taskName };
+}
+
+/**
+ * Faz parse seguro de um timestamp de registro de foco, respeitando se possui fuso explícito ou wall-clock local.
+ */
+export function parseFocusTimestamp(dateStr: string): Date | null {
+  return hasTimeZoneSuffix(dateStr)
+    ? parseServerDate(dateStr)
+    : parseLocalDate(dateStr);
+}
+
+/**
+ * Indica se a sessão atual pode ser salva (mínimo 60s, ou cupom da mochila já esgotado com saldo residual).
  */
 export function canCompleteFocusSession(timerState: {
   phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
   elapsedSeconds: number;
+  secondsRemaining?: number;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
 }): boolean {
   const isBreak =
     timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
-  return !isBreak && timerState.elapsedSeconds >= 60;
+  if (isBreak) return false;
+  if (timerState.elapsedSeconds >= 60) return true;
+  return (
+    timerState.target?.type === "inventory" &&
+    timerState.elapsedSeconds > 0 &&
+    (timerState.secondsRemaining ?? 1) <= 1
+  );
 }
 
 /**
@@ -215,17 +292,20 @@ export function isFocusSessionRewardCapped(timerState: {
  * Deriva estados visuais e de controle do timer de foco em uma única função pura,
  * evitando duplicação entre Display, Widget lateral, PiP e Host.
  */
-export function getFocusTimerDerivedState(timerState: {
-  isActive: boolean;
-  isPaused: boolean;
-  mode: "POMO" | "STOPWATCH";
-  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
-  secondsRemaining: number;
-  elapsedSeconds: number;
-  totalDurationSeconds?: number;
-  completedCycles?: number;
-  target?: { type?: "activity" | "inventory" | "task" } | null;
-}): FocusTimerDerivedMeta {
+export function getFocusTimerDerivedState(
+  timerState: {
+    isActive: boolean;
+    isPaused: boolean;
+    mode: "POMO" | "STOPWATCH";
+    phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+    secondsRemaining: number;
+    elapsedSeconds: number;
+    totalDurationSeconds?: number;
+    completedCycles?: number;
+    target?: { type?: "activity" | "inventory" | "task" } | null;
+  },
+  prefs?: FocusBreakPreferencesInput,
+): FocusTimerDerivedMeta {
   const isRunning = timerState.isActive && !timerState.isPaused;
   const isBreak =
     timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
@@ -234,7 +314,10 @@ export function getFocusTimerDerivedState(timerState: {
   const canComplete = canCompleteFocusSession(timerState);
   const isPartialPomo = isPartialPomoSession(timerState);
   const isSessionRewardCapped = isFocusSessionRewardCapped(timerState);
-  const nextBreakMinutes = getNextFocusBreakMinutes(timerState.completedCycles);
+  const nextBreakMinutes = getNextFocusBreakMinutes(
+    timerState.completedCycles,
+    prefs,
+  );
 
   return {
     isRunning,
@@ -252,58 +335,29 @@ export function getFocusTimerDerivedState(timerState: {
  * Formata minutos em formato amigável (ex: 0m, 35m, 1h, 1h 30m).
  */
 export function formatFocusMinutes(minutes: number): string {
-  if (!minutes || minutes <= 0) return "0m";
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+  if (!Number.isFinite(minutes) || minutes <= 0) return "0m";
+  const totalMinutes = Math.round(minutes);
+  if (totalMinutes <= 0) return "0m";
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
 
   if (hours === 0) return `${remainingMinutes}m`;
   if (remainingMinutes === 0) return `${hours}h`;
   return `${hours}h ${remainingMinutes}m`;
 }
 
-export const formatDurationMinutes = formatFocusMinutes;
-
 /**
- * Formata data de término de registro de foco no formato legível respeitando `dateFormat` (ex: DD/MM às HH:MM ou MM/DD at HH:MM).
- */
-export function formatFocusDate(
-  dateStr?: string | null,
-  locale: AppLocale = "pt-BR",
-  dateFormat?: DateFormat,
-  timeFormat?: TimeFormat,
-  timeZone?: string | null,
-): string {
-  if (!dateStr) return "-";
-  try {
-    const hasExplicitTz = /([zZ]|[+-]\d{2}(?::?\d{2})?)$/.test(dateStr.trim());
-    const d = hasExplicitTz
-      ? parseServerDate(dateStr)
-      : parseLocalDate(dateStr);
-    if (!d) return dateStr;
-    const day = formatShortDate(dateStr, {
-      includeYear: false,
-      isLocal: !hasExplicitTz,
-      locale,
-      dateFormat,
-      timeZone,
-    });
-    const time = formatTimeDisplay(d, {
-      timeFormat,
-      locale,
-      ...(hasExplicitTz ? { timeZone } : {}),
-    });
-    const t = getUtilityTranslator(locale, "focus");
-    return t("atTime", { day, time });
-  } catch {
-    return dateStr;
-  }
-}
-
-/**
- * Formata uma duração em segundos no formato compacto "Xm Ys", "Xm" ou "Ys".
+ * Formata uma duração em segundos no formato compacto "Xh Ym", "Xh", "Xm Ys", "Xm" ou "Ys".
  */
 export function formatDurationMinSec(seconds: number): string {
-  const safeSeconds = Math.max(0, Math.floor(seconds));
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
+  const safeSeconds = Math.floor(seconds);
+  if (safeSeconds >= 3600) {
+    const h = Math.floor(safeSeconds / 3600);
+    const remMins = Math.floor((safeSeconds % 3600) / 60);
+    if (remMins === 0) return `${h}h`;
+    return `${h}h ${remMins}m`;
+  }
   const m = Math.floor(safeSeconds / 60);
   const s = safeSeconds % 60;
   if (m === 0) return `${s}s`;
@@ -341,8 +395,10 @@ export function formatFocusRecordDuration(
 ): string {
   if (startTime && endTime) {
     try {
-      const startMs = new Date(startTime).getTime();
-      const endMs = new Date(endTime).getTime();
+      const startDate = parseFocusTimestamp(startTime);
+      const endDate = parseFocusTimestamp(endTime);
+      const startMs = startDate?.getTime() ?? Number.NaN;
+      const endMs = endDate?.getTime() ?? Number.NaN;
       if (!Number.isNaN(startMs) && !Number.isNaN(endMs)) {
         const diffSecs = Math.max(0, Math.round((endMs - startMs) / 1000));
         if (diffSecs > 0 && diffSecs < 60) {
@@ -375,7 +431,12 @@ export function formatFocusRecordDuration(
 export function getItemRemainingMinutes(
   remainingSeconds?: number | null,
 ): number {
-  if (remainingSeconds !== undefined && remainingSeconds !== null) {
+  if (
+    remainingSeconds !== undefined &&
+    remainingSeconds !== null &&
+    Number.isFinite(remainingSeconds) &&
+    remainingSeconds > 1
+  ) {
     return Math.ceil(remainingSeconds / 60);
   }
   return 0;

@@ -2,7 +2,6 @@
 
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   invalidateFocusDomainTags,
@@ -11,7 +10,12 @@ import {
   invalidateTaskDomainTags,
 } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
-import { getServerAuthToken, serverApi } from "@/api/server";
+import { setAuthCookies } from "@/api/authCookies";
+import {
+  API_BASE_URL,
+  buildServerForwardHeaders,
+  serverApi,
+} from "@/api/server";
 import type { ExperienceMode } from "@/types/ui";
 import type {
   AccountResetScope,
@@ -20,8 +24,6 @@ import type {
   UserResponseDTO,
 } from "@/types/user";
 import { isValidIanaTimeZone, TIMEZONE_COOKIE } from "@/utils/date";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
  * Atualiza os dados de perfil do usuário (Nome, Data de Nascimento, Gênero, Modo de Experiência)
@@ -58,8 +60,12 @@ export async function updateUserProfileAction(
         includeUserAndTransactions: true,
       });
       invalidateFocusDomainTags({ records: true });
+      updateTag("social");
     } else {
       updateTag("user");
+      updateTag("showcase");
+      updateTag("social");
+      updateTag("retrospective");
     }
     return { success: true, data: updatedUser };
   } catch (err) {
@@ -88,8 +94,8 @@ export async function updateUserProfilePhotoAction(
 ): Promise<ActionState<UserResponseDTO | null>> {
   const t = await getTranslations("settings.userActions");
   try {
-    const token = await getServerAuthToken();
-    if (!token) {
+    const forwardHeaders = await buildServerForwardHeaders();
+    if (!forwardHeaders.has("Authorization")) {
       return {
         success: false,
         error: t("unauthorizedSession"),
@@ -98,9 +104,7 @@ export async function updateUserProfilePhotoAction(
 
     const res = await fetch(`${API_BASE_URL}/users/photo`, {
       method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: forwardHeaders,
       body: formData,
     });
 
@@ -134,7 +138,7 @@ export async function updateUserPasswordAction(
 ): Promise<ActionState<void>> {
   const t = await getTranslations("settings.userActions");
   try {
-    const { error } = await serverApi.PATCH("/users/password", {
+    const { data, error } = await serverApi.PATCH("/users/password", {
       body: payload,
     });
 
@@ -143,6 +147,15 @@ export async function updateUserPasswordAction(
         success: false,
         error: getErrorMessage(error, t("updatePasswordError")),
       };
+    }
+
+    // Rotaciona os cookies HTTP-only com a nova sessão emitida pelo backend
+    // (todas as demais sessões/dispositivos já foram revogados no servidor)
+    const rotated = data as
+      | { token?: string | null; refreshToken?: string | null }
+      | undefined;
+    if (rotated?.token && rotated?.refreshToken) {
+      await setAuthCookies(rotated.token, rotated.refreshToken);
     }
 
     return { success: true, data: undefined };
@@ -215,6 +228,7 @@ export async function deleteUserAccountAction(): Promise<ActionState<void>> {
     cookieStore.delete(TIMEZONE_COOKIE);
     cookieStore.delete("activeWorkspaceId");
     invalidateSessionCacheTags();
+    return { success: true, data: undefined };
   } catch (err) {
     console.error("[UserAction:DeleteAccount]", err);
     return {
@@ -222,6 +236,4 @@ export async function deleteUserAccountAction(): Promise<ActionState<void>> {
       error: t("deleteAccountNetworkError"),
     };
   }
-
-  redirect("/signIn");
 }

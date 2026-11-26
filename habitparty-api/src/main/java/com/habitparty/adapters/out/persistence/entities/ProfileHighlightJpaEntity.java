@@ -11,20 +11,24 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "profile_highlights")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProfileHighlightJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class ProfileHighlightJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "highlight_id")
   private UUID id;
 
@@ -34,6 +38,7 @@ public class ProfileHighlightJpaEntity {
   @Column(name = "display_order", nullable = false)
   private int displayOrder;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "highlight_type", nullable = false, length = 40)
   private HighlightType highlightType;
@@ -45,5 +50,5 @@ public class ProfileHighlightJpaEntity {
   private String highlightKey;
 
   @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt = LocalDateTime.now();
+  private LocalDateTime createdAt;
 }

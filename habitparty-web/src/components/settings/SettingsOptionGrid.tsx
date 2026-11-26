@@ -1,9 +1,7 @@
-"use client";
-
 import { Check, Loader2, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import type { SettingsOptionItem } from "@/types/settings";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 interface SettingsOptionGridProps<T extends string | boolean> {
   statusMessage?: ReactNode;
@@ -20,6 +18,10 @@ interface SettingsOptionGridProps<T extends string | boolean> {
   labelId?: string;
   title?: string;
   description?: string;
+  /** Aviso contextual exibido quando o grupo depende de outra opção (ex.: privacidade). */
+  dependencyHint?: ReactNode;
+  /** Atenua visualmente o grupo quando bloqueado por uma regra superior. */
+  dimmed?: boolean;
 }
 
 /**
@@ -37,6 +39,8 @@ export function SettingsOptionGrid<T extends string | boolean>({
   labelId,
   title,
   description,
+  dependencyHint,
+  dimmed = false,
 }: SettingsOptionGridProps<T>) {
   const isCompact = variant === "compact";
 
@@ -162,41 +166,63 @@ export function SettingsOptionGrid<T extends string | boolean>({
     );
   });
 
-  return (
-    <div
-      className={cn(
-        "@container flex flex-col",
-        isCompact ? "gap-2.5" : "gap-4",
-      )}
-    >
-      {title && (
-        <div>
-          <h3 id={labelId} className="text-body-s font-bold text-neutral-100">
-            {title}
-          </h3>
-          {description && (
-            <p className="text-tiny text-neutral-400 mt-0.5">{description}</p>
-          )}
-        </div>
-      )}
-
+  const statusAndGrid = (
+    <>
       {statusMessage && (
         <div className="rounded-xl border flex items-center gap-3 w-full sm:w-fit max-w-full transition-colors p-4 bg-amber-500/10 dark:bg-gold/10 border-amber-500/30 dark:border-gold/30 text-amber-800 dark:text-gold">
           <Sparkles
             size={20}
             className="shrink-0 text-amber-800 dark:text-gold"
+            aria-hidden="true"
           />
           <div className="text-body-s min-w-0 flex-1">{statusMessage}</div>
         </div>
       )}
 
-      {labelId ? (
-        <fieldset aria-labelledby={labelId} className={gridClassName}>
-          {optionButtons}
-        </fieldset>
-      ) : (
-        <div className={gridClassName}>{optionButtons}</div>
+      <div className={gridClassName}>{optionButtons}</div>
+    </>
+  );
+
+  if (title || labelId) {
+    return (
+      <fieldset
+        className={cn(
+          "@container flex flex-col border-0 p-0 m-0 min-w-0 transition-opacity",
+          isCompact ? "gap-2.5" : "gap-4",
+          dimmed && "opacity-60",
+        )}
+      >
+        {title && (
+          <legend
+            id={labelId}
+            className="text-body-s font-bold text-neutral-100 p-0 float-none w-full"
+          >
+            {title}
+          </legend>
+        )}
+        {description && (
+          <p className="text-tiny text-neutral-400 -mt-1.5">{description}</p>
+        )}
+        {dependencyHint && (
+          <p className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-1.5">
+            {dependencyHint}
+          </p>
+        )}
+
+        {statusAndGrid}
+      </fieldset>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "@container flex flex-col",
+        isCompact ? "gap-2.5" : "gap-4",
+        dimmed && "opacity-60",
       )}
+    >
+      {statusAndGrid}
     </div>
   );
 }

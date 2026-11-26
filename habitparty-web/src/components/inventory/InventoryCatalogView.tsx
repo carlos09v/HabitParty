@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   DragEndEvent,
   SensorDescriptor,
@@ -7,16 +5,15 @@ import type {
 } from "@dnd-kit/core";
 import { Backpack, Package, SearchX, Store } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type MouseEvent, useMemo } from "react";
+import { type MouseEvent, useCallback, useMemo } from "react";
 import {
   InventoryCard,
   InventoryItemRow,
 } from "@/components/inventory/InventoryCard";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
 import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
-import { ItemRowHeader } from "@/components/ui/ItemRow";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { InventoryItem } from "@/types/inventory";
 import type { ViewMode } from "@/types/ui";
 
@@ -24,8 +21,11 @@ interface InventoryCatalogViewProps {
   filteredItems: InventoryItem[];
   totalItemsCount: number;
   viewMode: ViewMode;
+  isGamified: boolean;
+  isReorderDisabled?: boolean;
   usingItemIds?: Set<string>;
   sendingItemIds?: Set<string>;
+  returningItemIds?: Set<string>;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
   onUse: (item: InventoryItem) => void;
@@ -39,8 +39,11 @@ export function InventoryCatalogView({
   filteredItems,
   totalItemsCount,
   viewMode,
+  isGamified,
+  isReorderDisabled = false,
   usingItemIds,
   sendingItemIds,
+  returningItemIds,
   sensors,
   onDragEnd,
   onUse,
@@ -50,7 +53,14 @@ export function InventoryCatalogView({
   onClearFilters,
 }: InventoryCatalogViewProps) {
   const t = useTranslations("inventory.container");
-  const { isGamified } = useExperienceMode();
+  const router = useRouter();
+
+  const handleOpenFocus = useCallback(
+    (itemId: string) => {
+      router.push(`/focus?from=inventory&itemId=${itemId}`);
+    },
+    [router],
+  );
 
   const itemIds = useMemo(
     () => filteredItems.map((i) => i.id),
@@ -61,7 +71,6 @@ export function InventoryCatalogView({
     const isInventoryEmpty = totalItemsCount === 0;
     return (
       <div className="flex flex-col gap-2.5 w-full pb-8">
-        {viewMode === "list" && <ItemRowHeader mode="inventory" />}
         <CatalogEmptyState
           icon={isInventoryEmpty ? (isGamified ? Backpack : Package) : SearchX}
           title={
@@ -102,6 +111,8 @@ export function InventoryCatalogView({
     );
   }
 
+  const effectiveDragDisabled = isReorderDisabled || filteredItems.length <= 1;
+
   return (
     <CatalogGridListShell
       dndContextId="inventory-dnd-context"
@@ -109,34 +120,33 @@ export function InventoryCatalogView({
       viewMode={viewMode}
       headerMode="inventory"
       listAriaLabel={t("listAriaLabel")}
+      disableDnd={effectiveDragDisabled}
       sensors={sensors}
       onDragEnd={onDragEnd}
     >
       {filteredItems.map((item) => {
-        const isUsing = Boolean(usingItemIds?.has(item.id));
-        const isSendingToFocus = Boolean(sendingItemIds?.has(item.id));
-        return viewMode === "card" ? (
-          <InventoryCard
-            key={item.id}
-            item={item}
-            onUse={onUse}
-            onSendToFocus={onSendToFocus}
-            onOpenMysteryBox={onOpenMysteryBox}
-            onContextMenu={onContextMenu}
-            isUsing={isUsing}
-            isSendingToFocus={isSendingToFocus}
-          />
+        const stableKey = item.stackKey ?? item.id;
+        const isUsing = Boolean(usingItemIds?.has(stableKey));
+        const isSendingToFocus = Boolean(sendingItemIds?.has(stableKey));
+        const isReturning = Boolean(returningItemIds?.has(stableKey));
+        const sharedProps = {
+          item,
+          isGamified,
+          isReorderDisabled: effectiveDragDisabled,
+          onOpenFocus: handleOpenFocus,
+          onUse,
+          onSendToFocus,
+          onOpenMysteryBox,
+          onContextMenu,
+          isUsing,
+          isSendingToFocus,
+          isReturning,
+        };
+
+        return viewMode !== "list" ? (
+          <InventoryCard key={stableKey} {...sharedProps} />
         ) : (
-          <InventoryItemRow
-            key={item.id}
-            item={item}
-            onUse={onUse}
-            onSendToFocus={onSendToFocus}
-            onOpenMysteryBox={onOpenMysteryBox}
-            onContextMenu={onContextMenu}
-            isUsing={isUsing}
-            isSendingToFocus={isSendingToFocus}
-          />
+          <InventoryItemRow key={stableKey} {...sharedProps} />
         );
       })}
     </CatalogGridListShell>

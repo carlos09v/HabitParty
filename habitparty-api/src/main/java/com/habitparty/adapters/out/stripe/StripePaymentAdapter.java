@@ -9,11 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.application.ports.PaymentGatewayPort;
 import com.habitparty.application.ports.PaymentWebhookEvent;
+import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.PaymentMethodType;
 import com.habitparty.core.domain.enums.PlanType;
@@ -41,6 +44,16 @@ import com.stripe.param.checkout.SessionCreateParams;
 public class StripePaymentAdapter implements PaymentGatewayPort {
   private static final Logger log = LoggerFactory.getLogger(StripePaymentAdapter.class);
   private final ConcurrentHashMap<PlanType, String> cachedProductIds = new ConcurrentHashMap<>();
+  private final UserRepository userRepository;
+
+  public StripePaymentAdapter() {
+    this(null);
+  }
+
+  @Autowired
+  public StripePaymentAdapter(@Nullable UserRepository userRepository) {
+    this.userRepository = userRepository;
+  }
 
   @Value("${stripe.prices.monthly:}")
   private String monthlyPriceId;
@@ -90,7 +103,12 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
           if (existing != null && (existing.getDeleted() == null || !existing.getDeleted())) {
             return existing.getId();
           }
-        } catch (StripeException ignored) {
+        } catch (StripeException e) {
+          if (!isMissingCustomerError(e)) {
+            throw e;
+          }
+          log.warn("Cliente Stripe {} ausente no gateway; recriando para o usuário {}.",
+              user.getStripeCustomerId(), user.getId());
         }
       }
 
@@ -103,15 +121,12 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
 
   private String searchOrCreateStripeCustomer(User user) throws StripeException {
     if (user.getEmail() != null && !user.getEmail().isBlank()) {
-      try {
-        CustomerSearchResult searchResult = Customer.search(
-            CustomerSearchParams.builder()
-                .setQuery("email:'" + escapeStripeSearchValue(user.getEmail().trim()) + "'")
-                .build());
-        if (searchResult.getData() != null && !searchResult.getData().isEmpty()) {
-          return searchResult.getData().get(0).getId();
-        }
-      } catch (StripeException ignored) {
+      CustomerSearchResult searchResult = Customer.search(
+          CustomerSearchParams.builder()
+              .setQuery("email:'" + escapeStripeSearchValue(user.getEmail().trim()) + "'")
+              .build());
+      if (searchResult.getData() != null && !searchResult.getData().isEmpty()) {
+        return searchResult.getData().get(0).getId();
       }
     }
 
@@ -124,6 +139,21 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
 
     Customer customer = Customer.create(params);
     return customer.getId();
+  }
+
+  private void persistRecoveredCustomerId(User user, String freshCustomerId) {
+    if (user == null || freshCustomerId == null || freshCustomerId.isBlank()) {
+      return;
+    }
+    user.setStripeCustomerId(freshCustomerId);
+    if (userRepository != null) {
+      try {
+        userRepository.save(user);
+      } catch (Exception ex) {
+        log.warn("Não foi possível persistir novo stripeCustomerId {} para usuário {}: {}",
+            freshCustomerId, user.getId(), ex.getMessage());
+      }
+    }
   }
 
   private static String escapeStripeSearchValue(String value) {
@@ -354,6 +384,7 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
       } catch (StripeException e) {
         if (isMissingCustomerError(e)) {
           String freshCustomerId = searchOrCreateStripeCustomer(user);
+          persistRecoveredCustomerId(user, freshCustomerId);
           sessionBuilder.setCustomer(freshCustomerId);
           return Session.create(sessionBuilder.build()).getUrl();
         }
@@ -445,6 +476,7 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
       } catch (StripeException e) {
         if (isMissingCustomerError(e)) {
           String freshCustomerId = searchOrCreateStripeCustomer(user);
+          persistRecoveredCustomerId(user, freshCustomerId);
           com.stripe.param.billingportal.SessionCreateParams retryParams =
               com.stripe.param.billingportal.SessionCreateParams.builder()
                   .setCustomer(freshCustomerId)
@@ -481,6 +513,37 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
   }
 
   @Override
+  public void cancelSubscriptionImmediately(String subscriptionId) {
+    if (subscriptionId == null || subscriptionId.isBlank()) {
+      return;
+    }
+    try {
+      Subscription subscription = Subscription.retrieve(subscriptionId);
+      if (subscription == null) {
+        return;
+      }
+      String status = subscription.getStatus();
+      if ("canceled".equalsIgnoreCase(status) || "incomplete_expired".equalsIgnoreCase(status)) {
+        log.info("Assinatura Stripe {} já está encerrada (status={}).", subscriptionId, status);
+        return;
+      }
+      subscription.cancel();
+      log.info("Assinatura Stripe {} cancelada imediatamente durante exclusão de conta.", subscriptionId);
+    } catch (InvalidRequestException e) {
+      if ("resource_missing".equals(e.getCode())
+          || (e.getMessage() != null && e.getMessage().toLowerCase().contains("no such subscription"))) {
+        log.info("Assinatura Stripe {} não encontrada no gateway (já removida ou inexistente).", subscriptionId);
+        return;
+      }
+      throw new PaymentProcessingException(
+          "Falha ao cancelar assinatura recorrente no Stripe antes de excluir a conta: " + e.getMessage(), e);
+    } catch (StripeException e) {
+      throw new PaymentProcessingException(
+          "Falha ao cancelar assinatura recorrente no Stripe antes de excluir a conta: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public PaymentWebhookEvent parseWebhookEvent(String payload, String signatureHeader) {
     if (signatureHeader == null || signatureHeader.isBlank()) {
       throw new PaymentProcessingException("Cabeçalho Stripe-Signature ausente na requisição de webhook");
@@ -499,28 +562,56 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
       throw new PaymentProcessingException("Erro ao validar webhook Stripe: " + e.getMessage(), e);
     }
 
+    String eventType = event.getType();
+    boolean isHandledBillingEvent = "checkout.session.completed".equals(eventType)
+        || "checkout.session.async_payment_succeeded".equals(eventType)
+        || "customer.subscription.created".equals(eventType)
+        || "customer.subscription.updated".equals(eventType)
+        || "customer.subscription.deleted".equals(eventType);
+
+    if (!isHandledBillingEvent) {
+      return new PaymentWebhookEvent.IgnoredEvent(event.getId(), eventType);
+    }
+
     EventDataObjectDeserializer deserializer = event.getDataObjectDeserializer();
     StripeObject stripeObject = deserializer.getObject().orElseGet(() -> {
       try {
         return deserializer.deserializeUnsafe();
       } catch (Exception e) {
-        log.warn("Não foi possível desserializar o objeto do evento de forma segura: {}", e.getMessage());
+        log.error("Falha ao desserializar evento crítico de billing {} ({}): {}",
+            event.getId(), eventType, e.getMessage());
         return null;
       }
     });
 
     if (stripeObject == null) {
-      return new PaymentWebhookEvent.IgnoredEvent(event.getId(), event.getType());
+      throw new PaymentProcessingException(
+          "Não foi possível desserializar o payload do evento de pagamento " + eventType + ".");
     }
 
-    return switch (event.getType()) {
-      case "checkout.session.completed", "checkout.session.async_payment_succeeded" ->
-          mapPaidCheckoutSessionOrIgnore(event.getId(), event.getType(), (Session) stripeObject);
-      case "customer.subscription.created", "customer.subscription.updated" ->
-          mapSubscriptionUpdated(event.getId(), (Subscription) stripeObject);
-      case "customer.subscription.deleted" ->
-          mapSubscriptionDeleted(event.getId(), (Subscription) stripeObject);
-      default -> new PaymentWebhookEvent.IgnoredEvent(event.getId(), event.getType());
+    return switch (eventType) {
+      case "checkout.session.completed", "checkout.session.async_payment_succeeded" -> {
+        if (!(stripeObject instanceof Session session)) {
+          throw new PaymentProcessingException(
+              "Objeto inesperado no evento " + eventType + ": " + stripeObject.getClass().getSimpleName());
+        }
+        yield mapPaidCheckoutSessionOrIgnore(event.getId(), eventType, session);
+      }
+      case "customer.subscription.created", "customer.subscription.updated" -> {
+        if (!(stripeObject instanceof Subscription subscription)) {
+          throw new PaymentProcessingException(
+              "Objeto inesperado no evento " + eventType + ": " + stripeObject.getClass().getSimpleName());
+        }
+        yield mapSubscriptionUpdated(event.getId(), subscription);
+      }
+      case "customer.subscription.deleted" -> {
+        if (!(stripeObject instanceof Subscription subscription)) {
+          throw new PaymentProcessingException(
+              "Objeto inesperado no evento " + eventType + ": " + stripeObject.getClass().getSimpleName());
+        }
+        yield mapSubscriptionDeleted(event.getId(), subscription);
+      }
+      default -> new PaymentWebhookEvent.IgnoredEvent(event.getId(), eventType);
     };
   }
 

@@ -1,9 +1,18 @@
 "use client";
 
 import { Check, Copy, RefreshCw } from "lucide-react";
-import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
+import { type ReactNode, useState } from "react";
 import { useFriendCodeActions } from "@/hooks/useFriendCodeActions";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
+
+const ConfirmationModal = dynamic(
+  () =>
+    import("@/components/ui/ConfirmationModal").then(
+      (mod) => mod.ConfirmationModal,
+    ),
+  { ssr: false },
+);
 
 interface FriendCodeCardProps {
   friendCode: string;
@@ -12,6 +21,12 @@ interface FriendCodeCardProps {
   copyLabel: string;
   regenerateLabel: string;
   regeneratingLabel?: string;
+  confirmRegenerate?: {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    cancelLabel: string;
+  };
   messages: {
     copied: string;
     copyError: string;
@@ -36,6 +51,7 @@ export function FriendCodeCard({
   copyLabel,
   regenerateLabel,
   regeneratingLabel,
+  confirmRegenerate,
   messages,
   onRegenerated,
   leadingIcon,
@@ -43,12 +59,21 @@ export function FriendCodeCard({
   extraActions,
   variant = "embedded",
 }: FriendCodeCardProps) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { copiedCode, isRegenerating, handleCopyCode, handleRegenerateCode } =
     useFriendCodeActions({
       friendCode,
       messages,
       onRegenerated,
     });
+
+  const handleRegenerateClick = () => {
+    if (confirmRegenerate) {
+      setIsConfirmOpen(true);
+    } else {
+      handleRegenerateCode();
+    }
+  };
 
   const isCard = variant === "card";
 
@@ -123,7 +148,7 @@ export function FriendCodeCard({
 
         <button
           type="button"
-          onClick={handleRegenerateCode}
+          onClick={handleRegenerateClick}
           disabled={isRegenerating}
           className={cn(
             "inline-flex items-center gap-1.5 text-xs font-bold border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-gold transition-colors cursor-pointer disabled:opacity-60",
@@ -144,6 +169,26 @@ export function FriendCodeCard({
 
         {extraActions}
       </div>
+
+      {confirmRegenerate && isConfirmOpen && (
+        <ConfirmationModal
+          isOpen={isConfirmOpen}
+          onClose={() => {
+            if (!isRegenerating) {
+              setIsConfirmOpen(false);
+            }
+          }}
+          onConfirm={() => {
+            handleRegenerateCode(() => setIsConfirmOpen(false));
+          }}
+          title={confirmRegenerate.title}
+          description={confirmRegenerate.description}
+          confirmText={confirmRegenerate.confirmLabel}
+          cancelText={confirmRegenerate.cancelLabel}
+          variant="warning"
+          isLoading={isRegenerating}
+        />
+      )}
     </section>
   );
 }

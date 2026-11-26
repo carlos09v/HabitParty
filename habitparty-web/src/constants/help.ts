@@ -1,48 +1,7 @@
 import { HELP_FAQS_EN } from "@/constants/help.en";
-import { HELP_TABLES, HELP_TABLES_EN } from "@/constants/helpTables";
+import { getHelpTablesByLocale } from "@/constants/helpTables";
 import type { AppLocale } from "@/i18n/config";
-import type {
-  HelpCategory,
-  HelpFaqItem,
-  HelpProductivityStep,
-  HelpTableEntry,
-} from "@/types/help";
-
-export { HELP_TABLES };
-
-export const HELP_PRODUCTIVITY_STEPS: readonly HelpProductivityStep[] = [
-  {
-    step: 1,
-    badgeClassName:
-      "bg-primary/15 dark:bg-primary/20 border-primary/30 dark:border-primary/40 text-primary dark:text-primary-light",
-  },
-  {
-    step: 2,
-    badgeClassName:
-      "bg-amber-500/15 dark:bg-gold/20 border-amber-500/35 dark:border-gold/40 text-amber-700 dark:text-gold",
-  },
-  {
-    step: 3,
-    badgeClassName:
-      "bg-magenta/15 dark:bg-magenta/20 border-magenta/35 dark:border-magenta/40 text-magenta dark:text-fuchsia-300",
-  },
-  {
-    step: 4,
-    badgeClassName:
-      "bg-emerald-500/15 dark:bg-success-500/20 border-emerald-500/35 dark:border-success-500/40 text-emerald-700 dark:text-success-500",
-  },
-] as const;
-
-export const HELP_CATEGORY_IDS: readonly HelpCategory[] = [
-  "ALL",
-  "OVERVIEW",
-  "TASKS",
-  "ECONOMY",
-  "REWARDS",
-  "INVENTORY",
-  "FOCUS",
-  "LEVELS",
-] as const;
+import type { HelpFaqItem, HelpTableEntry } from "@/types/help";
 
 export const HELP_FAQS: HelpFaqItem[] = [
   {
@@ -494,9 +453,9 @@ export const HELP_FAQS: HelpFaqItem[] = [
     id: "friends-privacy-network",
     category: "OVERVIEW",
     question:
-      "Como funcionam a Rede de Amigos (/friends), o Código HP-XXXXXX e a Privacidade?",
+      "Como funcionam a Rede de Amigos (/profile?tab=friends), o Código HP-XXXXXX e a Privacidade?",
     answer:
-      "Na tela Amigos (/friends), você pode se conectar com amigos mantendo total controle sobre o que compartilha e sem expor suas listas privadas de tarefas ou financeiro:",
+      "Na aba Amigos do seu Perfil (/profile?tab=friends), você pode se conectar com amigos mantendo total controle sobre o que compartilha e sem expor suas listas privadas de tarefas ou financeiro:",
     bullets: [
       "Busca & Código Único: Encontre pessoas por @username, nome ou pelo Código de Amigo exclusivo (HP-XXXXXX). Você também define nas Configurações quem pode enviar solicitações (Todos, Apenas por Código de Amigo ou Ninguém).",
       "Alertas Sociais em Tempo Real: Pedidos de amizade recebidos, aceites e marcos de amigos aparecem no sino de notificações da Sidebar.",
@@ -513,7 +472,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "notificações",
     ],
     highlightBadge: "Novo • 1.4",
-    actionLink: { label: "Abrir Rede de Amigos", href: "/friends" },
+    actionLink: { label: "Abrir Rede de Amigos", href: "/profile?tab=friends" },
   },
   {
     id: "retrospective-and-customization",
@@ -551,5 +510,5 @@ export function getHelpFaqs(locale: AppLocale): HelpFaqItem[] {
 export function getHelpTables(
   locale: AppLocale,
 ): Record<string, HelpTableEntry> {
-  return locale === "en" ? HELP_TABLES_EN : HELP_TABLES;
+  return getHelpTablesByLocale(locale);
 }

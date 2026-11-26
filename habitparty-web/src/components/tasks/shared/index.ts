@@ -1,4 +1,8 @@
 export {
+  BoardEmptyState,
+  type BoardEmptyStateVariant,
+} from "./BoardEmptyState";
+export {
   ChecklistItemRow,
   type ChecklistItemRowProps,
   useChecklistInlineEdit,
@@ -7,11 +11,19 @@ export {
   ChecklistRewardCounter,
   ChecklistRewardInfoTooltip,
   getChecklistRewardStats,
+  RewardedStepToggleButton,
   useChecklistRewardRowHelpers,
 } from "./ChecklistRewardInfoTooltip";
-export { RichTextDescriptionEditor } from "./RichTextDescriptionEditor";
+export { ColumnCompletedSection } from "./ColumnCompletedSection";
+export { FilterPopoverShell } from "./FilterPopoverShell";
+export { HierarchicalTagRow } from "./HierarchicalTagRow";
+export { LoadArchivedTasksButton } from "./LoadArchivedTasksButton";
 export { TaskActionControl } from "./TaskActionControl";
 export { TaskEventBadge } from "./TaskEventBadge";
+export {
+  TaskFocusActionButton,
+  type TaskFocusActionButtonProps,
+} from "./TaskFocusActionButton";
 export {
   TaskFocusTimeBadge,
   TaskHardcoreBadge,
@@ -35,4 +47,5 @@ export {
   buildTaskContextMenuItems,
   type ColumnMoveWorkspaceOption,
 } from "./taskMenuBuilders";
+export { useRoutineColumnTasks } from "./useRoutineColumnTasks";
 export { WeekDaysIndicator } from "./WeekDaysIndicator";

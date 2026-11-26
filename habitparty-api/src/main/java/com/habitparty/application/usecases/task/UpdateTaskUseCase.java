@@ -55,7 +55,7 @@ public class UpdateTaskUseCase {
     this(port, userPort, emailLogPort, Clock.systemDefaultZone());
   }
 
-  @Autowired(required = false)
+  @Autowired
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }
@@ -96,72 +96,36 @@ public class UpdateTaskUseCase {
     );
     List<ChecklistItem> downgradedChecklistItems = task.clearRewardedChecklistItemsIfNotHard();
 
-    // 3. Atualiza os campos específicos usando Pattern Matching
-    if (task instanceof Habit h) {
-      h.updateHabitDetails(command.habitType(), command.resetCounter(), command.importanceType());
-    } 
-    else if (task instanceof Daily d) {
-      int safeRepeat = command.repeatEvery() != null ? command.repeatEvery() : 1;
-      d.updateDailyDetails(command.startDate(), command.repeatType(), safeRepeat, 
-                           command.daysOfWeek(), command.monthlyOption(), today);
-    } 
-    else if (task instanceof Todo t) {
-      if (Boolean.TRUE.equals(command.sendEmailReminder())) {
-        boolean wasAlreadyActive = t.isSendEmailReminder() && !t.isEmailReminderSent();
-        if (!wasAlreadyActive) {
-          if (loadedUser == null) {
-            throw new ResourceNotFoundException("Usuário não encontrado.");
+    // 3. Atualiza os campos específicos usando Pattern Matching exaustivo (sealed Task)
+    switch (task) {
+      case Habit h -> h.updateHabitDetails(command.habitType(), command.resetCounter(), command.importanceType());
+      case Daily d -> {
+        int safeRepeat = command.repeatEvery() != null ? command.repeatEvery() : 1;
+        d.updateDailyDetails(command.startDate(), command.repeatType(), safeRepeat,
+            command.daysOfWeek(), command.monthlyOption(), today);
+      }
+      case Todo t -> {
+        if (Boolean.TRUE.equals(command.sendEmailReminder())) {
+          boolean wasAlreadyActive = t.isSendEmailReminder() && !t.isEmailReminderSent();
+          if (!wasAlreadyActive) {
+            TodoSchedulePolicy.validateEmailReminderQuotas(
+                loadedUser, userIdLogado, today, userZone, port, emailLogPort);
           }
-
-          loadedUser.validateEmailVerified("ativar lembretes por e-mail");
-
-          boolean isPremium = loadedUser.isPremium();
-
-          long activeReminders = port.countActiveEmailRemindersByUserId(userIdLogado);
-          com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
-
-          LocalDateTime startOfMonth = today.withDayOfMonth(1)
-              .atStartOfDay(userZone)
-              .withZoneSameInstant(ZoneId.systemDefault())
-              .toLocalDateTime();
-          long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
-              userIdLogado,
-              EmailType.TASK_REMINDER,
-              EmailDispatchStatus.SENT,
-              startOfMonth
-          );
-          com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateMonthlyDispatchesQuota(isPremium, sentThisMonth);
         }
-      }
 
-      boolean isEventSchedule = Boolean.TRUE.equals(command.isAllDay())
-          || command.startTime() != null
-          || command.dueEndTime() != null;
-      if (isEventSchedule) {
-        if (loadedUser == null) {
-          throw new ResourceNotFoundException("Usuário não encontrado.");
-        }
-        if (!loadedUser.isPremium()) {
-          throw new LimitExceededException(
-              "Agendar afazeres como Evento (com horário de início/término ou dia inteiro) é um recurso exclusivo dos planos Premium."
-          );
-        }
-      }
+        boolean isEventSchedule = TodoSchedulePolicy.isEventSchedule(
+            command.isAllDay(), command.startTime(), command.dueEndTime());
+        TodoSchedulePolicy.assertEventScheduleAllowed(loadedUser, isEventSchedule);
 
-      boolean hasAnyTimeOrEvent = command.dueTime() != null || isEventSchedule;
-      LocalDate effectiveDueDate = command.dueDate() != null
-          ? command.dueDate()
-          : (hasAnyTimeOrEvent ? today : null);
+        LocalDate effectiveDueDate = TodoSchedulePolicy.resolveEffectiveDueDate(
+            command.dueDate(), command.dueTime(), isEventSchedule, today);
 
-      LocalDateTime newReminderAt = Todo.calculateReminderTime(
-          effectiveDueDate, command.reminderType(), command.customReminderAt()
-      );
-      t.updateTodoDetails(effectiveDueDate, command.dueTime(), command.reminderType(), newReminderAt, command.sendEmailReminder(), today);
-      if (Boolean.TRUE.equals(command.isAllDay()) || command.startTime() != null) {
-        t.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay(), today);
-      } else {
-        t.defineEventSchedule(null, null, false, today);
-        t.defineDueEndTime(command.dueEndTime());
+        LocalDateTime newReminderAt = Todo.calculateReminderTime(
+            effectiveDueDate, command.reminderType(), command.customReminderAt());
+        t.updateTodoDetails(
+            effectiveDueDate, command.dueTime(), command.reminderType(), newReminderAt, command.sendEmailReminder(), today);
+        TodoSchedulePolicy.applyEventSchedule(
+            t, command.startTime(), command.dueEndTime(), command.isAllDay(), today, true);
       }
     }
 

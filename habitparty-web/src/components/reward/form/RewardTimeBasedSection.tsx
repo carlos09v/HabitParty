@@ -19,9 +19,8 @@ import type {
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
-  adjustSuggestedPriceForCategory,
-  calculateSuggestedCouponPrice,
   type RewardPriceAnalysis,
+  resolveSuggestedPackagePrice,
 } from "@/utils/rewardEconomy";
 import { toPackageMessageKey } from "@/utils/rewardMapper";
 
@@ -32,6 +31,7 @@ interface RewardTimeBasedSectionProps {
   type: RewardType;
   category: RewardCategory;
   createMultiplePackages: boolean;
+  canCreateMultiplePackages?: boolean;
   onCreateMultiplePackagesChange: (checked: boolean) => void;
   selectedBatchPackages: PackageLevel[];
   onToggleBatchPackage: (pkgId: PackageLevel) => void;
@@ -56,6 +56,7 @@ export function RewardTimeBasedSection({
   type,
   category,
   createMultiplePackages,
+  canCreateMultiplePackages = true,
   onCreateMultiplePackagesChange,
   selectedBatchPackages,
   onToggleBatchPackage,
@@ -100,7 +101,7 @@ export function RewardTimeBasedSection({
             id="rewardMultiPackageToggle"
             checked={createMultiplePackages}
             onCheckedChange={onCreateMultiplePackagesChange}
-            disabled={isPending}
+            disabled={isPending || !canCreateMultiplePackages}
             aria-label={t("multiPackageToggleLabel")}
           />
         </div>
@@ -154,18 +155,13 @@ export function RewardTimeBasedSection({
                   onSelectPackageLevel(pkg.id);
                   if (pkg.suggestedMinutes) {
                     onSetBaseDurationMinutes(String(pkg.suggestedMinutes));
+                  }
+                  if (
+                    pkg.suggestedMinutes ||
+                    typeof pkg.suggestedPrice === "number"
+                  ) {
                     onApplySuggestedPrice(
-                      calculateSuggestedCouponPrice(
-                        pkg.suggestedMinutes,
-                        category,
-                      ),
-                    );
-                  } else if (typeof pkg.suggestedPrice === "number") {
-                    onApplySuggestedPrice(
-                      adjustSuggestedPriceForCategory(
-                        pkg.suggestedPrice,
-                        category,
-                      ),
+                      resolveSuggestedPackagePrice(pkg, category),
                     );
                   }
                 }}
@@ -191,17 +187,7 @@ export function RewardTimeBasedSection({
                   {tOptions(`couponPackages.${pkgKey}`)}
                   {createMultiplePackages &&
                   typeof pkg.suggestedPrice === "number"
-                    ? ` • ${
-                        pkg.suggestedMinutes
-                          ? calculateSuggestedCouponPrice(
-                              pkg.suggestedMinutes,
-                              category,
-                            )
-                          : adjustSuggestedPriceForCategory(
-                              pkg.suggestedPrice,
-                              category,
-                            )
-                      }`
+                    ? ` • ${resolveSuggestedPackagePrice(pkg, category)}`
                     : ""}
                 </span>
               </button>
@@ -231,15 +217,7 @@ export function RewardTimeBasedSection({
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {visibleBatchOptions.map((pkg) => {
-                  const chipPrice = pkg.suggestedMinutes
-                    ? calculateSuggestedCouponPrice(
-                        pkg.suggestedMinutes,
-                        category,
-                      )
-                    : adjustSuggestedPriceForCategory(
-                        pkg.suggestedPrice ?? 8,
-                        category,
-                      );
+                  const chipPrice = resolveSuggestedPackagePrice(pkg, category);
                   return (
                     <span
                       key={pkg.id}
@@ -286,8 +264,11 @@ export function RewardTimeBasedSection({
                 value={baseDurationMinutes}
                 onChange={(e) => onBaseDurationChange(e.target.value)}
                 onBlur={() => {
-                  if (!baseDurationMinutes || Number(baseDurationMinutes) < 5) {
+                  const parsed = Number.parseInt(baseDurationMinutes, 10);
+                  if (!Number.isFinite(parsed) || parsed < 5) {
                     onBaseDurationChange("5");
+                  } else if (parsed > 1440) {
+                    onBaseDurationChange("1440");
                   }
                 }}
                 onStep={(delta) => {

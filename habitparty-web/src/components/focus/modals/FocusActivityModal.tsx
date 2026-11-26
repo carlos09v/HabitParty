@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Check,
-  Clock,
-  Hourglass,
-  Info,
-  Loader2,
-  Target,
-  Timer,
-  X,
-} from "lucide-react";
+import { Clock, Hourglass, Info, Target, Timer } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
@@ -17,6 +8,7 @@ import {
   createFocusActivity,
   updateFocusActivity,
 } from "@/actions/focusActions";
+import { FocusModalFooter } from "@/components/focus/modals/FocusModalFooter";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
@@ -24,8 +16,10 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Input } from "@/components/ui/Input";
 import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { DEFAULT_POMO_MINUTES, FOCUS_ICONS } from "@/constants/focus";
+import { FOCUS_ICONS } from "@/constants/focusIcons";
+import { DEFAULT_POMO_MINUTES } from "@/constants/focusRules";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
+import { useUserStore } from "@/store/userStore";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import { cn } from "@/utils";
 import { suggestFocusIconFromName } from "@/utils/iconSuggestion";
@@ -47,6 +41,7 @@ export function FocusActivityModal({
   onSuccess,
 }: FocusActivityModalProps) {
   const t = useTranslations("focus.activityModal");
+  const isPremium = useUserStore((s) => s.is_Premium);
   const isEditing = Boolean(activityToEdit);
   const durationHoursHintId = useId();
 
@@ -56,23 +51,31 @@ export function FocusActivityModal({
   const [recordType, setRecordType] = useState<FocusRecordType>("POMO");
   const [targetTimeMinutes, setTargetTimeMinutes] =
     useState(DEFAULT_POMO_MINUTES);
+  const [targetMinutesDraft, setTargetMinutesDraft] = useState(
+    String(DEFAULT_POMO_MINUTES),
+  );
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setHasAttemptedSubmit(false);
       if (activityToEdit) {
+        const initMins =
+          activityToEdit.targetTimeMinutes || DEFAULT_POMO_MINUTES;
         setName(activityToEdit.name);
         setIcon(activityToEdit.icon || "book");
         setRecordType(activityToEdit.recordType || "POMO");
-        setTargetTimeMinutes(
-          activityToEdit.targetTimeMinutes || DEFAULT_POMO_MINUTES,
-        );
-        setHasManuallyChangedIcon(false);
+        setTargetTimeMinutes(initMins);
+        setTargetMinutesDraft(String(initMins));
+        // Preserva o ícone existente ao renomear uma atividade já salva.
+        setHasManuallyChangedIcon(true);
       } else {
         setName("");
         setIcon("book");
         setRecordType("POMO");
         setTargetTimeMinutes(DEFAULT_POMO_MINUTES);
+        setTargetMinutesDraft(String(DEFAULT_POMO_MINUTES));
         setHasManuallyChangedIcon(false);
       }
     }
@@ -83,19 +86,35 @@ export function FocusActivityModal({
     setName(newName);
 
     if (!hasManuallyChangedIcon) {
-      const suggested = suggestFocusIconFromName(newName);
+      const suggested = suggestFocusIconFromName(newName, isPremium);
       if (suggested) {
         setIcon(suggested);
       }
     }
   };
 
+  const clampTargetMinutes = (raw: string): number => {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isNaN(parsed)) return DEFAULT_POMO_MINUTES;
+    return Math.min(180, Math.max(5, parsed));
+  };
+
+  const nameError =
+    hasAttemptedSubmit && !name.trim() ? t("nameRequired") : undefined;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error(t("nameRequired"));
+      setHasAttemptedSubmit(true);
+      window.requestAnimationFrame(() => {
+        document.getElementById("activity-name")?.focus();
+      });
       return;
     }
+
+    const effectiveMinutes = clampTargetMinutes(targetMinutesDraft);
+    setTargetTimeMinutes(effectiveMinutes);
+    setTargetMinutesDraft(String(effectiveMinutes));
 
     setIsSubmitting(true);
     try {
@@ -104,8 +123,7 @@ export function FocusActivityModal({
           name: name.trim(),
           icon,
           recordType,
-          pomoTimeMinutes:
-            recordType === "POMO" ? targetTimeMinutes : undefined,
+          pomoTimeMinutes: recordType === "POMO" ? effectiveMinutes : undefined,
         });
 
         if (res.success) {
@@ -114,8 +132,7 @@ export function FocusActivityModal({
             name: name.trim(),
             icon,
             recordType,
-            targetMinutes:
-              recordType === "POMO" ? targetTimeMinutes : undefined,
+            targetMinutes: recordType === "POMO" ? effectiveMinutes : undefined,
           });
           toast.success(t("updateSuccess"));
           onSuccess?.(
@@ -126,7 +143,7 @@ export function FocusActivityModal({
               recordType: res.data?.recordType || recordType,
               targetTimeMinutes:
                 recordType === "POMO"
-                  ? (res.data?.targetTimeMinutes ?? targetTimeMinutes)
+                  ? (res.data?.targetTimeMinutes ?? effectiveMinutes)
                   : undefined,
             },
             true,
@@ -141,7 +158,7 @@ export function FocusActivityModal({
           icon,
           recordType,
           targetTimeMinutes:
-            recordType === "POMO" ? targetTimeMinutes : undefined,
+            recordType === "POMO" ? effectiveMinutes : undefined,
         });
 
         if (res.success) {
@@ -149,7 +166,7 @@ export function FocusActivityModal({
           toast.success(t("createSuccess", { name: name.trim() }), {
             description:
               recordType === "POMO"
-                ? t("createSuccessPomoDesc", { minutes: targetTimeMinutes })
+                ? t("createSuccessPomoDesc", { minutes: effectiveMinutes })
                 : t("createSuccessStopwatchDesc"),
           });
           onSuccess?.(
@@ -161,7 +178,7 @@ export function FocusActivityModal({
               recordType: res.data?.recordType || recordType,
               targetTimeMinutes:
                 recordType === "POMO"
-                  ? (res.data?.targetTimeMinutes ?? targetTimeMinutes)
+                  ? (res.data?.targetTimeMinutes ?? effectiveMinutes)
                   : undefined,
             },
             false,
@@ -182,12 +199,16 @@ export function FocusActivityModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      headerIcon={<Target size={20} />}
+      headerIcon={<Target size={20} aria-hidden="true" />}
       title={isEditing ? t("editTitle") : t("createTitle")}
       description={isEditing ? t("editDescription") : t("createDescription")}
       preventClose={isSubmitting}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+      <form
+        noValidate
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 mt-2"
+      >
         {/* Nome da Atividade e Ícone Integrados */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between gap-2">
@@ -200,7 +221,13 @@ export function FocusActivityModal({
               </label>
               <InfoTooltip
                 title={t("entertainmentWarningTitle")}
-                icon={<Info size={14} className="text-gold shrink-0" />}
+                icon={
+                  <Info
+                    size={14}
+                    className="text-gold shrink-0"
+                    aria-hidden="true"
+                  />
+                }
                 triggerLabel={t("entertainmentWarningPill")}
                 size={12}
                 align="left"
@@ -224,7 +251,7 @@ export function FocusActivityModal({
               {name.length}/{MAX_FOCUS_ACTIVITY_NAME_LENGTH}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2">
             <IconPickerPopover
               options={FOCUS_ICONS}
               value={icon}
@@ -246,10 +273,15 @@ export function FocusActivityModal({
                 required
                 maxLength={MAX_FOCUS_ACTIVITY_NAME_LENGTH}
                 disabled={isSubmitting}
+                error={nameError}
               />
             </div>
           </div>
-          <span className="text-label-g text-neutral-400">{t("iconHint")}</span>
+          {!nameError && (
+            <span className="text-label-g text-neutral-400">
+              {t("iconHint")}
+            </span>
+          )}
         </div>
 
         {/* Tipo de Registro (Pomodoro vs Cronômetro) */}
@@ -258,6 +290,7 @@ export function FocusActivityModal({
             {t("modeLabel")}
           </span>
           <SegmentedControl
+            ariaLabel={t("modeLabel")}
             value={recordType}
             onChange={setRecordType}
             options={[
@@ -296,17 +329,32 @@ export function FocusActivityModal({
               min={5}
               max={180}
               step={5}
-              value={targetTimeMinutes}
-              onChange={(e) => setTargetTimeMinutes(Number(e.target.value))}
-              onStep={(delta) =>
-                setTargetTimeMinutes((prev) =>
-                  Math.min(180, Math.max(5, prev + delta)),
-                )
-              }
+              value={targetMinutesDraft}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setTargetMinutesDraft(raw);
+                const parsed = Number.parseInt(raw, 10);
+                if (!Number.isNaN(parsed)) {
+                  setTargetTimeMinutes(Math.min(180, Math.max(5, parsed)));
+                }
+              }}
+              onBlur={() => {
+                const clamped = clampTargetMinutes(targetMinutesDraft);
+                setTargetTimeMinutes(clamped);
+                setTargetMinutesDraft(String(clamped));
+              }}
+              onStep={(delta) => {
+                const next = Math.min(
+                  180,
+                  Math.max(5, targetTimeMinutes + delta),
+                );
+                setTargetTimeMinutes(next);
+                setTargetMinutesDraft(String(next));
+              }}
               decrementDisabled={targetTimeMinutes <= 5 || isSubmitting}
               incrementDisabled={targetTimeMinutes >= 180 || isSubmitting}
               disabled={isSubmitting}
-              icon={<Clock size={16} />}
+              icon={<Clock size={16} aria-hidden="true" />}
               aria-describedby={
                 targetTimeMinutes >= 60 ? durationHoursHintId : undefined
               }
@@ -315,35 +363,13 @@ export function FocusActivityModal({
           </div>
         )}
 
-        {/* Botões de Ação */}
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3.5 border-t border-neutral-700 dark:border-white/10 mt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
-          >
-            <X size={14} />
-            {t("cancel")}
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || !name.trim()}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={15} className="animate-spin text-on-gold" />
-                <span>{t("saving")}</span>
-              </>
-            ) : (
-              <>
-                <Check size={15} />
-                <span>{isEditing ? t("saveChanges") : t("createSubmit")}</span>
-              </>
-            )}
-          </button>
-        </div>
+        <FocusModalFooter
+          cancelLabel={t("cancel")}
+          submitLabel={isEditing ? t("saveChanges") : t("createSubmit")}
+          submittingLabel={t("saving")}
+          isSubmitting={isSubmitting}
+          onCancel={onClose}
+        />
       </form>
     </BaseModal>
   );

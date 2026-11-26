@@ -1,53 +1,36 @@
 "use client";
 
 import { Mountain, Sparkles, Trophy } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useId, useState } from "react";
-import { LockedSectionNotice } from "@/components/showcase/LockedSectionNotice";
+import { type ReactNode, useEffect, useId, useState } from "react";
+import { getPublicUserRetrospectiveAction } from "@/actions/socialActions";
 import { PublicFriendActionsBar } from "@/components/showcase/PublicFriendActionsBar";
-import { ShowcaseCollectionSection } from "@/components/showcase/ShowcaseCollectionSection";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
-import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
+import { ShowcaseOverviewLayout } from "@/components/showcase/ShowcaseOverviewLayout";
 import {
   getShowcaseTabIds,
   type ShowcaseTabItem,
-  ShowcaseTabPanelFallback,
   ShowcaseTabs,
 } from "@/components/showcase/ShowcaseTabs";
+import {
+  EMPTY_ARTIFACTS,
+  EMPTY_FRIENDS,
+  ProgressionPyramidPanel,
+  preloadProgressionPanel,
+  preloadRetrospectivePanel,
+  RetrospectivePanel,
+} from "@/components/showcase/showcaseDynamicPanels";
 import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useLazyRetrospective } from "@/hooks/useLazyRetrospective";
 import type { ShowcaseStatsResponseDTO } from "@/types/showcase";
-import type {
-  FriendConnectionItem,
-  PublicUserShowcaseData,
-  SocialUserSummary,
-  UserRetrospectiveData,
-} from "@/types/social";
+import type { PublicUserShowcaseData, SocialUserSummary } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
-import { createEmptyShowcaseData } from "@/utils";
-
-const EMPTY_FRIENDS: FriendConnectionItem[] = [];
+import { createEmptyShowcaseData } from "@/utils/showcaseUtils";
 
 type PublicShowcaseTabId = "overview" | "progression" | "retrospective";
 
-const preloadProgressionPanel = () =>
-  import("@/components/showcase/progression/ProgressionPyramidPanel").then(
-    (mod) => mod.ProgressionPyramidPanel,
-  );
-
-const ProgressionPyramidPanel = dynamic(preloadProgressionPanel, {
-  loading: ShowcaseTabPanelFallback,
-});
-
-const preloadRetrospectivePanel = () =>
-  import("@/components/showcase/RetrospectivePanel").then(
-    (mod) => mod.RetrospectivePanel,
-  );
-
-const RetrospectivePanel = dynamic(preloadRetrospectivePanel, {
-  loading: ShowcaseTabPanelFallback,
-});
+const noop = () => {};
 
 function mapSocialSummaryToUserDTO(
   summary: SocialUserSummary,
@@ -64,7 +47,9 @@ function mapSocialSummaryToUserDTO(
     avatarPreset: summary.avatarPreset ?? undefined,
     isPremium: summary.isPremium,
     isFounder: summary.isFounder,
-    currentLevelTitle: summary.levelTitle,
+    emailVerified: summary.emailVerified,
+    createdAt: summary.createdAt ?? undefined,
+    currentLevelTitle: summary.levelTitle ?? undefined,
     totalXp: summary.totalXp,
     currentStreak: summary.currentStreak,
     highestStreak: summary.highestStreak,
@@ -79,13 +64,11 @@ function mapSocialSummaryToUserDTO(
 
 interface PublicShowcaseViewProps {
   data: PublicUserShowcaseData;
-  retrospective: UserRetrospectiveData | null;
   statsSlot?: ReactNode;
 }
 
 export function PublicShowcaseView({
   data,
-  retrospective,
   statsSlot,
 }: PublicShowcaseViewProps) {
   const t = useTranslations("showcase.publicProfile");
@@ -98,11 +81,31 @@ export function PublicShowcaseView({
   const canShowProgressionTab = Boolean(
     data.canViewProfile && data.canViewStats,
   );
-  const canShowRetroTab = Boolean(
-    data.canViewProfile && data.canViewStats && retrospective?.eligible,
-  );
+  // Exibe a aba Retrospectiva quando estatísticas são visíveis, carregando sob demanda
+  // (também permite consultar anos anteriores elegíveis mesmo se o ano atual ainda não liberou).
+  const canShowRetroTab = Boolean(data.canViewProfile && data.canViewStats);
+
+  const {
+    retrospective,
+    status: retroStatus,
+    isLoading: isRetroLoading,
+    loadError: isRetroLoadError,
+    ensureLoaded: ensurePublicRetroLoaded,
+    setRetrospectiveData: setRetrospective,
+  } = useLazyRetrospective({
+    enabled: canShowRetroTab,
+    fetcher: (year) =>
+      getPublicUserRetrospectiveAction(data.user.username, year),
+  });
+
+  useEffect(() => {
+    if (activeTab === "retrospective" && retroStatus === "idle") {
+      void ensurePublicRetroLoaded();
+    }
+  }, [activeTab, retroStatus, ensurePublicRetroLoaded]);
 
   const mappedUser = mapSocialSummaryToUserDTO(data.user);
+  const artifactsList = data.artifacts ?? EMPTY_ARTIFACTS;
 
   const fallbackStats: ShowcaseStatsResponseDTO = data.stats ?? {
     ...createEmptyShowcaseData(mappedUser).stats,
@@ -112,6 +115,13 @@ export function PublicShowcaseView({
     unlockedAchievementsCount: data.canViewAchievements
       ? data.achievements.filter((a) => a.unlocked).length
       : 0,
+    totalAchievementsCount: data.canViewAchievements
+      ? data.achievements.length
+      : 0,
+    unlockedArtifactsCount: data.canViewAchievements
+      ? artifactsList.filter((a) => a.unlocked).length
+      : 0,
+    totalArtifactsCount: data.canViewAchievements ? artifactsList.length : 0,
   };
 
   const friendActions = <PublicFriendActionsBar data={data} />;
@@ -166,6 +176,8 @@ export function PublicShowcaseView({
         stats={fallbackStats}
         isVisitorMode
         isOtherUser
+        hideStats={!data.canViewStats}
+        hideAchievements={!data.canViewAchievements}
         onToggleVisitorMode={() => {}}
         onOpenProgression={
           canShowProgressionTab ? () => setActiveTab("progression") : undefined
@@ -185,47 +197,22 @@ export function PublicShowcaseView({
       )}
 
       {activeTab === "overview" && (
-        <div
-          id={overviewIds.panelId}
-          role="tabpanel"
-          aria-labelledby={overviewIds.tabId}
-          className="flex flex-col gap-7"
-        >
-          <ShowcaseHighlightsSection
-            user={mappedUser}
-            stats={fallbackStats}
-            highlights={data.highlights}
-            achievements={data.achievements}
-            artifacts={data.artifacts ?? []}
-            isVisitorMode
-            onOpenPicker={() => {}}
-          />
-
-          {data.canViewStats && statsSlot ? (
-            statsSlot
-          ) : (
-            <LockedSectionNotice
-              title={t("statsLockedTitle")}
-              description={t("statsLockedDesc")}
-            />
-          )}
-
-          {data.canViewAchievements ? (
-            <ShowcaseCollectionSection
-              achievements={data.achievements}
-              artifacts={data.artifacts ?? []}
-              highlights={data.highlights}
-              totalAchievementsCount={fallbackStats.totalAchievementsCount}
-              totalArtifactsCount={fallbackStats.totalArtifactsCount}
-              isVisitorMode
-            />
-          ) : (
-            <LockedSectionNotice
-              title={t("achievementsLockedTitle")}
-              description={t("achievementsLockedDesc")}
-            />
-          )}
-        </div>
+        <ShowcaseOverviewLayout
+          panelId={overviewIds.panelId}
+          labelledById={overviewIds.tabId}
+          user={mappedUser}
+          stats={fallbackStats}
+          highlights={data.highlights}
+          achievements={data.achievements}
+          artifacts={artifactsList}
+          isVisitorMode
+          canViewStats={data.canViewStats}
+          canViewAchievements={data.canViewAchievements}
+          statsSlot={statsSlot}
+          onOpenPicker={noop}
+          totalAchievementsCount={fallbackStats.totalAchievementsCount}
+          totalArtifactsCount={fallbackStats.totalArtifactsCount}
+        />
       )}
 
       {activeTab === "progression" && canShowProgressionTab && (
@@ -252,9 +239,13 @@ export function PublicShowcaseView({
         >
           <RetrospectivePanel
             initialRetrospective={retrospective}
+            isLoading={isRetroLoading}
+            loadError={isRetroLoadError}
+            onRetry={() => void ensurePublicRetroLoaded(true)}
             isGamified={isGamified}
             isOwnProfile={false}
             targetUsername={data.user.username}
+            onRetrospectiveChange={setRetrospective}
           />
         </div>
       )}

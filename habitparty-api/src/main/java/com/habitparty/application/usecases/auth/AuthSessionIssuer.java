@@ -9,6 +9,7 @@ import com.habitparty.application.ports.TokenPort;
 import com.habitparty.core.domain.entities.AuthTokens;
 import com.habitparty.core.domain.entities.RefreshToken;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.UserToken;
 
 public final class AuthSessionIssuer {
   public static final int MAX_ACTIVE_SESSIONS = 3;
@@ -22,21 +23,26 @@ public final class AuthSessionIssuer {
       RefreshTokenRepository refreshTokenRepository) {
     int activeSessions = refreshTokenRepository.countActiveByUserId(user.getId());
     if (activeSessions >= MAX_ACTIVE_SESSIONS) {
-      refreshTokenRepository.revokeOldestSession(user.getId());
+      int excess = activeSessions - MAX_ACTIVE_SESSIONS + 1;
+      for (int i = 0; i < excess; i++) {
+        refreshTokenRepository.revokeOldestSession(user.getId());
+      }
     }
 
     String accessToken = tokenPort.generateToken(user);
+    String rawRefreshToken = UUID.randomUUID().toString();
+    String hashedRefreshToken = UserToken.hashToken(rawRefreshToken);
 
     RefreshToken refreshToken = new RefreshToken(
         UUID.randomUUID(),
         user.getId(),
-        UUID.randomUUID().toString(),
+        hashedRefreshToken,
         Instant.now().plus(REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS),
         false
     );
 
     refreshTokenRepository.save(refreshToken);
 
-    return new AuthTokens(accessToken, refreshToken.getToken());
+    return new AuthTokens(accessToken, rawRefreshToken);
   }
 }

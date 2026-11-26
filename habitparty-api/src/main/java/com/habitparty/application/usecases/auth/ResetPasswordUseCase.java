@@ -1,9 +1,12 @@
 package com.habitparty.application.usecases.auth;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.PasswordHasherPort;
+import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.UserTokenRepository;
 import com.habitparty.core.domain.entities.User;
@@ -17,14 +20,25 @@ public class ResetPasswordUseCase {
   private final UserTokenRepository tokenRepository;
   private final UserRepository userRepository;
   private final PasswordHasherPort passwordHasher;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   public ResetPasswordUseCase(
       UserTokenRepository tokenRepository,
       UserRepository userRepository,
       PasswordHasherPort passwordHasher) {
+    this(tokenRepository, userRepository, passwordHasher, null);
+  }
+
+  @Autowired
+  public ResetPasswordUseCase(
+      UserTokenRepository tokenRepository,
+      UserRepository userRepository,
+      PasswordHasherPort passwordHasher,
+      @Nullable RefreshTokenRepository refreshTokenRepository) {
     this.tokenRepository = tokenRepository;
     this.userRepository = userRepository;
     this.passwordHasher = passwordHasher;
+    this.refreshTokenRepository = refreshTokenRepository;
   }
 
   @Transactional
@@ -55,5 +69,10 @@ public class ResetPasswordUseCase {
 
     token.markAsUsed();
     tokenRepository.save(token);
+
+    // Revoga todas as sessões ativas para encerrar eventuais acessos comprometidos
+    if (refreshTokenRepository != null) {
+      refreshTokenRepository.revokeAllByUserId(user.getId());
+    }
   }
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useLayoutEffect } from "react";
 import {
   DEFAULT_THEME_ID,
   getDefaultThemeForPolarity,
@@ -9,6 +8,7 @@ import {
   LIGHT_THEME_ID,
   toDefaultPolarityTheme,
 } from "@/constants/themes";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 import {
   applyThemeToDocument,
   getThemePreferenceCookies,
@@ -20,9 +20,6 @@ interface ThemeInitializerProps {
   theme?: ThemeMode;
   allowCustomThemes?: boolean;
 }
-
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function resolveDomOrCookieState(
   fallbackTheme: ThemeMode | undefined,

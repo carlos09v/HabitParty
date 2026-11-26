@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "next-intl";
 import { USAGE_MODES } from "@/constants/onboarding";
 import type { UsageMode } from "@/types/onboarding";

@@ -1,11 +1,12 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.out.persistence.entities.UserArtifactJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.UserArtifactMapper;
 import com.habitparty.adapters.out.persistence.repository.UserArtifactJpaRepository;
 import com.habitparty.application.ports.UserArtifactRepository;
@@ -41,35 +42,52 @@ public class UserArtifactAdapter implements UserArtifactRepository {
   }
 
   @Override
+  @Transactional
   public UserArtifact save(UserArtifact userArtifact) {
-    UserArtifactJpaEntity saved = repository.save(mapper.toEntity(userArtifact));
-    return mapper.toDomain(saved);
+    repository.insertIfAbsent(
+        userArtifact.getUserId(),
+        userArtifact.getArtifactId(),
+        userArtifact.getObtainedSource(),
+        userArtifact.getUnlockedAt(),
+        userArtifact.isSeen());
+    return userArtifact;
   }
 
   @Override
+  @Transactional
   public List<UserArtifact> saveAll(List<UserArtifact> userArtifacts) {
     if (userArtifacts == null || userArtifacts.isEmpty()) {
       return List.of();
     }
-    List<UserArtifactJpaEntity> entities = userArtifacts.stream()
-        .map(mapper::toEntity)
-        .toList();
-    return repository.saveAll(entities).stream()
-        .map(mapper::toDomain)
-        .toList();
+    List<UserArtifact> inserted = new ArrayList<>(userArtifacts.size());
+    for (UserArtifact ua : userArtifacts) {
+      int rows = repository.insertIfAbsent(
+          ua.getUserId(),
+          ua.getArtifactId(),
+          ua.getObtainedSource(),
+          ua.getUnlockedAt(),
+          ua.isSeen());
+      if (rows > 0) {
+        inserted.add(ua);
+      }
+    }
+    return inserted;
   }
 
   @Override
+  @Transactional
   public void markAllSeenByUserId(UUID userId) {
     repository.markAllSeenByUserId(userId);
   }
 
   @Override
+  @Transactional
   public void deleteAllByUserId(UUID userId) {
     repository.deleteAllByUserId(userId);
   }
 
   @Override
+  @Transactional
   public void deleteAchievementArtifactsByUserId(UUID userId) {
     repository.deleteAchievementArtifactsByUserId(userId);
   }

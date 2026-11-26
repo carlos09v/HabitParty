@@ -166,6 +166,12 @@
     "stopResetTitle": "Stop / Reset time",
     "stopAria": "Stop",
     "stopLabel": "Stop",
+    "resetConfirm": {
+      "title": "Reset current session?",
+      "description": "You have already logged {elapsed} of focus in this session. Resetting now will discard this unrecorded time.",
+      "confirm": "Discard and reset",
+      "cancel": "Keep focusing"
+    },
     "linkActivityBadge": "Link to an activity?",
     "linkActivityTitle": "Link this focus session to an activity",
     "loadActivitiesError": "Could not load activities.",
@@ -191,7 +197,9 @@
       "selectActivityPrompt": "Select an activity in HabitParty",
       "close": "Close",
       "unsupported": "Floating Picture-in-Picture window is not supported in this browser.",
-      "sessionCapBadgeProductivity": "⏱️ 1h30m cap"
+      "sessionCapBadgeProductivity": "⏱️ 1h30m cap",
+      "actionFailed": "Could not save. Please try again.",
+      "minDurationHint": "At least 1 minute required to save."
     },
     "modeInventory": "Inventory"
   },
@@ -210,6 +218,7 @@
     "resendButton": "Resend verification",
     "sending": "Sending...",
     "resent": "Link resent",
+    "resendCooldown": "Resend in {seconds}s",
     "resendSuccessToast": "Verification email resent to {target}!",
     "resendDefaultTarget": "your inbox",
     "resendErrorToast": "Could not resend the verification email."

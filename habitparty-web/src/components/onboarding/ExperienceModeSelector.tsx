@@ -1,10 +1,9 @@
-"use client";
-
-import { CheckCircle2, Coins, ShieldAlert } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { ExperienceModeMiniPreview } from "@/components/ui/ExperienceModeMiniPreview";
 import { EXPERIENCE_MODES } from "@/constants/onboarding";
 import type { ExperienceMode } from "@/types/ui";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 import { OnboardingSelectableCard } from "./OnboardingSelectableCard";
 
 interface ExperienceModeSelectorProps {
@@ -21,11 +20,15 @@ export function ExperienceModeSelector({
 
   return (
     <fieldset className="flex flex-col gap-3 m-0 p-0 border-0">
+      <legend className="sr-only">{t("sectionTitle")}</legend>
       <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-        <legend className="text-body-s font-bold text-neutral-100">
+        <span
+          aria-hidden="true"
+          className="text-body-s font-bold text-neutral-100"
+        >
           {t("sectionTitle")}
-        </legend>
-        <span className="text-tiny font-semibold text-amber-700 dark:text-gold">
+        </span>
+        <span className="text-tiny font-semibold text-gold-ink dark:text-gold">
           {t("switchHint")}
         </span>
       </div>
@@ -56,8 +59,8 @@ export function ExperienceModeSelector({
                       className={cn(
                         "shrink-0",
                         isSelected
-                          ? "text-amber-700 dark:text-gold"
-                          : "text-emerald-800 dark:text-emerald-400",
+                          ? "text-gold-ink dark:text-gold"
+                          : "text-success-400",
                       )}
                     />
                     <span>{item}</span>
@@ -70,34 +73,22 @@ export function ExperienceModeSelector({
       </div>
 
       {/* Live Mini-Preview adaptativo */}
-      <div
-        aria-live="polite"
-        className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-surface/80 dark:bg-surface/50 border border-neutral-700/80 dark:border-primary/25 text-xs"
-      >
-        <div className="flex items-center gap-2 text-neutral-300">
-          <span className="text-tiny font-bold uppercase tracking-wider text-neutral-400">
-            {t("preview.label")}:
-          </span>
-          <span className="font-semibold text-neutral-100">
-            {t("preview.sampleTask")}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/12 border border-amber-500/30 text-amber-800 dark:bg-gold/15 dark:border-gold/30 dark:text-gold font-bold">
-            <Coins size={12} aria-hidden="true" />
-            {isGamified
-              ? t("preview.gamifiedReward")
-              : t("preview.productivityReward")}
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-300 font-semibold">
-            <ShieldAlert size={12} aria-hidden="true" />
-            {isGamified
-              ? t("preview.gamifiedBadge")
-              : t("preview.productivityBadge")}
-          </span>
-        </div>
-      </div>
+      <ExperienceModeMiniPreview
+        isGamified={isGamified}
+        label={t("preview.label")}
+        sampleTask={t("preview.sampleTask")}
+        rewardText={
+          isGamified
+            ? t("preview.gamifiedReward")
+            : t("preview.productivityReward")
+        }
+        badgeText={
+          isGamified
+            ? t("preview.gamifiedBadge")
+            : t("preview.productivityBadge")
+        }
+        className="px-3.5 py-2.5 bg-surface/80 dark:bg-surface/50 dark:border-primary/25"
+      />
     </fieldset>
   );
 }

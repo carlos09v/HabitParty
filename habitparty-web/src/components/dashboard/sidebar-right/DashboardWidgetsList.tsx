@@ -6,15 +6,18 @@ import { WeeklyCalendar } from "./WeeklyCalendar";
 
 export function DashboardWidgetsList({
   experienceMode = "PRODUCTIVITY",
+  isPremium = false,
+  timeZone,
   balance = 0,
   weeklyEarnings = 0,
   weeklySpent = 0,
   bars,
+  rewardsBridge,
   transactions = [],
   tasks = [],
   activities = [],
   records = [],
-  onSelectDay,
+  friendsOverview,
 }: DashboardWidgetsListProps) {
   return (
     <>
@@ -22,19 +25,29 @@ export function DashboardWidgetsList({
         transactions={transactions}
         tasks={tasks}
         records={records}
-        onSelectDay={onSelectDay}
+        timeZone={timeZone}
       />
       <div className="h-px w-full bg-neutral-700/70 dark:bg-white/10 shrink-0" />
-      <ActivitiesWidget activities={activities} records={records} />
+      <ActivitiesWidget
+        activities={activities}
+        records={records}
+        initialIsPremium={isPremium}
+        timeZone={timeZone}
+      />
       <div className="h-px w-full bg-neutral-700/70 dark:bg-white/10 shrink-0" />
       <EconomyWidget
         balance={balance}
         weeklyEarnings={weeklyEarnings}
         weeklySpent={weeklySpent}
         bars={bars}
+        rewardsBridge={rewardsBridge}
+        timeZone={timeZone}
       />
       <div className="h-px w-full bg-neutral-700/70 dark:bg-white/10 shrink-0" />
-      <PartyWidget experienceMode={experienceMode} />
+      <PartyWidget
+        experienceMode={experienceMode}
+        initialOverview={friendsOverview}
+      />
     </>
   );
 }

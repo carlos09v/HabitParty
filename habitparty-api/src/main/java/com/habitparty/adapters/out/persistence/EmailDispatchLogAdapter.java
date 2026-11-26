@@ -14,6 +14,8 @@ import com.habitparty.adapters.out.persistence.entities.EmailDispatchLogJpaEntit
 import com.habitparty.adapters.out.persistence.repository.EmailDispatchLogJpaRepository;
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.core.domain.entities.EmailDispatchLog;
+import com.habitparty.core.domain.enums.EmailDispatchStatus;
+import com.habitparty.core.domain.enums.EmailType;
 
 @Component
 public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
@@ -26,31 +28,20 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
 
   @Override
   public EmailDispatchLog save(EmailDispatchLog domain) {
-    EmailDispatchLogJpaEntity entity = new EmailDispatchLogJpaEntity(
-        domain.getId(),
-        domain.getUserId(),
-        domain.getTaskId(),
-        domain.getEmailType(),
-        domain.getRecipientEmail(),
-        domain.getSubject(),
-        domain.getStatus(),
-        domain.getErrorMessage(),
-        domain.getSentAt()
-    );
+    EmailDispatchLogJpaEntity entity = EmailDispatchLogJpaEntity.builder()
+        .id(domain.getId())
+        .userId(domain.getUserId())
+        .taskId(domain.getTaskId())
+        .emailType(domain.getEmailType())
+        .recipientEmail(domain.getRecipientEmail())
+        .subject(domain.getSubject())
+        .status(domain.getStatus())
+        .errorMessage(domain.getErrorMessage())
+        .sentAt(domain.getSentAt())
+        .build();
 
     EmailDispatchLogJpaEntity saved = repository.save(entity);
-
-    return new EmailDispatchLog(
-        saved.getId(),
-        saved.getUserId(),
-        saved.getTaskId(),
-        saved.getEmailType(),
-        saved.getRecipientEmail(),
-        saved.getSubject(),
-        saved.getStatus(),
-        saved.getErrorMessage(),
-        saved.getSentAt()
-    );
+    return toDomain(saved);
   }
 
   @Override
@@ -59,42 +50,19 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
   }
 
   @Override
-  public long countByStatusAndSentAtAfter(
-      com.habitparty.core.domain.enums.EmailDispatchStatus status,
-      LocalDateTime date) {
+  public long countByStatusAndSentAtAfter(EmailDispatchStatus status, LocalDateTime date) {
     return repository.countByStatusAndSentAtAfter(status, date);
   }
 
   @Override
-  public long countByUserIdAndSentAtAfter(UUID userId, LocalDateTime date) {
-    return repository.countByUserIdAndSentAtAfter(userId, date);
-  }
-
-  @Override
-  public long countByUserIdAndStatusAndSentAtAfter(
-      UUID userId,
-      com.habitparty.core.domain.enums.EmailDispatchStatus status,
-      LocalDateTime date) {
+  public long countByUserIdAndStatusAndSentAtAfter(UUID userId, EmailDispatchStatus status, LocalDateTime date) {
     return repository.countByUserIdAndStatusAndSentAtAfter(userId, status, date);
-  }
-
-  @Override
-  public Map<UUID, Long> countByUserIdsAndSentAtAfter(Collection<UUID> userIds, LocalDateTime date) {
-    if (userIds == null || userIds.isEmpty()) {
-      return Map.of();
-    }
-    List<Object[]> rows = repository.countByUserIdsAndSentAtAfter(userIds, date);
-    Map<UUID, Long> result = new HashMap<>(rows.size());
-    for (Object[] row : rows) {
-      result.put((UUID) row[0], ((Number) row[1]).longValue());
-    }
-    return result;
   }
 
   @Override
   public Map<UUID, Long> countByUserIdsAndStatusAndSentAtAfter(
       Collection<UUID> userIds,
-      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      EmailDispatchStatus status,
       LocalDateTime date) {
     if (userIds == null || userIds.isEmpty()) {
       return Map.of();
@@ -110,8 +78,8 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
   @Override
   public long countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
       UUID userId,
-      com.habitparty.core.domain.enums.EmailType emailType,
-      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      EmailType emailType,
+      EmailDispatchStatus status,
       LocalDateTime date) {
     return repository.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(userId, emailType, status, date);
   }
@@ -120,17 +88,7 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
   public List<EmailDispatchLog> findRecentByUserId(UUID userId, int limit) {
     return repository.findRecentByUserId(userId, PageRequest.of(0, limit))
         .stream()
-        .map(entity -> new EmailDispatchLog(
-            entity.getId(),
-            entity.getUserId(),
-            entity.getTaskId(),
-            entity.getEmailType(),
-            entity.getRecipientEmail(),
-            entity.getSubject(),
-            entity.getStatus(),
-            entity.getErrorMessage(),
-            entity.getSentAt()
-        ))
+        .map(this::toDomain)
         .toList();
   }
 
@@ -142,5 +100,18 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
   @Override
   public void deleteAllByUserId(UUID userId) {
     repository.deleteAllByUserId(userId);
+  }
+
+  private EmailDispatchLog toDomain(EmailDispatchLogJpaEntity entity) {
+    return new EmailDispatchLog(
+        entity.getId(),
+        entity.getUserId(),
+        entity.getTaskId(),
+        entity.getEmailType(),
+        entity.getRecipientEmail(),
+        entity.getSubject(),
+        entity.getStatus(),
+        entity.getErrorMessage(),
+        entity.getSentAt());
   }
 }

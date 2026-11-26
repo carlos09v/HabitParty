@@ -16,6 +16,7 @@ export function Input({
   compact = false,
   error,
   hint,
+  "aria-describedby": externalDescribedBy,
   ...props
 }: InputProps) {
   const t = useTranslations("ui.input");
@@ -26,7 +27,9 @@ export function Input({
 
   const errorId = id && error ? `${id}-error` : undefined;
   const hintId = id && hint ? `${id}-hint` : undefined;
-  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
+  const describedBy =
+    [externalDescribedBy, errorId, hintId].filter(Boolean).join(" ") ||
+    undefined;
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -40,8 +43,37 @@ export function Input({
       )}
 
       <div className="relative flex items-center transition-colors">
+        <input
+          id={id}
+          type={finalType}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
+          className={cn(
+            "peer w-full rounded-lg transition-colors",
+            compact ? "py-2 text-base sm:text-body-s" : "py-3 text-body-m",
+            // Tema Claro: Fundo de card limpo, borda nítida (>= 3:1) e texto escuro de alta legibilidade
+            "bg-card border border-neutral-500/80 hover:border-neutral-400 text-neutral-50 focus:border-primary focus:ring-2 focus:ring-primary/15 focus:bg-card shadow-xs",
+            // Tema Escuro: Borda legível (>= 3:1) com identidade cósmica
+            "dark:bg-primary-dark/20 dark:border-primary-light/40 dark:hover:border-primary-light/60 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:ring-0 dark:focus:bg-primary-dark/30 dark:shadow-none",
+            // Foco acessível com anel de alto contraste WCAG AA em todos os temas
+            "outline-none focus:outline-none",
+            "focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background dark:focus-visible:ring-offset-2 dark:focus-visible:border-transparent",
+            "placeholder:text-neutral-400",
+            finalType === "number" &&
+              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+            error &&
+              "border-danger-500/90 dark:border-danger-400 focus-visible:ring-danger-500 dark:focus-visible:ring-danger-400 focus:border-danger-500 dark:focus:border-danger-400",
+            icon ? "pl-11 pr-4" : compact ? "px-3" : "px-4",
+            isPasswordInput ? "pr-11" : endAdornment ? "pr-10" : "",
+            className,
+          )}
+          {...props}
+        />
+
+        {/* Ícone renderizado após o <input className="peer"> para que peer-focus funcione via seletor ~ */}
         {icon && (
           <div
+            aria-hidden="true"
             className={cn(
               "absolute left-4 pointer-events-none transition-colors",
               "text-neutral-400 peer-focus:text-primary dark:peer-focus:text-gold dark:peer-[:not(:placeholder-shown)]:text-gold",
@@ -51,44 +83,21 @@ export function Input({
           </div>
         )}
 
-        <input
-          id={id}
-          type={finalType}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          className={cn(
-            "peer w-full rounded-lg transition-colors",
-            compact ? "py-2 text-base sm:text-body-s" : "py-3 text-body-m",
-            // Tema Claro: Fundo de card limpo, borda nítida e texto escuro de alta legibilidade
-            "bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 focus:border-primary focus:ring-2 focus:ring-primary/15 focus:bg-card shadow-xs",
-            // Tema Escuro: 100% fiel ao original
-            "dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:ring-0 dark:focus:bg-primary-dark/30 dark:shadow-none",
-            // Foco acessível com anel de alto contraste WCAG AA
-            "outline-none focus:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus-visible:ring-gold dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background dark:focus-visible:border-transparent",
-            "placeholder:text-neutral-400",
-            finalType === "number" &&
-              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-            error &&
-              "border-danger-500/80 focus-visible:ring-danger-500 focus:border-danger-500",
-            icon ? "pl-11 pr-4" : compact ? "px-3" : "px-4",
-            isPasswordInput ? "pr-11" : "",
-            className,
-          )}
-          {...props}
-        />
-
         {/* Alternância de Visibilidade da Senha com foco acessível */}
         {isPasswordInput && (
           <button
             type="button"
             onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-            className="absolute right-3.5 text-neutral-400 hover:text-gold transition-colors p-1 rounded-md outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer"
+            className="absolute right-3.5 text-neutral-400 hover:text-primary dark:hover:text-gold transition-colors p-1 rounded-md outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring cursor-pointer"
             aria-label={
               isPasswordVisible ? t("hidePassword") : t("showPassword")
             }
           >
-            {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+            {isPasswordVisible ? (
+              <EyeOff size={18} aria-hidden="true" />
+            ) : (
+              <Eye size={18} aria-hidden="true" />
+            )}
           </button>
         )}
 
@@ -104,7 +113,7 @@ export function Input({
         <span
           id={errorId}
           role="alert"
-          className="text-xs text-danger-500 font-semibold mt-0.5"
+          className="text-xs text-danger-400 font-semibold mt-0.5"
         >
           {error}
         </span>

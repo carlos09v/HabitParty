@@ -1,15 +1,20 @@
 /**
- * Dispara o download de um arquivo de texto ou binário a partir de uma string
+ * Dispara o download de um arquivo de texto ou binário a partir de uma string ou Blob.
  */
 export function downloadBlob(
-  content: string,
+  content: string | Blob,
   filename: string,
   mimeType = "text/csv;charset=utf-8;",
 ): void {
-  const isCsv = mimeType.toLowerCase().includes("csv");
-  const normalizedContent =
-    isCsv && !content.startsWith("\uFEFF") ? `\uFEFF${content}` : content;
-  const blob = new Blob([normalizedContent], { type: mimeType });
+  let blob: Blob;
+  if (content instanceof Blob) {
+    blob = content;
+  } else {
+    const isCsv = mimeType.toLowerCase().includes("csv");
+    const normalizedContent =
+      isCsv && !content.startsWith("\uFEFF") ? `\uFEFF${content}` : content;
+    blob = new Blob([normalizedContent], { type: mimeType });
+  }
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -17,5 +22,7 @@ export function downloadBlob(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 }

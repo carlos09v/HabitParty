@@ -16,6 +16,8 @@ export type UpdateFocusActivityOrderDTO =
 
 export type FocusRecordResponseDTO =
   components["schemas"]["FocusRecordResponseDTO"];
+export type FocusSummaryResponseDTO =
+  components["schemas"]["FocusSummaryResponseDTO"];
 export type CreateFocusRecordDTO =
   components["schemas"]["CreateFocusRecordDTO"];
 export type UpdateFocusRecordDTO =
@@ -85,6 +87,13 @@ export interface FocusMetrics {
   totalAverageMinutes: number;
 }
 
+export interface FocusSummaryData extends FocusMetrics {
+  globalTodayProductiveMinutes: number;
+  globalTodayRewardableMinutes: number;
+  todayDurationByActivityId: Record<string, number>;
+  dailyMinutes: Record<string, number>;
+}
+
 export interface WeeklyFocusDayData {
   dayLabel: string; // "Dom", "Seg", etc.
   fullDate: string;
@@ -120,22 +129,4 @@ export interface FocusTimerState {
   completedCycles: number;
   hasTriggeredOvertimeAlert?: boolean;
   target: FocusActiveTarget | null;
-  startedAt: string | null;
-}
-
-export interface FocusTimerControlsState {
-  isActive: boolean;
-  isPaused: boolean;
-  mode: FocusRecordType;
-  phase?: FocusPhase;
-  target: FocusActiveTarget | null;
-  totalDurationSeconds: number;
-  startedAt: string | null;
-  hasElapsedSeconds: boolean;
-  canComplete: boolean;
-  isPartialPomo?: boolean;
-  isOvertime?: boolean;
-  isSavingSession?: boolean;
-  isCompletingLinkedTask?: boolean;
-  isSessionRewardCapped?: boolean;
 }

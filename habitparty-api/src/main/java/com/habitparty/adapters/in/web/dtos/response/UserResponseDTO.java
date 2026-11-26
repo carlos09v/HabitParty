@@ -23,6 +23,7 @@ public record UserResponseDTO(
         boolean isPremium,
         boolean isFounder,
         boolean emailVerified,
+        boolean hasPassword,
         SubscriptionStatus subscriptionStatus,
         OffsetDateTime subscriptionEndsAt,
         boolean hasActiveRecurringSubscription,
@@ -73,9 +74,7 @@ public record UserResponseDTO(
     }
 
     private static OffsetDateTime toUtcOffsetDateTime(LocalDateTime raw) {
-        return raw != null
-                ? raw.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
-                : null;
+        return com.habitparty.application.usecases.common.UtcDateTimeMapper.toUtcOffsetDateTime(raw);
     }
 
     public static UserResponseDTO fromDomain(User user, int effectiveStreak) {
@@ -84,6 +83,7 @@ public record UserResponseDTO(
                 user.isPremium(),
                 user.isFounder(),
                 user.isEmailVerified(),
+                user.hasPassword(),
                 user.getEffectiveSubscriptionStatus(),
                 toUtcOffsetDateTime(user.getSubscriptionEndsAt()),
                 user.hasActiveRecurringSubscription(),

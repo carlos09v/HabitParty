@@ -36,6 +36,7 @@
       "showPassword": "Exibir senha",
       "hidePassword": "Ocultar senha"
     },
+    "skipToContent": "Pular para o conteúdo principal",
     "select": {
       "placeholder": "Selecione uma opção",
       "emptyMessage": "Sem itens disponíveis.",
@@ -48,6 +49,7 @@
       "today": "Hoje",
       "tomorrow": "Amanhã",
       "clear": "Limpar",
+      "close": "Fechar",
       "noDueDate": "Sem prazo",
       "dialogAriaLabel": "Selecionar data",
       "prevMonth": "Mês anterior",
@@ -91,6 +93,13 @@
       "confirm": "Confirmar",
       "cancel": "Cancelar",
       "processing": "Processando..."
+    },
+    "modal": {
+      "close": "Fechar"
+    },
+    "currency": {
+      "coin": "Moeda",
+      "credit": "Crédito"
     },
     "welcomeCard": {
       "hidePermanentlyTitle": "Ocultar card de orientação permanentemente (pode reativar em Configurações)",
@@ -138,11 +147,11 @@
           "subtitleGamified": "Consuma itens resgatados, abra caixas misteriosas ou envie recompensas para o Palco de Foco.",
           "subtitleProductivity": "Gerencie cupons, abra sorteios de pausa ou utilize recompensas resgatadas.",
           "bullet0": "Guarde e organize todos os itens e cupons resgatados na Vitrine.",
-          "bullet1": "Use itens consumíveis diretamente ou envie poções para o Palco de Foco.",
+          "bullet1": "Use itens de uso único diretamente ou envie cupons de tempo para o Palco de Foco.",
           "bullet2": "Itens de uso único desaparecem da mochila após o consumo total.",
           "bullet2Gamified": "Itens de uso único desaparecem da mochila após o consumo total.",
           "bullet2Productivity": "Itens de uso único desaparecem do inventário após o consumo total.",
-          "bullet1Gamified": "Use itens consumíveis diretamente ou envie poções para o Palco de Foco.",
+          "bullet1Gamified": "Use itens de uso único diretamente ou envie cupons de tempo para o Palco de Foco.",
           "bullet1Productivity": "Use recompensas diretas ou envie cupons de descanso para o Palco de Foco."
         },
         "rewards": {
@@ -297,7 +306,8 @@
         "skull": "Boss / Hardcore VIP",
         "key": "Chave Mestra VIP",
         "hourglass": "Ampulheta Épica VIP",
-        "mountain": "Alta Performance VIP"
+        "mountain": "Alta Performance VIP",
+        "receipt": "Recibo / Dívida"
       }
     },
     "rewardPreview": {
@@ -365,6 +375,10 @@
       "missingCoinsHint": "Faltam {missing} moedas",
       "missingCreditsHint": "Faltam {missing} créditos",
       "readyToRedeemHint": "Saldo suficiente",
+      "ownedInBackpack": "{count} na mochila",
+      "ownedInInventory": "{count} no inventário",
+      "ownedInBackpackTooltip": "Você já possui {count, plural, one {# unidade} other {# unidades}} na mochila",
+      "ownedInInventoryTooltip": "Você já possui {count, plural, one {# unidade} other {# unidades}} no inventário",
       "statuses": {
         "activeSession": "Sessão ativa",
         "sealedBox": "Caixa lacrada",

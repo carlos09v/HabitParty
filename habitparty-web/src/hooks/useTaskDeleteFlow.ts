@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { checkTaskHasHistory } from "@/actions/taskActions";
+import { useInFlightSet } from "@/hooks/useInFlightSet";
 import type { Task } from "@/types/task";
 
 export interface PendingTaskDelete {
@@ -15,6 +16,8 @@ interface UseTaskDeleteFlowOptions {
     columnId?: string,
     deleteHistory?: boolean,
   ) => void | Promise<void>;
+  /** Chamado para tarefas simples sem histórico/checklist/hardcore (ex: Undo Toast de 5s). */
+  onSimpleDelete?: (task: Task, columnId?: string) => void | Promise<void>;
 }
 
 function shouldConfirmTaskDeleteLocally(task: Task): boolean {
@@ -41,31 +44,21 @@ function shouldConfirmTaskDeleteLocally(task: Task): boolean {
  */
 export function useTaskDeleteFlow({
   onConfirmDelete,
+  onSimpleDelete,
 }: UseTaskDeleteFlowOptions) {
   const [taskToDelete, setTaskToDelete] = useState<PendingTaskDelete | null>(
     null,
   );
   const [deleteHistory, setDeleteHistory] = useState(false);
-  const [checkingDeleteTaskIds, setCheckingDeleteTaskIds] = useState<
-    Set<string>
-  >(() => new Set());
-  const checkingIdsRef = useRef<Set<string>>(new Set());
-
-  const setTaskCheckingState = useCallback(
-    (taskId: string, isChecking: boolean) => {
-      if (isChecking) {
-        checkingIdsRef.current.add(taskId);
-      } else {
-        checkingIdsRef.current.delete(taskId);
-      }
-      setCheckingDeleteTaskIds(new Set(checkingIdsRef.current));
-    },
-    [],
-  );
+  const {
+    activeIds: checkingDeleteTaskIds,
+    has: isTaskChecking,
+    setPending: setTaskCheckingState,
+  } = useInFlightSet();
 
   const requestDeleteTask = useCallback(
     async (task: Task, columnId?: string) => {
-      if (checkingIdsRef.current.has(task.id)) return;
+      if (isTaskChecking(task.id)) return;
 
       if (task.id.startsWith("temp-")) {
         await onConfirmDelete(task, columnId, false);
@@ -89,12 +82,16 @@ export function useTaskDeleteFlow({
           return;
         }
 
-        await onConfirmDelete(task, columnId, false);
+        if (onSimpleDelete) {
+          await onSimpleDelete(task, columnId);
+        } else {
+          await onConfirmDelete(task, columnId, false);
+        }
       } finally {
         setTaskCheckingState(task.id, false);
       }
     },
-    [onConfirmDelete, setTaskCheckingState],
+    [isTaskChecking, onConfirmDelete, onSimpleDelete, setTaskCheckingState],
   );
 
   const confirmDeleteTask = useCallback(async () => {

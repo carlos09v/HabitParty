@@ -2,6 +2,7 @@ package com.habitparty.adapters.out.persistence.mappers;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 import org.springframework.stereotype.Component;
 
@@ -18,7 +19,7 @@ import com.habitparty.core.domain.enums.UserExperienceMode;
 public class UserMapper {
 
   public UserJpaEntity toEntity(User domain) {
-    UserJpaEntity entity = new UserJpaEntity();
+    UserJpaEntity entity = UserJpaEntity.builder().build();
     updateEntityFromDomain(entity, domain);
     return entity;
   }
@@ -30,10 +31,13 @@ public class UserMapper {
     entity.setEmail(domain.getEmail());
     entity.setUsername(domain.getUsername());
     entity.setPassword(domain.getPassword());
+    entity.setHasPassword(domain.hasPassword());
     entity.setEmailVerified(domain.isEmailVerified());
     entity.setEmailVerifiedAt(domain.getEmailVerifiedAt());
     entity.setGender(domain.getGender());
-    entity.setExperienceMode(domain.getExperienceMode() != null ? domain.getExperienceMode() : UserExperienceMode.PRODUCTIVITY);
+    entity.setExperienceMode(domain.getExperienceMode() != null
+        ? domain.getExperienceMode()
+        : UserExperienceMode.PRODUCTIVITY);
     entity.setTimezone(domain.getTimezone());
     entity.setTimezoneUpdatedAt(domain.getTimezoneUpdatedAt());
     entity.setLastDailyResetDate(domain.getLastDailyResetDate());
@@ -44,7 +48,9 @@ public class UserMapper {
     entity.setAchievementsVisibility(domain.getAchievementsVisibility());
     entity.setFriendRequestPolicy(domain.getFriendRequestPolicy());
     entity.setUsageMode(domain.getUsageMode());
-    entity.setPrimaryGoals(domain.getPrimaryGoals());
+    entity.setPrimaryGoals(domain.getPrimaryGoals() != null
+        ? new ArrayList<>(domain.getPrimaryGoals())
+        : null);
     entity.setMainObstacle(domain.getMainObstacle());
     entity.setDailyFocusGoalMinutes(domain.getDailyFocusGoalMinutes());
     entity.setPeakPeriod(domain.getPeakPeriod());
@@ -60,11 +66,16 @@ public class UserMapper {
       entity.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     }
 
-    // Mapeia UserStatsJpaEntity (1:1 PK compartilhada)
+    // Mapeia UserStatsJpaEntity (1:1 PK compartilhada via @MapsId)
     UserStatsJpaEntity statsEntity = entity.getStats();
     if (statsEntity == null) {
-      statsEntity = new UserStatsJpaEntity();
+      statsEntity = UserStatsJpaEntity.builder()
+          .id(entity.getId())
+          .user(entity)
+          .build();
       entity.setStats(statsEntity);
+    } else if (statsEntity.getUser() == null) {
+      statsEntity.setUser(entity);
     }
     UserStats domainStats = domain.getStats();
     statsEntity.setCurrentCoins(domainStats != null && domainStats.getCurrentCoins() != null
@@ -99,14 +110,20 @@ public class UserMapper {
         ? domainStats.getUpdatedAt()
         : LocalDateTime.now());
 
-    // Mapeia UserSubscriptionJpaEntity (1:1 PK compartilhada)
+    // Mapeia UserSubscriptionJpaEntity (1:1 PK compartilhada via @MapsId)
     UserSubscriptionJpaEntity subEntity = entity.getSubscription();
     if (subEntity == null) {
-      subEntity = new UserSubscriptionJpaEntity();
+      subEntity = UserSubscriptionJpaEntity.builder()
+          .id(entity.getId())
+          .user(entity)
+          .build();
       entity.setSubscription(subEntity);
+    } else if (subEntity.getUser() == null) {
+      subEntity.setUser(entity);
     }
     UserSubscription domainSub = domain.getSubscription();
-    subEntity.setPremium(domainSub != null && domainSub.isPremium());
+    // Persiste o flag bruto do domínio (rawIsPremium) para evitar sobrescrever o estado com avaliação dinâmica de relógio
+    subEntity.setPremium(domainSub != null && domainSub.getRawIsPremium());
     subEntity.setFounder(domainSub != null && domainSub.isFounder());
     subEntity.setStripeCustomerId(domainSub != null ? domainSub.getStripeCustomerId() : null);
     subEntity.setStripeSubscriptionId(domainSub != null ? domainSub.getStripeSubscriptionId() : null);
@@ -185,9 +202,9 @@ public class UserMapper {
         entity.getExperienceMode() != null ? entity.getExperienceMode() : UserExperienceMode.PRODUCTIVITY,
         entity.getCreatedAt(),
         domainStats,
-        domainSub
-    );
+        domainSub);
     user.setBio(entity.getBio());
+    user.setHasPassword(entity.isHasPassword());
     user.setAvatarFrame(entity.getAvatarFrame());
     user.setEquippedTitle(entity.getEquippedTitle());
     user.setAvatarPreset(entity.getAvatarPreset());

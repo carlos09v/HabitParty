@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
-import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.adapters.in.web.dtos.response.DashboardTaskResponseDTO;
 import com.habitparty.application.ports.projections.FocusableTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskHistoryStatusResponseDTO;
@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
 @RequestMapping("/tasks")
 @Validated
@@ -45,7 +46,7 @@ public interface TaskApi {
 
     @Operation(summary = "Dashboard de Tarefas", description = "Lista as tarefas para o dashboard filtrado.")
     @GetMapping("/workspace/{workspaceId}/dashboard")
-    ResponseEntity<Page<DashboardTaskDTO>> getDashboardTasks(
+    ResponseEntity<Page<DashboardTaskResponseDTO>> getDashboardTasks(
         @PathVariable UUID workspaceId,
         @RequestParam(defaultValue = "TODAY") String filter,
         @RequestParam(defaultValue = "0") int page,
@@ -94,7 +95,7 @@ public interface TaskApi {
     @PutMapping("/move")
     ResponseEntity<Void> moveTasks(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
-        @RequestBody List<@Valid UpdateTaskOrderDTO> itemsToMove);
+        @RequestBody @Size(max = 500, message = "Máximo de 500 itens por reordenação.") List<@Valid UpdateTaskOrderDTO> itemsToMove);
 
     @Operation(summary = "Alterar Status da Tarefa", description = "Altera o status de uma tarefa e ganha recompensa se concluída.")
     @PatchMapping("/{taskId}/status")

@@ -39,39 +39,76 @@ class FocusRecordJpaRepositoryYieldTest {
     UUID userId = user.getId();
     UUID activityId = UUID.randomUUID();
     LocalDateTime dayStart = LocalDateTime.of(2026, 11, 20, 0, 0);
-    LocalDateTime dayEnd = LocalDateTime.of(2026, 11, 20, 23, 59, 59, 999_999_999);
+    LocalDateTime nextDayStart = LocalDateTime.of(2026, 11, 21, 0, 0);
 
     // 1. Sessão < 10 min (9 min): 0 min elegível
-    focusRecordJpaRepository.save(new FocusRecordJpaEntity(
-        UUID.randomUUID(), userId, activityId, null, null, null, null,
-        LocalDateTime.of(2026, 11, 20, 8, 0),
-        LocalDateTime.of(2026, 11, 20, 8, 9),
-        FocusRecordType.STOPWATCH, null, null, 9, 0, BigDecimal.ZERO));
+    focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .focusActivityId(activityId)
+        .startTime(LocalDateTime.of(2026, 11, 20, 8, 0))
+        .endTime(LocalDateTime.of(2026, 11, 20, 8, 9))
+        .recordType(FocusRecordType.STOPWATCH)
+        .durationMinutes(9)
+        .xpEarned(0)
+        .coinsEarned(BigDecimal.ZERO)
+        .build());
 
     // 2. Sessão dentro da faixa (45 min): 45 min elegíveis
-    focusRecordJpaRepository.save(new FocusRecordJpaEntity(
-        UUID.randomUUID(), userId, activityId, null, null, null, null,
-        LocalDateTime.of(2026, 11, 20, 9, 0),
-        LocalDateTime.of(2026, 11, 20, 9, 45),
-        FocusRecordType.STOPWATCH, null, null, 45, 11, new BigDecimal("0.68")));
+    focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .focusActivityId(activityId)
+        .startTime(LocalDateTime.of(2026, 11, 20, 9, 0))
+        .endTime(LocalDateTime.of(2026, 11, 20, 9, 45))
+        .recordType(FocusRecordType.STOPWATCH)
+        .durationMinutes(45)
+        .xpEarned(11)
+        .coinsEarned(new BigDecimal("0.68"))
+        .build());
 
     // 3. Sessão acima de 1h30 (99 min): apenas 90 min elegíveis
-    focusRecordJpaRepository.save(new FocusRecordJpaEntity(
-        UUID.randomUUID(), userId, activityId, null, null, null, null,
-        LocalDateTime.of(2026, 11, 20, 10, 0),
-        LocalDateTime.of(2026, 11, 20, 11, 39),
-        FocusRecordType.STOPWATCH, null, null, 99, 21, new BigDecimal("1.35")));
+    focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .focusActivityId(activityId)
+        .startTime(LocalDateTime.of(2026, 11, 20, 10, 0))
+        .endTime(LocalDateTime.of(2026, 11, 20, 11, 39))
+        .recordType(FocusRecordType.STOPWATCH)
+        .durationMinutes(99)
+        .xpEarned(21)
+        .coinsEarned(new BigDecimal("1.35"))
+        .build());
 
     // 4. Sessão de mochila/lazer (60 min): 0 min elegível
-    focusRecordJpaRepository.save(new FocusRecordJpaEntity(
-        UUID.randomUUID(), userId, null, UUID.randomUUID(), null, null, null,
-        LocalDateTime.of(2026, 11, 20, 12, 0),
-        LocalDateTime.of(2026, 11, 20, 13, 0),
-        FocusRecordType.STOPWATCH, null, null, 60, 0, BigDecimal.ZERO));
+    focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .inventoryItemId(UUID.randomUUID())
+        .startTime(LocalDateTime.of(2026, 11, 20, 12, 0))
+        .endTime(LocalDateTime.of(2026, 11, 20, 13, 0))
+        .recordType(FocusRecordType.STOPWATCH)
+        .durationMinutes(60)
+        .xpEarned(0)
+        .coinsEarned(BigDecimal.ZERO)
+        .build());
+
+    // 5. Sessão encerrada exatamente à meia-noite de D+1: deve ficar FORA do intervalo [dayStart, nextDayStart)
+    focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .focusActivityId(activityId)
+        .startTime(LocalDateTime.of(2026, 11, 20, 23, 30))
+        .endTime(LocalDateTime.of(2026, 11, 21, 0, 0))
+        .recordType(FocusRecordType.STOPWATCH)
+        .durationMinutes(30)
+        .xpEarned(8)
+        .coinsEarned(new BigDecimal("0.45"))
+        .build());
 
     focusRecordJpaRepository.flush();
 
-    int sum = focusRecordJpaRepository.sumTodayFocusMinutesByUserId(userId, dayStart, dayEnd);
+    int sum = focusRecordJpaRepository.sumTodayFocusMinutesByUserId(userId, dayStart, nextDayStart);
     assertEquals(135, sum);
 
     UUID session99Id = focusRecordJpaRepository.findAllByUserIdOrderByStartTimeDesc(userId)
@@ -82,12 +119,18 @@ class FocusRecordJpaRepositoryYieldTest {
         .getId();
 
     int sumExcluding99 = focusRecordJpaRepository.sumTodayFocusMinutesByUserIdExcludingRecord(
-        userId, dayStart, dayEnd, session99Id);
+        userId, dayStart, nextDayStart, session99Id);
     assertEquals(45, sumExcluding99);
 
     int productiveExcluding99 = focusRecordJpaRepository.sumProductiveFocusMinutesByUserIdExcludingRecord(
-        userId, dayStart, dayEnd, session99Id);
+        userId, dayStart, nextDayStart, session99Id);
     assertEquals(54, productiveExcluding99);
+
+    var analyticsRows = focusRecordJpaRepository.findProductiveAnalyticsByUserId(userId);
+    // Deve retornar apenas as 4 sessões produtivas (ignorando a sessão de inventário/lazer de 60 min)
+    assertEquals(4, analyticsRows.size());
+    int totalProductiveMins = analyticsRows.stream().mapToInt(r -> r.getDurationMinutes()).sum();
+    assertEquals(9 + 45 + 99 + 30, totalProductiveMins);
   }
 
   private User createAndSaveUser(String prefix) {

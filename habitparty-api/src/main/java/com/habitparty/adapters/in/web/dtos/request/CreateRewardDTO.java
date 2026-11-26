@@ -10,6 +10,7 @@ import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -33,7 +34,8 @@ public record CreateRewardDTO(
   @JsonSetter(nulls = Nulls.SKIP) // Isso diz: se vier nulo ou vazio de forma estranha, ignore
   RewardCategory category,
 
-  List<String> tags,
+  @Size(max = 5, message = "A recompensa pode ter no máximo 5 tags")
+  List<@Size(max = 80, message = "Cada tag deve ter até 80 caracteres") String> tags,
 
   @NotNull(message = "O tipo é obrigatório")
   RewardType type,
@@ -42,6 +44,8 @@ public record CreateRewardDTO(
 
   Integer baseDurationMinutes,
 
+  @Valid
+  @Size(max = 10, message = "A caixa misteriosa pode ter no máximo 10 itens")
   List<MysteryBoxLootItem> lootItems
 ) {
   public CreateRewardDTO(

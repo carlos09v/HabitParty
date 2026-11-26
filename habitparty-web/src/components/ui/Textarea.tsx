@@ -1,8 +1,9 @@
-import type { ReactNode, TextareaHTMLAttributes } from "react";
+import type { ReactNode, Ref, TextareaHTMLAttributes } from "react";
 import { cn } from "@/utils";
 
 export interface TextareaProps
   extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  ref?: Ref<HTMLTextAreaElement>;
   label?: string;
   id?: string;
   error?: string;
@@ -15,6 +16,7 @@ export interface TextareaProps
  * Campo de texto multiline acessível padronizado com os tokens visuais do HabitParty.
  */
 export function Textarea({
+  ref,
   label,
   id,
   className,
@@ -43,6 +45,7 @@ export function Textarea({
 
       <div className="relative flex transition-colors">
         <textarea
+          ref={ref}
           id={id}
           rows={rows}
           aria-invalid={error ? true : undefined}

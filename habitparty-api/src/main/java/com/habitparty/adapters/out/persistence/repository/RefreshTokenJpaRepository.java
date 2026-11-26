@@ -14,24 +14,29 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.adapters.out.persistence.entities.RefreshTokenJpaEntity;
 
 public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenJpaEntity, UUID> {
+
   Optional<RefreshTokenJpaEntity> findByToken(String token);
 
-  @Query("SELECT COUNT(r) FROM RefreshTokenJpaEntity r WHERE r.user.id = :userId AND r.revoked = false AND r.expirationDate > CURRENT_TIMESTAMP")
+  @Query("SELECT COUNT(r) FROM RefreshTokenJpaEntity r WHERE r.userId = :userId AND r.revoked = false AND r.expirationDate > CURRENT_TIMESTAMP")
   int countActiveTokensByUserId(@Param("userId") UUID userId);
 
-  // Encontra a sessão ativa (não revogada e ainda não expirada) mais antiga do usuário
-  Optional<RefreshTokenJpaEntity> findFirstByUser_IdAndRevokedFalseAndExpirationDateAfterOrderByCreatedAtAsc(
+  Optional<RefreshTokenJpaEntity> findFirstByUserIdAndRevokedFalseAndExpirationDateAfterOrderByCreatedAtAsc(
       UUID userId,
       Instant now);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Transactional
+  @Query("UPDATE RefreshTokenJpaEntity r SET r.revoked = true WHERE r.userId = :userId AND r.revoked = false")
+  void revokeAllByUserId(@Param("userId") UUID userId);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Transactional
   @Query("DELETE FROM RefreshTokenJpaEntity r WHERE r.expirationDate < :now OR (r.revoked = true AND r.createdAt < :revokedCutoff)")
   void deleteObsoleteTokens(
       @Param("now") Instant now,
       @Param("revokedCutoff") LocalDateTime revokedCutoff);
 
-  @Modifying
-  @Query("DELETE FROM RefreshTokenJpaEntity r WHERE r.user.id = :userId")
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM RefreshTokenJpaEntity r WHERE r.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
 }

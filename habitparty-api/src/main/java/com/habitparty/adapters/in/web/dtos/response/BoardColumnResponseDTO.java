@@ -31,11 +31,6 @@ public record BoardColumnResponseDTO(
         );
     }
 
-    // MÉTODO 2: Usado pelo GetFullKanbanBoardUseCase (GET Grandão com as tasks)
-    public static BoardColumnResponseDTO fromDomain(BoardColumn column, List<TaskResponseDTO> tasks) {
-        return fromDomain(column, tasks, null, null);
-    }
-
     public static BoardColumnResponseDTO fromDomain(
             BoardColumn column,
             List<TaskResponseDTO> tasks,

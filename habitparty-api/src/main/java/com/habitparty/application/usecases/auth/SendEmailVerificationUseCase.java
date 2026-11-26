@@ -1,23 +1,21 @@
 package com.habitparty.application.usecases.auth;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.EmailSenderPort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.UserTokenRepository;
-import com.habitparty.core.domain.entities.EmailDispatchLog;
 import com.habitparty.core.domain.entities.User;
-import com.habitparty.core.domain.entities.UserToken;
-import com.habitparty.core.domain.enums.EmailDispatchStatus;
 import com.habitparty.core.domain.enums.EmailType;
 import com.habitparty.core.domain.enums.UserTokenType;
 import com.habitparty.core.exceptions.DomainValidationException;
@@ -25,14 +23,17 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class SendEmailVerificationUseCase {
-  private static final Logger log = LoggerFactory.getLogger(SendEmailVerificationUseCase.class);
+  private static final Duration EMAIL_VERIFICATION_TTL = Duration.ofHours(24);
 
   private final UserRepository userRepository;
   private final UserTokenRepository tokenRepository;
   private final EmailSenderPort emailSender;
   private final EmailDispatchLogRepository emailLogPort;
   private final String frontendUrl;
+  private AsyncAuthEmailDispatcher asyncEmailDispatcher;
+  private TransactionOperations transactionOperations;
 
+  @Autowired
   public SendEmailVerificationUseCase(
       UserRepository userRepository,
       UserTokenRepository tokenRepository,
@@ -43,7 +44,19 @@ public class SendEmailVerificationUseCase {
     this.tokenRepository = tokenRepository;
     this.emailSender = emailSender;
     this.emailLogPort = emailLogPort;
-    this.frontendUrl = frontendUrl.endsWith("/") ? frontendUrl.substring(0, frontendUrl.length() - 1) : frontendUrl;
+    this.frontendUrl = EmailTokenDispatchService.normalizeFrontendUrl(frontendUrl);
+  }
+
+  @Autowired(required = false)
+  public void setAsyncEmailDispatcher(@Nullable AsyncAuthEmailDispatcher asyncEmailDispatcher) {
+    this.asyncEmailDispatcher = asyncEmailDispatcher;
+  }
+
+  @Autowired(required = false)
+  public void setTransactionManager(@Nullable PlatformTransactionManager transactionManager) {
+    this.transactionOperations = transactionManager != null
+        ? new TransactionTemplate(transactionManager)
+        : null;
   }
 
   public void executeForUser(User user) {
@@ -51,40 +64,29 @@ public class SendEmailVerificationUseCase {
       return;
     }
 
-    tokenRepository.invalidateActiveTokensByUserIdAndType(user.getId(), UserTokenType.EMAIL_VERIFICATION);
-
-    String rawToken = UUID.randomUUID().toString();
-    String hashedToken = UserToken.hashToken(rawToken);
-
-    UserToken token = new UserToken(
-        UUID.randomUUID(),
+    String rawToken = EmailTokenDispatchService.issueHashedToken(
         user.getId(),
         UserTokenType.EMAIL_VERIFICATION,
-        hashedToken,
-        Instant.now().plus(24, ChronoUnit.HOURS),
-        false
-    );
-
-    tokenRepository.save(token);
+        EMAIL_VERIFICATION_TTL,
+        tokenRepository,
+        transactionOperations);
 
     String verificationLink = frontendUrl + "/verify-email?token=" + rawToken;
     String userName = (user.getFullName() != null && !user.getFullName().isBlank())
         ? user.getFullName()
         : user.getUsername();
 
-    boolean success = emailSender.sendEmailVerificationEmail(user.getEmail(), userName, verificationLink);
-
-    emailLogPort.save(new EmailDispatchLog(
-        UUID.randomUUID(),
+    EmailTokenDispatchService.dispatchOrSendSync(
         user.getId(),
-        null,
-        EmailType.EMAIL_VERIFICATION,
         user.getEmail(),
+        EmailType.EMAIL_VERIFICATION,
         "Confirme seu e-mail - HabitParty",
-        success ? EmailDispatchStatus.SENT : EmailDispatchStatus.FAILED,
-        success ? null : "Falha ao enviar e-mail de verificação via Resend",
-        LocalDateTime.now()
-    ));
+        "Falha ao enviar e-mail de verificação via Resend",
+        asyncEmailDispatcher != null
+            ? () -> asyncEmailDispatcher.dispatchEmailVerification(user.getId(), user.getEmail(), userName, verificationLink)
+            : null,
+        () -> emailSender.sendEmailVerificationEmail(user.getEmail(), userName, verificationLink),
+        emailLogPort);
   }
 
   public void executeByUserId(UUID userId) {

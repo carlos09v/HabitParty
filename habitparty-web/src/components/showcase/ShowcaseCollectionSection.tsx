@@ -4,18 +4,21 @@ import { Gem, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useMemo, useState } from "react";
 import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
-import { ArtifactsGallery } from "@/components/showcase/ArtifactsGallery";
+import {
+  LazyArtifactsGallery,
+  preloadArtifactsGallery,
+} from "@/components/showcase/showcaseDynamicPanels";
 import { DEFAULT_TOTAL_ARTIFACTS_COUNT } from "@/constants/artifacts";
 import type {
   AchievementItemResponseDTO,
   ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
 } from "@/types/showcase";
+import { cn } from "@/utils/cn";
 import {
-  cn,
   handleTabListKeyDown,
   type ShowcaseCollectionTabId,
-} from "@/utils";
+} from "@/utils/showcaseUtils";
 
 interface ShowcaseCollectionSectionProps {
   achievements: AchievementItemResponseDTO[];
@@ -25,9 +28,12 @@ interface ShowcaseCollectionSectionProps {
   activeCollection?: ShowcaseCollectionTabId;
   onSelectCollection?: (tab: ShowcaseCollectionTabId) => void;
   onPinAchievement?: (achievement: AchievementItemResponseDTO) => void;
+  onUnpinAchievement?: (achievement: AchievementItemResponseDTO) => void;
   onPinArtifact?: (artifact: ArtifactItemResponseDTO) => void;
+  onUnpinArtifact?: (artifact: ArtifactItemResponseDTO) => void;
   totalAchievementsCount?: number;
   totalArtifactsCount?: number;
+  achievementsSeenDismissed?: boolean;
   artifactsSeenDismissed?: boolean;
 }
 
@@ -45,9 +51,12 @@ export function ShowcaseCollectionSection({
   activeCollection,
   onSelectCollection,
   onPinAchievement = noop,
+  onUnpinAchievement,
   onPinArtifact = noop,
+  onUnpinArtifact,
   totalAchievementsCount,
   totalArtifactsCount,
+  achievementsSeenDismissed = false,
   artifactsSeenDismissed = false,
 }: ShowcaseCollectionSectionProps) {
   const t = useTranslations("showcase.collectionTabs");
@@ -83,10 +92,10 @@ export function ShowcaseCollectionSection({
 
   const unseenAchievementsCount = useMemo(
     () =>
-      isVisitorMode
+      isVisitorMode || achievementsSeenDismissed
         ? 0
         : achievements.filter((a) => a.unlocked && !a.seen).length,
-    [achievements, isVisitorMode],
+    [achievements, achievementsSeenDismissed, isVisitorMode],
   );
   const unseenArtifactsCount = useMemo(
     () =>
@@ -105,18 +114,22 @@ export function ShowcaseCollectionSection({
     {
       id: "achievements" as const,
       tabId: achievementsTabId,
+      panelId: achievementsPanelId,
       label: t("achievements"),
       countText: `${unlockedAchievements}/${resolvedTotalAchievements}`,
       unseenCount: unseenAchievementsCount,
       icon: Trophy,
+      onPreload: undefined,
     },
     {
       id: "artifacts" as const,
       tabId: artifactsTabId,
+      panelId: artifactsPanelId,
       label: t("artifacts"),
       countText: `${unlockedArtifacts}/${resolvedTotalArtifacts}`,
       unseenCount: unseenArtifactsCount,
       icon: Gem,
+      onPreload: preloadArtifactsGallery,
     },
   ];
 
@@ -137,13 +150,16 @@ export function ShowcaseCollectionSection({
               type="button"
               role="tab"
               aria-selected={isSelected}
+              aria-controls={tab.panelId}
               tabIndex={isSelected ? 0 : -1}
               onKeyDown={handleTabListKeyDown}
               onClick={() => handleSelect(tab.id)}
+              onMouseEnter={tab.onPreload}
+              onFocus={tab.onPreload}
               className={cn(
                 "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer",
                 "focus-visible:outline-2 focus-visible:outline-gold focus-visible:-outline-offset-2",
-                "aria-selected:text-amber-700 dark:aria-selected:text-gold aria-selected:bg-amber-500/8 dark:aria-selected:bg-gold/10",
+                "aria-selected:text-amber-700 dark:aria-selected:text-gold aria-selected:bg-amber-500/8 dark:aria-selected:bg-gold/10 aria-selected:forced-colors:outline-2 aria-selected:forced-colors:outline-solid aria-selected:forced-colors:outline-[Highlight]",
                 "aria-selected:after:content-[''] aria-selected:after:absolute aria-selected:after:inset-x-2 aria-selected:after:bottom-0 aria-selected:after:border-b-2 aria-selected:after:border-amber-600 dark:aria-selected:after:border-gold",
                 !isSelected &&
                   "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
@@ -182,6 +198,7 @@ export function ShowcaseCollectionSection({
             highlights={highlights}
             isVisitorMode={isVisitorMode}
             onPinAchievement={onPinAchievement}
+            onUnpinAchievement={onUnpinAchievement}
           />
         </div>
       ) : (
@@ -190,11 +207,12 @@ export function ShowcaseCollectionSection({
           role="tabpanel"
           aria-labelledby={artifactsTabId}
         >
-          <ArtifactsGallery
+          <LazyArtifactsGallery
             artifacts={artifacts}
             highlights={highlights}
             isVisitorMode={isVisitorMode}
             onPinArtifact={onPinArtifact}
+            onUnpinArtifact={onUnpinArtifact}
           />
         </div>
       )}

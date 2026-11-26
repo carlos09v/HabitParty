@@ -27,6 +27,10 @@ public interface TaskRepository {
 
   Optional<Task> findById(UUID id);
 
+  default Optional<List<Task>> findAllByIds(Collection<UUID> ids) {
+    return Optional.empty();
+  }
+
   // Busca todas as tarefas de uma coluna do Kanban, já ordenadas para a tela!
   List<Task> findByBoardColumnIdOrderByOrderIndexAsc(UUID boardColumnId);
 
@@ -49,11 +53,12 @@ public interface TaskRepository {
     return List.of();
   }
 
-  // Busca paginada das tarefas recorrentes (HABIT/DAILY) para o rollover diário em lotes
-  List<Task> findRecurringTasksPage(int page, int size);
-
   default List<Task> findRecurringTasksByUserIds(Collection<UUID> userIds) {
     return List.of();
+  }
+
+  default Optional<List<Task>> findRecurringTasksLightweightByUserIds(Collection<UUID> userIds) {
+    return Optional.empty();
   }
 
   List<Task> findOverdueHardcoreTodos(LocalDate today);
@@ -99,6 +104,10 @@ public interface TaskRepository {
   }
 
   void deleteById(UUID id);
+
+  default List<UUID> findIdsByBoardColumnIds(Collection<UUID> boardColumnIds) {
+    return List.of();
+  }
 
   // Cascata do boardColumn
   void deleteAllByBoardColumnId(UUID boardColumnId);

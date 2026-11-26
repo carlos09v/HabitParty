@@ -1,26 +1,27 @@
 "use client";
 
 import { arrayMove } from "@dnd-kit/sortable";
-import { Crown, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Crown, Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
-import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
+import {
+  CatalogCapacityPill,
+  useResolvedIsPremium,
+} from "@/components/ui/CatalogItemShared";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
+import { Switch } from "@/components/ui/Switch";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import {
   FREE_MAX_REWARD_CARDS,
   MAX_ACTIVE_DEBT_CARDS,
   MAX_REWARD_PACKAGES_PER_CARD,
   PREMIUM_MAX_REWARD_CARDS,
-  REWARD_CATEGORY_FILTER_VALUES,
-  REWARD_PACKAGE_FILTER_VALUES,
   REWARD_SORT_VALUES,
-  REWARD_TYPE_FILTER_VALUES,
 } from "@/constants/reward";
 import {
   ExperienceModeFallbackProvider,
@@ -30,21 +31,27 @@ import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
 import { useRewardCatalogActions } from "@/hooks/useRewardCatalogActions";
 import type { AppLocale } from "@/i18n/config";
-import { useUserStore } from "@/store/userStore";
-import type { Reward, RewardDisplayEntry } from "@/types/reward";
+import { useUIStore } from "@/store/uiStore";
+import type {
+  Reward,
+  RewardDisplayEntry,
+  RewardGroupContext,
+} from "@/types/reward";
 import type { ExperienceMode } from "@/types/ui";
 import { cn } from "@/utils";
+import {
+  buildCatalogCategoryOptions,
+  buildCatalogPackageOptions,
+  buildCatalogTypeOptions,
+  matchesCatalogSearchAndMeta,
+} from "@/utils/catalogFiltering";
 import { calculateRewardWelcomeStats } from "@/utils/catalogMetrics";
 import {
   formatRewardVariantBadge,
   groupRewardsForShowcase,
   isDebtReward,
 } from "@/utils/rewardGrouping";
-import {
-  toCategoryMessageKey,
-  toPackageMessageKey,
-  toRewardTypeMessageKey,
-} from "@/utils/rewardMapper";
+import { toRewardTypeMessageKey } from "@/utils/rewardMapper";
 import { RewardsCatalogView } from "./RewardsCatalogView";
 
 const RewardFormModal = dynamic(
@@ -57,6 +64,7 @@ const RewardFormModal = dynamic(
 
 interface RewardsContainerProps {
   initialRewards: Reward[];
+  initialOwnedCounts?: Record<string, number>;
   initialCoins?: number;
   initialIsPremium?: boolean;
   initialExperienceMode?: ExperienceMode;
@@ -64,6 +72,7 @@ interface RewardsContainerProps {
 
 export function RewardsContainer({
   initialRewards,
+  initialOwnedCounts = {},
   initialCoins = 0,
   initialIsPremium = false,
   initialExperienceMode = "PRODUCTIVITY",
@@ -72,6 +81,7 @@ export function RewardsContainer({
     <ExperienceModeFallbackProvider mode={initialExperienceMode}>
       <RewardsContainerContent
         initialRewards={initialRewards}
+        initialOwnedCounts={initialOwnedCounts}
         initialCoins={initialCoins}
         initialIsPremium={initialIsPremium}
         initialExperienceMode={initialExperienceMode}
@@ -82,6 +92,7 @@ export function RewardsContainer({
 
 function RewardsContainerContent({
   initialRewards,
+  initialOwnedCounts,
   initialCoins,
   initialIsPremium,
   initialExperienceMode,
@@ -90,16 +101,27 @@ function RewardsContainerContent({
   const tOptions = useTranslations("rewards.options");
   const { isGamified } = useExperienceMode(initialExperienceMode);
   const locale = useLocale() as AppLocale;
-  const storeHasUser = useUserStore((s) => s.user !== null);
-  const storeIsPremium = useUserStore((s) => Boolean(s.user?.isPremium));
-  const isPremium = storeHasUser ? storeIsPremium : initialIsPremium;
+  const isPremium = useResolvedIsPremium(initialIsPremium);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
 
   const [onlyAffordable, setOnlyAffordable] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [ownedCountByRewardId, setOwnedCountByRewardId] =
+    useState<Record<string, number>>(initialOwnedCounts);
   const [selectedVariantByGroup, setSelectedVariantByGroup] = useState<
     Record<string, string>
   >({});
   const displayedEntriesRef = useRef<RewardDisplayEntry[]>([]);
+
+  useEffect(() => {
+    setOwnedCountByRewardId(initialOwnedCounts);
+  }, [initialOwnedCounts]);
+
+  const handleRewardBought = useCallback((reward: Reward) => {
+    setOwnedCountByRewardId((prev) => ({
+      ...prev,
+      [reward.id]: (prev[reward.id] ?? 0) + 1,
+    }));
+  }, []);
 
   const {
     viewMode,
@@ -148,7 +170,6 @@ function RewardsContainerContent({
     initialItems: initialRewards,
     onReorderServerAction: reorderRewards,
     isFiltering: isFiltering || onlyAffordable,
-    onlyChangedOrderIndex: true,
     resolveDragReorder: resolveGroupedRewardOrder,
   });
 
@@ -178,6 +199,7 @@ function RewardsContainerContent({
     editingGroup,
     prefillDraft,
     handleAddProduct,
+    handleOpenTemplateDraft,
     handleAddDebt,
     handleCloseFormModal,
     handleRewardSuccess,
@@ -185,7 +207,12 @@ function RewardsContainerContent({
     isDeleting,
     redeemingRewardIds,
     handleBuy,
-  } = useRewardCatalogActions({ rewards, setRewards });
+  } = useRewardCatalogActions({
+    rewards,
+    setRewards,
+    fallbackCoins: initialCoins,
+    onRewardBought: handleRewardBought,
+  });
 
   const handleSelectVariant = useCallback(
     (groupId: string, variantId: string) => {
@@ -199,38 +226,29 @@ function RewardsContainerContent({
 
   const categoryOptions = useMemo(
     () =>
-      REWARD_CATEGORY_FILTER_VALUES.map((value) => ({
-        value,
-        label: value
-          ? tOptions(`categories.${toCategoryMessageKey(value)}`)
-          : tOptions("categories.all"),
-      })),
+      buildCatalogCategoryOptions({
+        allLabel: tOptions("categories.all"),
+        getCategoryLabel: (key) => tOptions(`categories.${key}`),
+      }),
     [tOptions],
   );
 
   const typeOptions = useMemo(
     () =>
-      REWARD_TYPE_FILTER_VALUES.map((value) => ({
-        value,
-        label: value
-          ? value === "MysteryBox"
-            ? isGamified
-              ? tOptions("types.MysteryBox")
-              : tOptions("types.MysteryBoxProductivity")
-            : tOptions(`types.${toRewardTypeMessageKey(value)}`)
-          : tOptions("types.all"),
-      })),
+      buildCatalogTypeOptions({
+        allLabel: tOptions("types.all"),
+        isGamified,
+        getTypeLabel: (typeKey) => tOptions(`types.${typeKey}`),
+      }),
     [isGamified, tOptions],
   );
 
   const packageOptions = useMemo(
     () =>
-      REWARD_PACKAGE_FILTER_VALUES.map((value) => ({
-        value,
-        label: value
-          ? tOptions(`packages.${toPackageMessageKey(value)}`)
-          : tOptions("packages.all"),
-      })),
+      buildCatalogPackageOptions({
+        allLabel: tOptions("packages.all"),
+        getPackageLabel: (key) => tOptions(`packages.${key}`),
+      }),
     [tOptions],
   );
 
@@ -249,6 +267,21 @@ function RewardsContainerContent({
     () => groupRewardsForShowcase(rewards),
     [rewards],
   );
+
+  const fullGroupById = useMemo(() => {
+    const map = new Map<string, RewardGroupContext>();
+    for (const entry of allGroupedEntries) {
+      if (entry.variants.length > 1) {
+        map.set(entry.groupId, {
+          groupId: entry.groupId,
+          displayTitle: entry.displayTitle,
+          variants: entry.variants,
+        });
+      }
+    }
+    return map;
+  }, [allGroupedEntries]);
+
   // Dívidas descartáveis possuem cota implícita independente e não consomem o limite regular de cards
   const { activeDebtsCount, totalShowcaseCards } = useMemo(() => {
     let debts = 0;
@@ -270,78 +303,69 @@ function RewardsContainerContent({
 
   const coinFilterLimit = onlyAffordable ? resolvedCoins : null;
 
-  const filteredRewards = useMemo(() => {
+  // Filtra entradas já agrupadas preservando a identidade do grupo e ordena grupos completos após filtragem
+  const displayedEntries = useMemo(() => {
     if (!isFiltering && coinFilterLimit === null) {
-      return rewards;
+      return allGroupedEntries;
     }
 
-    const searchLower = filters.search.trim().toLowerCase();
-    const filterTypeKey = filters.type
-      ? toRewardTypeMessageKey(filters.type)
-      : null;
-    const filterCategoryKey = filters.category
-      ? toCategoryMessageKey(filters.category)
-      : null;
-    const filterPackageKey = filters.packageLevel
-      ? toPackageMessageKey(filters.packageLevel)
-      : null;
+    const filteredEntries: RewardDisplayEntry[] = [];
+    for (const entry of allGroupedEntries) {
+      const matchingVariants = entry.variants.filter((variant) => {
+        if (!matchesCatalogSearchAndMeta(variant, filters)) {
+          return false;
+        }
+        if (coinFilterLimit !== null && variant.price > coinFilterLimit) {
+          return false;
+        }
+        return true;
+      });
 
-    let result = rewards.filter((r) => {
-      if (
-        searchLower &&
-        !r.title.toLowerCase().includes(searchLower) &&
-        !(r.description || "").toLowerCase().includes(searchLower)
-      ) {
-        return false;
-      }
-      if (filterTypeKey && toRewardTypeMessageKey(r.type) !== filterTypeKey) {
-        return false;
-      }
-      if (
-        filterCategoryKey &&
-        toCategoryMessageKey(r.category) !== filterCategoryKey
-      ) {
-        return false;
-      }
-      if (
-        filterPackageKey &&
-        toPackageMessageKey(r.packageLevel) !== filterPackageKey
-      ) {
-        return false;
-      }
-      if (coinFilterLimit !== null && r.price > coinFilterLimit) {
-        return false;
-      }
-      return true;
-    });
+      if (matchingVariants.length === 0) continue;
 
-    if (filters.sortBy === "price-asc") {
-      result = [...result].sort((a, b) => a.price - b.price);
-    } else if (filters.sortBy === "price-desc") {
-      result = [...result].sort((a, b) => b.price - a.price);
-    } else if (filters.sortBy === "name") {
-      result = [...result].sort((a, b) =>
-        a.title.localeCompare(b.title, locale),
-      );
+      filteredEntries.push({
+        groupId: entry.groupId,
+        displayTitle: entry.displayTitle,
+        primaryReward: matchingVariants[0],
+        variants: matchingVariants,
+      });
     }
 
-    return result;
-  }, [rewards, isFiltering, filters, coinFilterLimit, locale]);
+    if (!filters.sortBy) {
+      return filteredEntries;
+    }
 
-  const displayedEntries = useMemo(
-    () =>
-      isFiltering || onlyAffordable
-        ? groupRewardsForShowcase(filteredRewards)
-        : allGroupedEntries,
-    [isFiltering, onlyAffordable, filteredRewards, allGroupedEntries],
-  );
+    const debts = filteredEntries.filter((e) => isDebtReward(e.primaryReward));
+    const regulars = filteredEntries.filter(
+      (e) => !isDebtReward(e.primaryReward),
+    );
+
+    const compareEntries = (a: RewardDisplayEntry, b: RewardDisplayEntry) => {
+      if (filters.sortBy === "price-asc") {
+        const minA = Math.min(...a.variants.map((v) => v.price));
+        const minB = Math.min(...b.variants.map((v) => v.price));
+        return minA - minB;
+      }
+      if (filters.sortBy === "price-desc") {
+        const maxA = Math.max(...a.variants.map((v) => v.price));
+        const maxB = Math.max(...b.variants.map((v) => v.price));
+        return maxB - maxA;
+      }
+      if (filters.sortBy === "name") {
+        return a.displayTitle.localeCompare(b.displayTitle, locale);
+      }
+      return 0;
+    };
+
+    return [...debts.sort(compareEntries), ...regulars.sort(compareEntries)];
+  }, [allGroupedEntries, isFiltering, filters, coinFilterLimit, locale]);
 
   useEffect(() => {
     displayedEntriesRef.current = displayedEntries;
   }, [displayedEntries]);
 
   const welcomeStats = useMemo(() => {
-    const { stats } = calculateRewardWelcomeStats(
+    const { stats, redeemableCount } = calculateRewardWelcomeStats(
       allGroupedEntries,
       resolvedCoins,
       locale,
@@ -352,7 +376,10 @@ function RewardsContainerContent({
         return {
           ...stat,
           active: onlyAffordable,
-          onClick: () => setOnlyAffordable((prev) => !prev),
+          onClick:
+            redeemableCount > 0 || onlyAffordable
+              ? () => setOnlyAffordable((prev) => !prev)
+              : undefined,
         };
       }
       if (index === 2) {
@@ -378,9 +405,13 @@ function RewardsContainerContent({
   const isContextGrouped = Boolean(
     contextGroup && contextGroup.variants.length > 1,
   );
+  const contextTypeKey = contextMenu.reward
+    ? toRewardTypeMessageKey(contextMenu.reward.type)
+    : null;
   const canAddPackageToContext = Boolean(
     contextMenu.reward &&
-      toRewardTypeMessageKey(contextMenu.reward.type) === "TimeBased" &&
+      !isDebtReward(contextMenu.reward) &&
+      (contextTypeKey === "TimeBased" || contextTypeKey === "SingleUse") &&
       (!contextGroup ||
         contextGroup.variants.length < MAX_REWARD_PACKAGES_PER_CARD),
   );
@@ -500,6 +531,23 @@ function RewardsContainerContent({
           ]}
           onDropdownChange={(id, value) => handleFilterChange({ [id]: value })}
           onClearDropdowns={handleClearAllFilters}
+          extraActiveFiltersCount={onlyAffordable ? 1 : 0}
+          mobileExtraFilters={
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-700/80 dark:border-white/10 bg-surface/60 px-3 py-2.5">
+              <label
+                htmlFor="mobile-filter-affordable"
+                className="text-xs font-semibold text-neutral-100 cursor-pointer"
+              >
+                {t("filters.affordableActive")}
+              </label>
+              <Switch
+                id="mobile-filter-affordable"
+                checked={onlyAffordable}
+                onCheckedChange={setOnlyAffordable}
+                aria-label={t("filters.affordableActive")}
+              />
+            </div>
+          }
           middleActions={
             onlyAffordable ? (
               <button
@@ -513,14 +561,12 @@ function RewardsContainerContent({
             ) : undefined
           }
           rightActions={
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium tabular-nums",
-                  isCardLimitReached
-                    ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                    : "border-neutral-700 bg-surface dark:border-white/15 dark:bg-surface/60 text-neutral-300",
-                )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <CatalogCapacityPill
+                current={totalShowcaseCards}
+                max={maxRewardCards}
+                isPremium={isPremium}
+                isWarning={isCardLimitReached}
                 title={
                   isCardLimitReached
                     ? t("limitReachedTitle", {
@@ -533,57 +579,47 @@ function RewardsContainerContent({
                         max: maxRewardCards,
                       })
                 }
-              >
-                {isPremium && (
-                  <Crown size={12} className="text-gold fill-gold/20" />
-                )}
-                <span>
-                  {totalShowcaseCards}/{maxRewardCards}
-                </span>
-              </div>
+              />
+
+              {activeDebtsCount < MAX_ACTIVE_DEBT_CARDS && (
+                <button
+                  type="button"
+                  onClick={handleAddDebt}
+                  title={t("addDebtTitle")}
+                  className="flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 py-2.5 text-body-s font-semibold text-rose-700 hover:bg-rose-500/20 dark:border-rose-400/35 dark:bg-rose-500/15 dark:text-rose-200 dark:hover:bg-rose-500/25 transition-colors shrink-0 cursor-pointer select-none"
+                >
+                  <Receipt size={14} aria-hidden="true" />
+                  <span>{t("addDebtButton")}</span>
+                </button>
+              )}
 
               {isCardLimitReached ? (
-                <div className="flex items-center gap-2">
-                  {activeDebtsCount < MAX_ACTIVE_DEBT_CARDS && (
-                    <button
-                      type="button"
-                      onClick={handleAddDebt}
-                      title={t("addDebtTitle")}
-                      className="flex items-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 py-2.5 text-body-s font-semibold text-rose-700 hover:bg-rose-500/20 dark:border-rose-400/35 dark:bg-rose-500/15 dark:text-rose-200 dark:hover:bg-rose-500/25 transition-colors shrink-0 cursor-pointer select-none"
-                    >
-                      <Plus size={14} />
-                      <span>{t("addDebtButton")}</span>
-                    </button>
+                <button
+                  type="button"
+                  onClick={isPremium ? undefined : openUpgradeModal}
+                  disabled={isPremium}
+                  title={
+                    isPremium
+                      ? t("maxLimitReachedTitle", { max: maxRewardCards })
+                      : t("upgradeLimitTitle")
+                  }
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-body-s font-bold transition-colors shrink-0 select-none",
+                    isPremium
+                      ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
+                      : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs cursor-pointer",
                   )}
-                  <button
-                    type="button"
-                    onClick={
-                      isPremium ? undefined : () => setIsUpgradeModalOpen(true)
-                    }
-                    disabled={isPremium}
-                    title={
-                      isPremium
-                        ? t("maxLimitReachedTitle", { max: maxRewardCards })
-                        : t("upgradeLimitTitle")
-                    }
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-body-s font-bold transition-colors shrink-0 select-none",
-                      isPremium
-                        ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
-                        : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs cursor-pointer",
-                    )}
-                  >
-                    <Crown
-                      size={15}
-                      className={isPremium ? undefined : "fill-gold/20"}
-                    />
-                    <span>
-                      {isPremium
-                        ? t("limitReachedShort")
-                        : t("upgradeLimitButton")}
-                    </span>
-                  </button>
-                </div>
+                >
+                  <Crown
+                    size={15}
+                    className={isPremium ? undefined : "fill-gold/20"}
+                  />
+                  <span>
+                    {isPremium
+                      ? t("limitReachedShort")
+                      : t("upgradeLimitButton")}
+                  </span>
+                </button>
               ) : (
                 <PrimaryActionButton
                   label={
@@ -598,9 +634,14 @@ function RewardsContainerContent({
 
         <RewardsCatalogView
           entries={displayedEntries}
+          fullGroupById={fullGroupById}
           totalVisibleRewardsCount={rewards.length}
           viewMode={viewMode}
+          isGamified={isGamified}
+          isReorderDisabled={isFiltering || onlyAffordable}
+          sortBy={filters.sortBy}
           currentCoins={resolvedCoins}
+          ownedCountByRewardId={ownedCountByRewardId}
           deletingRewardIds={checkingDeleteRewardIds}
           redeemingRewardIds={redeemingRewardIds}
           selectedVariantByGroup={selectedVariantByGroup}
@@ -611,6 +652,7 @@ function RewardsContainerContent({
           onEdit={handleEditReward}
           onContextMenu={handleContextMenu}
           onAddProduct={handleAddProduct}
+          onSelectStarterTemplate={handleOpenTemplateDraft}
           onClearFilters={handleClearAllFilters}
         />
       </section>
@@ -631,6 +673,12 @@ function RewardsContainerContent({
           groupToEdit={editingGroup}
           prefillDraft={prefillDraft}
           existingRewards={rewards}
+          restrictToDebtOnly={
+            isCardLimitReached &&
+            !editingReward &&
+            !editingGroup &&
+            prefillDraft?.category === "Dívida"
+          }
           onSuccess={handleRewardSuccess}
           onGroupSuccess={handleRewardGroupSuccess}
           onClose={handleCloseFormModal}
@@ -643,7 +691,7 @@ function RewardsContainerContent({
           isOpen={Boolean(rewardToDelete)}
           title={t("deleteModal.title")}
           description={t.rich("deleteModal.description", {
-            title: rewardToDelete.title,
+            title: rewardToDelete.reward.title,
             bold: (chunks) => (
               <strong className="text-neutral-100">{chunks}</strong>
             ),
@@ -652,8 +700,16 @@ function RewardsContainerContent({
           cancelText={t("deleteModal.cancelText")}
           variant="danger"
           isLoading={isDeleting}
-          checkboxLabel={t("deleteModal.deleteHistoryLabel")}
-          checkboxHint={t("deleteModal.deleteHistoryHint")}
+          checkboxLabel={
+            rewardToDelete.hasHistory
+              ? t("deleteModal.deleteHistoryLabel")
+              : undefined
+          }
+          checkboxHint={
+            rewardToDelete.hasHistory
+              ? t("deleteModal.deleteHistoryHint")
+              : undefined
+          }
           checkboxChecked={deleteRewardHistory}
           onCheckboxChange={setDeleteRewardHistory}
           onClose={() => !isDeleting && setRewardToDelete(null)}
@@ -691,13 +747,6 @@ function RewardsContainerContent({
           onCheckboxChange={setDeleteGroupHistory}
           onClose={() => !isDeleting && setGroupToDelete(null)}
           onConfirm={handleConfirmDeleteGroup}
-        />
-      )}
-
-      {isUpgradeModalOpen && (
-        <LazyUpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
         />
       )}
     </>

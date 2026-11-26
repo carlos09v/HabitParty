@@ -1,10 +1,10 @@
-"use client";
-
 import { useFormatter, useTranslations } from "next-intl";
 import { useId } from "react";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
-import { cn, type LevelProgress, type ProgressionTierView } from "@/utils";
+import { cn } from "@/utils/cn";
+import type { LevelProgress } from "@/utils/levels";
+import type { ProgressionTierView } from "@/utils/progression";
 import {
   INSPECTOR_STATUS_BADGE_CLASS,
   INSPECTOR_STATUS_LABEL_KEY,
@@ -139,16 +139,10 @@ export function TierInspectorCard({
         </p>
       ) : (
         <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/35 dark:border-gold/35 bg-amber-500/[0.08] px-3 py-2.5">
-          <span className="text-xs font-semibold text-neutral-200">
-            {t(
-              isGamified
-                ? "inspector.remainingToUnlock"
-                : "inspector.remainingToUnlockEssential",
-              {
-                xp: format.number(remainingXpToSelected),
-                title: tierView.localizedTitle,
-              },
-            )}
+          <span className="text-xs font-semibold text-neutral-200 truncate">
+            {t("inspector.targetUnlockLabel", {
+              title: tierView.localizedTitle,
+            })}
           </span>
           <XpAmount
             amount={remainingXpToSelected}

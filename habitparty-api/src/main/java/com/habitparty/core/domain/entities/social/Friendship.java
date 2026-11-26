@@ -118,6 +118,9 @@ public class Friendship {
     if (status == FriendshipStatus.ACCEPTED) {
       throw new DomainValidationException("Esta amizade já foi aceita.");
     }
+    if (status != FriendshipStatus.PENDING) {
+      throw new DomainValidationException("Apenas solicitações pendentes podem ser aceitas.");
+    }
     this.status = FriendshipStatus.ACCEPTED;
     this.respondedAt = now != null ? now : Instant.now();
   }
@@ -134,6 +137,9 @@ public class Friendship {
   public void blockBy(UUID blockerId, Instant now) {
     if (!involves(blockerId)) {
       throw new UnauthorizedException("Usuário não pertence a este vínculo.");
+    }
+    if (status == FriendshipStatus.BLOCKED && !Objects.equals(requesterId, blockerId)) {
+      throw new UnauthorizedException("Não é possível sobrescrever um bloqueio aplicado por outro usuário.");
     }
     UUID otherId = otherUserId(blockerId);
     this.requesterId = blockerId;

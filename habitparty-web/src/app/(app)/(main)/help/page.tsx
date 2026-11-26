@@ -44,7 +44,11 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-primary/20 pb-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 mb-1">
-              <HelpCircle className="text-gold shrink-0" size={28} />
+              <HelpCircle
+                className="text-gold-ink dark:text-gold shrink-0"
+                size={28}
+                aria-hidden="true"
+              />
               <h1 className="text-2xl sm:text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
                 {t("title")}
               </h1>
@@ -55,11 +59,12 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
           </div>
           <a
             href="#novidades"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/60 dark:hover:bg-surface border border-neutral-700 dark:border-primary/30 text-xs font-bold text-neutral-100 hover:text-amber-700 dark:hover:text-gold transition-colors shrink-0 self-start sm:self-auto whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/60 dark:hover:bg-surface border border-neutral-700 dark:border-primary/30 text-xs font-bold text-neutral-100 hover:text-gold-ink dark:hover:text-gold transition-colors shrink-0 self-start sm:self-auto whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <History
               size={15}
-              className="text-emerald-800 dark:text-emerald-400 shrink-0"
+              className="text-success-400 shrink-0"
+              aria-hidden="true"
             />
             <span>{t("changelogJump")}</span>
           </a>
@@ -77,8 +82,8 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
         {/* CARD DE SUPORTE, CONTATO E REPORT DE BUGS */}
         <section className="rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/60 shadow-xs dark:shadow-none p-4 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
           <div className="flex items-start gap-3.5 sm:gap-4 max-w-2xl min-w-0">
-            <div className="w-11 h-11 rounded-xl bg-amber-500/15 dark:bg-gold/15 border border-amber-500/30 dark:border-gold/30 flex items-center justify-center text-amber-800 dark:text-gold shrink-0 mt-0.5">
-              <MessageSquareHeart size={22} />
+            <div className="w-11 h-11 rounded-xl bg-amber-500/15 dark:bg-gold/15 border border-amber-500/30 dark:border-gold/30 flex items-center justify-center text-gold-ink dark:text-gold shrink-0 mt-0.5">
+              <MessageSquareHeart size={22} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-neutral-50">
@@ -92,7 +97,7 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
                 {t("support.descriptionMiddle")}
                 <a
                   href={SUPPORT_LINKS.contactMailto}
-                  className="text-amber-700 dark:text-gold font-semibold hover:underline break-all"
+                  className="text-gold-ink dark:text-gold font-semibold hover:underline break-all rounded outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {SUPPORT_LINKS.contactEmail}
                 </a>
@@ -106,11 +111,12 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
               href={SUPPORT_LINKS.githubIssues}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface/70 hover:bg-surface dark:bg-card dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-gold/50 text-xs font-bold text-neutral-100 hover:text-amber-700 dark:hover:text-gold transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface/70 hover:bg-surface dark:bg-card dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-gold/50 text-xs font-bold text-neutral-100 hover:text-gold-ink dark:hover:text-gold transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <Bug
                 size={15}
-                className="text-amber-800 dark:text-gold shrink-0"
+                className="text-gold-ink dark:text-gold shrink-0"
+                aria-hidden="true"
               />
               <span>{t("support.reportBug")}</span>
             </a>
@@ -118,16 +124,16 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
               href={SUPPORT_LINKS.githubRepo}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface/70 hover:bg-surface dark:bg-card dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-neutral-600 dark:hover:border-white/30 text-xs font-semibold text-neutral-200 hover:text-neutral-50 dark:hover:text-white transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface/70 hover:bg-surface dark:bg-card dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-neutral-600 dark:hover:border-white/30 text-xs font-semibold text-neutral-200 hover:text-neutral-50 dark:hover:text-white transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
-              <GitBranch size={15} className="shrink-0" />
+              <GitBranch size={15} className="shrink-0" aria-hidden="true" />
               <span>{t("support.repository")}</span>
             </a>
             <a
               href={SUPPORT_LINKS.contactMailto}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-xs font-bold shadow-glow-gold-xs transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold text-xs font-bold shadow-glow-gold-xs transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <Mail size={15} className="shrink-0" />
+              <Mail size={15} className="shrink-0" aria-hidden="true" />
               <span>{t("support.sendEmail")}</span>
             </a>
           </div>

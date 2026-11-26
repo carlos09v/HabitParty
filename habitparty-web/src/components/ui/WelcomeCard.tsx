@@ -1,12 +1,12 @@
 "use client";
 
 import { HelpCircle, Sparkles, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import {
   CONFIGURABLE_WELCOME_CARDS,
   WELCOME_CARD_DETAILS,
@@ -16,6 +16,14 @@ import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { useWelcomeCards } from "@/store/welcomeCardsStore";
 import type { WelcomeCardProps, WelcomeCardStat } from "@/types/ui";
 import { cn } from "@/utils";
+
+const ConfirmationModal = dynamic(
+  () =>
+    import("@/components/ui/ConfirmationModal").then((mod) => ({
+      default: mod.ConfirmationModal,
+    })),
+  { ssr: false },
+);
 
 function getStatCardVariantClasses(
   variant: WelcomeCardStat["variant"],
@@ -74,6 +82,70 @@ function getStatValueClasses(variant: WelcomeCardStat["variant"]): string {
   return "text-neutral-50";
 }
 
+interface WelcomeCardQuickActionsProps {
+  hasQuickGuide: boolean;
+  isDismissible: boolean;
+  isGuideOpen: boolean;
+  guidePopoverId: string;
+  onToggleGuide: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onRequestDismiss: () => void;
+  quickGuideTitle: string;
+  quickGuideAria: string;
+  hideForeverTitle: string;
+  hideForeverAria: string;
+  className?: string;
+}
+
+function WelcomeCardQuickActions({
+  hasQuickGuide,
+  isDismissible,
+  isGuideOpen,
+  guidePopoverId,
+  onToggleGuide,
+  onRequestDismiss,
+  quickGuideTitle,
+  quickGuideAria,
+  hideForeverTitle,
+  hideForeverAria,
+  className,
+}: WelcomeCardQuickActionsProps) {
+  if (!hasQuickGuide && !isDismissible) return null;
+
+  return (
+    <div className={cn("items-center gap-1 shrink-0", className)}>
+      {hasQuickGuide && (
+        <button
+          type="button"
+          onClick={onToggleGuide}
+          aria-expanded={isGuideOpen}
+          aria-controls={guidePopoverId}
+          title={quickGuideTitle}
+          aria-label={quickGuideAria}
+          className={cn(
+            "w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
+            isGuideOpen
+              ? "bg-primary/15 dark:bg-gold/20 border-primary/40 dark:border-gold/50 text-primary dark:text-gold"
+              : "bg-surface/80 dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 hover:text-primary dark:hover:text-gold hover:border-primary/35 dark:hover:border-gold/35",
+          )}
+        >
+          <HelpCircle size={15} />
+        </button>
+      )}
+      {isDismissible && (
+        <button
+          type="button"
+          onClick={onRequestDismiss}
+          className="w-8 h-8 rounded-lg border border-transparent text-neutral-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+          title={hideForeverTitle}
+          aria-label={hideForeverAria}
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function WelcomeCard({
   title,
   subtitle,
@@ -95,7 +167,11 @@ export function WelcomeCard({
   const { isCardHidden, hideCard } = useWelcomeCards();
   const guidePopoverId = useId();
 
-  const guidePopover = useFloatingPopover({
+  const guidePopover = useFloatingPopover<
+    HTMLElement,
+    HTMLButtonElement,
+    HTMLElement
+  >({
     align: "right",
     estimatedWidth: 360,
     estimatedHeight: 280,
@@ -127,9 +203,9 @@ export function WelcomeCard({
   const defaultDetail = storageKey
     ? WELCOME_CARD_DETAILS[storageKey]
     : undefined;
-  const fallbackTitle = title ?? defaultDetail?.title ?? "";
-  const fallbackSubtitle = subtitle ?? defaultDetail?.subtitle;
-  const fallbackBullets = bullets ?? defaultDetail?.bullets ?? [];
+  const fallbackTitle = title ?? "";
+  const fallbackSubtitle = subtitle;
+  const fallbackBullets = bullets ?? [];
   const resolvedImageSrc = imageSrc ?? defaultDetail?.imageSrc;
   const resolvedImageWidth = imageWidth ?? defaultDetail?.normalWidth ?? 120;
   const resolvedImageHeight = imageHeight ?? defaultDetail?.normalHeight ?? 72;
@@ -164,9 +240,12 @@ export function WelcomeCard({
     CONFIGURABLE_WELCOME_CARDS.find((card) => card.key === storageKey)?.icon ??
     Sparkles;
 
-  // Mantem respeito a ocultacao configurada em WelcomeCardsSettings
+  // Mantem respeito a ocultacao configurada em WelcomeCardsSettings,
+  // preservando um <h1> semantico invisivel para leitores de tela quando headingLevel === "h1"
   if (storageKey && isCardHidden(storageKey)) {
-    return null;
+    return headingLevel === "h1" ? (
+      <h1 className="sr-only">{resolvedTitle}</h1>
+    ) : null;
   }
 
   const isDismissible =
@@ -191,6 +270,7 @@ export function WelcomeCard({
   return (
     <>
       <section
+        ref={guidePopover.containerRef}
         className={cn(
           "w-full shrink-0 bg-linear-to-r from-primary/[0.05] via-card to-amber-500/[0.03] dark:from-primary-dark/45 dark:via-surface/85 dark:to-primary-dark/30 border border-neutral-700 dark:border-primary/35 shadow-xs dark:shadow-[0_0_16px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] relative rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5",
           className,
@@ -221,40 +301,22 @@ export function WelcomeCard({
             </div>
 
             {/* Acoes rapidas no topo direito em mobile/tablet */}
-            <div className="flex items-center gap-1 shrink-0 xl:hidden">
-              {hasQuickGuide && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    guidePopover.triggerRef.current = e.currentTarget;
-                    guidePopover.toggle();
-                  }}
-                  aria-expanded={guidePopover.isOpen}
-                  aria-controls={guidePopoverId}
-                  title={t("quickGuideTitle")}
-                  aria-label={t("quickGuideAria")}
-                  className={cn(
-                    "w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
-                    guidePopover.isOpen
-                      ? "bg-primary/15 dark:bg-gold/20 border-primary/40 dark:border-gold/50 text-primary dark:text-gold"
-                      : "bg-surface/80 dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 hover:text-primary dark:hover:text-gold hover:border-primary/35 dark:hover:border-gold/35",
-                  )}
-                >
-                  <HelpCircle size={15} />
-                </button>
-              )}
-              {isDismissible && (
-                <button
-                  type="button"
-                  onClick={() => setIsConfirmModalOpen(true)}
-                  className="w-8 h-8 rounded-lg border border-transparent text-neutral-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
-                  title={t("hideForeverTitle")}
-                  aria-label={t("hideForeverAria")}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+            <WelcomeCardQuickActions
+              hasQuickGuide={hasQuickGuide}
+              isDismissible={isDismissible}
+              isGuideOpen={guidePopover.isOpen}
+              guidePopoverId={guidePopoverId}
+              onToggleGuide={(e) => {
+                guidePopover.triggerRef.current = e.currentTarget;
+                guidePopover.toggle();
+              }}
+              onRequestDismiss={() => setIsConfirmModalOpen(true)}
+              quickGuideTitle={t("quickGuideTitle")}
+              quickGuideAria={t("quickGuideAria")}
+              hideForeverTitle={t("hideForeverTitle")}
+              hideForeverAria={t("hideForeverAria")}
+              className="flex xl:hidden"
+            />
           </div>
 
           {/* Direita: 3 KPIs vivos/clicaveis + controles desktop */}
@@ -349,41 +411,22 @@ export function WelcomeCard({
             )}
 
             {/* Botoes Guia Rapido (?) e Ocultar (X) em desktop */}
-            <div className="hidden xl:flex items-center gap-1 pl-2 border-l border-neutral-700 dark:border-white/10 shrink-0">
-              {hasQuickGuide && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    guidePopover.triggerRef.current = e.currentTarget;
-                    guidePopover.toggle();
-                  }}
-                  aria-expanded={guidePopover.isOpen}
-                  aria-controls={guidePopoverId}
-                  title={t("quickGuideTitle")}
-                  aria-label={t("quickGuideAria")}
-                  className={cn(
-                    "w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
-                    guidePopover.isOpen
-                      ? "bg-primary/15 dark:bg-gold/20 border-primary/40 dark:border-gold/50 text-primary dark:text-gold"
-                      : "bg-surface/80 dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 hover:text-primary dark:hover:text-gold hover:border-primary/35 dark:hover:border-gold/35",
-                  )}
-                >
-                  <HelpCircle size={15} />
-                </button>
-              )}
-
-              {isDismissible && (
-                <button
-                  type="button"
-                  onClick={() => setIsConfirmModalOpen(true)}
-                  className="w-8 h-8 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
-                  title={t("hideForeverTitle")}
-                  aria-label={t("hideForeverAria")}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+            <WelcomeCardQuickActions
+              hasQuickGuide={hasQuickGuide}
+              isDismissible={isDismissible}
+              isGuideOpen={guidePopover.isOpen}
+              guidePopoverId={guidePopoverId}
+              onToggleGuide={(e) => {
+                guidePopover.triggerRef.current = e.currentTarget;
+                guidePopover.toggle();
+              }}
+              onRequestDismiss={() => setIsConfirmModalOpen(true)}
+              quickGuideTitle={t("quickGuideTitle")}
+              quickGuideAria={t("quickGuideAria")}
+              hideForeverTitle={t("hideForeverTitle")}
+              hideForeverAria={t("hideForeverAria")}
+              className="hidden xl:flex pl-2 border-l border-neutral-700 dark:border-white/10"
+            />
           </div>
         </div>
       </section>
@@ -393,6 +436,7 @@ export function WelcomeCard({
         guidePopover.isOpen &&
         guidePopover.shouldRenderPortal &&
         guidePopover.floatingStyle &&
+        guidePopover.portalContainer &&
         createPortal(
           <section
             ref={guidePopover.popoverRef}
@@ -454,11 +498,11 @@ export function WelcomeCard({
               </ul>
             )}
           </section>,
-          document.body,
+          guidePopover.portalContainer,
         )}
 
-      {/* Modal de Confirmacao para Ocultar Card */}
-      {isDismissible && (
+      {/* Modal de Confirmacao para Ocultar Card (montado sob demanda) */}
+      {isDismissible && isConfirmModalOpen && (
         <ConfirmationModal
           isOpen={isConfirmModalOpen}
           onClose={() => setIsConfirmModalOpen(false)}

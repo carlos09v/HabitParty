@@ -32,7 +32,7 @@ export function AuthPageShell({
           {footerText}{" "}
           <Link
             href={footerLinkHref}
-            className="inline-flex items-center py-1.5 sm:py-0.5 text-primary dark:text-gold font-bold hover:underline transition-colors outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded px-1"
+            className="inline-flex items-center py-1.5 sm:py-0.5 text-primary dark:text-gold font-bold hover:underline transition-colors outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded px-1"
           >
             {footerLinkText}
           </Link>

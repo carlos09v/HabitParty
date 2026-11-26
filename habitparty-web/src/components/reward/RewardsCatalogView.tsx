@@ -1,17 +1,22 @@
-"use client";
-
 import type {
   DragEndEvent,
   SensorDescriptor,
   SensorOptions,
 } from "@dnd-kit/core";
-import { Plus, Receipt, SearchX, Store } from "lucide-react";
+import {
+  Coffee,
+  Gamepad2,
+  Package,
+  Plus,
+  Receipt,
+  SearchX,
+  Store,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type MouseEvent, useMemo } from "react";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
 import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
-import { ItemRowHeader } from "@/components/ui/ItemRow";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { RewardPrefillDraft } from "@/hooks/useRewardCatalogActions";
 import type {
   Reward,
   RewardDisplayEntry,
@@ -19,14 +24,22 @@ import type {
 } from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
 import { cn } from "@/utils";
-import { isDebtReward } from "@/utils/rewardGrouping";
+import {
+  extractRewardGroupBaseTitle,
+  isDebtReward,
+} from "@/utils/rewardGrouping";
 import { RewardCard, RewardItemRow } from "./RewardCard";
 
 interface RewardsCatalogViewProps {
   entries: RewardDisplayEntry[];
+  fullGroupById?: ReadonlyMap<string, RewardGroupContext>;
   totalVisibleRewardsCount: number;
   viewMode: ViewMode;
+  isGamified: boolean;
+  isReorderDisabled?: boolean;
+  sortBy?: string;
   currentCoins?: number;
+  ownedCountByRewardId?: Readonly<Record<string, number>>;
   deletingRewardIds?: Set<string>;
   redeemingRewardIds?: Set<string>;
   selectedVariantByGroup?: Record<string, string>;
@@ -41,14 +54,20 @@ interface RewardsCatalogViewProps {
     groupContext?: RewardGroupContext,
   ) => void;
   onAddProduct: () => void;
+  onSelectStarterTemplate?: (draft: RewardPrefillDraft) => void;
   onClearFilters: () => void;
 }
 
 export function RewardsCatalogView({
   entries,
+  fullGroupById,
   totalVisibleRewardsCount,
   viewMode,
+  isGamified,
+  isReorderDisabled = false,
+  sortBy,
   currentCoins,
+  ownedCountByRewardId,
   deletingRewardIds,
   redeemingRewardIds,
   selectedVariantByGroup,
@@ -59,37 +78,100 @@ export function RewardsCatalogView({
   onEdit,
   onContextMenu,
   onAddProduct,
+  onSelectStarterTemplate,
   onClearFilters,
 }: RewardsCatalogViewProps) {
   const t = useTranslations("rewards.container");
-  const { isGamified } = useExperienceMode();
 
-  const { debtEntries, regularEntries, sortableItemIds } = useMemo(() => {
-    const debts: RewardDisplayEntry[] = [];
-    const regular: RewardDisplayEntry[] = [];
-    const ids: string[] = [];
+  const { debtEntries, debtIds, regularEntries, sortableItemIds } =
+    useMemo(() => {
+      const debts: RewardDisplayEntry[] = [];
+      const debtGroupIds: string[] = [];
+      const regular: RewardDisplayEntry[] = [];
+      const ids: string[] = [];
 
-    for (const entry of entries) {
-      if (isDebtReward(entry.primaryReward)) {
-        debts.push(entry);
-      } else {
-        regular.push(entry);
-        ids.push(entry.groupId);
+      for (const entry of entries) {
+        if (isDebtReward(entry.primaryReward)) {
+          debts.push(entry);
+          debtGroupIds.push(entry.groupId);
+        } else {
+          regular.push(entry);
+          ids.push(entry.groupId);
+        }
       }
-    }
 
-    return {
-      debtEntries: debts,
-      regularEntries: regular,
-      sortableItemIds: ids,
-    };
-  }, [entries]);
+      return {
+        debtEntries: debts,
+        debtIds: debtGroupIds,
+        regularEntries: regular,
+        sortableItemIds: ids,
+      };
+    }, [entries]);
+
+  const starterTemplates = useMemo<
+    Array<{
+      id: string;
+      icon: typeof Coffee;
+      label: string;
+      meta: string;
+      draft: RewardPrefillDraft;
+    }>
+  >(
+    () => [
+      {
+        id: "coffee",
+        icon: Coffee,
+        label: t("empty.templates.coffeeTitle"),
+        meta: t("empty.templates.coffeeMeta"),
+        draft: {
+          title: t("empty.templates.coffeeTitle"),
+          category: "Bem-estar",
+          type: "SingleUse",
+          icon: "coffee",
+          price: 4,
+          suggestedPackageLevel: "Básico",
+        },
+      },
+      {
+        id: "gaming",
+        icon: Gamepad2,
+        label: t("empty.templates.gamingTitle"),
+        meta: t("empty.templates.gamingMeta"),
+        draft: {
+          title: extractRewardGroupBaseTitle(t("empty.templates.gamingTitle")),
+          category: "Entretenimento",
+          type: "TimeBased",
+          icon: "gamepad",
+          baseDurationMinutes: 30,
+          suggestedPackageLevel: "Básico",
+        },
+      },
+      {
+        id: "box",
+        icon: Package,
+        label: isGamified
+          ? t("empty.templates.boxTitleGamified")
+          : t("empty.templates.boxTitleProductivity"),
+        meta: t("empty.templates.boxMeta"),
+        draft: {
+          title: isGamified
+            ? t("empty.templates.boxTitleGamified")
+            : t("empty.templates.boxTitleProductivity"),
+          category: "Sorte",
+          type: "MysteryBox",
+          icon: "mystery_box",
+          price: 5,
+          suggestedPackageLevel: "Básico",
+        },
+      },
+    ],
+    [isGamified, t],
+  );
 
   if (entries.length === 0) {
     const isStoreEmpty = totalVisibleRewardsCount === 0;
     return (
       <div className="flex flex-col gap-2.5 w-full pb-8">
-        {viewMode === "list" && <ItemRowHeader mode="reward" />}
         <CatalogEmptyState
           icon={isStoreEmpty ? Store : SearchX}
           title={
@@ -106,14 +188,46 @@ export function RewardsCatalogView({
           }
           action={
             isStoreEmpty ? (
-              <button
-                type="button"
-                onClick={onAddProduct}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer"
-              >
-                <Plus size={15} />
-                <span>{t("empty.createFirstReward")}</span>
-              </button>
+              <div className="flex flex-col items-center gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={onAddProduct}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer"
+                >
+                  <Plus size={15} />
+                  <span>{t("empty.createFirstReward")}</span>
+                </button>
+                {onSelectStarterTemplate && (
+                  <div className="flex flex-col items-center gap-1.5 pt-1">
+                    <span className="text-[11px] font-medium text-neutral-400">
+                      {t("empty.templatesHint")}
+                    </span>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {starterTemplates.map((tpl) => {
+                        const TplIcon = tpl.icon;
+                        return (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            onClick={() => onSelectStarterTemplate(tpl.draft)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-700 dark:border-white/15 bg-card dark:bg-surface/80 hover:border-gold/50 hover:text-gold text-neutral-200 text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            <TplIcon
+                              size={13}
+                              className="text-gold shrink-0"
+                              aria-hidden="true"
+                            />
+                            <span>{tpl.label}</span>
+                            <span className="text-[10px] text-neutral-400 font-normal">
+                              ({tpl.meta})
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 type="button"
@@ -129,59 +243,61 @@ export function RewardsCatalogView({
     );
   }
 
+  const effectiveDragDisabled = isReorderDisabled || regularEntries.length <= 1;
+
   const renderRewardEntry = (entry: RewardDisplayEntry, isDebt: boolean) => {
     const hasVariants = entry.variants.length > 1;
     const selectedVariantId = selectedVariantByGroup?.[entry.groupId];
+    const defaultVariant =
+      hasVariants && sortBy === "price-desc"
+        ? entry.variants.reduce((best, curr) =>
+            curr.price > best.price ? curr : best,
+          )
+        : entry.primaryReward;
     const reward =
       hasVariants && selectedVariantId
         ? (entry.variants.find((v) => v.id === selectedVariantId) ??
-          entry.primaryReward)
-        : entry.primaryReward;
+          defaultVariant)
+        : defaultVariant;
+
+    const fullGroupContext = fullGroupById?.get(entry.groupId);
     const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
     const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
+    const ownedQuantity = ownedCountByRewardId?.[reward.id] ?? 0;
 
-    if (viewMode === "card") {
-      return (
-        <RewardCard
-          key={entry.groupId}
-          groupId={entry.groupId}
-          reward={reward}
-          displayTitle={entry.displayTitle}
-          variants={hasVariants ? entry.variants : undefined}
-          activeVariantId={reward.id}
-          onSelectVariant={hasVariants ? onSelectVariant : undefined}
-          onBuy={onBuy}
-          onEdit={onEdit}
-          onContextMenu={onContextMenu}
-          currentCoins={currentCoins}
-          isDeleteChecking={isDeleteChecking}
-          isRedeeming={isRedeeming}
-          isReorderDisabled={isDebt}
-        />
-      );
-    }
-
+    // Clamping currentCoins ao preço do item evita re-renders de cards já compráveis quando saldo sobe
+    const clampedCoins =
+      typeof currentCoins === "number"
+        ? Math.min(currentCoins, reward.price)
+        : undefined;
     const canAfford =
       typeof currentCoins === "number" ? currentCoins >= reward.price : true;
 
-    return (
-      <RewardItemRow
-        key={entry.groupId}
-        groupId={entry.groupId}
-        reward={reward}
-        displayTitle={entry.displayTitle}
-        variants={hasVariants ? entry.variants : undefined}
-        activeVariantId={reward.id}
-        onSelectVariant={hasVariants ? onSelectVariant : undefined}
-        onBuy={onBuy}
-        onEdit={onEdit}
-        onContextMenu={onContextMenu}
-        canAfford={canAfford}
-        isDeleteChecking={isDeleteChecking}
-        isRedeeming={isRedeeming}
-        isReorderDisabled={isDebt}
-      />
-    );
+    const sharedProps = {
+      groupId: entry.groupId,
+      reward,
+      displayTitle: entry.displayTitle,
+      variants: hasVariants ? entry.variants : undefined,
+      fullGroupContext,
+      activeVariantId: reward.id,
+      onSelectVariant: hasVariants ? onSelectVariant : undefined,
+      onBuy,
+      onEdit,
+      onContextMenu,
+      currentCoins: clampedCoins,
+      canAfford,
+      ownedQuantity,
+      isGamified,
+      isDeleteChecking,
+      isRedeeming,
+      isReorderDisabled: isDebt || effectiveDragDisabled,
+    };
+
+    if (viewMode !== "list") {
+      return <RewardCard key={entry.groupId} {...sharedProps} />;
+    }
+
+    return <RewardItemRow key={entry.groupId} {...sharedProps} />;
   };
 
   return (
@@ -217,23 +333,17 @@ export function RewardsCatalogView({
             </p>
           </div>
 
-          {viewMode === "card" ? (
-            <div className="@container w-full">
-              <div className="catalog-card-grid grid grid-cols-1 w-full @min-[520px]:grid-cols-2 @min-[800px]:grid-cols-3 @min-[1080px]:grid-cols-4 @min-[1280px]:grid-cols-5 gap-3.5">
-                {debtEntries.map((entry) => renderRewardEntry(entry, true))}
-              </div>
-            </div>
-          ) : (
-            <div className="@container flex flex-col gap-2.5 w-full">
-              {regularEntries.length === 0 && <ItemRowHeader mode="reward" />}
-              <ul
-                className="flex flex-col gap-2 w-full"
-                aria-label={t("sections.debtsListAria")}
-              >
-                {debtEntries.map((entry) => renderRewardEntry(entry, true))}
-              </ul>
-            </div>
-          )}
+          <CatalogGridListShell
+            itemIds={debtIds}
+            viewMode={viewMode}
+            headerMode="reward"
+            listAriaLabel={t("sections.debtsListAria")}
+            disableDnd={true}
+            hideHeader={false}
+            bottomPaddingClassName="pb-0"
+          >
+            {debtEntries.map((entry) => renderRewardEntry(entry, true))}
+          </CatalogGridListShell>
         </section>
       )}
 
@@ -264,6 +374,8 @@ export function RewardsCatalogView({
             viewMode={viewMode}
             headerMode="reward"
             listAriaLabel={t("sections.showcaseListAria")}
+            disableDnd={effectiveDragDisabled}
+            hideHeader={debtEntries.length > 0}
             sensors={sensors}
             onDragEnd={onDragEnd}
           >

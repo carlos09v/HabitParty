@@ -7,9 +7,60 @@ import { useUserStore } from "@/store/userStore";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import type { DatePickerEventSchedulePatch } from "@/types/ui";
 import { cn } from "@/utils";
-import { isTaskHardcoreLocked } from "@/utils/date";
+import { isTaskCycleBasedStreak, isTaskHardcoreLocked } from "@/utils/date";
 import { TaskDatePicker } from "./TaskDatePicker";
 import { TaskPriorityPicker } from "./TaskPriorityPicker";
+
+interface TaskHeaderStreakBadgeProps {
+  streak: number;
+  highestStreak: number;
+  isCycleBasedStreak: boolean;
+}
+
+function TaskHeaderStreakBadge({
+  streak,
+  highestStreak,
+  isCycleBasedStreak,
+}: TaskHeaderStreakBadgeProps) {
+  const t = useTranslations("tasks.detailsPopover.header");
+  if (streak <= 0 && highestStreak <= 0) return null;
+
+  const streakUnit = isCycleBasedStreak ? "x" : "d";
+  const title =
+    highestStreak > 0
+      ? t(
+          isCycleBasedStreak
+            ? "streakCyclesWithRecordTitle"
+            : "streakWithRecordTitle",
+          { streak, highestStreak },
+        )
+      : t(isCycleBasedStreak ? "streakCyclesTitle" : "streakTitle", {
+          streak,
+        });
+
+  return (
+    <span
+      className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
+      title={title}
+    >
+      <Flame size={12} className="fill-warning-500 text-warning-500" />
+      <span>
+        {streak}
+        {streakUnit}
+      </span>
+      {highestStreak > streak && (
+        <span className="text-[10px] font-semibold text-amber-800/95 dark:text-gold/85">
+          (
+          {t("recordShort", {
+            count: highestStreak,
+            unit: streakUnit,
+          })}
+          )
+        </span>
+      )}
+    </span>
+  );
+}
 
 interface TaskDetailsHeaderProps {
   task: Task;
@@ -25,8 +76,7 @@ interface TaskDetailsHeaderProps {
   dueEndTime?: string;
   isAllDay?: boolean;
   priority: string;
-  onToggleComplete: () => void;
-  onHabitDelta?: (delta: number) => void;
+  isReadOnly?: boolean;
   onDateChange: (newDate: string) => void;
   onEventScheduleChange?: (patch: DatePickerEventSchedulePatch) => void;
   onPrioritySelect: (p: TaskPriorityOption) => void;
@@ -38,6 +88,7 @@ export function TaskDetailsHeader({
   task,
   columnTitle,
   workspaceName,
+  completed,
   isHabit,
   isDaily,
   isTodo,
@@ -47,6 +98,7 @@ export function TaskDetailsHeader({
   dueEndTime,
   isAllDay,
   priority,
+  isReadOnly = false,
   onDateChange,
   onEventScheduleChange,
   onPrioritySelect,
@@ -57,12 +109,7 @@ export function TaskDetailsHeader({
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const streak = task.streak ?? task.currentStreak ?? 0;
   const highestStreak = Math.max(task.highestStreak ?? 0, streak);
-  const isCycleBasedStreak = isHabit
-    ? task.resetCounter != null && task.resetCounter.toUpperCase() !== "DAILY"
-    : isDaily &&
-      ((task.repeatType != null && task.repeatType.toUpperCase() !== "DAILY") ||
-        (task.repeatEvery ?? 1) > 1);
-  const streakUnit = isCycleBasedStreak ? "x" : "d";
+  const isCycleBasedStreak = isTaskCycleBasedStreak(task);
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
   const isDateLocked = isTaskHardcoreLocked(task, new Date(), userTimeZone);
 
@@ -71,7 +118,11 @@ export function TaskDetailsHeader({
       <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
         {(workspaceName || columnTitle) && (
           <>
-            <TaskWorkspaceBadge workspaceName={workspaceName} size="header" />
+            <TaskWorkspaceBadge
+              workspaceName={workspaceName}
+              isReadOnly={isReadOnly}
+              size="header"
+            />
             {columnTitle && (
               <span
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700/80 dark:bg-white/6 dark:border-white/10 text-neutral-300 text-tiny font-semibold truncate max-w-[115px]"
@@ -116,47 +167,11 @@ export function TaskDetailsHeader({
                 })}
               </span>
             )}
-            {(streak > 0 || highestStreak > 0) && (
-              <span
-                className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
-                title={
-                  highestStreak > 0
-                    ? t(
-                        isCycleBasedStreak
-                          ? "streakCyclesWithRecordTitle"
-                          : "streakWithRecordTitle",
-                        { streak, highestStreak },
-                      )
-                    : t(
-                        isCycleBasedStreak
-                          ? "streakCyclesTitle"
-                          : "streakTitle",
-                        {
-                          streak,
-                        },
-                      )
-                }
-              >
-                <Flame
-                  size={12}
-                  className="fill-warning-500 text-warning-500"
-                />
-                <span>
-                  {streak}
-                  {streakUnit}
-                </span>
-                {highestStreak > streak && (
-                  <span className="text-[10px] font-semibold text-amber-800/95 dark:text-gold/85">
-                    (
-                    {t("recordShort", {
-                      count: highestStreak,
-                      unit: streakUnit,
-                    })}
-                    )
-                  </span>
-                )}
-              </span>
-            )}
+            <TaskHeaderStreakBadge
+              streak={streak}
+              highestStreak={highestStreak}
+              isCycleBasedStreak={isCycleBasedStreak}
+            />
           </div>
         ) : isTodo ? (
           <TaskDatePicker
@@ -165,56 +180,24 @@ export function TaskDetailsHeader({
             startTime={startTime ?? task.startTime}
             dueEndTime={dueEndTime ?? task.dueEndTime}
             isAllDay={isAllDay ?? task.isAllDay}
+            isCompleted={completed}
             onDateChange={onDateChange}
             onEventScheduleChange={onEventScheduleChange}
-            disabled={isDateLocked}
+            disabled={isDateLocked || isReadOnly}
+            disabledReason={
+              isReadOnly ? "readonly" : isDateLocked ? "hardcore" : undefined
+            }
           />
         ) : isDaily ? (
           <div className="flex items-center gap-1.5">
             <span className="text-tiny font-medium text-magenta dark:text-fuchsia-300 bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
               {t("dailyBadge")}
             </span>
-            {(streak > 0 || highestStreak > 0) && (
-              <span
-                className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
-                title={
-                  highestStreak > 0
-                    ? t(
-                        isCycleBasedStreak
-                          ? "streakCyclesWithRecordTitle"
-                          : "streakWithRecordTitle",
-                        { streak, highestStreak },
-                      )
-                    : t(
-                        isCycleBasedStreak
-                          ? "streakCyclesTitle"
-                          : "streakTitle",
-                        {
-                          streak,
-                        },
-                      )
-                }
-              >
-                <Flame
-                  size={12}
-                  className="fill-warning-500 text-warning-500"
-                />
-                <span>
-                  {streak}
-                  {streakUnit}
-                </span>
-                {highestStreak > streak && (
-                  <span className="text-[10px] font-semibold text-amber-800/95 dark:text-gold/85">
-                    (
-                    {t("recordShort", {
-                      count: highestStreak,
-                      unit: streakUnit,
-                    })}
-                    )
-                  </span>
-                )}
-              </span>
-            )}
+            <TaskHeaderStreakBadge
+              streak={streak}
+              highestStreak={highestStreak}
+              isCycleBasedStreak={isCycleBasedStreak}
+            />
           </div>
         ) : null}
       </div>
@@ -224,8 +207,9 @@ export function TaskDetailsHeader({
         <TaskPriorityPicker
           priority={priority}
           onPrioritySelect={onPrioritySelect}
+          disabled={isReadOnly}
         />
-        {onEdit && (
+        {onEdit && !isReadOnly && (
           <button
             type="button"
             onClick={onEdit}

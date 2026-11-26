@@ -125,6 +125,7 @@ export interface StarterPackTaskPreset {
   key: StarterPackTaskKey;
   taskType: "HABIT" | "DAILY" | "TODO";
   difficulty: "TRIVIAL" | "EASY" | "MEDIUM" | "HARD";
+  /** Corresponde ao enum `TaskPriority.Low` na API Java. */
   priority?: "NONE" | "Low" | "MEDIUM" | "HIGH";
   importanceType?: "LOW" | "NORMAL" | "HIGH";
   isHardcoreIfStrict?: boolean;

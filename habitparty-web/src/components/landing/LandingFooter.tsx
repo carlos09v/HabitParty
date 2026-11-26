@@ -17,12 +17,16 @@ export function LandingFooter() {
   const tNav = useTranslations("landing.navbar");
 
   return (
-    <footer className="border-t border-neutral-700 dark:border-white/10 bg-card/70 dark:bg-neutral-900/60 pt-16 pb-12 relative z-10">
+    <footer className="landing-section-deferred border-t border-neutral-700 dark:border-white/10 bg-card/70 dark:bg-neutral-900/60 pt-16 pb-12 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Coluna 1: Marca */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href={`/${locale}`} className="inline-block">
+            <Link
+              href={`/${locale}`}
+              aria-label={tNav("homeAria")}
+              className="inline-block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
               <BrandLogo
                 alt="HabitParty"
                 width={160}
@@ -38,17 +42,20 @@ export function LandingFooter() {
                 href={SUPPORT_LINKS.githubRepo}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface/80 hover:bg-surface-hover dark:bg-white/5 dark:hover:bg-white/10 border border-neutral-700 dark:border-white/10 text-xs font-medium text-neutral-300 hover:text-gold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface/80 hover:bg-surface-hover dark:bg-white/5 dark:hover:bg-white/10 border border-neutral-700 dark:border-white/10 text-xs font-medium text-neutral-300 hover:text-gold-ink dark:hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 aria-label={t("githubAria")}
               >
-                <GitBranch className="w-3.5 h-3.5" />
+                <GitBranch className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>GitHub</span>
               </a>
               <a
                 href={SUPPORT_LINKS.contactMailto}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface/80 hover:bg-surface-hover dark:bg-white/5 dark:hover:bg-white/10 border border-neutral-700 dark:border-white/10 text-xs font-medium text-neutral-300 hover:text-gold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface/80 hover:bg-surface-hover dark:bg-white/5 dark:hover:bg-white/10 border border-neutral-700 dark:border-white/10 text-xs font-medium text-neutral-300 hover:text-gold-ink dark:hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
-                <Mail className="w-3.5 h-3.5 text-gold" />
+                <Mail
+                  className="w-3.5 h-3.5 text-gold-ink dark:text-gold"
+                  aria-hidden="true"
+                />
                 <span>{SUPPORT_LINKS.contactEmail}</span>
               </a>
             </div>
@@ -56,15 +63,15 @@ export function LandingFooter() {
 
           {/* Coluna 2: Navegação */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-100 mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-100 mb-4">
               {t("exploreTitle")}
-            </h4>
+            </h2>
             <ul className="space-y-2.5 text-sm text-neutral-300">
               {LANDING_NAV_LINK_CONFIGS.map((link) => (
                 <li key={link.id}>
                   <a
                     href={link.href}
-                    className="hover:text-gold transition-colors"
+                    className="hover:text-gold-ink dark:hover:text-gold transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     {tNav(`links.${link.id}`)}
                   </a>
@@ -75,14 +82,14 @@ export function LandingFooter() {
 
           {/* Coluna 3: Acesso */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-100 mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-100 mb-4">
               {t("accessTitle")}
-            </h4>
+            </h2>
             <ul className="space-y-2.5 text-sm text-neutral-300">
               <li>
                 <Link
                   href="/signIn"
-                  className="hover:text-gold transition-colors"
+                  className="hover:text-gold-ink dark:hover:text-gold transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {t("signInLink")}
                 </Link>
@@ -90,7 +97,7 @@ export function LandingFooter() {
               <li>
                 <Link
                   href="/signUp"
-                  className="hover:text-gold transition-colors"
+                  className="hover:text-gold-ink dark:hover:text-gold transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {t("signUpFreeLink")}
                 </Link>
@@ -98,7 +105,7 @@ export function LandingFooter() {
               <li>
                 <a
                   href={`#${LANDING_ANCHORS.faq}`}
-                  className="hover:text-gold transition-colors"
+                  className="hover:text-gold-ink dark:hover:text-gold transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {t("helpCenterLink")}
                 </a>
@@ -108,18 +115,21 @@ export function LandingFooter() {
 
           {/* Coluna 4: Suporte & Contato */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-100 mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-100 mb-4">
               {t("supportTitle")}
-            </h4>
+            </h2>
             <ul className="space-y-2.5 text-sm text-neutral-300">
               <li>
                 <a
                   href={SUPPORT_LINKS.githubIssues}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-gold transition-colors inline-flex items-center gap-1.5"
+                  className="hover:text-gold-ink dark:hover:text-gold transition-colors inline-flex items-center gap-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
-                  <Bug className="w-3.5 h-3.5 text-gold shrink-0" />
+                  <Bug
+                    className="w-3.5 h-3.5 text-gold-ink dark:text-gold shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>{t("reportBugLink")}</span>
                 </a>
               </li>
@@ -128,18 +138,24 @@ export function LandingFooter() {
                   href={SUPPORT_LINKS.githubRepo}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-gold transition-colors inline-flex items-center gap-1.5"
+                  className="hover:text-gold-ink dark:hover:text-gold transition-colors inline-flex items-center gap-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
-                  <GitBranch className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                  <GitBranch
+                    className="w-3.5 h-3.5 text-neutral-400 shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>{t("officialRepoLink")}</span>
                 </a>
               </li>
               <li>
                 <a
                   href={SUPPORT_LINKS.contactMailto}
-                  className="hover:text-gold transition-colors inline-flex items-center gap-1.5 break-all"
+                  className="hover:text-gold-ink dark:hover:text-gold transition-colors inline-flex items-center gap-1.5 break-all rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
-                  <Mail className="w-3.5 h-3.5 text-info shrink-0" />
+                  <Mail
+                    className="w-3.5 h-3.5 text-info shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>{SUPPORT_LINKS.contactEmail}</span>
                 </a>
               </li>

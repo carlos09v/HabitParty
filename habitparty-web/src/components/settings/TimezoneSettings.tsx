@@ -1,18 +1,18 @@
 "use client";
 
-import { Info, Loader2, Sparkles } from "lucide-react";
+import { Info, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRegisterSettingsDirty } from "@/components/settings/SettingsDirtyContext";
+import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
+import { useBrowserTimezoneState } from "@/hooks/useBrowserTimezoneState";
 import { useUpdateTimezone } from "@/hooks/useUpdateTimezone";
 import { useUserStore } from "@/store/userStore";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 import {
-  areTimeZonesClockEquivalent,
   areTimeZonesEquivalent,
   DEFAULT_TIMEZONE,
-  detectBrowserTimeZone,
   formatTimeZoneOffsetLabel,
-  getTimeZoneCooldownRemainingMs,
   isValidIanaTimeZone,
 } from "@/utils/date";
 import { TimezoneSelectDropdown } from "./TimezoneSelectDropdown";
@@ -20,11 +20,13 @@ import { TimezoneSelectDropdown } from "./TimezoneSelectDropdown";
 interface TimezoneSettingsProps {
   initialTimezone?: string | null;
   initialTimezoneUpdatedAt?: string | null;
+  serverNowMs?: number;
 }
 
 export function TimezoneSettings({
   initialTimezone,
   initialTimezoneUpdatedAt,
+  serverNowMs,
 }: TimezoneSettingsProps) {
   const t = useTranslations("settings.timezoneCard");
   const storeUser = useUserStore((state) => state.user);
@@ -36,59 +38,40 @@ export function TimezoneSettings({
       : DEFAULT_TIMEZONE;
 
   const [selectedTimezone, setSelectedTimezone] = useState(persistedTimezone);
-  const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
-  const [nowMs, setNowMs] = useState<number | null>(null);
-
-  const { isPending, updateTimezone } = useUpdateTimezone({
-    formatSuccessMessage: (tz) => t("toastSuccess", { timezone: tz }),
-    errorMessage: t("toastError"),
-    onSuccess: () => setNowMs(Date.now()),
-  });
-
-  useEffect(() => {
-    setSelectedTimezone(persistedTimezone);
-  }, [persistedTimezone]);
-
-  useEffect(() => {
-    setBrowserTimezone(detectBrowserTimeZone(DEFAULT_TIMEZONE));
-  }, []);
+  const syncedPersistedTzRef = useRef(persistedTimezone);
 
   const effectiveTimezoneUpdatedAt =
     storeUser?.timezoneUpdatedAt ?? initialTimezoneUpdatedAt;
 
-  const cooldownRemainingMs = useMemo(() => {
-    if (nowMs === null) return 0;
-    return getTimeZoneCooldownRemainingMs(
-      effectiveTimezoneUpdatedAt,
-      new Date(nowMs),
-    );
-  }, [effectiveTimezoneUpdatedAt, nowMs]);
+  const {
+    browserTimezone,
+    refreshNow,
+    isCooldownActive,
+    cooldownHours,
+    cooldownMinutes,
+    hasBrowserMismatch,
+  } = useBrowserTimezoneState({
+    accountTimezone: persistedTimezone,
+    timezoneUpdatedAt: effectiveTimezoneUpdatedAt,
+    serverNowMs,
+    tickCooldown: true,
+  });
 
-  const isCooldownActive = cooldownRemainingMs > 0;
-  const cooldownTotalMinutes = Math.ceil(cooldownRemainingMs / 60_000);
-  const cooldownHours = Math.floor(cooldownTotalMinutes / 60);
-  const cooldownMinutes = cooldownTotalMinutes % 60;
+  const { isPending, updateTimezone } = useUpdateTimezone({
+    formatSuccessMessage: (tz) => t("toastSuccess", { timezone: tz }),
+    errorMessage: t("toastError"),
+    onSuccess: refreshNow,
+  });
 
   useEffect(() => {
-    setNowMs(Date.now());
-    if (!effectiveTimezoneUpdatedAt) return;
-    if (getTimeZoneCooldownRemainingMs(effectiveTimezoneUpdatedAt) <= 0) return;
-
-    const timer = window.setInterval(() => {
-      const nextNow = Date.now();
-      setNowMs(nextNow);
-      if (
-        getTimeZoneCooldownRemainingMs(
-          effectiveTimezoneUpdatedAt,
-          new Date(nextNow),
-        ) <= 0
-      ) {
-        window.clearInterval(timer);
-      }
-    }, 60_000);
-
-    return () => window.clearInterval(timer);
-  }, [effectiveTimezoneUpdatedAt]);
+    const prevPersisted = syncedPersistedTzRef.current;
+    if (persistedTimezone !== prevPersisted) {
+      setSelectedTimezone((curr) =>
+        curr === prevPersisted ? persistedTimezone : curr,
+      );
+      syncedPersistedTzRef.current = persistedTimezone;
+    }
+  }, [persistedTimezone]);
 
   const persistedOffset = useMemo(
     () => formatTimeZoneOffsetLabel(persistedTimezone),
@@ -100,18 +83,19 @@ export function TimezoneSettings({
     [browserTimezone],
   );
 
-  const hasBrowserMismatch = Boolean(
-    browserTimezone &&
-      !areTimeZonesClockEquivalent(persistedTimezone, browserTimezone),
-  );
-
   const hasChanges = !areTimeZonesEquivalent(
     selectedTimezone,
     persistedTimezone,
   );
 
+  useRegisterSettingsDirty(
+    "timezone-settings",
+    hasChanges && !isCooldownActive,
+  );
+
   const handleSave = () => {
     if (
+      isPending ||
       !hasChanges ||
       isCooldownActive ||
       !isValidIanaTimeZone(selectedTimezone)
@@ -150,7 +134,7 @@ export function TimezoneSettings({
         selectedTimezone={selectedTimezone}
         persistedTimezone={persistedTimezone}
         browserTimezone={browserTimezone}
-        disabled={isPending}
+        disabled={isPending || isCooldownActive}
         onSelectTimezone={setSelectedTimezone}
       />
 
@@ -184,28 +168,22 @@ export function TimezoneSettings({
           </span>
         </p>
 
-        <button
+        <SettingsSaveButton
           type="button"
           onClick={handleSave}
-          disabled={!hasChanges || isCooldownActive || isPending}
-          className={cn(
-            "w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors cursor-pointer",
-            "bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-sm",
-            "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
-          )}
-        >
-          {isPending && <Loader2 size={14} className="animate-spin" />}
-          <span>
-            {isPending
-              ? t("saving")
-              : isCooldownActive
-                ? t("cooldownButtonLabel", {
-                    hours: cooldownHours,
-                    minutes: cooldownMinutes,
-                  })
-                : t("saveButton")}
-          </span>
-        </button>
+          isPending={isPending}
+          disabled={!hasChanges || isCooldownActive}
+          showSaveIcon={!isCooldownActive}
+          savingLabel={t("saving")}
+          label={
+            isCooldownActive
+              ? t("cooldownButtonLabel", {
+                  hours: cooldownHours,
+                  minutes: cooldownMinutes,
+                })
+              : t("saveButton")
+          }
+        />
       </div>
     </div>
   );

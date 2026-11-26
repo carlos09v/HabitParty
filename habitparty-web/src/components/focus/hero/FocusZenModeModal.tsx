@@ -2,132 +2,142 @@
 
 import {
   CheckCircle2,
-  Coffee,
-  FastForward,
+  ChevronUp,
+  ListTodo,
   Loader2,
   Minimize2,
   Moon,
-  Pause,
   PictureInPicture2,
-  Play,
-  RotateCcw,
+  Sparkles,
   Sun,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFocusKeyboardShortcuts } from "@/hooks/useFocusKeyboardShortcuts";
 import { useFocusPipAction } from "@/hooks/useFocusPipAction";
+import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+import { useIsClient } from "@/hooks/useIsClient";
+import { useNativeModalDialog } from "@/hooks/useNativeModalDialog";
 import { useThemeMode } from "@/hooks/useThemeMode";
-import type {
-  FocusActiveTarget,
-  FocusPhase,
-  FocusRecordType,
-} from "@/types/focus";
-import type { TimerSoundType } from "@/types/settings";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { cn } from "@/utils";
+import { resolveLinkedTask } from "@/utils/focusFormatters";
+import { resolveFocusTargetIcon } from "@/utils/focusIcons";
 import { FocusDailyYieldBadge } from "../stage/FocusDailyYieldBadge";
+import { FocusSessionCapBadge } from "../stage/FocusSessionCapBadge";
+import { FocusSessionNotesField } from "../stage/FocusSessionNotesField";
 import { FocusStageAudioControls } from "../stage/FocusStageAudioControls";
 import { FocusStageTimerCircle } from "../stage/FocusStageTimerCircle";
+import { FocusTimerActionButtons } from "../stage/FocusTimerActionButtons";
 
 interface FocusZenModeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isBreak: boolean;
-  isOvertime?: boolean;
-  nextBreakMinutes?: number;
-  isRunning: boolean;
-  isActive: boolean;
-  isSavingSession?: boolean;
-  isSessionRewardCapped?: boolean;
   todayRewardableMinutes?: number;
-  mode: FocusRecordType;
-  phase: FocusPhase;
-  target: FocusActiveTarget | null;
-  canComplete: boolean;
-  isSoundEnabled: boolean;
-  timerSoundType: TimerSoundType;
-  TargetIcon: React.ComponentType<{ size?: number; className?: string }>;
+  isTargetLocked?: boolean;
+  initialIsPremium?: boolean;
   onToggleTimer: () => void;
   onResetTimer: () => void;
-  onSkipBreak: () => void;
-  onStartBreak?: () => void;
+  onStartBreak: () => void;
   onComplete: () => void;
-  onToggleSound: () => void;
-  onChangeSoundType: (type: TimerSoundType) => void;
   onOpenUpgradeModal?: () => void;
+  onDimmedChange?: (dimmed: boolean) => void;
 }
 
 /**
  * Modo Zen em tela cheia para foco imersivo sem distrações.
- * Extraído do FocusHeroStage para melhorar manutenibilidade e modularização.
+ * Lê controles diretamente do timer store (eliminando 20+ props), usa `<dialog>` nativo
+ * com `open:flex`, suporta recolher anotações e mantém contraste seguro em telas touch.
  */
 export function FocusZenModeModal({
   isOpen,
   onClose,
-  isBreak,
-  isOvertime = false,
-  nextBreakMinutes = 5,
-  isRunning,
-  isActive,
-  isSavingSession = false,
-  isSessionRewardCapped = false,
   todayRewardableMinutes,
-  mode,
-  target,
-  canComplete,
-  isSoundEnabled,
-  timerSoundType,
-  TargetIcon,
+  isTargetLocked = false,
+  initialIsPremium = false,
   onToggleTimer,
   onResetTimer,
-  onSkipBreak,
   onStartBreak,
   onComplete,
-  onToggleSound,
-  onChangeSoundType,
   onOpenUpgradeModal,
+  onDimmedChange,
 }: FocusZenModeModalProps) {
   const t = useTranslations("focus.zenMode");
   const { isGamified } = useExperienceMode();
   const { isLight } = useThemeMode();
+  const mounted = useIsClient();
   const { isPipOpen, isPipSupported, togglePip } = useFocusPipAction();
+  const controls = useFocusTimerControls();
+  const hasSessionNotes = useFocusTimerStore(
+    (s) => s.sessionNotes.trim().length > 0,
+  );
+
   const [isLightsOff, setIsLightsOff] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
 
-  // Fecha o Modo Zen com a tecla Esc e bloqueia scroll do body enquanto aberto
-  useEffect(() => {
-    if (!isOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  const {
+    isActive,
+    isPaused,
+    isRunning,
+    mode,
+    phase = "WORK",
+    target,
+    canComplete,
+    isPartialPomo,
+    isOvertime,
+    isSavingSession = false,
+    isCompletingLinkedTask = false,
+    isSessionRewardCapped = false,
+    nextBreakMinutes,
+    skipBreak,
+    completeLinkedTask,
+  } = controls;
 
-  if (!isOpen || typeof document === "undefined") return null;
+  const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
+  const isInventoryTarget = target?.type === "inventory";
+  const TargetIcon = resolveFocusTargetIcon(target);
+  const { taskId: linkedTaskId, taskName: linkedTaskTitle } =
+    resolveLinkedTask(target);
 
   const isDimmed = isLight && isLightsOff;
 
+  useEffect(() => {
+    onDimmedChange?.(isOpen && isDimmed);
+    return () => {
+      onDimmedChange?.(false);
+    };
+  }, [isOpen, isDimmed, onDimmedChange]);
+
+  const { dialogRef, dialogEventHandlers } = useNativeModalDialog({
+    isOpen: isOpen && mounted,
+    onClose,
+  });
+
+  useFocusKeyboardShortcuts({
+    enabled: isOpen && mounted,
+    ownDialogRef: dialogRef,
+    onToggleTimer,
+    onToggleZenMode: onClose,
+  });
+
+  if (!isOpen || !mounted) return null;
+
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
       aria-label={t("dialogAria")}
+      onCancel={dialogEventHandlers.onCancel}
+      onKeyDown={dialogEventHandlers.onKeyDown}
       className={cn(
-        "fixed inset-0 z-50 flex flex-col justify-between p-4 sm:p-10 md:p-12 overflow-y-auto overscroll-contain custom-scrollbar select-none animate-in fade-in duration-200 transition-colors",
+        "hp-dialog-modal fixed inset-0 w-screen h-dvh open:flex flex-col justify-between p-4 sm:p-10 md:p-12 overflow-y-auto overscroll-contain custom-scrollbar select-none animate-in fade-in duration-200 transition-colors",
         isDimmed
           ? "zen-dimmed-dark bg-background"
           : "bg-surface dark:bg-background",
       )}
     >
-      {/* Fundo Cósmico / Santuário Difuso com Aura Radial Suave */}
+      {/* Fundo Cósmico / Santuário Difuso */}
       <div
         aria-hidden="true"
         className={cn(
@@ -138,8 +148,8 @@ export function FocusZenModeModal({
         )}
       />
 
-      {/* Top Bar Zen: Info do Alvo + Dimmer Local + Botão Fechar (controles periféricos atenuados) */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 w-full max-w-4xl mx-auto opacity-80 sm:opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+      {/* Top Bar Zen (opacidade 100% em touch/tablet, sutil somente em ponteiro fino) */}
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 w-full max-w-4xl mx-auto opacity-100 pointer-fine:opacity-70 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div
             className={cn(
@@ -149,18 +159,22 @@ export function FocusZenModeModal({
                 : "bg-amber-500/15 dark:bg-gold/20 border-amber-500/45 dark:border-gold/50 text-gold-ink dark:text-gold",
             )}
           >
-            <TargetIcon size={20} />
+            <TargetIcon size={20} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-neutral-100 text-body-m truncate">
+            <h1 className="font-bold text-neutral-100 text-body-m truncate">
               {target?.name || t("defaultTitle")}
-            </span>
+            </h1>
             <span className="text-tiny text-neutral-400 truncate">
               {isBreak
                 ? t("restorativeBreak")
-                : mode === "POMO"
-                  ? t("pomodoroCycle")
-                  : t("stopwatch")}
+                : isInventoryTarget
+                  ? isGamified
+                    ? t("backpackCouponGamified")
+                    : t("backpackCouponProductivity")
+                  : mode === "POMO"
+                    ? t("pomodoroCycle")
+                    : t("stopwatch")}
             </span>
           </div>
         </div>
@@ -181,15 +195,22 @@ export function FocusZenModeModal({
               type="button"
               onClick={() => setIsLightsOff((prev) => !prev)}
               aria-pressed={isLightsOff}
+              aria-label={
+                isLightsOff ? t("lightsOnButton") : t("lightsOffButton")
+              }
+              title={isLightsOff ? t("lightsOnTitle") : t("lightsOffTitle")}
               className={cn(
                 "flex items-center gap-1.5 px-2.5 sm:px-3 min-h-9 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
                 isLightsOff
                   ? "border-gold/50 bg-gold/15 text-gold hover:bg-gold/25"
                   : "border-neutral-700 bg-card/80 text-neutral-300 hover:text-neutral-50 hover:border-neutral-500 shadow-2xs",
               )}
-              title={isLightsOff ? t("lightsOnTitle") : t("lightsOffTitle")}
             >
-              {isLightsOff ? <Sun size={15} /> : <Moon size={15} />}
+              {isLightsOff ? (
+                <Sun size={15} aria-hidden="true" />
+              ) : (
+                <Moon size={15} aria-hidden="true" />
+              )}
               <span className="hidden min-[380px]:inline">
                 {isLightsOff ? t("lightsOnButton") : t("lightsOffButton")}
               </span>
@@ -201,15 +222,16 @@ export function FocusZenModeModal({
               type="button"
               onClick={() => void togglePip()}
               aria-pressed={isPipOpen}
+              aria-label={t("pipButton")}
+              title={isPipOpen ? t("pipCloseTitle") : t("pipOpenTitle")}
               className={cn(
                 "flex items-center gap-1.5 px-2.5 sm:px-3 min-h-9 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
                 isPipOpen
                   ? "border-gold/50 bg-gold/15 text-gold hover:bg-gold/25"
                   : "border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-neutral-50 dark:hover:text-white hover:border-neutral-500",
               )}
-              title={isPipOpen ? t("pipCloseTitle") : t("pipOpenTitle")}
             >
-              <PictureInPicture2 size={15} />
+              <PictureInPicture2 size={15} aria-hidden="true" />
               <span className="hidden min-[380px]:inline">
                 {t("pipButton")}
               </span>
@@ -223,39 +245,57 @@ export function FocusZenModeModal({
             title={t("exitTitle")}
             aria-label={t("exitTitle")}
           >
-            <Minimize2 size={16} />
+            <Minimize2 size={16} aria-hidden="true" />
             <span className="text-xs font-semibold">{t("exitButton")}</span>
           </button>
         </div>
       </div>
 
-      {/* Centro Zen: Timer Gigante */}
+      {/* Centro Zen: Timer Gigante + Tarefa Vinculada + Controles */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto py-4 w-full">
         <FocusStageTimerCircle size="zen" onToggle={onToggleTimer} />
 
-        {isSessionRewardCapped && (
-          <div
-            title={
-              isGamified
-                ? t("sessionCapReachedTitle")
-                : t("sessionCapReachedTitleProductivity")
-            }
-            className={cn(
-              "mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold shadow-2xs",
-              isGamified
-                ? "border-amber-500/40 bg-amber-500/12 text-amber-700 dark:text-amber-300"
-                : "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-            )}
-          >
-            <span>
-              {isGamified
-                ? t("sessionCapReachedBadge")
-                : t("sessionCapReachedBadgeProductivity")}
+        {/* Pill da tarefa vinculada (Macro + Micro) no Modo Zen */}
+        {linkedTaskId && linkedTaskTitle && (
+          <div className="mt-4 flex items-center gap-2 max-w-md px-3 py-1.5 rounded-xl bg-card/80 dark:bg-surface/80 border border-neutral-700 dark:border-primary/30 shadow-xs">
+            <ListTodo
+              size={13}
+              aria-hidden="true"
+              className="text-amber-700 dark:text-gold shrink-0"
+            />
+            <span className="text-xs font-semibold text-neutral-100 truncate">
+              {linkedTaskTitle}
             </span>
+            <button
+              type="button"
+              disabled={isCompletingLinkedTask}
+              aria-busy={isCompletingLinkedTask}
+              onClick={() =>
+                void completeLinkedTask(linkedTaskId, linkedTaskTitle)
+              }
+              className="inline-flex items-center gap-1 min-h-7 px-1.5 rounded-md text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 hover:underline shrink-0 cursor-pointer disabled:opacity-60"
+            >
+              {isCompletingLinkedTask ? (
+                <Loader2
+                  size={12}
+                  aria-hidden="true"
+                  className="animate-spin"
+                />
+              ) : (
+                <CheckCircle2 size={12} aria-hidden="true" />
+              )}
+              <span>{t("completeLinkedTaskButton")}</span>
+            </button>
           </div>
         )}
 
-        {typeof todayRewardableMinutes === "number" && (
+        <FocusSessionCapBadge
+          visible={isSessionRewardCapped}
+          size="md"
+          className="mt-4"
+        />
+
+        {typeof todayRewardableMinutes === "number" && !isInventoryTarget && (
           <FocusDailyYieldBadge
             todayRewardableMinutes={todayRewardableMinutes}
             size="md"
@@ -263,118 +303,74 @@ export function FocusZenModeModal({
           />
         )}
 
-        {/* Controles de Ação no Modo Zen */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md px-2">
-          {isActive && (
-            <button
-              type="button"
-              disabled={isSavingSession}
-              onClick={onResetTimer}
-              title={t("resetTitle")}
-              aria-label={t("resetTitle")}
-              className="w-14 h-14 rounded-2xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-[opacity,color,border-color,background-color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <RotateCcw size={22} />
-            </button>
-          )}
-
-          <button
-            type="button"
-            disabled={isSavingSession}
-            onClick={onToggleTimer}
-            className={cn(
-              "px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2.5 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-xl disabled:opacity-60 disabled:cursor-not-allowed",
-              isBreak
-                ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-md dark:shadow-[0_0_24px_rgba(16,185,129,0.5)]"
-                : isRunning
-                  ? "bg-amber-500 hover:bg-amber-600 text-neutral-950"
-                  : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-105",
-            )}
-          >
-            {isRunning ? (
-              <>
-                <Pause size={22} className="fill-current" />
-                <span>{t("pause")}</span>
-              </>
-            ) : (
-              <>
-                <Play size={22} className="fill-current ml-0.5" />
-                <span>{isActive ? t("resume") : t("start")}</span>
-              </>
-            )}
-          </button>
-
-          {isBreak && (
-            <button
-              type="button"
-              disabled={isSavingSession}
-              onClick={onSkipBreak}
-              title={t("skipBreakTitle")}
-              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <FastForward size={18} />
-              <span>{t("skipBreak")}</span>
-            </button>
-          )}
-
-          {isOvertime && !isBreak && onStartBreak && (
-            <button
-              type="button"
-              disabled={isSavingSession}
-              onClick={onStartBreak}
-              title={
-                isSavingSession
-                  ? t("savingSessionTitle")
-                  : t("startBreakTitle", { minutes: nextBreakMinutes })
-              }
-              className="px-5 py-4 rounded-2xl border border-cyan-600/45 dark:border-cyan-400/50 bg-cyan-500/15 dark:bg-cyan-500/20 hover:bg-cyan-500/25 dark:hover:bg-cyan-500/30 text-cyan-800 dark:text-cyan-200 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isSavingSession ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <Coffee size={18} />
-              )}
-              <span>
-                {t("startBreakButton", { minutes: nextBreakMinutes })}
-              </span>
-            </button>
-          )}
-
-          {canComplete && !isBreak && (
-            <button
-              type="button"
-              disabled={isSavingSession}
-              aria-busy={isSavingSession}
-              onClick={onComplete}
-              title={
-                isSavingSession ? t("savingSessionTitle") : t("completeTitle")
-              }
-              aria-label={
-                isSavingSession ? t("savingSessionTitle") : t("completeTitle")
-              }
-              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center transition-[opacity,background-color,border-color,color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isSavingSession ? (
-                <Loader2 size={24} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={24} />
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Rodapé Zen: Controles de Áudio (periférico atenuado) */}
-      <div className="relative z-10 flex items-center justify-center w-full max-w-md mx-auto pt-4 opacity-80 sm:opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
-        <FocusStageAudioControls
-          isSoundEnabled={isSoundEnabled}
-          timerSoundType={timerSoundType}
-          onToggleSound={onToggleSound}
-          onChangeSoundType={onChangeSoundType}
+        <FocusTimerActionButtons
+          variant="zen"
+          isActive={isActive}
+          isPaused={isPaused}
+          isRunning={isRunning}
+          isBreak={isBreak}
+          isOvertime={isOvertime}
+          canComplete={canComplete}
+          isPartialPomo={isPartialPomo}
+          isSavingSession={isSavingSession}
+          isTargetLocked={isTargetLocked}
+          nextBreakMinutes={nextBreakMinutes}
+          onToggleTimer={onToggleTimer}
+          onStartBreak={onStartBreak}
+          onComplete={onComplete}
+          onSkipBreak={skipBreak}
+          onResetTimer={onResetTimer}
           onOpenUpgradeModal={onOpenUpgradeModal}
         />
       </div>
-    </div>,
+
+      {/* Rodapé Zen: Notas Retráteis (expandir + recolher + indicador) + Áudio Unificado */}
+      <div className="relative z-10 flex flex-col items-center justify-center gap-3 w-full max-w-md mx-auto pt-4 opacity-100 pointer-fine:opacity-70 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+        {showNotes ? (
+          <div className="w-full flex items-center gap-1.5">
+            <FocusSessionNotesField variant="zen" className="flex-1 min-w-0" />
+            <button
+              type="button"
+              onClick={() => setShowNotes(false)}
+              title={t("hideNotesButton")}
+              aria-label={t("hideNotesButton")}
+              className="min-w-9 min-h-9 rounded-xl border border-neutral-700 dark:border-primary/35 bg-card/85 dark:bg-surface/80 text-neutral-400 hover:text-neutral-100 hover:border-gold/50 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              <ChevronUp size={15} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowNotes(true)}
+            aria-expanded={false}
+            className="inline-flex items-center gap-1.5 min-h-8 pointer-coarse:min-h-9 px-3 py-1 rounded-full border border-neutral-700 dark:border-primary/30 bg-card/70 dark:bg-surface/60 text-xs font-semibold text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/45 dark:hover:border-gold/40 transition-colors cursor-pointer"
+          >
+            <Sparkles
+              size={12}
+              className="text-amber-700 dark:text-gold"
+              aria-hidden="true"
+            />
+            <span>{t("toggleNotesButton")}</span>
+            {hasSessionNotes && (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-full bg-amber-600 dark:bg-gold shrink-0"
+                  title={t("hasNotesIndicatorAria")}
+                />
+                <span className="sr-only"> ({t("hasNotesIndicatorAria")})</span>
+              </>
+            )}
+          </button>
+        )}
+
+        <FocusStageAudioControls
+          initialIsPremium={initialIsPremium}
+          onOpenUpgradeModal={onOpenUpgradeModal}
+        />
+      </div>
+    </dialog>,
     document.body,
   );
 }

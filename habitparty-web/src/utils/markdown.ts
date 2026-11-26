@@ -2,18 +2,26 @@ import type { JSONContent } from "@tiptap/react";
 
 export type InlineMarkdownToken =
   | { type: "text"; content: string }
-  | { type: "bold"; content: string }
-  | { type: "italic"; content: string }
-  | { type: "highlight"; content: string }
+  | { type: "bold"; children: InlineMarkdownToken[] }
+  | { type: "italic"; children: InlineMarkdownToken[] }
+  | { type: "bold-italic"; children: InlineMarkdownToken[] }
+  | { type: "highlight"; children: InlineMarkdownToken[] }
   | { type: "code"; content: string }
-  | { type: "link"; label: string; href: string };
+  | { type: "link"; children: InlineMarkdownToken[]; href: string };
+
+export interface MarkdownBulletItem {
+  depth: number;
+  tokens: InlineMarkdownToken[];
+}
 
 export type MarkdownBlock =
   | { type: "paragraph"; tokens: InlineMarkdownToken[] }
-  | { type: "bullet-list"; items: InlineMarkdownToken[][] };
+  | { type: "bullet-list"; items: MarkdownBulletItem[] };
 
 const INLINE_TOKEN_REGEX =
-  /(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\))|(https?:\/\/[^\s<]+)|(\*\*([^*]+)\*\*)|(==([^=]+)==)|(`([^`]+)`)|(\*([^*]+)\*)/g;
+  /(`([^`]+)`)|(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\))|(https?:\/\/[^\s<]+)|(\*\*\*((?:(?!\*\*\*).)+)\*\*\*)|(\*\*((?:(?!\*\*).)+)\*\*)|(==((?:(?!==).)+)==)|(\*([^*]+)\*)/g;
+
+const MAX_INLINE_NESTING_DEPTH = 4;
 
 function escapeHtml(text: string): string {
   return text
@@ -29,10 +37,17 @@ function isSafeHttpUrl(url: string): boolean {
 }
 
 /**
- * Converte uma linha de texto em tokens inline de Markdown (negrito, itálico, destaque, código e links clicáveis).
+ * Converte uma linha de texto em tokens inline de Markdown (suportando marcas aninhadas
+ * como `***negrito itálico***`, `**==destaque==**` e `[**link**](url)`).
  */
-function parseInlineMarkdownTokens(line: string): InlineMarkdownToken[] {
+function parseInlineMarkdownTokens(
+  line: string,
+  depth = 0,
+): InlineMarkdownToken[] {
   if (!line) return [{ type: "text", content: "" }];
+  if (depth >= MAX_INLINE_NESTING_DEPTH) {
+    return [{ type: "text", content: line }];
+  }
 
   const tokens: InlineMarkdownToken[] = [];
   let lastIndex = 0;
@@ -48,12 +63,17 @@ function parseInlineMarkdownTokens(line: string): InlineMarkdownToken[] {
 
     if (match[1]) {
       tokens.push({
-        type: "link",
-        label: match[2],
-        href: match[3],
+        type: "code",
+        content: match[2],
       });
-    } else if (match[4]) {
-      const rawUrl = match[4];
+    } else if (match[3]) {
+      tokens.push({
+        type: "link",
+        children: parseInlineMarkdownTokens(match[4], depth + 1),
+        href: match[5],
+      });
+    } else if (match[6]) {
+      const rawUrl = match[6];
       const trailingMatch = rawUrl.match(/[.,;:!?)]+$/);
       const trailingPunct = trailingMatch ? trailingMatch[0] : "";
       const cleanUrl = trailingPunct
@@ -62,7 +82,7 @@ function parseInlineMarkdownTokens(line: string): InlineMarkdownToken[] {
 
       tokens.push({
         type: "link",
-        label: cleanUrl,
+        children: [{ type: "text", content: cleanUrl }],
         href: cleanUrl,
       });
       if (trailingPunct) {
@@ -71,25 +91,25 @@ function parseInlineMarkdownTokens(line: string): InlineMarkdownToken[] {
           content: trailingPunct,
         });
       }
-    } else if (match[5]) {
-      tokens.push({
-        type: "bold",
-        content: match[6],
-      });
     } else if (match[7]) {
       tokens.push({
-        type: "highlight",
-        content: match[8],
+        type: "bold-italic",
+        children: parseInlineMarkdownTokens(match[8], depth + 1),
       });
     } else if (match[9]) {
       tokens.push({
-        type: "code",
-        content: match[10],
+        type: "bold",
+        children: parseInlineMarkdownTokens(match[10], depth + 1),
       });
     } else if (match[11]) {
       tokens.push({
+        type: "highlight",
+        children: parseInlineMarkdownTokens(match[12], depth + 1),
+      });
+    } else if (match[13]) {
+      tokens.push({
         type: "italic",
-        content: match[12],
+        children: parseInlineMarkdownTokens(match[14], depth + 1),
       });
     }
 
@@ -107,7 +127,8 @@ function parseInlineMarkdownTokens(line: string): InlineMarkdownToken[] {
 }
 
 /**
- * Converte um texto multilinha em blocos estruturados (parágrafos e listas com marcadores).
+ * Converte um texto multilinha em blocos estruturados (parágrafos e listas com marcadores aninhados).
+ * Exige espaço após `-` e `*` para evitar que textos como `-10%` sejam convertidos em lista.
  */
 function parseMarkdownBlocks(text: string): MarkdownBlock[] {
   if (!text || !text.trim()) return [];
@@ -116,17 +137,23 @@ function parseMarkdownBlocks(text: string): MarkdownBlock[] {
   const blocks: MarkdownBlock[] = [];
 
   for (const line of lines) {
-    const bulletMatch = line.match(/^\s*(?:[-•]\s*(.*)|\*\s+(.*))$/);
+    const bulletMatch = line.match(/^(\s*)(?:-\s+(.*)|•\s*(.*)|\*\s+(.*))$/);
     if (bulletMatch) {
-      const itemContent = bulletMatch[1] ?? bulletMatch[2] ?? "";
-      const itemTokens = parseInlineMarkdownTokens(itemContent);
+      const leadingIndent = bulletMatch[1].replaceAll("\t", "  ").length;
+      const depth = Math.floor(leadingIndent / 2);
+      const itemContent =
+        bulletMatch[2] ?? bulletMatch[3] ?? bulletMatch[4] ?? "";
+      const item: MarkdownBulletItem = {
+        depth,
+        tokens: parseInlineMarkdownTokens(itemContent),
+      };
       const prevBlock = blocks[blocks.length - 1];
       if (prevBlock && prevBlock.type === "bullet-list") {
-        prevBlock.items.push(itemTokens);
+        prevBlock.items.push(item);
       } else {
         blocks.push({
           type: "bullet-list",
-          items: [itemTokens],
+          items: [item],
         });
       }
     } else {
@@ -144,26 +171,68 @@ function renderInlineTokensToHtml(tokens: InlineMarkdownToken[]): string {
   return tokens
     .map((token) => {
       switch (token.type) {
+        case "bold-italic":
+          return `<strong><em>${renderInlineTokensToHtml(token.children)}</em></strong>`;
         case "bold":
-          return `<strong>${escapeHtml(token.content)}</strong>`;
+          return `<strong>${renderInlineTokensToHtml(token.children)}</strong>`;
         case "italic":
-          return `<em>${escapeHtml(token.content)}</em>`;
+          return `<em>${renderInlineTokensToHtml(token.children)}</em>`;
         case "highlight":
-          return `<mark>${escapeHtml(token.content)}</mark>`;
+          return `<mark>${renderInlineTokensToHtml(token.children)}</mark>`;
         case "code":
           return `<code>${escapeHtml(token.content)}</code>`;
         case "link": {
+          const labelHtml = renderInlineTokensToHtml(token.children);
           if (!isSafeHttpUrl(token.href)) {
-            return escapeHtml(token.label);
+            return labelHtml;
           }
           const safeHref = escapeHtml(token.href);
-          return `<a href="${safeHref}">${escapeHtml(token.label)}</a>`;
+          return `<a href="${safeHref}">${labelHtml}</a>`;
         }
         default:
           return escapeHtml(token.content);
       }
     })
     .join("");
+}
+
+function renderBulletItemsToHtml(items: MarkdownBulletItem[]): string {
+  if (items.length === 0) return "";
+  let html = "<ul>";
+  let currentDepth = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    // Limita salto de profundidade a no máximo +1 nível por item para manter HTML válido no ProseMirror
+    const targetDepth = Math.min(item.depth, currentDepth + 1);
+
+    if (i === 0) {
+      html += `<li><p>${renderInlineTokensToHtml(item.tokens)}</p>`;
+      currentDepth = 0;
+      continue;
+    }
+
+    if (targetDepth > currentDepth) {
+      html += "<ul>";
+      html += `<li><p>${renderInlineTokensToHtml(item.tokens)}</p>`;
+      currentDepth = targetDepth;
+    } else if (targetDepth < currentDepth) {
+      while (currentDepth > targetDepth) {
+        html += "</li></ul>";
+        currentDepth--;
+      }
+      html += `</li><li><p>${renderInlineTokensToHtml(item.tokens)}</p>`;
+    } else {
+      html += `</li><li><p>${renderInlineTokensToHtml(item.tokens)}</p>`;
+    }
+  }
+
+  while (currentDepth > 0) {
+    html += "</li></ul>";
+    currentDepth--;
+  }
+  html += "</li></ul>";
+  return html;
 }
 
 /**
@@ -178,13 +247,7 @@ export function markdownToEditorHtml(markdown: string): string {
   return blocks
     .map((block) => {
       if (block.type === "bullet-list") {
-        const itemsHtml = block.items
-          .map(
-            (itemTokens) =>
-              `<li><p>${renderInlineTokensToHtml(itemTokens)}</p></li>`,
-          )
-          .join("");
-        return `<ul>${itemsHtml}</ul>`;
+        return renderBulletItemsToHtml(block.items);
       }
       const inlineHtml = renderInlineTokensToHtml(block.tokens);
       return `<p>${inlineHtml}</p>`;

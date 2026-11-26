@@ -8,6 +8,7 @@ import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -26,7 +27,8 @@ public record UpdateRewardDTO(
 
   RewardCategory category,
 
-  List<String> tags,
+  @Size(max = 5, message = "A recompensa pode ter no máximo 5 tags")
+  List<@Size(max = 80, message = "Cada tag deve ter até 80 caracteres") String> tags,
 
   RewardType type,
 
@@ -34,6 +36,8 @@ public record UpdateRewardDTO(
 
   Integer baseDurationMinutes,
 
+  @Valid
+  @Size(max = 10, message = "A caixa misteriosa pode ter no máximo 10 itens")
   List<MysteryBoxLootItem> lootItems
 ) {
   public UpdateRewardDTO(

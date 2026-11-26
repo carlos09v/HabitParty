@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 
 interface PartyWidgetModeLabelProps {
@@ -18,14 +17,9 @@ export function PartyWidgetModeLabel({
   gamifiedText,
   productivityText,
 }: PartyWidgetModeLabelProps) {
-  const { isGamified } = useExperienceMode();
-  const [mounted, setMounted] = useState(false);
+  const { isGamified } = useExperienceMode(
+    initialIsGamified ? "GAMIFIED" : "PRODUCTIVITY",
+  );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const effectiveGamified = mounted ? isGamified : initialIsGamified;
-
-  return <span>{effectiveGamified ? gamifiedText : productivityText}</span>;
+  return <span>{isGamified ? gamifiedText : productivityText}</span>;
 }

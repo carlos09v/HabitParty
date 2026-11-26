@@ -1,5 +1,5 @@
-import { RouteLoading } from "@/components/layout/RouteLoading";
+import { TasksSkeleton } from "@/components/tasks/TasksSkeleton";
 
 export default function TasksLoading() {
-  return <RouteLoading route="tasks" />;
+  return <TasksSkeleton />;
 }

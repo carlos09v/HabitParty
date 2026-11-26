@@ -13,12 +13,12 @@ import type {
   TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
+import { resolveUserLevelState } from "@/utils/levels";
+import type { ProfileCardRenderInput } from "@/utils/profile-card";
 import {
   resolveHighlightSlotCard,
   resolveRetrospectiveViewMeta,
-  resolveUserLevelState,
-} from "@/utils";
-import type { ProfileCardRenderInput } from "@/utils/profileCardRenderer";
+} from "@/utils/showcaseUtils";
 
 const RARITY_HEX: Record<AchievementRarity, string> = {
   COMMON: "#94A3B8",
@@ -45,6 +45,7 @@ export interface ProfilePreviewCardUser {
   currentLevelTitle?: string | null;
   nextLevelTitle?: string | null;
   xpToNextLevel?: number | null;
+  profileVisibility?: "PUBLIC" | "FRIENDS_ONLY" | "PRIVATE" | null;
 }
 
 interface UseProfileCardRenderInputParams {
@@ -141,6 +142,7 @@ export function useProfileCardRenderInput({
       mode,
       theme,
       isGamified,
+      locale,
       user: {
         fullName: user.fullName || user.username || "HabitParty",
         username: user.username || "member",
@@ -197,7 +199,9 @@ export function useProfileCardRenderInput({
         retroActiveDaysSub: tRetro("metrics.activeDaysSub"),
         retroTasksLabel: t("metrics.tasks"),
         retroFocusLabel: t("metrics.focus"),
-        retroXpLabel: t("metrics.xpEarned"),
+        retroXpLabel: isGamified
+          ? t("metrics.xpEarned")
+          : tRetro("metrics.xpEarnedEssential"),
         retroBestMonthLabel: t("metrics.bestMonth"),
         retroRarestLabel: t("metrics.rarestAchievement"),
         retroArchetypeLabel: tRetro("archetypeLabel"),

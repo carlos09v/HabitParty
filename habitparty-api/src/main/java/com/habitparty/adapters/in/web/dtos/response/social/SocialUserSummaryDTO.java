@@ -1,5 +1,6 @@
 package com.habitparty.adapters.in.web.dtos.response.social;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import com.habitparty.application.usecases.social.SocialUserSummary;
@@ -17,6 +18,8 @@ public record SocialUserSummaryDTO(
     String avatarPreset,
     boolean isPremium,
     boolean isFounder,
+    boolean emailVerified,
+    OffsetDateTime createdAt,
     String levelTitle,
     int totalXp,
     int currentStreak,
@@ -43,6 +46,8 @@ public record SocialUserSummaryDTO(
         summary.avatarPreset(),
         summary.isPremium(),
         summary.isFounder(),
+        summary.emailVerified(),
+        summary.createdAt(),
         summary.levelTitle(),
         summary.totalXp(),
         summary.currentStreak(),

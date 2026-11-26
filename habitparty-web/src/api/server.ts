@@ -32,9 +32,42 @@ import type {
 } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
 import { getLocaleMode } from "@/utils/cookies";
+import { setAuthCookies } from "./authCookies";
+import {
+  ACCESS_COOKIE_MAX_AGE_SECONDS,
+  ACCESS_COOKIE_NAME,
+  isJwtExpiredOrExpiringSoon,
+  REFRESH_COOKIE_NAME,
+  requestDedupedTokenRefresh,
+} from "./jwtUtils";
 import type { paths } from "./schema";
 
-export type ExtendedApiPaths = paths & {
+export type ExtendedApiPaths = Omit<paths, "/users/password"> & {
+  "/users/password": {
+    patch: {
+      requestBody: {
+        content: {
+          "application/json": {
+            currentPassword: string;
+            newPassword: string;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": {
+              token?: string;
+              refreshToken?: string;
+            };
+          };
+        };
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
   "/users/theme": {
     patch: {
       requestBody: {
@@ -519,47 +552,77 @@ export type ExtendedApiPaths = paths & {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
+ * Erro tipado para respostas HTTP 401 (sessão expirada/revogada) provenientes da API.
+ * Usado por serviços com `"use cache: private"` para impedir o cacheamento de falhas de autenticação
+ * e permitir redirecionamento seguro para `/signIn?sessionExpired=1`.
+ */
+export class UnauthorizedApiError extends Error {
+  readonly status = 401;
+
+  constructor(message = "API_UNAUTHORIZED") {
+    super(message);
+    this.name = "UnauthorizedApiError";
+  }
+}
+
+export function isUnauthorizedApiError(
+  err: unknown,
+): err is UnauthorizedApiError {
+  return (
+    err instanceof UnauthorizedApiError ||
+    (typeof err === "object" &&
+      err !== null &&
+      "name" in err &&
+      (err as { name?: unknown }).name === "UnauthorizedApiError")
+  );
+}
+
+/**
+ * Força a renovação do access token via `/auth/refresh` (deduplicada entre chamadas concorrentes).
+ * Em Route Handlers e Server Actions, persiste tanto o access token quanto o refresh token rotacionado.
+ */
+export async function refreshServerAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value;
+  if (!refreshToken) {
+    return null;
+  }
+
+  const pair = await requestDedupedTokenRefresh(refreshToken, API_BASE_URL);
+  if (!pair?.accessToken) {
+    return null;
+  }
+
+  try {
+    if (pair.refreshToken) {
+      await setAuthCookies(pair.accessToken, pair.refreshToken);
+    } else {
+      cookieStore.set(ACCESS_COOKIE_NAME, pair.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: ACCESS_COOKIE_MAX_AGE_SECONDS,
+      });
+    }
+  } catch {
+    // Em Server Components de leitura, cookieStore.set não é permitido (o proxy.ts já persiste os cookies)
+  }
+
+  return pair.accessToken;
+}
+
+/**
  * Obtém ou renova silenciosamente o token JWT nas requisições do lado do servidor.
  * Envolvido por `React.cache()` para garantir que chamadas paralelas em um mesmo
  * ciclo de renderização reutilizem o mesmo token (e nunca disparem múltiplos `/auth/refresh`).
  */
 export const getServerAuthToken = cache(async (): Promise<string | null> => {
   const cookieStore = await cookies();
-  let token = cookieStore.get("habitparty_token")?.value;
+  let token = cookieStore.get(ACCESS_COOKIE_NAME)?.value;
 
-  if (!token) {
-    const refreshToken = cookieStore.get("habitparty_refresh_token")?.value;
-    if (refreshToken) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-          cache: "no-store",
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const newToken = data.accessToken || data.token;
-          if (newToken) {
-            token = newToken;
-            try {
-              cookieStore.set("habitparty_token", newToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "lax",
-                path: "/",
-                maxAge: 60 * 60 * 2,
-              });
-            } catch {
-              // Em Server Components de leitura, cookieStore.set pode não ser permitido
-            }
-          }
-        }
-      } catch (err) {
-        console.error("[serverAuthMiddleware:SilentRefresh]", err);
-      }
-    }
+  if (!token || isJwtExpiredOrExpiringSoon(token, 0)) {
+    token = (await refreshServerAccessToken()) ?? undefined;
   }
 
   return token || null;
@@ -605,6 +668,38 @@ const serverAuthMiddleware: Middleware = {
     return request;
   },
 };
+
+/**
+ * Constrói os cabeçalhos padrão de forwarding (Authorization, Accept-Language e IPs do cliente)
+ * para chamadas diretas ao backend em Route Handlers e Server Actions multipart/streaming.
+ */
+export async function buildServerForwardHeaders(): Promise<Headers> {
+  const out = new Headers();
+  const token = await getServerAuthToken();
+  if (token) {
+    out.set("Authorization", `Bearer ${token}`);
+  }
+
+  try {
+    const locale = await getLocaleMode();
+    out.set("Accept-Language", locale);
+
+    const incomingHeaders = await headers();
+    const cfIp = incomingHeaders.get("cf-connecting-ip");
+    const forwardedFor = incomingHeaders.get("x-forwarded-for");
+    const realIp = incomingHeaders.get("x-real-ip");
+
+    if (cfIp) out.set("CF-Connecting-IP", cfIp);
+    if (forwardedFor) out.set("X-Forwarded-For", forwardedFor);
+    if (realIp) out.set("X-Real-IP", realIp);
+  } catch {
+    // Ignora fora de contexto HTTP
+  }
+
+  return out;
+}
+
+export { API_BASE_URL };
 
 /**
  * Cliente HTTP tipado 100% type-safe para uso em Server Components e Server Actions autenticados.

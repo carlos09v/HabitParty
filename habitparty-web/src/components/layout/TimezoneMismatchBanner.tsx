@@ -3,17 +3,14 @@
 import { Globe, RefreshCw, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { useBrowserTimezoneState } from "@/hooks/useBrowserTimezoneState";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
 import { useUpdateTimezone } from "@/hooks/useUpdateTimezone";
-import { useUserStore } from "@/store/userStore";
 import type { UserResponseDTO } from "@/types/user";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 import {
-  areTimeZonesClockEquivalent,
   canonicalizeTimeZone,
-  DEFAULT_TIMEZONE,
-  detectBrowserTimeZone,
   formatTimeZoneOffsetLabel,
-  getTimeZoneCooldownRemainingMs,
   isValidIanaTimeZone,
 } from "@/utils/date";
 
@@ -31,21 +28,19 @@ export function TimezoneMismatchBanner({
   initialUser,
 }: TimezoneMismatchBannerProps) {
   const t = useTranslations("timezoneAlert");
-  const storeUser = useUserStore((state) => state.user);
-
-  const user = storeUser ?? initialUser;
+  const user = useResolvedUser(initialUser);
   const accountTimezone = user?.timezone;
 
-  const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
+  const { browserTimezone, isCooldownActive, hasBrowserMismatch } =
+    useBrowserTimezoneState({
+      accountTimezone,
+      timezoneUpdatedAt: user?.timezoneUpdatedAt,
+    });
   const [dismissedPairKey, setDismissedPairKey] = useState<string | null>(null);
   const { isPending, updateTimezone } = useUpdateTimezone({
     formatSuccessMessage: (timezone) => t("updateSuccessToast", { timezone }),
     errorMessage: t("updateErrorToast"),
   });
-
-  useEffect(() => {
-    setBrowserTimezone(detectBrowserTimeZone(DEFAULT_TIMEZONE));
-  }, []);
 
   const pairKey = useMemo(() => {
     if (
@@ -71,17 +66,11 @@ export function TimezoneMismatchBanner({
     }
   }, [pairKey]);
 
-  const isCooldownActive = Boolean(
-    browserTimezone &&
-      getTimeZoneCooldownRemainingMs(user?.timezoneUpdatedAt) > 0,
-  );
-
   const shouldShow = Boolean(
     user &&
       browserTimezone &&
       !isCooldownActive &&
-      isValidIanaTimeZone(accountTimezone) &&
-      !areTimeZonesClockEquivalent(accountTimezone, browserTimezone) &&
+      hasBrowserMismatch &&
       pairKey &&
       dismissedPairKey !== pairKey,
   );

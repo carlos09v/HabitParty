@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { updateUserProfileAction } from "@/actions/userActions";
@@ -14,7 +13,7 @@ interface UseUpdateTimezoneOptions {
 }
 
 /**
- * Centraliza o fluxo de atualização do fuso horário (Action + Store + Cookie SSR + Toast + Router Refresh),
+ * Centraliza o fluxo de atualização do fuso horário (Action + Store + Cookie SSR + Toast),
  * eliminando duplicação entre TimezoneSettings e TimezoneMismatchBanner.
  */
 export function useUpdateTimezone({
@@ -22,7 +21,6 @@ export function useUpdateTimezone({
   errorMessage,
   onSuccess,
 }: UseUpdateTimezoneOptions) {
-  const router = useRouter();
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
   const [isPending, startTransition] = useTransition();
 
@@ -41,7 +39,6 @@ export function useUpdateTimezone({
         setClientTimeZoneCookie(nextTz);
         toast.success(formatSuccessMessage(nextTz));
         onSuccess?.(nextTz);
-        router.refresh();
       } else {
         toast.error(result.error || errorMessage);
       }

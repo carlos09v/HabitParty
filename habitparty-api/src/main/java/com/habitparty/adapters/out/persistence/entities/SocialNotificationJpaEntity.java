@@ -11,20 +11,24 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "social_notifications")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class SocialNotificationJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class SocialNotificationJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "notification_id", nullable = false, updatable = false)
   private UUID id;
 
@@ -34,6 +38,7 @@ public class SocialNotificationJpaEntity {
   @Column(name = "actor_id")
   private UUID actorId;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "notification_type", nullable = false, length = 40)
   private SocialNotificationType notificationType;

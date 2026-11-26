@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 
 export type LandingNavLinkKey =
-  | "howItWorks"
   | "gamification"
+  | "howItWorks"
   | "features"
   | "roadmap"
   | "pricing"
@@ -31,7 +31,6 @@ export interface LandingProductivityStepConfig {
   id: LandingProductivityStepKey;
   number: string;
   icon: LucideIcon;
-  color: string;
   numberColor: string;
   iconBoxClass: string;
   iconColor: string;
@@ -63,16 +62,19 @@ export type LandingRoadmapKey =
   | "r16"
   | "r20";
 
-export interface LandingRoadmapConfig {
-  id: LandingRoadmapKey;
-  release: string;
-  status: "completed" | "next" | "planned" | "epic";
+export type LandingRoadmapStatus = "completed" | "next" | "planned" | "epic";
+
+export interface LandingRoadmapStatusStyle {
   statusBadgeColor: string;
-  icon: LucideIcon;
   iconBoxColor: string;
   checkColor: string;
   accentColor: string;
-  borderGlowColor: string;
+}
+
+export interface LandingRoadmapConfig {
+  id: LandingRoadmapKey;
+  status: LandingRoadmapStatus;
+  icon: LucideIcon;
   hasExtras?: boolean;
 }
 
@@ -81,7 +83,6 @@ export type LandingPlanKey = "adventurer" | "founder" | "guardian";
 export interface LandingPlanConfig {
   id: LandingPlanKey;
   badgeColor: string;
-  highlight: boolean;
   isFounder?: boolean;
   hasOriginalPrice?: boolean;
   ctaLink: string;
@@ -89,10 +90,10 @@ export interface LandingPlanConfig {
 
 export type LandingFaqKey =
   | "founderPromo"
+  | "experienceMode"
   | "freeVsPremium"
   | "honestyShop"
   | "hardcoreMode"
   | "partyGuild"
   | "dataPreservation"
-  | "experienceMode"
   | "mobileApp";

@@ -24,7 +24,7 @@ public class RefreshToken {
   }
 
   public boolean isExpired() {
-    return Instant.now().isAfter(this.expirationDate);
+    return this.expirationDate == null || Instant.now().isAfter(this.expirationDate);
   }
 
   public boolean isValid() {

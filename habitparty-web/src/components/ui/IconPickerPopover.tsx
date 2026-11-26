@@ -2,11 +2,10 @@
 
 import { ChevronDown, Crown, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
+import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import type { IconOption } from "@/types/ui";
 import { cn } from "@/utils";
@@ -39,7 +38,7 @@ export function IconPickerPopover({
 }: IconPickerPopoverProps) {
   const t = useTranslations("ui.iconPicker");
   const resolvedTitle = title ?? t("popoverTitle");
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
   const isPremium = useUserStore((s) => s.is_Premium);
 
   const getOptionLabel = (item?: IconOption) => {
@@ -57,6 +56,7 @@ export function IconPickerPopover({
     toggle,
     coords,
     shouldRenderPortal,
+    portalContainer,
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align,
@@ -80,7 +80,7 @@ export function IconPickerPopover({
     if (item.isPremium && !isPremium) {
       toast.info(t("exclusiveToast", { label }));
       close();
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       return;
     }
     onChange(item.id);
@@ -102,7 +102,7 @@ export function IconPickerPopover({
     >
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
         <div className="flex items-center gap-1.5">
-          <span className="text-caption font-semibold text-neutral-200 uppercase tracking-wider">
+          <span className="text-label-m font-semibold text-neutral-200 uppercase tracking-wider">
             {resolvedTitle}
           </span>
           <span className="text-[10px] text-neutral-400">
@@ -165,99 +165,86 @@ export function IconPickerPopover({
   );
 
   return (
-    <>
-      <div className="relative inline-block" ref={containerRef}>
-        {triggerVariant === "compact" ? (
-          <button
-            ref={triggerRef}
-            type="button"
-            onClick={toggle}
-            disabled={disabled}
-            aria-expanded={isOpen}
-            aria-haspopup="dialog"
-            title={t("compactButtonTitle", { label: selectedLabel })}
+    <div className="relative inline-block" ref={containerRef}>
+      {triggerVariant === "compact" ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={toggle}
+          disabled={disabled}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          title={t("compactButtonTitle", { label: selectedLabel })}
+          className={cn(
+            "flex items-center justify-center gap-1.5 h-[42px] px-3 rounded-lg border transition-colors cursor-pointer select-none shrink-0",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
+            isOpen
+              ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
+              : "border-neutral-600 bg-card hover:border-neutral-500 text-neutral-50 shadow-xs dark:border-primary/40 dark:bg-background/50 dark:hover:bg-white/5 dark:text-neutral-200 dark:hover:text-gold dark:hover:border-gold/40 dark:shadow-none",
+            disabled && "opacity-50 cursor-not-allowed",
+            className,
+          )}
+        >
+          {CurrentIcon && <CurrentIcon size={19} className="shrink-0" />}
+          {selectedOption?.isPremium && (
+            <Crown size={11} className="text-gold fill-gold shrink-0 -ml-0.5" />
+          )}
+          <ChevronDown
+            size={13}
             className={cn(
-              "flex items-center justify-center gap-1.5 h-[42px] px-3 rounded-lg border transition-colors cursor-pointer select-none shrink-0",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
-              isOpen
-                ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
-                : "border-neutral-600 bg-card hover:border-neutral-500 text-neutral-50 shadow-xs dark:border-primary/40 dark:bg-background/50 dark:hover:bg-white/5 dark:text-neutral-200 dark:hover:text-gold dark:hover:border-gold/40 dark:shadow-none",
-              disabled && "opacity-50 cursor-not-allowed",
-              className,
+              "text-neutral-400 transition-transform duration-150 shrink-0",
+              isOpen && "rotate-180 text-primary dark:text-gold",
             )}
-          >
-            {CurrentIcon && <CurrentIcon size={19} className="shrink-0" />}
-            {selectedOption?.isPremium && (
-              <Crown
-                size={11}
-                className="text-gold fill-gold shrink-0 -ml-0.5"
-              />
+          />
+        </button>
+      ) : (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={toggle}
+          disabled={disabled}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          className={cn(
+            "w-full flex items-center justify-between gap-3 h-[42px] px-3.5 rounded-lg border transition-colors cursor-pointer select-none",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
+            isOpen
+              ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
+              : "border-neutral-600 bg-card hover:border-neutral-500 text-neutral-50 shadow-xs dark:border-primary/40 dark:bg-background/50 dark:hover:bg-white/5 dark:text-neutral-200 dark:hover:border-gold/40 dark:shadow-none",
+            disabled && "opacity-50 cursor-not-allowed",
+            className,
+          )}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            {CurrentIcon && (
+              <span className="p-1 rounded-md bg-gold/15 text-gold shrink-0 flex items-center gap-1">
+                <CurrentIcon size={16} />
+                {selectedOption?.isPremium && (
+                  <Crown size={10} className="fill-gold" />
+                )}
+              </span>
             )}
+            <span className="text-body-s font-medium truncate text-neutral-100">
+              {selectedLabel}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-neutral-400 shrink-0">
+            <span className="text-[11px] text-neutral-400">{t("change")}</span>
             <ChevronDown
-              size={13}
+              size={14}
               className={cn(
-                "text-neutral-400 transition-transform duration-150 shrink-0",
-                isOpen && "rotate-180 text-primary dark:text-gold",
+                "transition-transform duration-150",
+                isOpen && "rotate-180 text-gold",
               )}
             />
-          </button>
-        ) : (
-          <button
-            ref={triggerRef}
-            type="button"
-            onClick={toggle}
-            disabled={disabled}
-            aria-expanded={isOpen}
-            aria-haspopup="dialog"
-            className={cn(
-              "w-full flex items-center justify-between gap-3 h-[42px] px-3.5 rounded-lg border transition-colors cursor-pointer select-none",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
-              isOpen
-                ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
-                : "border-neutral-600 bg-card hover:border-neutral-500 text-neutral-50 shadow-xs dark:border-primary/40 dark:bg-background/50 dark:hover:bg-white/5 dark:text-neutral-200 dark:hover:border-gold/40 dark:shadow-none",
-              disabled && "opacity-50 cursor-not-allowed",
-              className,
-            )}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              {CurrentIcon && (
-                <span className="p-1 rounded-md bg-gold/15 text-gold shrink-0 flex items-center gap-1">
-                  <CurrentIcon size={16} />
-                  {selectedOption?.isPremium && (
-                    <Crown size={10} className="fill-gold" />
-                  )}
-                </span>
-              )}
-              <span className="text-body-s font-medium truncate text-neutral-100">
-                {selectedLabel}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-neutral-400 shrink-0">
-              <span className="text-[11px] text-neutral-400">
-                {t("change")}
-              </span>
-              <ChevronDown
-                size={14}
-                className={cn(
-                  "transition-transform duration-150",
-                  isOpen && "rotate-180 text-gold",
-                )}
-              />
-            </div>
-          </button>
-        )}
-
-        {shouldRenderPortal &&
-          popoverContent &&
-          createPortal(popoverContent, document.body)}
-      </div>
-
-      {isUpgradeModalOpen && (
-        <UpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
+          </div>
+        </button>
       )}
-    </>
+
+      {shouldRenderPortal &&
+        popoverContent &&
+        portalContainer &&
+        createPortal(popoverContent, portalContainer)}
+    </div>
   );
 }

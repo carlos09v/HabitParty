@@ -24,10 +24,7 @@ export type WelcomeCardStorageKey =
 
 export interface WelcomeCardConfig {
   key: WelcomeCardStorageKey;
-  title: string;
-  pageName: string;
   route: string;
-  description: string;
   icon: LucideIcon;
 }
 

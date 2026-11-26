@@ -1,32 +1,45 @@
 {
   "metadata": {
     "title": "Statement & History | HabitParty",
-    "titleGamified": "Journey Journal | HabitParty",
-    "titleProductivity": "Statement & History | HabitParty",
     "description": "View and export your statement of coins, XP, tasks, focus sessions, and rewards."
   },
   "loading": {
     "ariaLabel": "Loading transaction history..."
   },
   "page": {
-    "paginationItemLabel": "transactions"
+    "paginationItemLabel": "transactions",
+    "loadErrorTitle": "Could not load your statement right now",
+    "loadErrorDescription": "Please check your connection and try again. Your records remain safe.",
+    "retryButton": "Try again"
   },
   "welcomeCard": {
+    "compactTitleGamified": "Journey Journal",
+    "compactTitleProductivity": "Transaction Statement",
+    "compactSubtitleGamified": "Track earnings, spending, and penalties in the selected period.",
+    "compactSubtitleProductivity": "Audit credits, points, and redemptions in the selected period.",
     "stats": {
-      "coinsOnPageLabel": "Coins on Page",
-      "coinsOnPageLabelProductivity": "Credits on Page",
+      "coinsInPeriodLabel": "Coins in Period",
+      "coinsInPeriodLabelProductivity": "Credits in Period",
+      "coinsSpentPrimaryLabel": "Total Spent",
+      "coinsSpentPrimaryLabelProductivity": "Credits Redeemed",
       "coinsValue": "+{amount} Coins",
       "coinsValueProductivity": "+{amount} Credits",
-      "coinsSpentHint": "−{amount} coins spent on this page",
-      "coinsSpentHintProductivity": "−{amount} credits spent on this page",
-      "coinsEarnedHint": "earned in visible records",
-      "coinsEarnedHintProductivity": "earned in visible records",
-      "xpOnPageLabel": "XP on Page",
-      "xpOnPageLabelProductivity": "Points on Page",
+      "coinsSpentValue": "−{amount} Coins",
+      "coinsSpentValueProductivity": "−{amount} Credits",
+      "coinsSpentHint": "−{amount} coins spent in period",
+      "coinsSpentHintProductivity": "−{amount} credits used in period",
+      "coinsEarnedHint": "earned in filtered period",
+      "coinsEarnedHintProductivity": "earned in filtered period",
+      "coinsEarnedSubHint": "+{amount} coins earned in period",
+      "coinsEarnedSubHintProductivity": "+{amount} credits earned in period",
+      "xpInPeriodLabel": "XP in Period",
+      "xpInPeriodLabelProductivity": "Points in Period",
       "xpValue": "+{amount} XP",
       "xpValueProductivity": "+{amount} pts",
-      "xpEarnedHint": "experience in visible records",
-      "xpEarnedHintProductivity": "points in visible records",
+      "xpLostHint": "−{amount} XP lost in period",
+      "xpLostHintProductivity": "−{amount} pts deducted in period",
+      "xpEarnedHint": "experience in filtered period",
+      "xpEarnedHintProductivity": "points in filtered period",
       "totalRecordsLabel": "Total Records",
       "transactionSingular": "transaction",
       "transactionPlural": "transactions",
@@ -34,15 +47,25 @@
     }
   },
   "filters": {
-    "searchPlaceholder": "Search transaction...",
+    "searchPlaceholder": "Search name, list, tag, or description...",
     "periodLabel": "Period:",
+    "periodAria": "Filter by period",
+    "directionLabel": "Flow",
+    "directionAria": "Filter by transaction direction",
+    "sortLabel": "Sort",
+    "sortAria": "Sort records",
+    "pageSizeLabel": "Per page",
+    "pageSizeAria": "Items per page",
+    "dateFromLabel": "From",
+    "dateToLabel": "To",
+    "advancedToggle": "More filters",
+    "clearAll": "Clear filters",
+    "tabsAria": "History categories",
     "tabs": {
       "ALL": "All",
       "TASKS": "Tasks & Habits",
-      "SHOPPING": "Store",
       "SHOPPING_GAMIFIED": "Store",
       "SHOPPING_PRODUCTIVITY": "Rewards",
-      "BACKPACK": "Backpack",
       "BACKPACK_GAMIFIED": "Backpack",
       "BACKPACK_PRODUCTIVITY": "Inventory",
       "FOCUS": "Focus"
@@ -51,12 +74,28 @@
       "ALL": "All time",
       "TODAY": "Today",
       "7DAYS": "Last 7 days",
-      "30DAYS": "Last 30 days"
+      "30DAYS": "Last 30 days",
+      "THIS_MONTH": "This month",
+      "LAST_MONTH": "Last month",
+      "CUSTOM": "Custom range"
     },
-    "exportButtonTitle": "Export Statement in CSV format",
+    "directions": {
+      "ALL": "All movements",
+      "IN": "Earnings only",
+      "OUT": "Spending & penalties"
+    },
+    "sorts": {
+      "NEWEST": "Newest first",
+      "OLDEST": "Oldest first",
+      "HIGHEST_GOLD": "Highest value",
+      "LOWEST_GOLD": "Lowest value"
+    },
+    "pageSizeOption": "{size} / page",
+    "exportButtonTitle": "Export filtered statement to CSV",
     "exporting": "Exporting...",
     "exportCsvButton": "Export CSV",
     "exportCsvShort": "CSV",
+    "updatingStatus": "Updating statement records...",
     "csvFilenamePrefix": "my_statement",
     "toasts": {
       "exportError": "Error exporting statement.",
@@ -79,66 +118,75 @@
       "actions": "Actions",
       "selectAllAria": "Select all records on this page"
     },
-    "emptyTitle": "No transactions found",
-    "emptyDescription": "There are no coin or XP movements for the selected filters.",
-    "emptyDescriptionProductivity": "There are no credit or point movements for the selected filters.",
+    "emptyTitle": "Your statement is still empty",
+    "emptyDescription": "Complete tasks, habits, or focus sessions to start logging your coin and XP gains.",
+    "emptyDescriptionProductivity": "Complete tasks, routines, or focus sessions to start logging your credits and points.",
+    "emptyCtaTasks": "Go to Tasks",
+    "emptyFilteredTitle": "No transactions found",
+    "emptyFilteredDescription": "There are no coin or XP movements for the selected filters.",
+    "emptyFilteredDescriptionProductivity": "There are no credit or point movements for the selected filters.",
+    "emptyFilteredClear": "Clear filters",
     "recordSingular": "record",
     "recordPlural": "records",
     "toasts": {
-      "deleteError": "Error deleting record.",
-      "deleteSuccess": "Record removed successfully!"
+      "deleteError": "Error removing record.",
+      "deleteSuccess": "Record removed from statement.",
+      "undoAction": "Undo",
+      "restoreSuccess": "{count, plural, one {# record restored!} other {# records restored!}}",
+      "restoreError": "Could not restore the records."
     },
     "deleteModal": {
-      "title": "Delete statement record",
+      "title": "Remove statement record",
       "defaultItemName": "this record",
-      "description": "Remove <bold>{name}</bold> from your statement? This <bold>does not change</bold> your coin balance or XP, it only deletes the record.",
-      "deleting": "Deleting...",
-      "confirmText": "Delete record",
+      "description": "Remove <bold>{name}</bold> from your statement view? This <bold>does not change</bold> your coin balance, XP, or streak.",
+      "descriptionProductivity": "Remove <bold>{name}</bold> from your statement view? This <bold>does not change</bold> your credits, points, or streak.",
+      "deleting": "Removing...",
+      "confirmText": "Remove record",
       "cancelText": "Cancel"
     },
     "bulk": {
-      "selectedCount": "{count, plural, one {# record selected} other {# records selected}}",
-      "selectAll": "Select all",
-      "clearSelection": "Clear selection",
-      "deleteSelected": "Delete selected ({count})",
-      "modalTitle": "Delete selected records",
-      "modalDescription": "Remove <bold>{count, plural, one {# record} other {# records}}</bold> from your history? This <bold>does not change</bold> your coin balance or XP, it only deletes the records.",
-      "confirmText": "Delete records",
-      "deleteSuccess": "{count, plural, one {# record removed} other {# records removed}} successfully!",
-      "deleteError": "Error deleting the selected records."
+      "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+      "selectAll": "Select page",
+      "clearSelection": "Cancel",
+      "deleteSelected": "Remove ({count})",
+      "modalTitle": "Remove selected records",
+      "modalDescription": "Remove <bold>{count, plural, one {# record} other {# records}}</bold> from your statement view? This <bold>does not change</bold> your coin balance, XP, or streak.",
+      "modalDescriptionProductivity": "Remove <bold>{count, plural, one {# record} other {# records}}</bold> from your statement view? This <bold>does not change</bold> your credits, points, or streak.",
+      "confirmText": "Remove records",
+      "deleteSuccess": "{count, plural, one {# record removed from statement.} other {# records removed from statement.}}",
+      "deleteError": "Error removing the selected records."
     }
   },
   "row": {
-    "rowTitle": "Click to view transaction details",
+    "rowTitle": "View details for {name}",
     "defaultTransactionName": "Transaction",
-    "defaultEventTitle": "Event",
-    "durationLabel": "Duration:",
     "listPriceLabel": "List price:",
-    "deleteRecordTitle": "Delete statement record",
-    "deleteRecordAria": "Delete statement record",
+    "deleteRecordTitle": "Remove statement record",
+    "deleteRecordAria": "Remove record {name} from statement",
     "columnLabel": "List:",
     "selectRowAria": "Select record {name}"
   },
   "detailPopover": {
-    "dialogAria": "Transaction Details",
     "copyIdTitle": "Copy Transaction ID",
+    "copiedToast": "ID copied to clipboard.",
+    "copyFailedToast": "Could not copy ID.",
     "defaultTransactionName": "Transaction",
     "closeAria": "Close details",
-    "coinBalanceLabel": "Coin Balance",
-    "coinBalanceLabelProductivity": "Credit Balance",
-    "xpLabel": "Experience (XP)",
-    "xpLabelProductivity": "Consistency Points",
+    "coinChangeLabel": "Coin Change",
+    "coinChangeLabelProductivity": "Credit Change",
+    "xpLabel": "XP Change",
+    "xpLabelProductivity": "Points Change",
     "originalListPriceLabel": "Original list price:",
     "taskDifficultyLabel": "Task Difficulty:",
-    "taskDifficultyLabelProductivity": "Task Effort:",
+    "taskDifficultyLabelProductivity": "Task Complexity:",
     "packageRarityLabel": "Package Rarity:",
     "sessionDurationLabel": "Session Duration:",
     "recordedAtLabel": "Recorded on:",
     "linkedTagsLabel": "Linked tags:",
-    "deleteButton": "Delete",
+    "deleteButton": "Remove from statement",
     "closeButton": "Close",
     "columnLabel": "List:",
-    "descriptionLabel": "Reward description"
+    "descriptionLabel": "Description"
   },
   "utils": {
     "unknownDate": "Unknown date",
@@ -161,10 +209,8 @@
     },
     "contextRoutes": {
       "tasks": "View in Tasks",
-      "inventory": "View in Backpack",
       "inventoryGamified": "View in Backpack",
       "inventoryProductivity": "View in Inventory",
-      "rewards": "View in Store",
       "rewardsGamified": "View in Store",
       "rewardsProductivity": "View in Rewards",
       "focus": "View in Focus"
@@ -184,10 +230,10 @@
     }
   },
   "actions": {
-    "exportCsvFailed": "Failed to export statement CSV file.",
-    "exportCsvUnexpectedError": "Error generating CSV file.",
     "deleteFailed": "Failed to remove transaction record.",
     "deleteUnexpectedError": "Error communicating with server for deletion.",
-    "deleteBatchFailed": "Failed to remove the selected records."
+    "deleteBatchFailed": "Failed to remove the selected records.",
+    "restoreFailed": "Failed to restore the selected records.",
+    "restoreUnexpectedError": "Error communicating with server for restore."
   }
 }

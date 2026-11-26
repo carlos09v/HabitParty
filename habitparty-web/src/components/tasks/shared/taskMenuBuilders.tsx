@@ -1,5 +1,7 @@
 import {
+  ArrowLeft,
   ArrowLeftToLine,
+  ArrowRight,
   ArrowRightToLine,
   Check,
   Columns3,
@@ -30,11 +32,18 @@ export function buildTaskContextMenuItems(options: {
   onDuplicate: (task: Task) => void;
   onDelete: (task: Task) => void;
   onStartFocus?: (task: Task) => void;
+  moveColumns?: ReadonlyArray<{
+    id: string;
+    title: string;
+    isCurrent?: boolean;
+  }>;
+  onMoveToColumn?: (task: Task, targetColumnId: string) => void;
   isDuplicating?: boolean;
   labels?: {
     startFocus?: string;
     edit?: string;
     duplicate?: string;
+    moveToColumn?: string;
     delete?: string;
   };
 }): ContextMenuItem[] {
@@ -44,6 +53,8 @@ export function buildTaskContextMenuItems(options: {
     onDuplicate,
     onDelete,
     onStartFocus,
+    moveColumns,
+    onMoveToColumn,
     isDuplicating = false,
     labels,
   } = options;
@@ -51,6 +62,11 @@ export function buildTaskContextMenuItems(options: {
     Boolean(task) &&
     normalizeTaskType(task as Task) !== "habit" &&
     !task?.completed;
+
+  const targetMoveColumns =
+    task && onMoveToColumn && moveColumns
+      ? moveColumns.filter((col) => col.id && !col.isCurrent)
+      : [];
 
   return [
     ...(canFocus && task
@@ -90,6 +106,21 @@ export function buildTaskContextMenuItems(options: {
         if (task) onDuplicate(task);
       },
     },
+    ...(task && onMoveToColumn && targetMoveColumns.length > 0
+      ? [
+          {
+            label: labels?.moveToColumn || "Mover para coluna",
+            icon: <FolderInput size={14} />,
+            children: targetMoveColumns.map((col) => ({
+              label: col.title,
+              icon: (
+                <Columns3 size={13} className="text-neutral-400 shrink-0" />
+              ),
+              onClick: () => onMoveToColumn(task, col.id),
+            })),
+          },
+        ]
+      : []),
     {
       label: labels?.delete || "Excluir",
       icon: <Trash2 size={14} />,
@@ -120,6 +151,10 @@ export function buildColumnContextMenuItems(options: {
   onDelete: (column: BoardColumn) => void;
   onInsertLeft?: (column: BoardColumn) => void;
   onInsertRight?: (column: BoardColumn) => void;
+  canMoveLeft?: boolean;
+  canMoveRight?: boolean;
+  onMoveLeft?: (column: BoardColumn) => void;
+  onMoveRight?: (column: BoardColumn) => void;
   onColumnWidthChange?: (columnId: string, width: ColumnWidthPreset) => void;
   onMoveToWorkspace?: (
     column: BoardColumn,
@@ -130,6 +165,8 @@ export function buildColumnContextMenuItems(options: {
   labels?: {
     edit?: string;
     delete?: string;
+    moveLeft?: string;
+    moveRight?: string;
     insertLeft?: string;
     insertRight?: string;
     layout?: string;
@@ -151,6 +188,10 @@ export function buildColumnContextMenuItems(options: {
     onDelete,
     onInsertLeft,
     onInsertRight,
+    canMoveLeft = false,
+    canMoveRight = false,
+    onMoveLeft,
+    onMoveRight,
     onColumnWidthChange,
     onMoveToWorkspace,
     onMoveLockedWorkspace,
@@ -201,6 +242,24 @@ export function buildColumnContextMenuItems(options: {
         if (column) onEdit(column);
       },
     },
+    ...(onMoveLeft && canMoveLeft && column
+      ? [
+          {
+            label: labels?.moveLeft || "Mover coluna à esquerda",
+            icon: <ArrowLeft size={14} />,
+            onClick: () => onMoveLeft(column),
+          },
+        ]
+      : []),
+    ...(onMoveRight && canMoveRight && column
+      ? [
+          {
+            label: labels?.moveRight || "Mover coluna à direita",
+            icon: <ArrowRight size={14} />,
+            onClick: () => onMoveRight(column),
+          },
+        ]
+      : []),
     ...(onInsertLeft && column
       ? [
           {

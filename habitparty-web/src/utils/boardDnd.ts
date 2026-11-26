@@ -1,6 +1,18 @@
 import type { UniqueIdentifier } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
+import { normalizeTaskType } from "@/constants/task";
 import type { BoardColumn, Task } from "@/types/task";
+
+/** Identifica se uma tarefa pertence à seção separada de Afazeres (To-Dos) concluídos. */
+export function isCompletedTodoSectionTask(task: Task): boolean {
+  return normalizeTaskType(task) === "todo" && Boolean(task.completed);
+}
+
+export function reindexTasksOrder(tasks: Task[]): Task[] {
+  return tasks.map((task, idx) =>
+    task.order === idx ? task : { ...task, order: idx },
+  );
+}
 
 /** Localiza a coluna que contém uma determinada tarefa pelo ID. */
 export function findColumnByTask(
@@ -10,7 +22,7 @@ export function findColumnByTask(
   return cols.find((col) => col.tasks.some((t) => t.id === taskId));
 }
 
-/** Move uma tarefa para outra coluna (em tempo real, durante o arrasto). */
+/** Move uma tarefa para outra coluna (em tempo real, durante o arrasto) recalculando `order`. */
 export function moveTaskAcrossColumns(
   cols: BoardColumn[],
   activeId: UniqueIdentifier,
@@ -38,9 +50,15 @@ export function moveTaskAcrossColumns(
   );
 
   return cols.map((col) => {
-    if (col.id === from.id)
-      return { ...col, tasks: col.tasks.filter((t) => t.id !== activeId) };
-    if (col.id === to.id) return { ...col, tasks: targetTasks };
+    if (col.id === from.id) {
+      return {
+        ...col,
+        tasks: reindexTasksOrder(col.tasks.filter((t) => t.id !== activeId)),
+      };
+    }
+    if (col.id === to.id) {
+      return { ...col, tasks: reindexTasksOrder(targetTasks) };
+    }
     return col;
   });
 }
@@ -61,7 +79,7 @@ export function reorderColumns(
   }));
 }
 
-/** Reordena tarefas dentro da mesma coluna. */
+/** Reordena tarefas dentro da mesma coluna, bloqueando troca entre Ativas e Concluídas e atualizando `order`. */
 export function reorderTasks(
   cols: BoardColumn[],
   activeId: UniqueIdentifier,
@@ -74,6 +92,15 @@ export function reorderTasks(
   const newIndex = col.tasks.findIndex((t) => t.id === overId);
   if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return cols;
 
-  const tasks = arrayMove(col.tasks, oldIndex, newIndex);
+  const activeTask = col.tasks[oldIndex];
+  const overTask = col.tasks[newIndex];
+  if (
+    isCompletedTodoSectionTask(activeTask) !==
+    isCompletedTodoSectionTask(overTask)
+  ) {
+    return cols;
+  }
+
+  const tasks = reindexTasksOrder(arrayMove(col.tasks, oldIndex, newIndex));
   return cols.map((c) => (c.id === col.id ? { ...c, tasks } : c));
 }

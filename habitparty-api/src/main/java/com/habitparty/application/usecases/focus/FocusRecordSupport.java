@@ -11,6 +11,8 @@ import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.focus.FocusActivity;
@@ -35,6 +37,15 @@ final class FocusRecordSupport {
       UUID taskId,
       @Nullable TaskRepository taskPort,
       String missingPortMessage) {
+    return loadAndValidateLinkedTask(userId, taskId, taskPort, null, missingPortMessage);
+  }
+
+  static Task loadAndValidateLinkedTask(
+      UUID userId,
+      UUID taskId,
+      @Nullable TaskRepository taskPort,
+      @Nullable WorkspaceWriteGuard workspaceWriteGuard,
+      String missingPortMessage) {
     if (taskPort == null) {
       throw new IllegalStateException(missingPortMessage);
     }
@@ -44,6 +55,12 @@ final class FocusRecordSupport {
     if (task.getTaskType() == TaskType.HABIT) {
       throw new DomainValidationException(
           "Apenas tarefas Diárias e Afazeres podem ser vinculadas a sessões de foco.");
+    }
+    if (workspaceWriteGuard != null && task.getBoardColumnId() != null) {
+      workspaceWriteGuard.assertColumnWritable(
+          task.getBoardColumnId(),
+          userId,
+          "Esta tarefa pertence a um ambiente em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para vinculá-la ao foco!");
     }
     return task;
   }
@@ -101,9 +118,6 @@ final class FocusRecordSupport {
   }
 
   static LocalDateTime toServerTime(LocalDateTime userTime, ZoneId userZone) {
-    return userTime
-        .atZone(userZone)
-        .withZoneSameInstant(ZoneId.systemDefault())
-        .toLocalDateTime();
+    return UtcDateTimeMapper.toServerLocalDateTime(userTime, userZone);
   }
 }

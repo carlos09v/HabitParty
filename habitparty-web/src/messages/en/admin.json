@@ -12,6 +12,7 @@
     "subtitle": "Monitor Resend email usage, database disk space, and control per-user resource consumption.",
     "refreshButton": "Refresh Data",
     "refreshedMessage": "Admin data updated successfully!",
+    "refreshError": "Could not refresh admin data.",
     "userDetailLoadError": "Could not load user details.",
     "roleUpdateError": "Error updating user role.",
     "promotedMessage": "User {fullName} promoted to Administrator!",
@@ -72,6 +73,8 @@
       "unverifiedTitle": "Email verification pending"
     },
     "searchPlaceholder": "Search by name, @user, or email...",
+    "filterTabsAriaLabel": "Filter users by category",
+    "tableAriaLabel": "Registered users table",
     "loading": "Loading data...",
     "headers": {
       "user": "User",
@@ -112,7 +115,8 @@
       "makeUser": "Make USER",
       "makeAdmin": "Make ADMIN",
       "demoteTitle": "Demote to Standard User",
-      "promoteTitle": "Promote to Administrator"
+      "promoteTitle": "Promote to Administrator",
+      "selfDemoteDisabledTitle": "You cannot revoke your own administrator privileges"
     },
     "pagination": {
       "itemLabel": "users",

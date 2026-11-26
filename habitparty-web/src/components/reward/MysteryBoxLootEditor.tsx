@@ -1,17 +1,21 @@
-"use client";
-
 import { Clock, Dices, Sparkles, Store } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { type MutableRefObject, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
+import {
+  getLocalizedDefaultMysteryBoxLoot,
+  getLocalizedMysteryBoxPresetSlots,
+} from "@/constants/mysteryBox";
 import {
   getMysteryBadgeVariantClass,
   MYSTERY_BOX_PRESETS,
   REWARD_ICONS,
 } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type {
   MysteryBoxLootItem,
   MysteryBoxPresetId,
@@ -19,6 +23,7 @@ import type {
   Reward,
 } from "@/types/reward";
 import { cn } from "@/utils";
+import { isDebtReward } from "@/utils/rewardGrouping";
 import {
   getMysteryBoxTier,
   suggestRewardIconFromTitle,
@@ -57,6 +62,8 @@ export function MysteryBoxLootEditor({
   slotInputRefs,
 }: MysteryBoxLootEditorProps) {
   const t = useTranslations("rewards.mysteryBox.lootEditor");
+  const locale = useLocale() as AppLocale;
+  const isPremium = useUserStore((s) => s.is_Premium);
   const { isGamified } = useExperienceMode();
   const tier = getMysteryBoxTier(packageLevel);
   const tierId = tier.id;
@@ -64,29 +71,35 @@ export function MysteryBoxLootEditor({
   const [manualIconSlots, setManualIconSlots] = useState<
     [boolean, boolean, boolean]
   >([false, false, false]);
+  const [draftMinutesBySlot, setDraftMinutesBySlot] = useState<
+    [string | null, string | null, string | null]
+  >([null, null, null]);
 
   const { storeCandidates, hasAnyStoreRewards } = useMemo(() => {
-    const anyStoreRewards = existingRewards.some(
-      (r) => r.type === "SingleUse" || r.type === "TimeBased",
-    );
-    const candidates = existingRewards.filter(
+    const eligibleRegular = existingRewards.filter(
       (r) =>
-        (r.type === "SingleUse" || r.type === "TimeBased") &&
-        r.price > 0 &&
-        r.price <= tier.recommendedPrice * 2,
+        !isDebtReward(r) && (r.type === "SingleUse" || r.type === "TimeBased"),
+    );
+    const candidates = eligibleRegular.filter(
+      (r) => r.price > 0 && r.price <= tier.recommendedPrice * 2,
     );
     return {
       storeCandidates: candidates,
-      hasAnyStoreRewards: anyStoreRewards,
+      hasAnyStoreRewards: eligibleRegular.length > 0,
     };
   }, [existingRewards, tier.recommendedPrice]);
 
   const handleSelectPreset = (presetId: MysteryBoxPresetId) => {
     const preset = MYSTERY_BOX_PRESETS.find((p) => p.id === presetId);
-    if (!preset) return;
-    const tierSlots = preset.tiers[tierId] || preset.tiers.Básico;
+    const tierSlots = getLocalizedMysteryBoxPresetSlots(
+      presetId,
+      tierId,
+      locale,
+    );
+    if (!preset || !tierSlots) return;
     const presetCategory = UI_TO_BACKEND_CATEGORY[preset.category];
     setManualIconSlots([false, false, false]);
+    setDraftMinutesBySlot([null, null, null]);
     onApplyPreset([
       { ...tierSlots[0], category: tierSlots[0].category ?? presetCategory },
       { ...tierSlots[1], category: tierSlots[1].category ?? presetCategory },
@@ -109,12 +122,43 @@ export function MysteryBoxLootEditor({
       return;
     }
 
-    const sorted = [...storeCandidates].sort((a, b) => a.price - b.price);
+    // Seleciona itens distintos mais próximos dos 3 degraus de valor do tier (0.7x, 1.0x, 1.6x) sem duplicar
+    const targets = [
+      tier.recommendedPrice * 0.7,
+      tier.recommendedPrice,
+      tier.recommendedPrice * 1.6,
+    ];
+    const remaining = [...storeCandidates];
+    const chosenRewards: Array<Reward | null> = [null, null, null];
+
+    for (let slotIdx = 0; slotIdx < 3; slotIdx += 1) {
+      if (remaining.length === 0) break;
+      const targetPrice = targets[slotIdx];
+      let bestIdx = 0;
+      let bestDist = Math.abs(remaining[0].price - targetPrice);
+      for (let i = 1; i < remaining.length; i += 1) {
+        const dist = Math.abs(remaining[i].price - targetPrice);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      }
+      chosenRewards[slotIdx] = remaining.splice(bestIdx, 1)[0];
+    }
+
+    // Ordena os escolhidos em ordem crescente de preço (comum -> raro -> jackpot)
+    const orderedChosen = chosenRewards
+      .filter((item): item is Reward => item !== null)
+      .sort((a, b) => a.price - b.price);
+    const tierDefaults = getLocalizedDefaultMysteryBoxLoot(tierId, locale);
+
     const picked: [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem] =
-      [0, 1, 2].map((slotIdx) => {
-        const candidate =
-          sorted[Math.min(slotIdx, sorted.length - 1)] || sorted[0];
-        const maxCap = slotMaxMinutes[slotIdx as 0 | 1 | 2];
+      ([0, 1, 2] as const).map((slotIdx) => {
+        const candidate = orderedChosen[slotIdx];
+        if (!candidate) {
+          return { ...tierDefaults[slotIdx] };
+        }
+        const maxCap = slotMaxMinutes[slotIdx];
         const rawMinutes =
           candidate.type === "TimeBased"
             ? candidate.baseDurationMinutes || 30
@@ -132,6 +176,7 @@ export function MysteryBoxLootEditor({
       }) as [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem];
 
     setManualIconSlots([false, false, false]);
+    setDraftMinutesBySlot([null, null, null]);
     onApplyPreset(picked);
     toast.success(t("pulledFromStoreToast"));
   };
@@ -325,7 +370,7 @@ export function MysteryBoxLootEditor({
                         MAX_SLOT_NAME_LENGTH,
                       );
                       const autoIcon = !manualIconSlots[slotIndex]
-                        ? suggestRewardIconFromTitle(nextName)
+                        ? suggestRewardIconFromTitle(nextName, isPremium)
                         : null;
                       onChangeSlot(slotIndex, {
                         ...slot,
@@ -353,20 +398,47 @@ export function MysteryBoxLootEditor({
                       min={5}
                       max={maxCap}
                       step={5}
-                      value={String(slot.minutes ?? Math.min(15, maxCap))}
+                      value={
+                        draftMinutesBySlot[slotIndex] ??
+                        String(slot.minutes ?? Math.min(15, maxCap))
+                      }
                       onChange={(e) => {
-                        const raw = parseInt(e.target.value, 10);
-                        const clamped = Number.isNaN(raw)
-                          ? 5
-                          : Math.min(Math.max(1, raw), maxCap);
-                        onChangeSlot(slotIndex, {
-                          ...slot,
-                          minutes: clamped,
+                        const rawText = e.target.value;
+                        setDraftMinutesBySlot((prev) => {
+                          const next: [
+                            string | null,
+                            string | null,
+                            string | null,
+                          ] = [...prev];
+                          next[slotIndex] = rawText;
+                          return next;
                         });
+                        const raw = Number.parseInt(rawText, 10);
+                        if (!Number.isNaN(raw) && raw >= 1) {
+                          onChangeSlot(slotIndex, {
+                            ...slot,
+                            minutes: Math.min(raw, maxCap),
+                          });
+                        }
                       }}
                       onBlur={() => {
-                        const current = slot.minutes ?? 15;
-                        const clamped = Math.min(Math.max(5, current), maxCap);
+                        const draft = draftMinutesBySlot[slotIndex];
+                        const parsed =
+                          draft !== null
+                            ? Number.parseInt(draft, 10)
+                            : (slot.minutes ?? 15);
+                        const clamped = Number.isFinite(parsed)
+                          ? Math.min(Math.max(5, parsed), maxCap)
+                          : Math.min(15, maxCap);
+                        setDraftMinutesBySlot((prev) => {
+                          const next: [
+                            string | null,
+                            string | null,
+                            string | null,
+                          ] = [...prev];
+                          next[slotIndex] = null;
+                          return next;
+                        });
                         if (clamped !== slot.minutes) {
                           onChangeSlot(slotIndex, {
                             ...slot,

@@ -1,5 +1,5 @@
 import { getRarityTheme } from "@/constants/achievements";
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import {
   COUPON_PACKAGE_OPTIONS,
   MYSTERY_BOX_TIERS,
@@ -1081,5 +1081,19 @@ export function buildHelpTables(
   };
 }
 
-export const HELP_TABLES = buildHelpTables("pt-BR");
-export const HELP_TABLES_EN = buildHelpTables("en");
+const helpTablesCache: Partial<
+  Record<AppLocale, Record<string, HelpTableEntry>>
+> = {};
+
+/** Constrói e memoriza as tabelas de referência sob demanda apenas para o idioma solicitado. */
+export function getHelpTablesByLocale(
+  locale: AppLocale,
+): Record<string, HelpTableEntry> {
+  const cached = helpTablesCache[locale];
+  if (cached) {
+    return cached;
+  }
+  const built = buildHelpTables(locale);
+  helpTablesCache[locale] = built;
+  return built;
+}

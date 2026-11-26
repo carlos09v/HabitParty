@@ -16,7 +16,7 @@ import com.habitparty.adapters.in.web.api.TaskApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
-import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.adapters.in.web.dtos.response.DashboardTaskResponseDTO;
 import com.habitparty.application.ports.projections.FocusableTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskHistoryStatusResponseDTO;
@@ -157,7 +157,7 @@ public class TaskController implements TaskApi {
   }
 
   @Override
-  public ResponseEntity<Page<DashboardTaskDTO>> getDashboardTasks(
+  public ResponseEntity<Page<DashboardTaskResponseDTO>> getDashboardTasks(
       UUID workspaceId,
       String filter,
       int page,
@@ -171,11 +171,12 @@ public class TaskController implements TaskApi {
     int safeSize = Math.min(Math.max(size, 1), 100);
     Pageable pageable = PageRequest.of(safePage, safeSize);
 
-    Page<DashboardTaskDTO> responsePage = listDashboardTasksUseCase.execute(
-        workspaceId,
-        userId,
-        filter,
-        pageable);
+    Page<DashboardTaskResponseDTO> responsePage = listDashboardTasksUseCase.execute(
+            workspaceId,
+            userId,
+            filter,
+            pageable)
+        .map(DashboardTaskResponseDTO::fromProjection);
 
     return ResponseEntity.ok(responsePage);
   }

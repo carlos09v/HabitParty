@@ -50,12 +50,44 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
 
   long countByRole(UserRole role);
 
+  // Alinhado exatamente à regra de UserSubscription.isPremium() (incluindo saldo pré-pago Pix e exclusão de PAST_DUE)
   @Query("""
       SELECT COUNT(u) FROM UserJpaEntity u
       LEFT JOIN u.subscription s
-      WHERE (:isPremium = true AND s.isPremium = true AND (s.subscriptionEndsAt IS NULL OR s.subscriptionEndsAt > CURRENT_TIMESTAMP))
-         OR (:isPremium = false AND (s IS NULL OR s.isPremium = false OR (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt <= CURRENT_TIMESTAMP)))
-  """)
+      WHERE (
+        :isPremium = true
+        AND s IS NOT NULL
+        AND (
+          (s.prepaidEndsAt IS NOT NULL AND s.prepaidEndsAt > CURRENT_TIMESTAMP)
+          OR (
+            s.subscriptionStatus <> com.habitparty.core.domain.enums.SubscriptionStatus.PAST_DUE
+            AND (
+              (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt > CURRENT_TIMESTAMP)
+              OR (s.subscriptionEndsAt IS NULL AND s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.ACTIVE)
+              OR (s.subscriptionEndsAt IS NULL AND s.isPremium = true AND (s.subscriptionStatus IS NULL OR s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE))
+            )
+          )
+        )
+      )
+      OR (
+        :isPremium = false
+        AND (
+          s IS NULL
+          OR (
+            (s.prepaidEndsAt IS NULL OR s.prepaidEndsAt <= CURRENT_TIMESTAMP)
+            AND (
+              s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.PAST_DUE
+              OR (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt <= CURRENT_TIMESTAMP)
+              OR (
+                s.subscriptionEndsAt IS NULL
+                AND s.subscriptionStatus <> com.habitparty.core.domain.enums.SubscriptionStatus.ACTIVE
+                AND NOT (s.isPremium = true AND (s.subscriptionStatus IS NULL OR s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE))
+              )
+            )
+          )
+        )
+      )
+      """)
   long countByIsPremium(@Param("isPremium") boolean isPremium);
 
   @Query("SELECT COUNT(u) FROM UserJpaEntity u LEFT JOIN u.subscription s WHERE s.isFounder = true")
@@ -63,30 +95,91 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
 
   long countByEmailVerified(boolean emailVerified);
 
+  interface AdminUserStatsProjection {
+    long getTotalUsers();
+    Long getPremiumUsers();
+    Long getFounderUsers();
+    Long getAdminUsers();
+    Long getVerifiedUsers();
+  }
+
+  @Query("""
+      SELECT COUNT(u) AS totalUsers,
+             COALESCE(SUM(CASE WHEN s IS NOT NULL AND (
+               (s.prepaidEndsAt IS NOT NULL AND s.prepaidEndsAt > CURRENT_TIMESTAMP)
+               OR (
+                 s.subscriptionStatus <> com.habitparty.core.domain.enums.SubscriptionStatus.PAST_DUE
+                 AND (
+                   (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt > CURRENT_TIMESTAMP)
+                   OR (s.subscriptionEndsAt IS NULL AND s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.ACTIVE)
+                   OR (s.subscriptionEndsAt IS NULL AND s.isPremium = true AND (s.subscriptionStatus IS NULL OR s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE))
+                 )
+               )
+             ) THEN 1L ELSE 0L END), 0L) AS premiumUsers,
+             COALESCE(SUM(CASE WHEN s IS NOT NULL AND s.isFounder = true THEN 1L ELSE 0L END), 0L) AS founderUsers,
+             COALESCE(SUM(CASE WHEN u.role = com.habitparty.core.domain.enums.UserRole.ADMIN THEN 1L ELSE 0L END), 0L) AS adminUsers,
+             COALESCE(SUM(CASE WHEN u.emailVerified = true THEN 1L ELSE 0L END), 0L) AS verifiedUsers
+      FROM UserJpaEntity u
+      LEFT JOIN u.subscription s
+      """)
+  AdminUserStatsProjection summarizeAdminUserStats();
+
   @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("""
       SELECT u FROM UserJpaEntity u
       LEFT JOIN u.subscription s
-      WHERE (CAST(:search AS string) IS NULL
-             OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-             OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
-             OR LOWER(u.username) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
+      WHERE (CAST(:searchPattern AS string) IS NULL
+             OR LOWER(u.fullName) LIKE CAST(:searchPattern AS string) ESCAPE '\\'
+             OR LOWER(u.email) LIKE CAST(:searchPattern AS string) ESCAPE '\\'
+             OR LOWER(u.username) LIKE CAST(:searchPattern AS string) ESCAPE '\\')
         AND (:role IS NULL OR u.role = :role)
         AND (:isPremium IS NULL
-             OR (:isPremium = true AND s.isPremium = true AND (s.subscriptionEndsAt IS NULL OR s.subscriptionEndsAt > CURRENT_TIMESTAMP))
-             OR (:isPremium = false AND (s IS NULL OR s.isPremium = false OR (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt <= CURRENT_TIMESTAMP))))
-        AND (:isFounder IS NULL OR s.isFounder = :isFounder)
+             OR (
+               :isPremium = true
+               AND s IS NOT NULL
+               AND (
+                 (s.prepaidEndsAt IS NOT NULL AND s.prepaidEndsAt > CURRENT_TIMESTAMP)
+                 OR (
+                   s.subscriptionStatus <> com.habitparty.core.domain.enums.SubscriptionStatus.PAST_DUE
+                   AND (
+                     (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt > CURRENT_TIMESTAMP)
+                     OR (s.subscriptionEndsAt IS NULL AND s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.ACTIVE)
+                     OR (s.subscriptionEndsAt IS NULL AND s.isPremium = true AND (s.subscriptionStatus IS NULL OR s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE))
+                   )
+                 )
+               )
+             )
+             OR (
+               :isPremium = false
+               AND (
+                 s IS NULL
+                 OR (
+                   (s.prepaidEndsAt IS NULL OR s.prepaidEndsAt <= CURRENT_TIMESTAMP)
+                   AND (
+                     s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.PAST_DUE
+                     OR (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt <= CURRENT_TIMESTAMP)
+                     OR (
+                       s.subscriptionEndsAt IS NULL
+                       AND s.subscriptionStatus <> com.habitparty.core.domain.enums.SubscriptionStatus.ACTIVE
+                       AND NOT (s.isPremium = true AND (s.subscriptionStatus IS NULL OR s.subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE))
+                     )
+                   )
+                 )
+               )
+             ))
+        AND (:isFounder IS NULL
+             OR (:isFounder = true AND s.isFounder = true)
+             OR (:isFounder = false AND (s IS NULL OR s.isFounder = false)))
         AND (:emailVerified IS NULL OR u.emailVerified = :emailVerified)
       ORDER BY u.createdAt DESC
-  """)
+      """)
   Page<UserJpaEntity> searchUsers(
-      @Param("search") String search,
+      @Param("searchPattern") String searchPattern,
       @Param("role") UserRole role,
       @Param("isPremium") Boolean isPremium,
       @Param("isFounder") Boolean isFounder,
       @Param("emailVerified") Boolean emailVerified,
-      Pageable pageable
-  );
+      Pageable pageable);
 
   @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("""
@@ -95,28 +188,28 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
       WHERE st.currentStreak > 0
         AND NOT EXISTS (
           SELECT 1 FROM TransactionHistoryJpaEntity t
-          WHERE t.user.id = u.id
+          WHERE t.userId = u.id
             AND t.transactionType IN :completedTypes
             AND t.createdAt >= :since
         )
-  """)
+      """)
   List<UserJpaEntity> findUsersWithExpiredStreak(
       @Param("completedTypes") Collection<TransactionType> completedTypes,
-      @Param("since") LocalDateTime since
-  );
+      @Param("since") LocalDateTime since);
 
   @Query("""
       SELECT u.id FROM UserJpaEntity u
       WHERE u.nextDailyResetAt IS NULL OR u.nextDailyResetAt <= :nowUtc
       ORDER BY u.id ASC
-  """)
+      """)
   List<UUID> findUserIdsDueForDailyReset(@Param("nowUtc") Instant nowUtc);
 
   @Query("""
-      SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END
-      FROM UserJpaEntity u
-      WHERE u.id = :id AND (u.nextDailyResetAt IS NULL OR u.nextDailyResetAt <= :nowUtc)
-  """)
+      SELECT EXISTS (
+        SELECT 1 FROM UserJpaEntity u
+        WHERE u.id = :id AND (u.nextDailyResetAt IS NULL OR u.nextDailyResetAt <= :nowUtc)
+      )
+      """)
   boolean isUserDueForDailyReset(@Param("id") UUID id, @Param("nowUtc") Instant nowUtc);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -128,27 +221,27 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
   List<UserJpaEntity> findAllByIdInForUpdate(@Param("ids") Collection<UUID> ids);
 
   @EntityGraph(attributePaths = {"stats", "subscription"})
-  Optional<UserJpaEntity> findByFriendCodeIgnoreCase(String friendCode);
+  Optional<UserJpaEntity> findByFriendCode(String friendCode);
 
-  boolean existsByFriendCodeIgnoreCase(String friendCode);
+  boolean existsByFriendCode(String friendCode);
 
   @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("""
       SELECT u FROM UserJpaEntity u
       WHERE u.id <> :excludeUserId
         AND (
-          (UPPER(u.friendCode) = :exactCode
+          (u.friendCode = :exactCode
             AND (u.profileVisibility <> com.habitparty.core.domain.enums.PrivacyLevel.PRIVATE
                  OR u.friendRequestPolicy <> com.habitparty.core.domain.enums.FriendRequestPolicy.NONE))
           OR (
             u.profileVisibility <> com.habitparty.core.domain.enums.PrivacyLevel.PRIVATE
             AND (
-              LOWER(u.username) LIKE :pattern
-              OR LOWER(u.fullName) LIKE :pattern
+              LOWER(u.username) LIKE :pattern ESCAPE '\\'
+              OR LOWER(u.fullName) LIKE :pattern ESCAPE '\\'
             )
           )
         )
-      ORDER BY CASE WHEN UPPER(u.friendCode) = :exactCode THEN 0 ELSE 1 END,
+      ORDER BY CASE WHEN u.friendCode = :exactCode THEN 0 ELSE 1 END,
                u.username ASC
       """)
   List<UserJpaEntity> searchSocialUsers(

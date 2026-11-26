@@ -34,9 +34,18 @@ export interface UseChecklistOptions {
   isRewardLocked?: boolean;
 }
 
+interface PendingTempChecklistOp {
+  deleted?: boolean;
+  toggled?: boolean;
+  name?: string;
+  rewardToggled?: boolean;
+}
+
+let checklistTempSeq = 0;
+
 /**
  * Hook reutilizável para gerenciar o estado e mutações de Checklist / Subtarefas.
- * Suporta modo criação (apenas estado local) e modo edição (mutações persistidas via Server Actions com rollback).
+ * Suporta modo criação (apenas estado local) e modo edição (mutações persistidas via Server Actions com rollback cirúrgico por item).
  */
 export function useChecklist({
   initialItems = [],
@@ -53,6 +62,12 @@ export function useChecklist({
   const { isGamified } = useExperienceMode();
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initialItems);
   const checklistRef = useRef<ChecklistItem[]>(initialItems);
+  const pendingTempOpsRef = useRef<Map<string, PendingTempChecklistOp>>(
+    new Map(),
+  );
+  const resetGenerationRef = useRef(0);
+  const inFlightToggleIdsRef = useRef<Set<string>>(new Set());
+  const inFlightRewardToggleIdsRef = useRef<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
   // Mantém a ref sincronizada
@@ -66,6 +81,10 @@ export function useChecklist({
   );
 
   const resetChecklist = useCallback((items: ChecklistItem[]) => {
+    resetGenerationRef.current += 1;
+    pendingTempOpsRef.current.clear();
+    inFlightToggleIdsRef.current.clear();
+    inFlightRewardToggleIdsRef.current.clear();
     checklistRef.current = items;
     setChecklist(items);
   }, []);
@@ -114,7 +133,8 @@ export function useChecklist({
         }
       }
 
-      const tempId = `temp-${Date.now()}`;
+      checklistTempSeq += 1;
+      const tempId = `temp-${Date.now()}-${checklistTempSeq}`;
       const optimisticItem: ChecklistItem = {
         id: tempId,
         name: trimmed,
@@ -126,22 +146,120 @@ export function useChecklist({
       updateList(next);
 
       if (taskId && !taskId.startsWith("temp-")) {
+        const gen = resetGenerationRef.current;
         startTransition(async () => {
           const res = await addChecklistItem(taskId, {
             name: trimmed,
             isRewarded: effectiveRewarded,
           });
+          const pendingOp = pendingTempOpsRef.current.get(tempId);
+          pendingTempOpsRef.current.delete(tempId);
+
+          if (resetGenerationRef.current !== gen) {
+            return;
+          }
+
           if (!res.success) {
             toast.error(res.error || t("checklistAddError"));
             const rolledBack = checklistRef.current.filter(
               (i) => i.id !== tempId,
             );
             updateList(rolledBack);
-          } else if (res.data) {
+            return;
+          }
+
+          if (res.data) {
+            const createdItem = res.data as ChecklistItem;
+            const realId = createdItem.id;
+
+            // Se o usuário removeu o item enquanto o POST ainda estava em voo, deleta no servidor agora
+            if (pendingOp?.deleted) {
+              if (realId) {
+                const delRes = await deleteChecklistItem(realId);
+                if (!delRes.success) {
+                  toast.error(delRes.error || t("checklistDeleteError"));
+                }
+              }
+              if (resetGenerationRef.current !== gen) return;
+              if (
+                checklistRef.current.some(
+                  (i) => i.id === tempId || (realId && i.id === realId),
+                )
+              ) {
+                updateList(
+                  checklistRef.current.filter(
+                    (i) => i.id !== tempId && (!realId || i.id !== realId),
+                  ),
+                );
+              }
+              return;
+            }
+
+            const reconciledItem: ChecklistItem = {
+              ...createdItem,
+              name: pendingOp?.name ?? createdItem.name,
+              isCompleted: pendingOp?.toggled
+                ? !createdItem.isCompleted
+                : createdItem.isCompleted,
+              isRewarded: pendingOp?.rewardToggled
+                ? !createdItem.isRewarded
+                : createdItem.isRewarded,
+            };
+
             const confirmed = checklistRef.current.map((item) =>
-              item.id === tempId ? (res.data as ChecklistItem) : item,
+              item.id === tempId ? reconciledItem : item,
             );
             updateList(confirmed);
+
+            // Reproduz no servidor eventuais mutações aplicadas sobre o item temporário em voo
+            if (realId && pendingOp) {
+              if (pendingOp.name && pendingOp.name !== createdItem.name) {
+                const updRes = await updateChecklistItem(realId, {
+                  name: pendingOp.name,
+                  isRewarded: Boolean(createdItem.isRewarded),
+                });
+                if (!updRes.success) {
+                  toast.error(updRes.error || t("checklistUpdateError"));
+                  if (resetGenerationRef.current === gen) {
+                    updateList(
+                      checklistRef.current.map((i) =>
+                        i.id === realId ? { ...i, name: createdItem.name } : i,
+                      ),
+                    );
+                  }
+                }
+              }
+              if (pendingOp.toggled) {
+                const togRes = await toggleChecklistItem(realId);
+                if (!togRes.success) {
+                  toast.error(togRes.error || t("checklistUpdateError"));
+                  if (resetGenerationRef.current === gen) {
+                    updateList(
+                      checklistRef.current.map((i) =>
+                        i.id === realId
+                          ? { ...i, isCompleted: createdItem.isCompleted }
+                          : i,
+                      ),
+                    );
+                  }
+                }
+              }
+              if (pendingOp.rewardToggled) {
+                const rewRes = await toggleChecklistItemReward(realId);
+                if (!rewRes.success) {
+                  toast.error(rewRes.error || t("checklistUpdateError"));
+                  if (resetGenerationRef.current === gen) {
+                    updateList(
+                      checklistRef.current.map((i) =>
+                        i.id === realId
+                          ? { ...i, isRewarded: createdItem.isRewarded }
+                          : i,
+                      ),
+                    );
+                  }
+                }
+              }
+            }
           }
         });
       }
@@ -161,18 +279,53 @@ export function useChecklist({
     async (itemId?: string) => {
       if (!itemId) return;
 
-      const previous = [...checklistRef.current];
+      if (
+        taskId &&
+        !itemId.startsWith("temp-") &&
+        inFlightToggleIdsRef.current.has(itemId)
+      ) {
+        return;
+      }
+
+      const currentItem = checklistRef.current.find((i) => i.id === itemId);
+      if (!currentItem) return;
+      const previousCompleted = Boolean(currentItem.isCompleted);
+
       const next = checklistRef.current.map((item) =>
-        item.id === itemId ? { ...item, isCompleted: !item.isCompleted } : item,
+        item.id === itemId
+          ? { ...item, isCompleted: !previousCompleted }
+          : item,
       );
       updateList(next);
 
+      if (taskId && itemId.startsWith("temp-")) {
+        const existing = pendingTempOpsRef.current.get(itemId) ?? {};
+        pendingTempOpsRef.current.set(itemId, {
+          ...existing,
+          toggled: !existing.toggled,
+        });
+        return;
+      }
+
       if (taskId && !itemId.startsWith("temp-")) {
+        const gen = resetGenerationRef.current;
+        inFlightToggleIdsRef.current.add(itemId);
         startTransition(async () => {
-          const res = await toggleChecklistItem(itemId);
-          if (!res.success) {
-            toast.error(res.error || t("checklistUpdateError"));
-            updateList(previous);
+          try {
+            const res = await toggleChecklistItem(itemId);
+            if (resetGenerationRef.current !== gen) return;
+            if (!res.success) {
+              toast.error(res.error || t("checklistUpdateError"));
+              updateList(
+                checklistRef.current.map((item) =>
+                  item.id === itemId
+                    ? { ...item, isCompleted: previousCompleted }
+                    : item,
+                ),
+              );
+            }
+          } finally {
+            inFlightToggleIdsRef.current.delete(itemId);
           }
         });
       }
@@ -187,25 +340,43 @@ export function useChecklist({
 
       const currentItem = checklistRef.current.find((i) => i.id === itemId);
       if (!currentItem || currentItem.name === trimmed) return;
+      const previousName = currentItem.name;
 
-      const previous = [...checklistRef.current];
       const next = checklistRef.current.map((item) =>
         item.id === itemId ? { ...item, name: trimmed } : item,
       );
       updateList(next);
 
+      if (taskId && itemId.startsWith("temp-")) {
+        const existing = pendingTempOpsRef.current.get(itemId) ?? {};
+        pendingTempOpsRef.current.set(itemId, {
+          ...existing,
+          name: trimmed,
+        });
+        return;
+      }
+
       if (taskId && !itemId.startsWith("temp-")) {
+        const gen = resetGenerationRef.current;
         startTransition(async () => {
           const res = await updateChecklistItem(itemId, {
             name: trimmed,
             isRewarded: Boolean(currentItem.isRewarded),
           });
+          if (resetGenerationRef.current !== gen) return;
           if (!res.success) {
             toast.error(res.error || t("checklistUpdateError"));
-            updateList(previous);
+            updateList(
+              checklistRef.current.map((item) =>
+                item.id === itemId ? { ...item, name: previousName } : item,
+              ),
+            );
           } else if (res.data) {
+            const serverItem = res.data as ChecklistItem;
             const confirmed = checklistRef.current.map((item) =>
-              item.id === itemId ? (res.data as ChecklistItem) : item,
+              item.id === itemId
+                ? { ...item, name: serverItem.name ?? item.name }
+                : item,
             );
             updateList(confirmed);
           }
@@ -218,6 +389,14 @@ export function useChecklist({
   const toggleItemReward = useCallback(
     async (itemId?: string) => {
       if (!itemId) return;
+
+      if (
+        taskId &&
+        !itemId.startsWith("temp-") &&
+        inFlightRewardToggleIdsRef.current.has(itemId)
+      ) {
+        return;
+      }
 
       const currentItem = checklistRef.current.find((i) => i.id === itemId);
       if (!currentItem) return;
@@ -233,7 +412,8 @@ export function useChecklist({
         return;
       }
 
-      const nextRewarded = !currentItem.isRewarded;
+      const previousRewarded = Boolean(currentItem.isRewarded);
+      const nextRewarded = !previousRewarded;
       if (nextRewarded) {
         if (!canRewardItems) {
           toast.error(
@@ -262,23 +442,47 @@ export function useChecklist({
         }
       }
 
-      const previous = [...checklistRef.current];
       const next = checklistRef.current.map((item) =>
         item.id === itemId ? { ...item, isRewarded: nextRewarded } : item,
       );
       updateList(next);
 
+      if (taskId && itemId.startsWith("temp-")) {
+        const existing = pendingTempOpsRef.current.get(itemId) ?? {};
+        pendingTempOpsRef.current.set(itemId, {
+          ...existing,
+          rewardToggled: !existing.rewardToggled,
+        });
+        return;
+      }
+
       if (taskId && !itemId.startsWith("temp-")) {
+        const gen = resetGenerationRef.current;
+        inFlightRewardToggleIdsRef.current.add(itemId);
         startTransition(async () => {
-          const res = await toggleChecklistItemReward(itemId);
-          if (!res.success) {
-            toast.error(res.error || t("checklistUpdateError"));
-            updateList(previous);
-          } else if (res.data) {
-            const confirmed = checklistRef.current.map((item) =>
-              item.id === itemId ? (res.data as ChecklistItem) : item,
-            );
-            updateList(confirmed);
+          try {
+            const res = await toggleChecklistItemReward(itemId);
+            if (resetGenerationRef.current !== gen) return;
+            if (!res.success) {
+              toast.error(res.error || t("checklistUpdateError"));
+              updateList(
+                checklistRef.current.map((item) =>
+                  item.id === itemId
+                    ? { ...item, isRewarded: previousRewarded }
+                    : item,
+                ),
+              );
+            } else if (res.data) {
+              const serverItem = res.data as ChecklistItem;
+              const confirmed = checklistRef.current.map((item) =>
+                item.id === itemId
+                  ? { ...item, isRewarded: serverItem.isRewarded }
+                  : item,
+              );
+              updateList(confirmed);
+            }
+          } finally {
+            inFlightRewardToggleIdsRef.current.delete(itemId);
           }
         });
       }
@@ -306,16 +510,41 @@ export function useChecklist({
     async (itemId?: string) => {
       if (!itemId) return;
 
-      const previous = [...checklistRef.current];
+      const deletedIndex = checklistRef.current.findIndex(
+        (item) => item.id === itemId,
+      );
+      if (deletedIndex === -1) return;
+      const deletedItem = checklistRef.current[deletedIndex];
+
       const next = checklistRef.current.filter((item) => item.id !== itemId);
       updateList(next);
 
+      if (taskId && itemId.startsWith("temp-")) {
+        const existing = pendingTempOpsRef.current.get(itemId) ?? {};
+        pendingTempOpsRef.current.set(itemId, {
+          ...existing,
+          deleted: true,
+        });
+        return;
+      }
+
       if (taskId && !itemId.startsWith("temp-")) {
+        const gen = resetGenerationRef.current;
         startTransition(async () => {
           const res = await deleteChecklistItem(itemId);
+          if (resetGenerationRef.current !== gen) return;
           if (!res.success) {
             toast.error(res.error || t("checklistDeleteError"));
-            updateList(previous);
+            const current = checklistRef.current;
+            if (!current.some((i) => i.id === itemId)) {
+              const restored = [...current];
+              restored.splice(
+                Math.min(deletedIndex, restored.length),
+                0,
+                deletedItem,
+              );
+              updateList(restored);
+            }
           }
         });
       }

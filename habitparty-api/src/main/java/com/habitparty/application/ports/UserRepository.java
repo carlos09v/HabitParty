@@ -37,6 +37,19 @@ public interface UserRepository {
   long countByRole(UserRole role);
   long countFounders();
   long countByEmailVerified(boolean emailVerified);
+
+  record AdminUserStatsSummary(
+      long totalUsers,
+      long freeUsers,
+      long premiumUsers,
+      long founderUsers,
+      long adminUsers,
+      long verifiedUsers) {}
+
+  default Optional<AdminUserStatsSummary> summarizeAdminUserStats() {
+    return Optional.empty();
+  }
+
   Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Boolean emailVerified, Pageable pageable);
 
   default List<User> findUsersWithExpiredStreak(LocalDateTime since) {

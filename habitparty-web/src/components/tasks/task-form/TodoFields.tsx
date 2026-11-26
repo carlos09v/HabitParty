@@ -87,20 +87,27 @@ export function TodoFields({ form }: TodoFieldsProps) {
       />
 
       {/* Lembrete */}
-      <Select
-        label={t("reminderLabel")}
-        options={TODO_REMINDER_OPTIONS.map((opt) => ({
-          value: opt.id,
-          label: t(`reminders.${opt.id}`),
-        }))}
-        value={reminderType}
-        onChange={(val) => setReminderType(val as ReminderTypeOption)}
-        disabled={isPending}
-        compact
-      />
+      <div className="flex flex-col gap-1">
+        <Select
+          label={t("reminderLabel")}
+          options={TODO_REMINDER_OPTIONS.map((opt) => ({
+            value: opt.id,
+            label: t(`reminders.${opt.id}`),
+          }))}
+          value={dueDate ? reminderType : "NONE"}
+          onChange={(val) => setReminderType(val as ReminderTypeOption)}
+          disabled={isPending || !dueDate}
+          compact
+        />
+        {!dueDate && (
+          <p className="text-tiny text-neutral-400 px-0.5">
+            {t("reminderRequiresDueDate")}
+          </p>
+        )}
+      </div>
 
       {/* Alerta no App + Opção de Enviar Lembrete por E-mail (Exibidos quando há lembrete ativo) */}
-      {reminderType !== "NONE" && (
+      {Boolean(dueDate) && reminderType !== "NONE" && (
         <div className="flex flex-col gap-2 animate-in fade-in duration-150">
           <div className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-800 dark:bg-info/10 dark:border-info/30 dark:text-info text-xs">
             <Bell size={14} className="shrink-0 mt-0.5" />

@@ -8,6 +8,7 @@ import { StoreInitializer } from "@/components/layout/StoreInitializer";
 import { StreakLostNotifier } from "@/components/layout/StreakLostNotifier";
 import { TimezoneMismatchBanner } from "@/components/layout/TimezoneMismatchBanner";
 import { AchievementUnlockListener } from "@/components/showcase/AchievementUnlockListener";
+import { GlobalUpgradeModalHost } from "@/components/subscription/GlobalUpgradeModalHost";
 import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getRawInventoryItems } from "@/services/inventoryService";
@@ -22,6 +23,7 @@ import {
   getOptionalThemeCookie,
   getTimeFormat,
 } from "@/utils/cookies";
+import { resolveExperienceMode } from "@/utils/experienceMode";
 
 export const instant = false;
 
@@ -80,11 +82,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <ScopedIntlProvider scope="main">
       {/* Container principal: h-[100dvh] overflow-hidden impede rolagem na janela toda */}
-      <div className="relative h-[100dvh] flex flex-col lg:flex-row overflow-hidden">
+      <div
+        id="app-shell"
+        className="relative h-[100dvh] flex flex-col lg:flex-row overflow-hidden"
+      >
         <Suspense fallback={null}>
           <PaymentFeedbackListener />
           <AchievementUnlockListener />
           <FocusPipHost />
+          <GlobalUpgradeModalHost />
           <StreakLostNotifier
             userId={user?.id}
             currentStreak={user?.currentStreak}
@@ -96,7 +102,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           theme={theme}
           dateFormat={dateFormat}
           timeFormat={timeFormat}
-          experienceMode={user?.experienceMode || "PRODUCTIVITY"}
+          experienceMode={resolveExperienceMode(user?.experienceMode)}
           workspaces={workspaces || []}
           activeWorkspaceId={activeWorkspaceId}
           user={user || null}
@@ -126,7 +132,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         ÁREA PRINCIPAL
         ========================================= 
       */}
-        <main className="relative z-10 flex-1 min-h-0 min-w-0 h-full overflow-hidden flex flex-col">
+        <main
+          id="app-main-content"
+          className="relative z-10 flex-1 min-h-0 min-w-0 h-full overflow-hidden flex flex-col"
+        >
           <EmailVerificationBanner initialUser={user || null} />
           <TimezoneMismatchBanner initialUser={user || null} />
           {/* Todo o conteúdo das telas /dashboard, /inventory, etc., aparecerá aqui */}

@@ -1,106 +1,89 @@
 "use client";
 
 import { Download, Mountain, Sparkles, Trophy, Users } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   type ReactNode,
+  useCallback,
   useEffect,
   useId,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { toast } from "sonner";
 import {
   markAchievementsSeenAction,
   markArtifactsSeenAction,
+  updateMyHighlightsAction,
 } from "@/actions/showcaseActions";
-import { ShowcaseCollectionSection } from "@/components/showcase/ShowcaseCollectionSection";
+import {
+  getFriendsOverviewAction,
+  getMyRetrospectiveAction,
+} from "@/actions/socialActions";
+import { PrivateProfileNotice } from "@/components/showcase/PrivateProfileNotice";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import type {
   PickerPendingItem,
   PickerTab,
 } from "@/components/showcase/ShowcaseHighlightPickerModal";
-import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
+import { ShowcaseOverviewLayout } from "@/components/showcase/ShowcaseOverviewLayout";
+import { ShowcaseStatsVisibilityProvider } from "@/components/showcase/ShowcaseStatsGridView";
 import {
   getShowcaseTabIds,
   type ShowcaseTabItem,
   ShowcaseTabPanelFallback,
   ShowcaseTabs,
 } from "@/components/showcase/ShowcaseTabs";
+import {
+  EMPTY_ARTIFACTS,
+  EMPTY_FRIENDS,
+  EMPTY_TASK_STREAKS,
+  FriendsNetworkPanel,
+  ProfilePreviewCardModal,
+  ProgressionPyramidPanel,
+  preloadFriendsPanel,
+  preloadHighlightPickerModal,
+  preloadPreviewCardModal,
+  preloadProgressionPanel,
+  preloadRetrospectivePanel,
+  RetrospectivePanel,
+  ShowcaseHighlightPickerModal,
+} from "@/components/showcase/showcaseDynamicPanels";
 import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { MAX_SHOWCASE_HIGHLIGHTS } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
-import { useUserStore } from "@/store/userStore";
+import {
+  type LazyLoadStatus,
+  useLazyRetrospective,
+} from "@/hooks/useLazyRetrospective";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
+import {
+  resolveUserAvatarFrame,
+  useActiveAvatarFrame,
+  useUserStore,
+} from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
   ArtifactItemResponseDTO,
+  HighlightSlotInputDTO,
   ProfileHighlightResponseDTO,
-  TaskStreakHighlightDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
 import type {
-  FriendConnectionItem,
   FriendsOverviewData,
   UserRetrospectiveData,
 } from "@/types/social";
 import {
+  canAudienceViewVisibility,
+  createEmptyShowcaseData,
   resolveShowcaseCollectionTab,
   resolveShowcaseTab,
   type ShowcaseCollectionTabId,
   type ShowcaseTabId,
-} from "@/utils";
-
-const EMPTY_FRIENDS: FriendConnectionItem[] = [];
-const EMPTY_ARTIFACTS: ArtifactItemResponseDTO[] = [];
-const EMPTY_TASK_STREAKS: TaskStreakHighlightDTO[] = [];
-
-const preloadProgressionPanel = () =>
-  import("@/components/showcase/progression/ProgressionPyramidPanel").then(
-    (mod) => mod.ProgressionPyramidPanel,
-  );
-
-const ProgressionPyramidPanel = dynamic(preloadProgressionPanel, {
-  loading: ShowcaseTabPanelFallback,
-});
-
-const preloadFriendsPanel = () =>
-  import("@/components/showcase/FriendsNetworkPanel").then(
-    (mod) => mod.FriendsNetworkPanel,
-  );
-
-const FriendsNetworkPanel = dynamic(preloadFriendsPanel, {
-  loading: ShowcaseTabPanelFallback,
-});
-
-const preloadRetrospectivePanel = () =>
-  import("@/components/showcase/RetrospectivePanel").then(
-    (mod) => mod.RetrospectivePanel,
-  );
-
-const RetrospectivePanel = dynamic(preloadRetrospectivePanel, {
-  loading: ShowcaseTabPanelFallback,
-});
-
-const preloadHighlightPickerModal = () =>
-  import("@/components/showcase/ShowcaseHighlightPickerModal").then(
-    (mod) => mod.ShowcaseHighlightPickerModal,
-  );
-
-const ShowcaseHighlightPickerModal = dynamic(preloadHighlightPickerModal, {
-  ssr: false,
-});
-
-const preloadPreviewCardModal = () =>
-  import("@/components/showcase/ProfilePreviewCardModal").then(
-    (mod) => mod.ProfilePreviewCardModal,
-  );
-
-const ProfilePreviewCardModal = dynamic(preloadPreviewCardModal, {
-  ssr: false,
-});
+  type VisitorAudience,
+} from "@/utils/showcaseUtils";
 
 interface ShowcaseContainerProps {
   initialShowcase: UserShowcaseResponseDTO;
@@ -118,8 +101,8 @@ export function ShowcaseContainer({
   statsSlot,
 }: ShowcaseContainerProps) {
   const t = useTranslations("showcase");
+  const tPublic = useTranslations("showcase.publicProfile");
   const { isGamified } = useExperienceMode();
-  const activeFrameId = useActiveAvatarFrame();
   const searchParams = useSearchParams();
   const urlTabParam = searchParams.get("tab");
   const urlCollectionParam = searchParams.get("collection");
@@ -130,24 +113,44 @@ export function ShowcaseContainer({
     useState<ShowcaseCollectionTabId>(() =>
       resolveShowcaseCollectionTab(urlCollectionParam, urlTabParam),
     );
+  const [achievementsSeenDismissed, setAchievementsSeenDismissed] =
+    useState(false);
   const [artifactsSeenDismissed, setArtifactsSeenDismissed] = useState(false);
   const [highlights, setHighlights] = useState<ProfileHighlightResponseDTO[]>(
     initialShowcase.highlights || [],
   );
+
+  // Lazy-loaded tabs state (Friends & Retrospective)
   const [friendsOverview, setFriendsOverview] =
     useState<FriendsOverviewData | null>(initialFriendsOverview);
+  const [friendsStatus, setFriendsStatus] = useState<LazyLoadStatus>(
+    initialFriendsOverview ? "ready" : "idle",
+  );
+  const friendsLoadedRef = useRef(Boolean(initialFriendsOverview));
+
+  const {
+    retrospective: activeRetrospective,
+    status: retroStatus,
+    isLoading: isRetroLoading,
+    loadError: isRetroLoadError,
+    ensureLoaded: ensureRetrospectiveLoaded,
+    setRetrospectiveData: setActiveRetrospectiveData,
+  } = useLazyRetrospective({
+    initialRetrospective,
+    fetcher: (year) => getMyRetrospectiveAction(year),
+  });
 
   useEffect(() => {
-    setFriendsOverview(initialFriendsOverview);
+    if (initialFriendsOverview) {
+      setFriendsOverview(initialFriendsOverview);
+      setFriendsStatus("ready");
+      friendsLoadedRef.current = true;
+    }
   }, [initialFriendsOverview]);
-  const [activeRetrospective, setActiveRetrospective] =
-    useState<UserRetrospectiveData | null>(initialRetrospective);
-
-  useEffect(() => {
-    setActiveRetrospective(initialRetrospective);
-  }, [initialRetrospective]);
 
   const [isVisitorMode, setIsVisitorMode] = useState(false);
+  const [visitorAudience, setVisitorAudience] =
+    useState<VisitorAudience>("public");
   const [pickerState, setPickerState] = useState<{
     isOpen: boolean;
     slotIndex: number;
@@ -169,30 +172,65 @@ export function ShowcaseContainer({
     retro: initialRetrospective,
   });
 
+  // Sync URL params (incluindo reset de ?collection=artifacts ao voltar para /profile limpo)
   useEffect(() => {
     setActiveTab(resolveShowcaseTab(urlTabParam));
-    if (urlCollectionParam || urlTabParam === "artifacts") {
-      setActiveCollectionTab(
-        resolveShowcaseCollectionTab(urlCollectionParam, urlTabParam),
-      );
-    }
+    setActiveCollectionTab(
+      resolveShowcaseCollectionTab(urlCollectionParam, urlTabParam),
+    );
   }, [urlTabParam, urlCollectionParam]);
 
   useEffect(() => {
     setHighlights(initialShowcase.highlights || []);
   }, [initialShowcase.highlights]);
 
+  const ensureFriendsLoaded = useCallback(async (force = false) => {
+    if (!force && friendsLoadedRef.current) return;
+    friendsLoadedRef.current = true;
+    setFriendsStatus("loading");
+    try {
+      const res = await getFriendsOverviewAction();
+      if (res.success && res.data) {
+        setFriendsOverview(res.data);
+        setFriendsStatus("ready");
+      } else {
+        friendsLoadedRef.current = false;
+        setFriendsStatus("error");
+      }
+    } catch {
+      friendsLoadedRef.current = false;
+      setFriendsStatus("error");
+    }
+  }, []);
+
+  const handleRequestRetrospective = useCallback(() => {
+    if (retroStatus === "loading") return;
+    void ensureRetrospectiveLoaded(retroStatus === "error");
+  }, [ensureRetrospectiveLoaded, retroStatus]);
+
+  // Carrega dados de Amigos / Retrospectiva sob demanda ao entrar nas abas
   useEffect(() => {
-    setPreviewModalState((prev) => ({
-      ...prev,
-      retro: initialRetrospective,
-    }));
-  }, [initialRetrospective]);
+    if (activeTab === "friends" || activeTab === "progression") {
+      if (friendsStatus === "idle") {
+        void ensureFriendsLoaded();
+      }
+    } else if (activeTab === "retrospective") {
+      if (retroStatus === "idle") {
+        void ensureRetrospectiveLoaded();
+      }
+    }
+  }, [
+    activeTab,
+    friendsStatus,
+    retroStatus,
+    ensureFriendsLoaded,
+    ensureRetrospectiveLoaded,
+  ]);
 
-  const markedAchievementsRef = useRef(false);
-  const markedArtifactsRef = useRef(false);
+  const markedAchievementIdsRef = useRef<Set<string>>(new Set());
+  const markedArtifactIdsRef = useRef<Set<string>>(new Set());
+  const isUnpinningRef = useRef(false);
 
-  // Sincroniza achievementPoints no store global (apenas quando divergir) e marca conquistas/artefatos não vistos somente na aba de vitrine
   useEffect(() => {
     const nextPoints = initialShowcase.stats?.achievementPoints;
     if (nextPoints !== undefined) {
@@ -208,29 +246,135 @@ export function ShowcaseContainer({
   useEffect(() => {
     if (isVisitorMode || activeTab !== "overview") return;
 
-    if (
-      activeCollectionTab === "achievements" &&
-      !markedAchievementsRef.current &&
-      initialShowcase.achievements?.some((a) => a.unlocked && !a.seen)
-    ) {
-      markedAchievementsRef.current = true;
-      void markAchievementsSeenAction();
+    let cancelled = false;
+    let dismissTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (activeCollectionTab === "achievements") {
+      const unseenIds = (initialShowcase.achievements ?? [])
+        .filter(
+          (a) =>
+            a.unlocked && !a.seen && !markedAchievementIdsRef.current.has(a.id),
+        )
+        .map((a) => a.id);
+
+      if (unseenIds.length > 0) {
+        for (const id of unseenIds) {
+          markedAchievementIdsRef.current.add(id);
+        }
+        void markAchievementsSeenAction().then((res) => {
+          if (cancelled) return;
+          if (!res.success) {
+            for (const id of unseenIds) {
+              markedAchievementIdsRef.current.delete(id);
+            }
+            return;
+          }
+          dismissTimer = globalThis.setTimeout(() => {
+            if (!cancelled) {
+              setAchievementsSeenDismissed(true);
+            }
+          }, 1500);
+        });
+      }
     }
 
-    if (
-      activeCollectionTab === "artifacts" &&
-      !markedArtifactsRef.current &&
-      initialShowcase.artifacts?.some((a) => a.unlocked && !a.seen)
-    ) {
-      markedArtifactsRef.current = true;
-      void markArtifactsSeenAction();
+    if (activeCollectionTab === "artifacts") {
+      const unseenIds = (initialShowcase.artifacts ?? [])
+        .filter(
+          (a) =>
+            a.unlocked && !a.seen && !markedArtifactIdsRef.current.has(a.id),
+        )
+        .map((a) => a.id);
+
+      if (unseenIds.length > 0) {
+        for (const id of unseenIds) {
+          markedArtifactIdsRef.current.add(id);
+        }
+        void markArtifactsSeenAction().then((res) => {
+          if (cancelled) return;
+          if (!res.success) {
+            for (const id of unseenIds) {
+              markedArtifactIdsRef.current.delete(id);
+            }
+            return;
+          }
+          dismissTimer = globalThis.setTimeout(() => {
+            if (!cancelled) {
+              setArtifactsSeenDismissed(true);
+            }
+          }, 1500);
+        });
+      }
     }
+
+    return () => {
+      cancelled = true;
+      if (dismissTimer) {
+        globalThis.clearTimeout(dismissTimer);
+      }
+    };
   }, [
     isVisitorMode,
     activeTab,
     activeCollectionTab,
     initialShowcase.achievements,
     initialShowcase.artifacts,
+  ]);
+
+  const storeUser = useUserStore((s) => s.user);
+  const storeFrameId = useActiveAvatarFrame();
+  const resolvedUser = useResolvedUser(initialShowcase.user);
+  const activeFrameId =
+    storeUser && storeUser.id === initialShowcase.user.id
+      ? storeFrameId
+      : resolveUserAvatarFrame(
+          resolvedUser?.avatarFrame,
+          Boolean(resolvedUser?.isPremium),
+        );
+
+  // Simulação fiel de Visão de Visitante baseada na privacidade real do usuário
+  const simulatedCanViewProfile =
+    !isVisitorMode ||
+    canAudienceViewVisibility(resolvedUser.profileVisibility, visitorAudience);
+  const simulatedCanViewStats =
+    !isVisitorMode ||
+    (simulatedCanViewProfile &&
+      canAudienceViewVisibility(resolvedUser.statsVisibility, visitorAudience));
+  const simulatedCanViewAchievements =
+    !isVisitorMode ||
+    (simulatedCanViewProfile &&
+      canAudienceViewVisibility(
+        resolvedUser.achievementsVisibility,
+        visitorAudience,
+      ));
+
+  // Ajusta aba ativa e query URL caso o modo visitante oculte a aba atual
+  useEffect(() => {
+    if (!isVisitorMode) return;
+    if (
+      activeTab === "friends" ||
+      !simulatedCanViewProfile ||
+      ((activeTab === "progression" || activeTab === "retrospective") &&
+        !simulatedCanViewStats)
+    ) {
+      setActiveTab("overview");
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has("tab")) {
+          params.delete("tab");
+          const query = params.toString();
+          const nextUrl = query
+            ? `${window.location.pathname}?${query}`
+            : window.location.pathname;
+          window.history.replaceState(window.history.state, "", nextUrl);
+        }
+      }
+    }
+  }, [
+    isVisitorMode,
+    activeTab,
+    simulatedCanViewProfile,
+    simulatedCanViewStats,
   ]);
 
   const handleSelectTab = (tab: ShowcaseTabId) => {
@@ -252,6 +396,9 @@ export function ShowcaseContainer({
   };
 
   const handleSelectCollectionTab = (tab: ShowcaseCollectionTabId) => {
+    if (activeCollectionTab === "achievements" && tab !== "achievements") {
+      setAchievementsSeenDismissed(true);
+    }
     if (activeCollectionTab === "artifacts" && tab !== "artifacts") {
       setArtifactsSeenDismissed(true);
     }
@@ -334,50 +481,151 @@ export function ShowcaseContainer({
     });
   };
 
-  const storeUser = useUserStore((s) => s.user);
-  const resolvedUser =
-    storeUser && storeUser.id === initialShowcase.user.id
-      ? storeUser
-      : initialShowcase.user;
-  const friendsCount = friendsOverview?.friendsCount ?? 0;
-  const pendingRequestsCount = friendsOverview?.incomingRequests.length ?? 0;
+  const handleQuickUnpinHighlight = async (
+    type: "ACHIEVEMENT" | "ARTIFACT",
+    id: string,
+    code: string,
+  ) => {
+    if (isUnpinningRef.current) return;
+    isUnpinningRef.current = true;
 
-  const showSeasonalRetroBanner = Boolean(
-    activeRetrospective?.eligible && activeRetrospective.inSeasonalWindow,
-  );
+    const remaining: HighlightSlotInputDTO[] = highlights
+      .filter(
+        (h) =>
+          !(
+            h.highlightType === type &&
+            (h.referenceId === id || h.highlightKey === code)
+          ),
+      )
+      .map((h) => ({
+        displayOrder: h.displayOrder,
+        highlightType: h.highlightType,
+        referenceId: h.referenceId,
+        highlightKey: h.highlightKey,
+      }));
 
-  const seasonalArchetypeTitle = activeRetrospective
+    const previous = highlights;
+    setHighlights((prev) =>
+      prev.filter(
+        (h) =>
+          !(
+            h.highlightType === type &&
+            (h.referenceId === id || h.highlightKey === code)
+          ),
+      ),
+    );
+
+    try {
+      const res = await updateMyHighlightsAction({ highlights: remaining });
+      if (!res.success) {
+        setHighlights(previous);
+        toast.error(res.error);
+        return;
+      }
+      if (res.data) {
+        setHighlights(res.data);
+      }
+      toast.success(t("pickerModal.unpinnedToast"));
+    } finally {
+      isUnpinningRef.current = false;
+    }
+  };
+
+  const handleOpenPreviewCard = (mode: "profile" | "retrospective") => {
+    if (mode === "retrospective") {
+      const targetYear = initialShowcase.seasonalRetroYear ?? undefined;
+      const hasMatchingRetro =
+        Boolean(activeRetrospective?.eligible) &&
+        (!targetYear || activeRetrospective?.year === targetYear);
+
+      if (!hasMatchingRetro) {
+        void ensureRetrospectiveLoaded(true, targetYear).then((loaded) => {
+          setPreviewModalState({
+            isOpen: true,
+            mode: loaded?.eligible ? "retrospective" : "profile",
+            retro: loaded,
+          });
+        });
+        return;
+      }
+    }
+    setPreviewModalState({
+      isOpen: true,
+      mode,
+      retro: activeRetrospective,
+    });
+  };
+
+  const friendsCount =
+    friendsOverview?.friendsCount ?? initialShowcase.friendsCount ?? 0;
+  const pendingRequestsCount =
+    friendsOverview?.incomingRequests.length ??
+    initialShowcase.pendingFriendRequestsCount ??
+    0;
+
+  const seasonalRetroYear =
+    (activeRetrospective?.eligible && activeRetrospective.inSeasonalWindow
+      ? activeRetrospective.year
+      : null) ??
+    initialShowcase.seasonalRetroYear ??
+    null;
+  const matchingSeasonalRetro =
+    activeRetrospective?.eligible &&
+    seasonalRetroYear !== null &&
+    activeRetrospective.year === seasonalRetroYear
+      ? activeRetrospective
+      : null;
+  const showSeasonalRetroBanner =
+    !isVisitorMode &&
+    Boolean(
+      (activeRetrospective?.eligible && activeRetrospective.inSeasonalWindow) ||
+        initialShowcase.hasSeasonalRetroBanner,
+    );
+
+  const seasonalArchetypeTitle = matchingSeasonalRetro
     ? isGamified
-      ? t(`retrospective.archetypes.${activeRetrospective.archetype}.title`)
+      ? t(`retrospective.archetypes.${matchingSeasonalRetro.archetype}.title`)
       : t(
-          `retrospective.archetypes.${activeRetrospective.archetype}.essentialTitle`,
+          `retrospective.archetypes.${matchingSeasonalRetro.archetype}.essentialTitle`,
         )
     : "";
 
   const tabs: ShowcaseTabItem<ShowcaseTabId>[] = [
     { id: "overview", label: t("tabs.overview"), icon: Trophy },
-    {
-      id: "progression",
-      label: t("tabs.progression"),
-      icon: Mountain,
-      onPreload: preloadProgressionPanel,
-    },
-    {
-      id: "friends",
-      label: t("tabs.friends", { count: friendsCount }),
-      icon: Users,
-      badge:
-        pendingRequestsCount > 0
-          ? t("tabs.friendsPending", { count: pendingRequestsCount })
-          : undefined,
-      onPreload: preloadFriendsPanel,
-    },
-    {
-      id: "retrospective",
-      label: t("tabs.retrospective"),
-      icon: Sparkles,
-      onPreload: preloadRetrospectivePanel,
-    },
+    ...(simulatedCanViewStats
+      ? [
+          {
+            id: "progression" as const,
+            label: t("tabs.progression"),
+            icon: Mountain,
+            onPreload: preloadProgressionPanel,
+          },
+        ]
+      : []),
+    ...(!isVisitorMode
+      ? [
+          {
+            id: "friends" as const,
+            label: t("tabs.friends", { count: friendsCount }),
+            icon: Users,
+            badge:
+              pendingRequestsCount > 0
+                ? t("tabs.friendsPending", { count: pendingRequestsCount })
+                : undefined,
+            onPreload: preloadFriendsPanel,
+          },
+        ]
+      : []),
+    ...(simulatedCanViewStats
+      ? [
+          {
+            id: "retrospective" as const,
+            label: t("tabs.retrospective"),
+            icon: Sparkles,
+            onPreload: preloadRetrospectivePanel,
+          },
+        ]
+      : []),
   ];
 
   const overviewIds = getShowcaseTabIds(tabsBaseId, "overview");
@@ -391,6 +639,69 @@ export function ShowcaseContainer({
     () => artifactsList.filter((a) => a.unlocked).length,
     [artifactsList],
   );
+
+  // Filtra destaques visíveis na simulação de Visão de Visitante conforme privacidade
+  const displayedHighlights = useMemo(() => {
+    if (!isVisitorMode) return highlights;
+    return highlights.filter((h) => {
+      if (
+        !simulatedCanViewAchievements &&
+        (h.highlightType === "ACHIEVEMENT" || h.highlightType === "ARTIFACT")
+      ) {
+        return false;
+      }
+      if (
+        !simulatedCanViewStats &&
+        (h.highlightType === "STAT_METRIC" ||
+          h.highlightType === "TASK_STREAK" ||
+          (h.highlightType === "ACCOUNT_BADGE" &&
+            h.highlightKey === "LEVEL_RANK"))
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [
+    isVisitorMode,
+    highlights,
+    simulatedCanViewAchievements,
+    simulatedCanViewStats,
+  ]);
+
+  const displayedStats = useMemo(() => {
+    if (!isVisitorMode || simulatedCanViewStats) {
+      return initialShowcase.stats;
+    }
+    return {
+      ...createEmptyShowcaseData(resolvedUser).stats,
+      currentStreak: 0,
+      highestStreak: 0,
+      totalXp: 0,
+      highestTaskStreak: 0,
+      highestTaskStreakTitle: null,
+      achievementPoints: simulatedCanViewAchievements
+        ? initialShowcase.stats.achievementPoints
+        : 0,
+      unlockedAchievementsCount: simulatedCanViewAchievements
+        ? initialShowcase.stats.unlockedAchievementsCount
+        : 0,
+      totalAchievementsCount: simulatedCanViewAchievements
+        ? initialShowcase.stats.totalAchievementsCount
+        : 0,
+      unlockedArtifactsCount: simulatedCanViewAchievements
+        ? initialShowcase.stats.unlockedArtifactsCount
+        : 0,
+      totalArtifactsCount: simulatedCanViewAchievements
+        ? initialShowcase.stats.totalArtifactsCount
+        : 0,
+    };
+  }, [
+    isVisitorMode,
+    simulatedCanViewStats,
+    simulatedCanViewAchievements,
+    initialShowcase.stats,
+    resolvedUser,
+  ]);
 
   return (
     <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-6">
@@ -406,171 +717,216 @@ export function ShowcaseContainer({
       {/* HERO HEADER: AVATAR + MOLDURA + TÍTULO + BIO + NÍVEL + BOTÃO CARD */}
       <ShowcaseHeroHeader
         user={resolvedUser}
-        stats={initialShowcase.stats}
+        stats={displayedStats}
         achievements={initialShowcase.achievements}
         unlockedArtifactsCount={unlockedArtifactsCount}
         retrospective={activeRetrospective}
+        eligibleRetroArchetypes={initialShowcase.eligibleRetroArchetypes}
         isVisitorMode={isVisitorMode}
+        visitorAudience={visitorAudience}
+        onVisitorAudienceChange={setVisitorAudience}
         onToggleVisitorMode={() => setIsVisitorMode((prev) => !prev)}
-        onOpenProgression={() => handleSelectTab("progression")}
-        onPreloadPreviewCard={preloadPreviewCardModal}
-        onOpenPreviewCard={() =>
-          setPreviewModalState({
-            isOpen: true,
-            mode: "profile",
-            retro: activeRetrospective,
-          })
+        hideStats={!simulatedCanViewStats}
+        hideAchievements={!simulatedCanViewAchievements}
+        onOpenProgression={
+          simulatedCanViewStats
+            ? () => handleSelectTab("progression")
+            : undefined
         }
+        onPreloadPreviewCard={preloadPreviewCardModal}
+        onOpenPreviewCard={() => handleOpenPreviewCard("profile")}
+        onRequestRetrospective={handleRequestRetrospective}
       />
 
-      {/* NAVEGAÇÃO DE ABAS DO PERFIL: VITRINE | PROGRESSÃO | AMIGOS | RETROSPECTIVA */}
-      <ShowcaseTabs
-        baseId={tabsBaseId}
-        ariaLabel={t("tabs.navAria")}
-        tabs={tabs}
-        activeTab={activeTab}
-        onSelectTab={handleSelectTab}
-      />
+      {!simulatedCanViewProfile ? (
+        <PrivateProfileNotice
+          title={tPublic("privateProfileTitle")}
+          description={
+            resolvedUser.profileVisibility === "FRIENDS_ONLY"
+              ? tPublic("privateProfileFriendsDesc")
+              : tPublic("privateProfilePrivateDesc")
+          }
+        />
+      ) : (
+        <>
+          {/* NAVEGAÇÃO DE ABAS DO PERFIL */}
+          <ShowcaseTabs
+            baseId={tabsBaseId}
+            ariaLabel={t("tabs.navAria")}
+            tabs={tabs}
+            activeTab={activeTab}
+            onSelectTab={handleSelectTab}
+          />
 
-      {/* ABA 1: VITRINE & CONQUISTAS */}
-      {activeTab === "overview" && (
-        <div
-          id={overviewIds.panelId}
-          role="tabpanel"
-          aria-labelledby={overviewIds.tabId}
-          className="flex flex-col gap-7"
-        >
-          {showSeasonalRetroBanner && activeRetrospective && (
-            <section className="rounded-2xl border border-amber-500/45 dark:border-gold/45 bg-gradient-to-r from-amber-500/15 via-primary/15 to-surface/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gold/20 border border-gold/45 flex items-center justify-center text-amber-700 dark:text-gold shrink-0">
-                  <Sparkles size={20} aria-hidden="true" />
-                </div>
-                <div>
-                  <h2 className="text-body-m font-extrabold text-neutral-50">
-                    {t("header.retrospectiveBannerTitle", {
-                      year: activeRetrospective.year,
-                    })}
-                  </h2>
-                  <p className="text-xs text-neutral-300 mt-0.5">
-                    {t("header.retrospectiveBannerDesc", {
-                      days: activeRetrospective.activeDays,
-                      tasks: activeRetrospective.tasksCompleted,
-                      archetype: seasonalArchetypeTitle,
-                    })}
-                  </p>
-                </div>
-              </div>
+          {/* ABA 1: VITRINE & CONQUISTAS */}
+          {activeTab === "overview" && (
+            <ShowcaseOverviewLayout
+              panelId={overviewIds.panelId}
+              labelledById={overviewIds.tabId}
+              bannerSlot={
+                showSeasonalRetroBanner && seasonalRetroYear ? (
+                  <section className="rounded-2xl border border-amber-500/45 dark:border-gold/45 bg-gradient-to-r from-amber-500/15 via-primary/15 to-surface/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gold/20 border border-gold/45 flex items-center justify-center text-amber-700 dark:text-gold shrink-0">
+                        <Sparkles size={20} aria-hidden="true" />
+                      </div>
+                      <div>
+                        <h2 className="text-body-m font-extrabold text-neutral-50">
+                          {t("header.retrospectiveBannerTitle", {
+                            year: seasonalRetroYear,
+                          })}
+                        </h2>
+                        <p className="text-xs text-neutral-300 mt-0.5">
+                          {matchingSeasonalRetro
+                            ? t("header.retrospectiveBannerDesc", {
+                                days: matchingSeasonalRetro.activeDays,
+                                tasks: matchingSeasonalRetro.tasksCompleted,
+                                archetype: seasonalArchetypeTitle,
+                              })
+                            : t("header.retrospectiveBannerCompactDesc", {
+                                year: seasonalRetroYear,
+                              })}
+                        </p>
+                      </div>
+                    </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onMouseEnter={preloadPreviewCardModal}
-                  onFocus={preloadPreviewCardModal}
-                  onClick={() =>
-                    setPreviewModalState({
-                      isOpen: true,
-                      mode: "retrospective",
-                      retro: activeRetrospective,
-                    })
-                  }
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 shadow-glow-gold-xs transition-colors cursor-pointer"
-                >
-                  <Download size={14} aria-hidden="true" />
-                  <span>{t("header.retrospectiveBannerBtn")}</span>
-                </button>
-              </div>
-            </section>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onMouseEnter={preloadPreviewCardModal}
+                        onFocus={preloadPreviewCardModal}
+                        onClick={() => handleOpenPreviewCard("retrospective")}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 shadow-glow-gold-xs transition-colors cursor-pointer"
+                      >
+                        <Download size={14} aria-hidden="true" />
+                        <span>{t("header.retrospectiveBannerBtn")}</span>
+                      </button>
+                    </div>
+                  </section>
+                ) : undefined
+              }
+              user={resolvedUser}
+              stats={displayedStats}
+              highlights={displayedHighlights}
+              achievements={initialShowcase.achievements}
+              artifacts={artifactsList}
+              taskStreaks={taskStreaksList}
+              isVisitorMode={isVisitorMode}
+              canViewStats={simulatedCanViewStats}
+              canViewAchievements={simulatedCanViewAchievements}
+              statsSlot={
+                statsSlot ? (
+                  <ShowcaseStatsVisibilityProvider
+                    canViewAchievements={simulatedCanViewAchievements}
+                  >
+                    {statsSlot}
+                  </ShowcaseStatsVisibilityProvider>
+                ) : undefined
+              }
+              onOpenPicker={handleOpenPicker}
+              onPreloadPicker={preloadHighlightPickerModal}
+              activeCollection={activeCollectionTab}
+              onSelectCollection={handleSelectCollectionTab}
+              onPinAchievement={handlePinAchievementFromGallery}
+              onUnpinAchievement={(ach) =>
+                void handleQuickUnpinHighlight("ACHIEVEMENT", ach.id, ach.code)
+              }
+              onPinArtifact={handlePinArtifactFromGallery}
+              onUnpinArtifact={(art) =>
+                void handleQuickUnpinHighlight("ARTIFACT", art.id, art.code)
+              }
+              totalAchievementsCount={
+                initialShowcase.stats.totalAchievementsCount
+              }
+              totalArtifactsCount={initialShowcase.stats.totalArtifactsCount}
+              achievementsSeenDismissed={achievementsSeenDismissed}
+              artifactsSeenDismissed={artifactsSeenDismissed}
+            />
           )}
 
-          {/* VITRINE DE DESTAQUES (4 SLOTS PERSONALIZÁVEIS) */}
-          <ShowcaseHighlightsSection
-            user={resolvedUser}
-            stats={initialShowcase.stats}
-            highlights={highlights}
-            achievements={initialShowcase.achievements}
-            artifacts={artifactsList}
-            taskStreaks={taskStreaksList}
-            isVisitorMode={isVisitorMode}
-            onOpenPicker={handleOpenPicker}
-            onPreloadPicker={preloadHighlightPickerModal}
-          />
+          {/* ABA 2: PIRÂMIDE DE PROGRESSÃO & PATENTES */}
+          {activeTab === "progression" && simulatedCanViewStats && (
+            <div
+              id={progressionIds.panelId}
+              role="tabpanel"
+              aria-labelledby={progressionIds.tabId}
+            >
+              <ProgressionPyramidPanel
+                user={resolvedUser}
+                stats={initialShowcase.stats}
+                achievements={
+                  simulatedCanViewAchievements
+                    ? initialShowcase.achievements
+                    : []
+                }
+                friends={friendsOverview?.friends ?? EMPTY_FRIENDS}
+                activeFrameId={activeFrameId}
+                isVisitorMode={isVisitorMode}
+              />
+            </div>
+          )}
 
-          {/* INDICADORES VITALÍCIOS DE CONSISTÊNCIA & FEITOS (Server Component Slot) */}
-          {statsSlot}
+          {/* ABA 3: REDE SOCIAL & AMIGOS */}
+          {activeTab === "friends" && !isVisitorMode && (
+            <div
+              id={friendsIds.panelId}
+              role="tabpanel"
+              aria-labelledby={friendsIds.tabId}
+            >
+              {!friendsOverview &&
+              (friendsStatus === "idle" || friendsStatus === "loading") ? (
+                <ShowcaseTabPanelFallback />
+              ) : friendsStatus === "error" && !friendsOverview ? (
+                <section
+                  role="alert"
+                  className="rounded-2xl border border-red-500/35 bg-card dark:bg-surface/50 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <p className="text-body-s text-neutral-200">
+                    {t("friends.loadError")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void ensureFriendsLoaded(true)}
+                    className="px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 transition-colors cursor-pointer self-start sm:self-auto"
+                  >
+                    {t("errorState.retry")}
+                  </button>
+                </section>
+              ) : (
+                <FriendsNetworkPanel
+                  initialOverview={friendsOverview}
+                  onOverviewUpdated={setFriendsOverview}
+                />
+              )}
+            </div>
+          )}
 
-          {/* COLEÇÕES EM 2 SUB-ABAS: CONQUISTAS & ARTEFATOS */}
-          <ShowcaseCollectionSection
-            achievements={initialShowcase.achievements}
-            artifacts={artifactsList}
-            highlights={highlights}
-            isVisitorMode={isVisitorMode}
-            activeCollection={activeCollectionTab}
-            onSelectCollection={handleSelectCollectionTab}
-            onPinAchievement={handlePinAchievementFromGallery}
-            onPinArtifact={handlePinArtifactFromGallery}
-            totalAchievementsCount={
-              initialShowcase.stats.totalAchievementsCount
-            }
-            totalArtifactsCount={initialShowcase.stats.totalArtifactsCount}
-            artifactsSeenDismissed={artifactsSeenDismissed}
-          />
-        </div>
-      )}
-
-      {/* ABA 2: PIRÂMIDE DE PROGRESSÃO & PATENTES */}
-      {activeTab === "progression" && (
-        <div
-          id={progressionIds.panelId}
-          role="tabpanel"
-          aria-labelledby={progressionIds.tabId}
-        >
-          <ProgressionPyramidPanel
-            user={resolvedUser}
-            stats={initialShowcase.stats}
-            achievements={initialShowcase.achievements}
-            friends={friendsOverview?.friends ?? EMPTY_FRIENDS}
-            activeFrameId={activeFrameId}
-            isVisitorMode={isVisitorMode}
-          />
-        </div>
-      )}
-
-      {/* ABA 3: REDE SOCIAL & AMIGOS */}
-      {activeTab === "friends" && (
-        <div
-          id={friendsIds.panelId}
-          role="tabpanel"
-          aria-labelledby={friendsIds.tabId}
-        >
-          <FriendsNetworkPanel
-            initialOverview={friendsOverview}
-            onOverviewUpdated={setFriendsOverview}
-          />
-        </div>
-      )}
-
-      {/* ABA 4: RETROSPECTIVA ANUAL */}
-      {activeTab === "retrospective" && (
-        <div
-          id={retrospectiveIds.panelId}
-          role="tabpanel"
-          aria-labelledby={retrospectiveIds.tabId}
-        >
-          <RetrospectivePanel
-            initialRetrospective={activeRetrospective}
-            isGamified={isGamified}
-            isOwnProfile
-            onRetrospectiveChange={setActiveRetrospective}
-            onOpenExportModal={(retroData) =>
-              setPreviewModalState({
-                isOpen: true,
-                mode: "retrospective",
-                retro: retroData,
-              })
-            }
-          />
-        </div>
+          {/* ABA 4: RETROSPECTIVA ANUAL */}
+          {activeTab === "retrospective" && simulatedCanViewStats && (
+            <div
+              id={retrospectiveIds.panelId}
+              role="tabpanel"
+              aria-labelledby={retrospectiveIds.tabId}
+            >
+              <RetrospectivePanel
+                initialRetrospective={activeRetrospective}
+                isLoading={isRetroLoading}
+                loadError={isRetroLoadError}
+                onRetry={() => void ensureRetrospectiveLoaded(true)}
+                isGamified={isGamified}
+                isOwnProfile={!isVisitorMode}
+                onRetrospectiveChange={setActiveRetrospectiveData}
+                onOpenExportModal={(retroData) =>
+                  setPreviewModalState({
+                    isOpen: true,
+                    mode: "retrospective",
+                    retro: retroData,
+                  })
+                }
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* MODAL DE SELEÇÃO DOS 4 SLOTS */}

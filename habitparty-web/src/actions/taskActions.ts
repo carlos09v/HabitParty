@@ -31,7 +31,11 @@ type TaskStatus =
 export async function createTask(
   boardColumnId: string,
   payload: CreateTaskDTO,
-  checklistItems?: { name?: string; isRewarded?: boolean }[],
+  checklistItems?: {
+    name?: string;
+    isRewarded?: boolean;
+    isCompleted?: boolean;
+  }[],
 ): Promise<ActionState<TaskResponseDTO>> {
   const t = await getTranslations("tasks.actions");
   try {

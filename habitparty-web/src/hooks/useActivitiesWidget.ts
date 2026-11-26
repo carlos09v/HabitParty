@@ -1,35 +1,54 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { deleteFocusActivity } from "@/actions/focusActions";
-import type { ActivityPeriodOption } from "@/constants/dashboard";
 import {
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_FOCUS_ACTIVITIES_PREMIUM,
-} from "@/constants/focus";
+} from "@/constants/focusRules";
+import { useContextMenu } from "@/hooks/useContextMenu";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
+import {
+  type QuickFocusTargetAdapter,
+  useQuickFocusTarget,
+} from "@/hooks/useQuickFocusTask";
+import { useDashboardFilterStore } from "@/store/dashboardFilterStore";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
+import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
+import type { DashboardFocusRecordSummary } from "@/types/dashboard";
 import type {
   FocusActivity,
   FocusActivityDeletionSummaryResponseDTO,
-  FocusRecord,
 } from "@/types/focus";
 import { calculateActivityDurationMap } from "@/utils/focusMetrics";
 import { deductUserPenalty } from "@/utils/gamification";
 
+const ACTIVITY_FOCUS_ADAPTER: QuickFocusTargetAdapter<FocusActivity> = {
+  isSameTarget: (store, activity) =>
+    store.target?.type === "activity" && store.target.id === activity.id,
+  startTarget: (store, activity) => store.startFocusActivity(activity),
+  transferTarget: (store, activity) => store.transferTarget(activity),
+};
+
 export function useActivitiesWidget(
   activities: FocusActivity[],
-  records: FocusRecord[],
+  records: DashboardFocusRecordSummary[],
+  initialIsPremium = false,
+  initialTimeZone?: string | null,
 ) {
-  const router = useRouter();
   const t = useTranslations("dashboard.sidebarRight.activitiesWidget");
-  const [period, setPeriod] = useState<ActivityPeriodOption>("today");
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const isPremium = useUserStore((s) => s.is_Premium);
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
+  const period = useDashboardFilterStore((s) => s.activityPeriod);
+  const setPeriod = useDashboardFilterStore((s) => s.setActivityPeriod);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
+  const hasStoreUser = useUserStore((s) => Boolean(s.user));
+  const storeIsPremium = useUserStore((s) => s.is_Premium);
+  const storeTimeZone = useUserStore((s) => s.user?.timezone);
+  const isPremium = hasStoreUser ? storeIsPremium : initialIsPremium;
+  const userTimeZone = storeTimeZone ?? initialTimeZone;
+  const todayIso = useMidnightRollover(userTimeZone);
 
   const [activitiesList, setActivitiesList] =
     useState<FocusActivity[]>(activities);
@@ -38,15 +57,12 @@ export function useActivitiesWidget(
     setActivitiesList(activities);
   }, [activities]);
 
-  const [contextMenu, setContextMenu] = useState<{
-    isOpen: boolean;
-    position: { x: number; y: number };
-    activity: FocusActivity | null;
-  }>({
-    isOpen: false,
-    position: { x: 0, y: 0 },
-    activity: null,
-  });
+  const {
+    contextMenu: rawContextMenu,
+    openContextMenu: handleContextMenu,
+    toggleFromButton,
+    closeContextMenu,
+  } = useContextMenu<FocusActivity>();
 
   const [activityToEdit, setActivityToEdit] = useState<FocusActivity | null>(
     null,
@@ -56,6 +72,17 @@ export function useActivitiesWidget(
     useState<FocusActivity | null>(null);
   const [deleteHistory, setDeleteHistory] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Quick Play/Pause com proteção para sessão de foco já em andamento
+  const {
+    pendingTarget: pendingFocusActivity,
+    currentFocusTarget,
+    clearPendingTarget: clearPendingFocusActivity,
+    handleStartTarget: handleStartActivityFocus,
+    handleTransferTarget: handleTransferToPendingActivity,
+    handleSaveAndStartTarget: handleSaveAndStartPendingActivity,
+    handleDiscardAndStartTarget: handleDiscardAndStartPendingActivity,
+  } = useQuickFocusTarget(ACTIVITY_FOCUS_ADAPTER);
 
   const openDeleteActivityModal = (activity: FocusActivity | null) => {
     setDeleteHistory(false);
@@ -71,6 +98,7 @@ export function useActivitiesWidget(
     ? Math.max(0, activitiesList.length - maxActivities)
     : 0;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: recalcula janela "Hoje" ao virar a meia-noite
   const activityTimeMap = useMemo(
     () =>
       calculateActivityDurationMap(
@@ -80,43 +108,28 @@ export function useActivitiesWidget(
         new Date(),
         userTimeZone,
       ),
-    [records, period, userTimeZone],
+    [records, period, userTimeZone, todayIso],
   );
+
+  const totalPeriodMinutes = useMemo(() => {
+    let total = 0;
+    for (const act of activeActivities) {
+      total += activityTimeMap[act.id] || 0;
+    }
+    return total;
+  }, [activeActivities, activityTimeMap]);
 
   const handleOpenCreateModal = () => {
     setActivityToEdit(null);
     setIsActivityModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, act: FocusActivity) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-      activity: act,
-    });
-  };
-
-  const handleMenuButtonClick = (
-    e: React.MouseEvent<HTMLButtonElement>,
-    act: FocusActivity,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const isSameOpen =
-      contextMenu.isOpen && contextMenu.activity?.id === act.id;
-    if (isSameOpen) {
-      setContextMenu((prev) => ({ ...prev, isOpen: false, activity: null }));
-      return;
-    }
-    const rect = e.currentTarget.getBoundingClientRect();
-    setContextMenu({
-      isOpen: true,
-      position: { x: rect.left, y: rect.bottom + 4 },
-      activity: act,
-    });
-  };
+  const handleMenuButtonClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, act: FocusActivity) => {
+      toggleFromButton(e, act, (current, next) => current?.id === next.id);
+    },
+    [toggleFromButton],
+  );
 
   const handleConfirmDelete = async (
     summary?: FocusActivityDeletionSummaryResponseDTO | null,
@@ -151,7 +164,6 @@ export function useActivitiesWidget(
       );
       setActivityToDelete(null);
       setDeleteHistory(false);
-      router.refresh();
     } catch {
       toast.error(t("deleteUnexpectedError"));
     } finally {
@@ -185,8 +197,13 @@ export function useActivitiesWidget(
     activeActivities,
     blockedActivitiesCount,
     activityTimeMap,
-    contextMenu,
-    setContextMenu,
+    totalPeriodMinutes,
+    contextMenu: {
+      isOpen: rawContextMenu.isOpen,
+      position: rawContextMenu.position,
+      activity: rawContextMenu.data,
+    },
+    closeContextMenu,
     activityToEdit,
     setActivityToEdit,
     isActivityModalOpen,
@@ -196,12 +213,18 @@ export function useActivitiesWidget(
     deleteHistory,
     setDeleteHistory,
     isDeleting,
-    isUpgradeModalOpen,
-    setIsUpgradeModalOpen,
+    openUpgradeModal,
     handleOpenCreateModal,
     handleContextMenu,
     handleMenuButtonClick,
     handleConfirmDelete,
     handleActivitySaved,
+    pendingFocusActivity,
+    currentFocusTarget,
+    clearPendingFocusActivity,
+    handleStartActivityFocus,
+    handleTransferToPendingActivity,
+    handleSaveAndStartPendingActivity,
+    handleDiscardAndStartPendingActivity,
   };
 }

@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.UUID;
 
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class Workspace {
+public class Workspace implements OwnedByUser {
   private UUID id;
   private UUID userId; // Chave estrangeira
   private String name;
@@ -19,12 +18,6 @@ public class Workspace {
     this.id = id;
     this.userId = userId;
     this.name = name;
-  }
-
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
   }
 
   // --- Updates... ---

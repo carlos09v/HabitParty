@@ -42,26 +42,30 @@ export interface InvalidateFocusDomainOptions {
 export function invalidateFocusDomainTags(
   options: InvalidateFocusDomainOptions = {},
 ) {
+  const tags = new Set<string>();
   if (options.activities) {
-    updateTag("focus-activities");
+    tags.add("focus-activities");
   }
   if (options.records) {
-    updateTag("focus-records");
-    updateTag("transactions");
-    updateTag("retrospective");
-    updateTag("showcase");
+    tags.add("focus-records");
+    tags.add("transactions");
+    tags.add("retrospective");
+    tags.add("showcase");
   }
   if (options.rewardsAndInventory) {
-    updateTag("inventory");
-    updateTag("user");
-    updateTag("transactions");
-    updateTag("retrospective");
-    updateTag("showcase");
+    tags.add("inventory");
+    tags.add("user");
+    tags.add("transactions");
+    tags.add("retrospective");
+    tags.add("showcase");
   }
   if (options.tasks) {
-    updateTag("tasks");
-    updateTag("dashboard-tasks");
-    updateTag("kanban");
+    tags.add("tasks");
+    tags.add("dashboard-tasks");
+    tags.add("kanban");
+  }
+  for (const tag of tags) {
+    updateTag(tag);
   }
 }
 
@@ -100,11 +104,17 @@ export function invalidateInventoryDomainTags(
 /**
  * Invalida as tags de cache RSC da Vitrine de Perfil e Conquistas (/profile).
  */
-export function invalidateShowcaseDomainTags(includeUser = false) {
+export function invalidateShowcaseDomainTags(
+  includeUser = false,
+  includeSocial = false,
+) {
   updateTag("showcase");
   updateTag("retrospective");
   if (includeUser) {
     updateTag("user");
+  }
+  if (includeSocial) {
+    updateTag("social");
   }
 }
 
@@ -118,6 +128,14 @@ export function invalidateSocialDomainTags(includeUser = false) {
   if (includeUser) {
     updateTag("user");
   }
+}
+
+/**
+ * Invalida as tags de cache RSC do Histórico de Transações (/history).
+ * Soft-hide/restore de extrato não altera agregações da retrospectiva.
+ */
+export function invalidateHistoryDomainTags() {
+  updateTag("transactions");
 }
 
 /**

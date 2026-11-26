@@ -1,3 +1,5 @@
+"use client";
+
 import { Calendar } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ChangeEvent, useEffect, useState } from "react";
@@ -205,10 +207,11 @@ export function DailyFields({ form }: DailyFieldsProps) {
                 <button
                   key={day.id}
                   type="button"
+                  aria-pressed={isSelected}
                   disabled={isPending}
                   onClick={() => toggleDayOfWeek(day.id)}
                   className={cn(
-                    "min-h-8 sm:min-h-0 py-1.5 px-0.5 rounded-lg border text-tiny font-bold transition-colors cursor-pointer disabled:opacity-50 text-center flex items-center justify-center",
+                    "min-h-8 sm:min-h-0 py-1.5 px-0.5 rounded-lg border text-tiny font-bold transition-colors cursor-pointer disabled:opacity-50 text-center flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                     isSelected
                       ? "border-primary bg-primary text-white shadow-xs dark:border-gold dark:bg-gold dark:text-on-gold dark:shadow-glow-gold-xs font-black"
                       : "border-neutral-600 bg-card text-neutral-200 hover:border-primary/50 hover:text-primary dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",

@@ -1,16 +1,9 @@
 package com.habitparty.infrastructure;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.habitparty.adapters.in.web.dtos.response.ErrorResponseDTO;
-import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.LimitExceededException;
-import com.habitparty.core.exceptions.PaymentProcessingException;
-import com.habitparty.core.exceptions.ResourceNotFoundException;
-import com.habitparty.core.exceptions.UnauthorizedException;
-
+import java.sql.SQLException;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -30,12 +24,23 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import com.habitparty.adapters.in.web.dtos.response.ErrorResponseDTO;
+import com.habitparty.core.exceptions.DomainValidationException;
+import com.habitparty.core.exceptions.LimitExceededException;
+import com.habitparty.core.exceptions.PaymentProcessingException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
+import com.habitparty.core.exceptions.UnauthenticatedException;
+import com.habitparty.core.exceptions.UnauthorizedException;
+
+import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolationException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DatabindException;
@@ -44,13 +49,14 @@ import tools.jackson.databind.DatabindException;
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final Pattern UNIQUE_KEY_PATTERN = Pattern.compile("Key \\((.*?)\\)=\\((.*?)\\) already exists");
+    private static final String SQLSTATE_UNIQUE_VIOLATION = "23505";
 
     // Catches errors thrown by @Valid (e.g., @NotBlank, @Past)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationExceptions(MethodArgumentNotValidException ex) {
         StringBuilder errorMessage = new StringBuilder("Erros de validação encontrados: ");
 
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
+        ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = (error instanceof FieldError fieldError)
                     ? fieldError.getField()
                     : error.getObjectName();
@@ -77,33 +83,62 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponseDTO> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        String specificMessage = ex.getMostSpecificCause().getMessage();
-        String mensagemAmigavel = "Conflito de integridade nos dados enviados.";
+        Throwable specificCause = ex.getMostSpecificCause();
+        String specificMessage = specificCause != null ? specificCause.getMessage() : ex.getMessage();
 
-        if (specificMessage != null && specificMessage.contains("already exists")) {
-            Matcher matcher = UNIQUE_KEY_PATTERN.matcher(specificMessage);
-            if (matcher.find()) {
-                String campo = matcher.group(1);
-                String valor = matcher.group(2);
-                if ("email".equalsIgnoreCase(campo)) {
-                    mensagemAmigavel = String.format("O email '%s' já está em uso.", valor);
-                } else if ("username".equalsIgnoreCase(campo)) {
-                    mensagemAmigavel = String.format("O username '%s' já está em uso.", valor);
+        if (isUniqueConstraintViolation(ex, specificMessage)) {
+            String mensagemAmigavel = "Já existe um registro com os mesmos dados informados.";
+            if (specificMessage != null) {
+                Matcher matcher = UNIQUE_KEY_PATTERN.matcher(specificMessage);
+                if (matcher.find()) {
+                    String campo = matcher.group(1);
+                    if ("email".equalsIgnoreCase(campo)) {
+                        // Nunca ecoa o e-mail duplicado para impedir enumeração de contas
+                        mensagemAmigavel = "Não foi possível concluir o cadastro com os dados informados.";
+                    } else if ("username".equalsIgnoreCase(campo)) {
+                        mensagemAmigavel = "Este nome de usuário já está em uso.";
+                    }
                 } else {
-                    mensagemAmigavel = "Já existe um registro com os mesmos dados informados.";
+                    String lower = specificMessage.toLowerCase(Locale.ROOT);
+                    if (lower.contains("email")) {
+                        mensagemAmigavel = "Não foi possível concluir o cadastro com os dados informados.";
+                    } else if (lower.contains("username")) {
+                        mensagemAmigavel = "Este nome de usuário já está em uso.";
+                    }
                 }
             }
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponseDTO("Dados Duplicados", mensagemAmigavel));
         }
 
-        ErrorResponseDTO error = new ErrorResponseDTO("Dados Duplicados", mensagemAmigavel);
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        log.warn("Violação de integridade de dados (não-unicidade): {}", specificMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponseDTO("Erro de Integridade", "Os dados informados violam uma regra de integridade."));
+    }
+
+    private static boolean isUniqueConstraintViolation(Throwable ex, String specificMessage) {
+        Throwable cursor = ex;
+        while (cursor != null) {
+            if (cursor instanceof SQLException sqlEx && SQLSTATE_UNIQUE_VIOLATION.equals(sqlEx.getSQLState())) {
+                return true;
+            }
+            cursor = cursor.getCause();
+        }
+        if (specificMessage == null) {
+            return false;
+        }
+        String lower = specificMessage.toLowerCase(Locale.ROOT);
+        return lower.contains("already exists")
+                || lower.contains("duplicate key")
+                || lower.contains("unique index or primary key violation")
+                || lower.contains("unique constraint");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponseDTO> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getCause();
 
-        // 1. Suporte ao Jackson 3 (Spring Boot 4 WebMVC)
+        // Suporte ao Jackson 3 (Spring Boot 4 WebMVC)
         if (cause instanceof DatabindException databindException) {
             String campo = databindException.getPath().stream()
                     .map(JacksonException.Reference::getPropertyName)
@@ -121,29 +156,6 @@ public class GlobalExceptionHandler {
             String mensagemAmigavel = buildFriendlyJsonMappingMessage(
                     campo, databindException.getCause(), targetType, invalidValue,
                     databindException instanceof tools.jackson.databind.exc.InvalidFormatException);
-
-            ErrorResponseDTO error = new ErrorResponseDTO("Formato de Dado Inválido", mensagemAmigavel);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
-
-        // 2. Suporte ao Jackson 2 (compatibilidade com adaptadores legados)
-        if (cause instanceof JsonMappingException jsonMappingException) {
-            String campo = jsonMappingException.getPath().stream()
-                    .map(JsonMappingException.Reference::getFieldName)
-                    .filter(Objects::nonNull)
-                    .findFirst()
-                    .orElse("desconhecido");
-
-            Class<?> targetType = null;
-            Object invalidValue = null;
-            if (jsonMappingException instanceof InvalidFormatException invalidFormat) {
-                targetType = invalidFormat.getTargetType();
-                invalidValue = invalidFormat.getValue();
-            }
-
-            String mensagemAmigavel = buildFriendlyJsonMappingMessage(
-                    campo, jsonMappingException.getCause(), targetType, invalidValue,
-                    jsonMappingException instanceof InvalidFormatException);
 
             ErrorResponseDTO error = new ErrorResponseDTO("Formato de Dado Inválido", mensagemAmigavel);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -196,7 +208,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgumentException(IllegalArgumentException ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO("Argumento Inválido", ex.getMessage());
+        log.warn("Argumento inválido na requisição: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Argumento Inválido",
+                "Um ou mais argumentos informados são inválidos.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -209,8 +224,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponseDTO> handleIllegalStateException(IllegalStateException ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO("Operação Inválida", ex.getMessage());
+        log.error("Estado inválido durante processamento da requisição: {}", ex.getMessage(), ex);
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Operação Inválida",
+                "Não foi possível concluir a operação no estado atual.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    // Conflito de concorrência otimista (@Version) -> 409 (Conflict)
+    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ResponseEntity<ErrorResponseDTO> handleOptimisticLockingFailure(Exception ex) {
+        log.warn("Conflito de concorrência otimista detectado: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Conflito de Concorrência",
+                "Este recurso foi atualizado simultaneamente. Recarregue os dados e tente novamente.");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     // Recursos Não Encontrados (Workspaces, Users, Rewards, etc.) -> 404
@@ -220,9 +248,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    // Tentativa de mexer em algo de outro usuário -> 403 (Forbidden)
+    // Requisição sem autenticação válida -> 401 (Unauthorized)
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleUnauthenticated(UnauthenticatedException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO("Não Autenticado", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // Tentativa de mexer em recurso de outro usuário -> 403 (Forbidden) (ou 401 se mensagem indicar ausência de autenticação)
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponseDTO> handleUnauthorized(UnauthorizedException ex) {
+        if ("Usuário não autenticado.".equals(ex.getMessage())) {
+            ErrorResponseDTO error = new ErrorResponseDTO("Não Autenticado", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
         ErrorResponseDTO error = new ErrorResponseDTO("Acesso Negado", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
@@ -234,10 +273,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    // Falhas de integração ou comunicação com gateway de pagamento -> 502 (Bad Gateway)
+    // Falhas de integração ou comunicação com gateway de pagamento -> 502 (Bad Gateway) sem vazar detalhes internos
     @ExceptionHandler(PaymentProcessingException.class)
     public ResponseEntity<ErrorResponseDTO> handlePaymentProcessing(PaymentProcessingException ex) {
-        ErrorResponseDTO error = new ErrorResponseDTO("Erro de Pagamento", ex.getMessage());
+        log.error("[Payment] Falha no processamento de pagamento: {}", ex.getMessage(), ex);
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Erro de Pagamento",
+                "Não foi possível processar a operação de pagamento no momento. Tente novamente em instantes.");
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
     }
 
@@ -269,11 +311,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(error);
     }
 
-    // Upload de arquivo acima do limite permitido -> 413 (Payload Too Large)
+    // Upload de arquivo acima do limite permitido -> 413 (Content Too Large)
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponseDTO> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
         ErrorResponseDTO error = new ErrorResponseDTO("Arquivo Muito Grande", "O tamanho do arquivo enviado excede o limite máximo permitido.");
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(error);
+    }
+
+    // Requisição multipart inválida ou corrompida -> 400 (Bad Request)
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMultipartException(MultipartException ex) {
+        log.warn("Requisição multipart inválida ou corrompida: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO("Erro no Upload", "Requisição multipart inválida ou corrompida.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    // Desconexão do cliente durante streaming (ex: download CSV interrompido) -> encerra silenciosamente
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public ResponseEntity<Void> handleAsyncRequestNotUsable(AsyncRequestNotUsableException ex) {
+        log.debug("Cliente desconectou durante streaming de resposta: {}", ex.getMessage());
+        return null;
     }
 
     // Fallback global para exceções não tratadas -> 500 (Internal Server Error)

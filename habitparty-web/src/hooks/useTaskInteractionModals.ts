@@ -53,9 +53,21 @@ export function useTaskInteractionModals() {
     (e: React.MouseEvent, task: Task, columnId?: string) => {
       e.preventDefault();
       e.stopPropagation();
+      const isKeyboardOrZero = e.clientX === 0 && e.clientY === 0;
+      const anchorRect =
+        isKeyboardOrZero && e.currentTarget instanceof Element
+          ? e.currentTarget.getBoundingClientRect()
+          : null;
+      const position = anchorRect
+        ? {
+            x: Math.round(anchorRect.right - 8),
+            y: Math.round(anchorRect.bottom + 4),
+          }
+        : { x: e.clientX, y: e.clientY };
+
       setContextMenu({
         isOpen: true,
-        position: { x: e.clientX, y: e.clientY },
+        position,
         task,
         columnId: columnId ?? task.columnId ?? null,
       });

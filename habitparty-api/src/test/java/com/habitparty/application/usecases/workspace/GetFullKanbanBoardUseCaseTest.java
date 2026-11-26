@@ -28,6 +28,7 @@ import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.KanbanBoard;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.entities.task.Todo;
 
 @ExtendWith(MockitoExtension.class)
 class GetFullKanbanBoardUseCaseTest {
@@ -52,7 +53,7 @@ class GetFullKanbanBoardUseCaseTest {
     UUID colId = UUID.randomUUID();
     Workspace ws = mock(Workspace.class);
     BoardColumn col = mock(BoardColumn.class);
-    Task activeTask = mock(Task.class);
+    Task activeTask = mock(Todo.class);
     when(col.getId()).thenReturn(colId);
     when(activeTask.getBoardColumnId()).thenReturn(colId);
 
@@ -86,7 +87,7 @@ class GetFullKanbanBoardUseCaseTest {
     UUID colId = UUID.randomUUID();
     Workspace ws = mock(Workspace.class);
     BoardColumn col = mock(BoardColumn.class);
-    Task task = mock(Task.class);
+    Task task = mock(Todo.class);
     when(col.getId()).thenReturn(colId);
     when(task.getBoardColumnId()).thenReturn(colId);
 

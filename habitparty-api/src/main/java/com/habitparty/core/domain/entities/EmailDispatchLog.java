@@ -6,36 +6,22 @@ import java.util.UUID;
 import com.habitparty.core.domain.enums.EmailDispatchStatus;
 import com.habitparty.core.domain.enums.EmailType;
 
-public class EmailDispatchLog {
-  private final UUID id;
-  private final UUID userId;
-  private final UUID taskId;
-  private final EmailType emailType;
-  private final String recipientEmail;
-  private final String subject;
-  private final EmailDispatchStatus status;
-  private final String errorMessage;
-  private final LocalDateTime sentAt;
+public record EmailDispatchLog(
+    UUID id,
+    UUID userId,
+    UUID taskId,
+    EmailType emailType,
+    String recipientEmail,
+    String subject,
+    EmailDispatchStatus status,
+    String errorMessage,
+    LocalDateTime sentAt) {
 
-  public EmailDispatchLog(
-      UUID id,
-      UUID userId,
-      UUID taskId,
-      EmailType emailType,
-      String recipientEmail,
-      String subject,
-      EmailDispatchStatus status,
-      String errorMessage,
-      LocalDateTime sentAt) {
-    this.id = id != null ? id : UUID.randomUUID();
-    this.userId = userId;
-    this.taskId = taskId;
-    this.emailType = emailType != null ? emailType : EmailType.TASK_REMINDER;
-    this.recipientEmail = recipientEmail;
-    this.subject = subject;
-    this.status = status != null ? status : EmailDispatchStatus.SENT;
-    this.errorMessage = errorMessage;
-    this.sentAt = sentAt != null ? sentAt : LocalDateTime.now();
+  public EmailDispatchLog {
+    id = id != null ? id : UUID.randomUUID();
+    emailType = emailType != null ? emailType : EmailType.TASK_REMINDER;
+    status = status != null ? status : EmailDispatchStatus.SENT;
+    sentAt = sentAt != null ? sentAt : LocalDateTime.now();
   }
 
   public UUID getId() {

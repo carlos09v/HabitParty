@@ -1,7 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { DASHBOARD_TASK_FILTERS } from "@/constants/dashboard";
 import {
   DIFFICULTY_SORT_WEIGHTS,
@@ -9,12 +15,17 @@ import {
   normalizeTaskType,
   PRIORITY_SORT_WEIGHTS,
 } from "@/constants/task";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
+import { useMinuteTicker } from "@/hooks/useMinuteTicker";
 import {
   syncDashboardFilterUrl,
   useDashboardFilterStore,
 } from "@/store/dashboardFilterStore";
 import { useUserStore } from "@/store/userStore";
-import type { DashboardAdvancedFilters } from "@/types/dashboard";
+import type {
+  DashboardAdvancedFilters,
+  DashboardColumnOption,
+} from "@/types/dashboard";
 import type { Task, TaskFilterType } from "@/types/task";
 import {
   getTodayDateString,
@@ -25,12 +36,47 @@ import {
   getDatePartsInTimeZone,
   getOffsetDateString,
 } from "@/utils/date";
-import { isTodoTimeOverdueToday } from "@/utils/taskSchedule";
+import { doesTaskMatchTagFilter } from "@/utils/tags";
+import { isTaskInReadOnlyScope } from "@/utils/taskMapper";
+import {
+  isTodoTimeOverdueToday,
+  isTodoTimeOverdueTodayFast,
+} from "@/utils/taskSchedule";
 
 export { syncDashboardFilterUrl, useDashboardFilterStore };
 
 function isValidTaskFilter(val: string | null): val is TaskFilterType {
   return DASHBOARD_TASK_FILTERS.some((f) => f.id === val);
+}
+
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+function isValidIsoCalendarDate(val: string | null): val is string {
+  if (!val) return false;
+  const match = ISO_DATE_PATTERN.exec(val);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  return (
+    utc.getUTCFullYear() === year &&
+    utc.getUTCMonth() === month - 1 &&
+    utc.getUTCDate() === day
+  );
+}
+
+function getTaskPrioritySortWeight(task: Task): number {
+  const priority = task.priority;
+  if (priority && priority.toUpperCase() !== "NONE") {
+    return PRIORITY_SORT_WEIGHTS[priority] || 0;
+  }
+  if (normalizeTaskType(task) === "habit") {
+    const habitImportance = task.importanceType || task.importance || "";
+    return PRIORITY_SORT_WEIGHTS[habitImportance] || 0;
+  }
+  return 0;
 }
 
 function isDailyScheduledBetween(
@@ -53,7 +99,24 @@ function isDailyScheduledBetween(
   return false;
 }
 
-function isTodoTaskOverdue(
+function isTodoTaskOverdueFast(
+  task: Task,
+  todayIso: string,
+  currentMinutes: number,
+): boolean {
+  if (normalizeTaskType(task) !== "todo" || task.completed || !task.dueDate) {
+    return false;
+  }
+  const datePart = task.dueDate.split("T")[0];
+  if (datePart < todayIso) {
+    return true;
+  }
+  return (
+    datePart === todayIso && isTodoTimeOverdueTodayFast(task, currentMinutes)
+  );
+}
+
+export function isTodoTaskOverdue(
   task: Task,
   todayIso: string,
   now: Date,
@@ -97,39 +160,98 @@ function matchesStructuralAdvancedFilters(
   ) {
     return false;
   }
+  if (advancedFilters.priority !== "all") {
+    const taskPriority = (task.priority || "NONE").toUpperCase();
+    if (taskPriority !== advancedFilters.priority.toUpperCase()) {
+      return false;
+    }
+  }
+  if (
+    advancedFilters.tag &&
+    !doesTaskMatchTagFilter(task, advancedFilters.tag)
+  ) {
+    return false;
+  }
   return true;
+}
+
+function getTaskDueSortKey(task: Task): string {
+  const datePart = task.dueDate ? task.dueDate.split("T")[0] : "9999-99-99";
+  const timePart = task.dueTime || task.startTime || "99:99";
+  return `${datePart}T${timePart}`;
 }
 
 export function useDashboardTaskFilters(
   tasks: Task[],
   validWorkspaceIds?: string[],
-  validColumnIds?: string[],
+  validColumns?: ReadonlyArray<
+    Pick<DashboardColumnOption, "id" | "workspaceId">
+  >,
+  options?: {
+    readOnlyWorkspaceIds?: ReadonlySet<string>;
+    readOnlyColumnIds?: ReadonlySet<string>;
+    timeZone?: string | null;
+  },
 ) {
   const searchParams = useSearchParams();
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
+  const storeUserTimeZone = useUserStore((s) => s.user?.timezone);
+  const userTimeZone = storeUserTimeZone ?? options?.timeZone;
+  const readOnlyWorkspaceIds = options?.readOnlyWorkspaceIds;
+  const readOnlyColumnIds = options?.readOnlyColumnIds;
+  const todayIsoRollover = useMidnightRollover(userTimeZone);
+  const hasTimedTodoToday = useMemo(
+    () =>
+      tasks.some((task) => {
+        if (
+          normalizeTaskType(task) !== "todo" ||
+          task.completed ||
+          !task.dueDate
+        ) {
+          return false;
+        }
+        const datePart = task.dueDate.split("T")[0];
+        return (
+          datePart === todayIsoRollover &&
+          Boolean(task.dueTime || task.startTime || task.dueEndTime)
+        );
+      }),
+    [tasks, todayIsoRollover],
+  );
+  const minuteTick = useMinuteTicker(hasTimedTodoToday);
   const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
   const selectedDate = useDashboardFilterStore((s) => s.selectedDate);
+  const searchQuery = useDashboardFilterStore((s) => s.searchQuery);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const advancedFilters = useDashboardFilterStore((s) => s.advancedFilters);
   const setStoreFilter = useDashboardFilterStore((s) => s.setFilter);
   const setStoreSelectedDate = useDashboardFilterStore(
     (s) => s.setSelectedDate,
   );
+  const hydrateFromUrl = useDashboardFilterStore((s) => s.hydrateFromUrl);
+  const setSearchQuery = useDashboardFilterStore((s) => s.setSearchQuery);
   const setAdvancedFilters = useDashboardFilterStore(
     (s) => s.setAdvancedFilters,
   );
 
   // Higieniza workspaceId / columnId persistidos caso o ambiente ou lista não exista mais
+  // (inclusive quando a última lista é excluída ou movida para outro ambiente)
   useEffect(() => {
     const invalidWorkspace =
       advancedFilters.workspaceId !== "all" &&
-      validWorkspaceIds &&
-      validWorkspaceIds.length > 0 &&
+      validWorkspaceIds !== undefined &&
       !validWorkspaceIds.includes(advancedFilters.workspaceId);
+
+    const matchedColumn =
+      advancedFilters.columnId !== "all" && validColumns !== undefined
+        ? validColumns.find((col) => col.id === advancedFilters.columnId)
+        : undefined;
     const invalidColumn =
       advancedFilters.columnId !== "all" &&
-      validColumnIds &&
-      validColumnIds.length > 0 &&
-      !validColumnIds.includes(advancedFilters.columnId);
+      validColumns !== undefined &&
+      (!matchedColumn ||
+        (advancedFilters.workspaceId !== "all" &&
+          Boolean(matchedColumn.workspaceId) &&
+          matchedColumn.workspaceId !== advancedFilters.workspaceId));
 
     if (invalidWorkspace || invalidColumn) {
       setAdvancedFilters((prev) => ({
@@ -142,32 +264,42 @@ export function useDashboardTaskFilters(
     advancedFilters.workspaceId,
     advancedFilters.columnId,
     validWorkspaceIds,
-    validColumnIds,
+    validColumns,
     setAdvancedFilters,
   ]);
 
-  // Inicializa a partir da URL na montagem (ou quando a URL muda externamente)
+  // Inicializa a partir da URL somente quando os parâmetros da URL efetivamente mudam
+  // (evita que a hidratação tardia de userTimeZone sobrescreva uma aba já clicada pelo usuário)
   const urlFilterParam = searchParams.get("filter");
   const urlDateParam = searchParams.get("date");
+  const lastSyncedUrlKeyRef = useRef<string | null>(null);
+  const userTimeZoneRef = useRef(userTimeZone);
+  useEffect(() => {
+    userTimeZoneRef.current = userTimeZone;
+  }, [userTimeZone]);
 
   useEffect(() => {
-    const todayIso = getTodayDateString(new Date(), userTimeZone);
+    const validUrlDate = isValidIsoCalendarDate(urlDateParam)
+      ? urlDateParam
+      : null;
+    const urlKey = `${urlFilterParam ?? ""}|${validUrlDate ?? ""}`;
+    if (lastSyncedUrlKeyRef.current === urlKey) return;
+    lastSyncedUrlKeyRef.current = urlKey;
+
+    const todayIso = getTodayDateString(new Date(), userTimeZoneRef.current);
     const resolvedFilter: TaskFilterType = isValidTaskFilter(urlFilterParam)
       ? urlFilterParam
       : "today";
 
-    if (urlDateParam && urlDateParam !== todayIso) {
-      setStoreSelectedDate(urlDateParam);
+    if (validUrlDate && validUrlDate !== todayIso) {
+      hydrateFromUrl(resolvedFilter, validUrlDate);
     } else {
-      setStoreFilter(urlDateParam === todayIso ? "today" : resolvedFilter);
+      hydrateFromUrl(
+        validUrlDate === todayIso ? "today" : resolvedFilter,
+        null,
+      );
     }
-  }, [
-    urlFilterParam,
-    urlDateParam,
-    userTimeZone,
-    setStoreFilter,
-    setStoreSelectedDate,
-  ]);
+  }, [urlFilterParam, urlDateParam, hydrateFromUrl]);
 
   const effectiveFilter = activeFilter;
 
@@ -184,9 +316,14 @@ export function useDashboardTaskFilters(
     syncDashboardFilterUrl(activeFilter, null);
   }, [activeFilter, setStoreSelectedDate]);
 
-  const filteredTasks = useMemo(() => {
+  const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
+
+  const { filteredTasks, overdueCount } = useMemo(() => {
+    void minuteTick;
+    void todayIsoRollover;
     const now = new Date();
     const nowParts = getDatePartsInTimeZone(now, userTimeZone);
+    const currentMinutes = nowParts.hour * 60 + nowParts.minute;
     const todayUtc = new Date(
       Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day),
     );
@@ -204,121 +341,198 @@ export function useDashboardTaskFilters(
       1,
       daysInCurrentMonth - nowParts.day + 1,
     );
+    const excludeReadOnlyOverdue =
+      advancedFilters.workspaceId === "all" &&
+      Boolean(readOnlyWorkspaceIds && readOnlyColumnIds);
 
-    // 1. Filtro Temporal
-    let result = tasks.filter((task) => {
+    interface SortableTaskEntry {
+      task: Task;
+      completedNum: number;
+      overdueNum: number;
+      hardcoreUrgentNum: number;
+      dueSortKey: string;
+      priorityWeight: number;
+      difficultyWeight: number;
+      rewardScore: number;
+    }
+
+    const sortableEntries: SortableTaskEntry[] = [];
+    let nextOverdueCount = 0;
+
+    // Passagem única O(N): aplica filtros estruturais, calcula overdueCount, filtra janela temporal/busca
+    // e pré-computa todas as chaves de ordenação (Schwartzian transform, zero Intl dentro do .sort()).
+    for (const task of tasks) {
+      if (!matchesStructuralAdvancedFilters(task, advancedFilters)) {
+        continue;
+      }
+
+      const isOverdue = isTodoTaskOverdueFast(task, todayIso, currentMinutes);
+      const isReadOnlyInAllScope =
+        excludeReadOnlyOverdue &&
+        isTaskInReadOnlyScope(
+          task,
+          readOnlyWorkspaceIds as ReadonlySet<string>,
+          readOnlyColumnIds as ReadonlySet<string>,
+        );
+
+      if (isOverdue && !isReadOnlyInAllScope) {
+        nextOverdueCount += 1;
+      }
+
+      if (advancedFilters.hideCompleted && task.completed) {
+        continue;
+      }
+
+      // 1. Filtro Temporal
       const type = normalizeTaskType(task);
       const isDaily = type === "daily";
       const isHabit = type === "habit";
+      let matchesTemporal = false;
 
       if (selectedDate) {
-        return isTaskScheduledForDate(task, selectedDate, {
+        matchesTemporal = isTaskScheduledForDate(task, selectedDate, {
           includeHabits: selectedDate === todayIso,
         });
-      }
-
-      if (effectiveFilter === "today") {
-        return isTaskScheduledForDate(task, todayIso, { includeHabits: true });
-      }
-
-      // Hábitos não possuem prazo fixo: ficam visíveis apenas na aba "Hoje"
-      if (isHabit) {
-        return false;
-      }
-
-      // Diárias são avaliadas conforme sua programação real dentro do intervalo
-      if (isDaily) {
+      } else if (effectiveFilter === "today") {
+        matchesTemporal = isTaskScheduledForDate(task, todayIso, {
+          includeHabits: true,
+        });
+      } else if (isHabit) {
+        matchesTemporal = false;
+      } else if (isDaily) {
         if (effectiveFilter === "next7days") {
-          return isDailyScheduledBetween(task, todayUtc, 8);
+          matchesTemporal = isDailyScheduledBetween(task, todayUtc, 8);
+        } else if (effectiveFilter === "this_month") {
+          matchesTemporal = isDailyScheduledBetween(
+            task,
+            todayUtc,
+            remainingDaysInMonth,
+          );
+        } else {
+          matchesTemporal = false;
         }
-        if (effectiveFilter === "this_month") {
-          return isDailyScheduledBetween(task, todayUtc, remainingDaysInMonth);
+      } else if (!task.dueDate) {
+        matchesTemporal = effectiveFilter === "nodate";
+      } else {
+        const datePart = task.dueDate.split("T")[0];
+        switch (effectiveFilter) {
+          case "next7days":
+            matchesTemporal = datePart >= todayIso && datePart <= next7DaysIso;
+            break;
+          case "this_month": {
+            const [year, month] = datePart.split("-").map(Number);
+            matchesTemporal =
+              datePart >= todayIso &&
+              year === nowParts.year &&
+              month === nowParts.month;
+            break;
+          }
+          case "overdue":
+            matchesTemporal = isOverdue && !isReadOnlyInAllScope;
+            break;
+          case "nodate":
+            matchesTemporal = false;
+            break;
+          default:
+            matchesTemporal = true;
+            break;
         }
-        return false;
       }
 
-      // Afazeres (To-Do) sem data de entrega definida
-      if (!task.dueDate) {
-        return effectiveFilter === "nodate";
+      if (!matchesTemporal) {
+        continue;
       }
 
-      const datePart = task.dueDate.split("T")[0];
-      const [year, month] = datePart.split("-").map(Number);
-
-      const isWithin7Days = datePart >= todayIso && datePart <= next7DaysIso;
-      const isThisMonth = year === nowParts.year && month === nowParts.month;
-
-      switch (effectiveFilter) {
-        case "next7days":
-          return isWithin7Days;
-        case "this_month":
-          return isThisMonth;
-        case "overdue":
-          return isTodoTaskOverdue(task, todayIso, now, userTimeZone);
-        case "nodate":
-          return false;
-        default:
-          return true;
+      // 2. Busca Inline
+      if (normalizedQuery) {
+        const matchesTitle = task.title.toLowerCase().includes(normalizedQuery);
+        const matchesDesc = Boolean(
+          task.description?.toLowerCase().includes(normalizedQuery),
+        );
+        const matchesTag = Boolean(
+          task.tags?.some((tag) => tag.toLowerCase().includes(normalizedQuery)),
+        );
+        if (!matchesTitle && !matchesDesc && !matchesTag) {
+          continue;
+        }
       }
-    });
 
-    // 2. Filtros Avançados
-    result = result.filter((t) =>
-      matchesStructuralAdvancedFilters(t, advancedFilters),
-    );
-
-    if (advancedFilters.hideCompleted) {
-      result = result.filter((t) => !t.completed);
+      sortableEntries.push({
+        task,
+        completedNum: task.completed ? 1 : 0,
+        overdueNum: isOverdue ? 1 : 0,
+        hardcoreUrgentNum:
+          task.isHardcoreModeEnabled && !task.completed ? 1 : 0,
+        dueSortKey: getTaskDueSortKey(task),
+        priorityWeight: getTaskPrioritySortWeight(task),
+        difficultyWeight: DIFFICULTY_SORT_WEIGHTS[task.difficulty || ""] || 0,
+        rewardScore: (task.rewardGold ?? 0) + (task.rewardXp ?? 0),
+      });
     }
 
-    // 3. Ordenação
-    result = [...result].sort((a, b) => {
-      if (
-        advancedFilters.sortBy === "default" ||
-        advancedFilters.sortBy === "dueDate"
-      ) {
-        const dateA = a.dueDate ? a.dueDate.split("T")[0] : "9999-99-99";
-        const dateB = b.dueDate ? b.dueDate.split("T")[0] : "9999-99-99";
-        return dateA.localeCompare(dateB);
+    // 3. Ordenação sobre chaves pré-computadas
+    const sortBy = advancedFilters.sortBy;
+    sortableEntries.sort((a, b) => {
+      if (sortBy === "default") {
+        const completedDiff = a.completedNum - b.completedNum;
+        if (completedDiff !== 0) return completedDiff;
+
+        const overdueDiff = b.overdueNum - a.overdueNum;
+        if (overdueDiff !== 0) return overdueDiff;
+
+        const hardcoreDiff = b.hardcoreUrgentNum - a.hardcoreUrgentNum;
+        if (hardcoreDiff !== 0) return hardcoreDiff;
+
+        if (a.dueSortKey !== b.dueSortKey) {
+          return a.dueSortKey < b.dueSortKey ? -1 : 1;
+        }
+
+        return b.priorityWeight - a.priorityWeight;
       }
-      if (advancedFilters.sortBy === "difficulty") {
-        const wa = DIFFICULTY_SORT_WEIGHTS[a.difficulty || ""] || 0;
-        const wb = DIFFICULTY_SORT_WEIGHTS[b.difficulty || ""] || 0;
-        return wb - wa;
+
+      if (sortBy === "dueDate") {
+        return a.dueSortKey === b.dueSortKey
+          ? 0
+          : a.dueSortKey < b.dueSortKey
+            ? -1
+            : 1;
       }
-      if (advancedFilters.sortBy === "priority") {
-        const wa =
-          PRIORITY_SORT_WEIGHTS[a.priority || a.importanceType || ""] || 0;
-        const wb =
-          PRIORITY_SORT_WEIGHTS[b.priority || b.importanceType || ""] || 0;
-        return wb - wa;
+      if (sortBy === "difficulty") {
+        return b.difficultyWeight - a.difficultyWeight;
       }
-      if (advancedFilters.sortBy === "reward") {
-        const ra = (a.rewardGold ?? 0) + (a.rewardXp ?? 0);
-        const rb = (b.rewardGold ?? 0) + (b.rewardXp ?? 0);
-        return rb - ra;
+      if (sortBy === "priority") {
+        return b.priorityWeight - a.priorityWeight;
+      }
+      if (sortBy === "reward") {
+        return b.rewardScore - a.rewardScore;
       }
       return 0;
     });
 
-    return result;
-  }, [tasks, selectedDate, effectiveFilter, advancedFilters, userTimeZone]);
-
-  const overdueCount = useMemo(() => {
-    const now = new Date();
-    const todayIso = getTodayDateString(now, userTimeZone);
-    return tasks.filter(
-      (task) =>
-        isTodoTaskOverdue(task, todayIso, now, userTimeZone) &&
-        matchesStructuralAdvancedFilters(task, advancedFilters),
-    ).length;
-  }, [tasks, advancedFilters, userTimeZone]);
+    return {
+      filteredTasks: sortableEntries.map((entry) => entry.task),
+      overdueCount: nextOverdueCount,
+    };
+  }, [
+    tasks,
+    selectedDate,
+    effectiveFilter,
+    advancedFilters,
+    normalizedQuery,
+    userTimeZone,
+    todayIsoRollover,
+    minuteTick,
+    readOnlyWorkspaceIds,
+    readOnlyColumnIds,
+  ]);
 
   return {
     activeFilter: effectiveFilter,
     setActiveFilter,
     selectedDate,
     handleClearDate,
+    searchQuery,
+    setSearchQuery,
     advancedFilters,
     setAdvancedFilters,
     filteredTasks,

@@ -17,52 +17,51 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "transaction_history")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class TransactionHistoryJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class TransactionHistoryJpaEntity extends BaseUuidJpaEntity {
+
   @Id
-  // Gerado pelo dominio
+  @ToString.Include
   @Column(name = "transaction_history_id")
   private UUID id;
 
-  // Relacionamento forte apenas com o usuário (dono do histórico)
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserJpaEntity user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "transaction_type", nullable = false)
   private TransactionType transactionType;
 
-  // === SOFT-LINKS (Sem relacionamentos do Hibernate, apenas os UUIDs) ===
   @Column(name = "reference_id")
   private UUID referenceId;
 
-  // === SNAPSHOTS E DADOS FINANCEIROS ===
   @Column(name = "name_snapshot", nullable = false)
   private String nameSnapshot;
 
-  @Column(name = "gold_amount")
+  @Column(name = "gold_amount", precision = 10, scale = 2)
   private BigDecimal goldAmount;
 
   @Column(name = "xp_amount")
   private Integer xpAmount;
 
-  @Column(name = "price_snapshot")
+  @Column(name = "price_snapshot", precision = 10, scale = 2)
   private BigDecimal priceSnapshot;
 
   @Column(name = "icon_snapshot")
@@ -76,6 +75,7 @@ public class TransactionHistoryJpaEntity {
   @Column(name = "package_level_snapshot")
   private RewardPackageLevel packageLevelSnapshot;
 
+  @Builder.Default
   @JdbcTypeCode(SqlTypes.ARRAY)
   @Column(name = "tags_snapshot", columnDefinition = "text[]")
   private List<String> tagsSnapshot = new ArrayList<>();
@@ -91,6 +91,10 @@ public class TransactionHistoryJpaEntity {
 
   @Column(name = "effort_units_snapshot")
   private Integer effortUnitsSnapshot;
+
+  @Builder.Default
+  @Column(name = "hidden_from_history", nullable = false, columnDefinition = "boolean default false")
+  private boolean hiddenFromHistory = false;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;

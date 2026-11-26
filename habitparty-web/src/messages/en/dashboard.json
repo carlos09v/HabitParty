@@ -28,6 +28,7 @@
     "streakStartBadge": "1 task or 30m focus 🔥",
     "streakRemainingHours": "⏳ {hours}h left (1 task or 30m focus)",
     "streakSecuredBadge": "Streak secured today! 🔥",
+    "streakCardJumpTitle": "View weekly calendar and streak history",
     "dailyTasksLabel": "Today's Tasks",
     "completedCount": "{completed}/{total} Completed",
     "noTasksTodayBadge": "No goals today",
@@ -38,11 +39,22 @@
     "pendingCountBadge": "{count} pending",
     "xpEarnedLabel": "XP Earned",
     "xpEarnedLabelGamified": "XP Earned",
-    "xpEarnedLabelProductivity": "Focus Points",
+    "xpEarnedLabelProductivity": "Points Today",
     "todayGainsTitle": "Experience points earned today",
     "todayGainsBadge": "Today's gains ✨",
     "todayGainsBadgeGamified": "Today's gains ✨",
-    "todayGainsBadgeProductivity": "Today's focus ✨"
+    "todayGainsBadgeProductivity": "Today's yield ✨",
+    "overdueAlertTitle": "{count, plural, one {# overdue task — click to view} other {# overdue tasks — click to view}}",
+    "overdueAlertBadge": "{count} overdue",
+    "quickAddTaskCta": "New Task",
+    "quickFocusCta": "Focus",
+    "levelShort": "Lv.{level}",
+    "focusTodayLabel": "Focus Today",
+    "focusGoalProgressTitle": "Focused today: {current} of {goal} daily goal",
+    "focusCardTitle": "Open Focus Stage and track today's sessions",
+    "focusGoalAriaLabel": "Daily focus goal progress: {percent}%",
+    "focusActiveBadge": "In focus rhythm ⏱️",
+    "focusStartBadge": "Start session ⏱️"
   },
   "emptyWorkspace": {
     "title": "Welcome to your Headquarters! 🚀",
@@ -97,7 +109,10 @@
     "deleteModalDescPrefix": "Are you sure you want to delete the column",
     "deleteModalDescSuffix": "? This action is irreversible and all tasks in this column will be permanently removed.",
     "deleteModalConfirm": "Delete Column",
-    "deleteModalCancel": "Cancel"
+    "deleteModalCancel": "Cancel",
+    "filterListAria": "Filter tasks by list {name}",
+    "filterListTitle": "Filter tasks from \"{name}\" below",
+    "clearFilterListTitle": "Clear filter for list \"{name}\""
   },
   "tasksPanel": {
     "title": "Your Tasks",
@@ -155,12 +170,31 @@
     "easy": "Easy",
     "medium": "Medium",
     "hard": "Hard",
+    "priorityLabel": "Priority",
+    "allPriorities": "All priorities",
+    "priorityHigh": "High",
+    "priorityMedium": "Medium",
+    "priorityLow": "Low",
+    "priorityNone": "No priority",
+    "tagsLabel": "Tags",
+    "allTagsOption": "All",
+    "tagLabel": "Tag",
+    "activeFiltersAria": "Active filters",
+    "removeFilterAria": "Remove filter {label}: {value}",
+    "clearAllFilters": "Clear all",
+    "hideCompletedChip": "Completed hidden",
     "sortByLabel": "Sort by",
-    "sortDefault": "Default (Date / Due)",
+    "sortDefault": "Default (Priority & Due)",
+    "sortDueDate": "Due Date (Soonest first)",
     "sortDifficulty": "Difficulty (Highest first)",
     "sortPriority": "Priority (Highest first)",
     "sortReward": "Highest Reward (XP/Gold)",
-    "hideCompletedLabel": "Hide completed tasks"
+    "hideCompletedLabel": "Hide completed tasks",
+    "searchPlaceholder": "Search tasks...",
+    "searchAriaLabel": "Search tasks by title, description, or tag",
+    "clearSearchAria": "Clear search",
+    "currentWorkspaceOnly": "Current workspace",
+    "currentWorkspaceOnlyTitle": "Toggle between all workspaces and only the active workspace"
   },
   "taskTable": {
     "ariaLabel": "Task list",
@@ -172,6 +206,7 @@
     "colSchedule": "Schedule/Due",
     "colActions": "Actions",
     "paginationItemLabel": "tasks",
+    "itemsPerPageLabel": "Per page:",
     "emptyFallbackTitle": "No tasks found",
     "emptyFallbackDesc": "We couldn't find any tasks for the selected filter.",
     "emptyDateTitle": "All clear on this date! 🎉",
@@ -206,6 +241,11 @@
       "nodate": {
         "title": "No tasks without a due date",
         "description": "All of your tasks have a scheduled due date."
+      },
+      "filtered": {
+        "title": "No tasks match your filters",
+        "description": "Try clearing the search or adjusting the active filters.",
+        "action": "Clear filters"
       }
     }
   },
@@ -349,6 +389,9 @@
       "edit": "Edit",
       "duplicate": "Duplicate",
       "delete": "Delete",
+      "moveToColumn": "Move to column",
+      "moveLeft": "Move column left",
+      "moveRight": "Move column right",
       "insertLeft": "Insert column to the left",
       "insertRight": "Insert column to the right",
       "layout": "Layout",
@@ -384,6 +427,10 @@
       "habitPenalty": "Habit penalty logged!",
       "deleteError": "Failed to delete task on server.",
       "deleteSuccess": "Task \"{title}\" deleted successfully!",
+      "deleteUndoToast": "Task \"{title}\" deleted",
+      "undoAction": "Undo",
+      "deleteRestoredToast": "Task \"{title}\" restored!",
+      "moveTaskSuccess": "Task moved to \"{column}\"!",
       "duplicateColumnError": "Target column not found for duplication.",
       "duplicateError": "Failed to duplicate task.",
       "duplicateSuccess": "Task \"{title}\" duplicated successfully!"
@@ -423,6 +470,7 @@
         "this_month": "Month"
       },
       "empty": "No activities registered.",
+      "createFirstCta": "Create activity",
       "lockedPreservedTitle": "{count} {count, plural, one {activity preserved} other {activities preserved}} from Premium period. Reactivate Premium to track time!",
       "lockedCount": "{count} {count, plural, one {locked activity} other {locked activities}}",
       "upgradeTitle": "Subscribe to Premium to create up to 6 focus activities!",
@@ -447,7 +495,10 @@
         "questionSuffix": "? Your previous session history will remain preserved.",
         "confirm": "Yes, delete",
         "cancel": "Cancel"
-      }
+      },
+      "periodTotalTitle": "Total focused in period: {duration}",
+      "startFocusAria": "Start focus on {name}",
+      "pauseFocusAria": "Pause focus on {name}"
     },
     "economyWidget": {
       "title": "Economy",
@@ -464,7 +515,16 @@
       "legendEarnings": "Earned",
       "legendSpent": "Spent",
       "leisureEquivalenceLabel": "Leisure equivalent",
-      "walletTitleProductivityWithLeisure": "View full transaction history • Equivalent to {duration} free leisure"
+      "walletTitleProductivityWithLeisure": "View full transaction history • Equivalent to {duration} free leisure",
+      "emptyTitle": "No activity in recent weeks",
+      "emptyHint": "Complete tasks or focus sessions to start earning coins.",
+      "rewardsBridgeRedeemableTitle": "{count, plural, one {# reward ready to redeem} other {# rewards ready to redeem}}",
+      "rewardsBridgeStoreTitle": "Open rewards store",
+      "rewardsBridgeStoreLabel": "Rewards",
+      "rewardsBridgeStoreLabelProductivity": "Leisure",
+      "rewardsBridgeBackpackTitle": "{count, plural, one {# item ready to use in backpack} other {# items ready to use in backpack}}",
+      "rewardsBridgeBackpackLabel": "Backpack",
+      "rewardsBridgeBackpackLabelProductivity": "Available"
     },
     "partyWidget": {
       "title": "Party & Friends",

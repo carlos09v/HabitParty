@@ -80,7 +80,13 @@ public class OpenMysteryBoxUseCase {
 
   @Transactional
   public OpenMysteryBoxResult executeWithDrop(UUID itemId, UUID userIdLogado) {
-    InventoryItem item = port.findById(itemId)
+    // Adquire lock exclusivo na ordem User -> InventoryItem para evitar double-open e deadlocks
+    User lockedUser = null;
+    if (userPort != null) {
+      lockedUser = userPort.findByIdForUpdate(userIdLogado).orElse(null);
+    }
+
+    InventoryItem item = port.findByIdForUpdate(itemId)
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado"));
     item.validateOwnership(userIdLogado);
 
@@ -127,18 +133,6 @@ public class OpenMysteryBoxUseCase {
 
     transactionHistoryRepositoryPort.save(transaction);
 
-    if (userPort != null) {
-      userPort.findById(userIdLogado).ifPresent((User user) -> {
-        if (user.getStats() != null) {
-          user.getStats().recordMysteryBoxOpened();
-        }
-        userPort.save(user);
-        if (evaluateUserAchievementsUseCase != null) {
-          evaluateUserAchievementsUseCase.execute(user);
-        }
-      });
-    }
-
     Artifact droppedArtifact = null;
     UserArtifact droppedUserArtifact = null;
 
@@ -158,6 +152,16 @@ public class OpenMysteryBoxUseCase {
           droppedUserArtifact = userArtifactPort.save(
               UserArtifact.createNewlyUnlocked(userIdLogado, droppedArtifact.getId(), obtainedSource));
         }
+      }
+    }
+
+    if (lockedUser != null) {
+      if (lockedUser.getStats() != null) {
+        lockedUser.getStats().recordMysteryBoxOpened();
+      }
+      userPort.save(lockedUser);
+      if (evaluateUserAchievementsUseCase != null) {
+        evaluateUserAchievementsUseCase.execute(lockedUser);
       }
     }
 

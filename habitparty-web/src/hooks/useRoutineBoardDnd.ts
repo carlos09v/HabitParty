@@ -7,23 +7,21 @@ import {
   type DragOverEvent,
   type DragStartEvent,
   getFirstCollision,
-  KeyboardSensor,
-  MouseSensor,
   pointerWithin,
   rectIntersection,
-  TouchSensor,
   type UniqueIdentifier,
-  useSensor,
-  useSensors,
 } from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
   type Dispatch,
   type SetStateAction,
   useCallback,
+  useMemo,
   useRef,
   useState,
 } from "react";
+import { useDndSensors } from "@/hooks/useDndSensors";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import type { BoardColumn, Task } from "@/types/task";
 import {
   findColumnByTask,
@@ -35,8 +33,14 @@ import {
 type SetColumns = Dispatch<SetStateAction<BoardColumn[]>>;
 
 export interface UseRoutineBoardDndOptions {
+  /** Colunas exibidas (possivelmente filtradas) — usadas para colisão visual. */
   columns?: BoardColumn[];
+  /** Colunas mestre (não filtradas) — usadas para snapshot, mutação, rollback e persistência. */
+  allColumns?: BoardColumn[];
   setColumns: SetColumns;
+  /** Desabilita qualquer mutação via drag-and-drop (ex: workspace excedente em modo somente leitura). */
+  disabled?: boolean;
+  onDisabledInteraction?: () => void;
   onTaskMove?: (
     taskId: string,
     targetColumnId: string,
@@ -54,16 +58,30 @@ export interface UseRoutineBoardDndOptions {
 /**
  * Toda a lógica de drag-and-drop (@dnd-kit) do quadro de rotina:
  * reordenar colunas, reordenar tarefas e mover tarefas entre colunas com callbacks de persistência.
+ * Opera sempre sobre `allColumns` (estado mestre) para jamais apagar tarefas filtradas ao arrastar.
  */
 export function useRoutineBoardDnd({
   columns = [],
+  allColumns,
   setColumns,
+  disabled = false,
+  onDisabledInteraction,
   onTaskMove,
   onColumnReorder,
   onHideColumn,
 }: UseRoutineBoardDndOptions) {
-  const columnsRef = useRef<BoardColumn[]>(columns);
-  columnsRef.current = columns;
+  const displayColumnsRef = useRef<BoardColumn[]>(columns);
+  const masterColumns = allColumns ?? columns;
+  const masterColumnsRef = useRef<BoardColumn[]>(masterColumns);
+  const onDisabledInteractionRef = useLatestRef(onDisabledInteraction);
+  const onTaskMoveRef = useLatestRef(onTaskMove);
+  const onColumnReorderRef = useLatestRef(onColumnReorder);
+  const onHideColumnRef = useLatestRef(onHideColumn);
+
+  useIsomorphicLayoutEffect(() => {
+    displayColumnsRef.current = columns;
+    masterColumnsRef.current = masterColumns;
+  }, [columns, masterColumns]);
 
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -71,16 +89,12 @@ export function useRoutineBoardDnd({
   const lastOverIdRef = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
   const initialDragColumnsRef = useRef<BoardColumn[] | null>(null);
+  const initialTaskPositionRef = useRef<{
+    columnId: string;
+    index: number;
+  } | null>(null);
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+  const sensors = useDndSensors();
 
   /**
    * Estratégia de colisão inteligente para Kanban:
@@ -157,7 +171,7 @@ export function useRoutineBoardDnd({
     let overId = getFirstCollision(intersections, "id");
 
     if (overId != null) {
-      const currentCols = columnsRef.current;
+      const currentCols = displayColumnsRef.current;
       const targetColumn = currentCols.find((col) => col.id === overId);
 
       // Se o cursor estiver diretamente sobre o container de uma Coluna (vazia ou espaço livre)
@@ -200,134 +214,202 @@ export function useRoutineBoardDnd({
     });
   }, []);
 
-  const onDragStart = ({ active }: DragStartEvent) => {
-    const data = active.data.current;
-    activeDragTypeRef.current =
-      data?.type === "Column"
-        ? "Column"
-        : data?.type === "Task"
-          ? "Task"
-          : null;
-    setActiveColumn(data?.type === "Column" ? data.column : null);
-    setActiveTask(data?.type === "Task" ? data.task : null);
-    lastOverIdRef.current = null;
-    recentlyMovedToNewContainer.current = false;
-    initialDragColumnsRef.current = columnsRef.current;
-  };
-
-  const onDragOver = ({ active, over }: DragOverEvent) => {
-    if (!over || active.id === over.id) return;
-    const dragType = active.data.current?.type ?? activeDragTypeRef.current;
-    if (dragType !== "Task") return;
-
-    const currentCols = columnsRef.current;
-    const fromCol = findColumnByTask(currentCols, active.id);
-    const toCol =
-      currentCols.find((col) => col.id === over.id) ||
-      findColumnByTask(currentCols, over.id);
-
-    // Se não encontrou as colunas de origem e destino, ou se já estão na mesma coluna,
-    // não faz nada: o @dnd-kit cuida das animações visuais intra-coluna sem disparar re-renders de estado
-    if (!fromCol || !toCol || fromCol.id === toCol.id) return;
-
-    const isOverTask =
-      over.data.current?.type === "Task" ||
-      Boolean(findColumnByTask(currentCols, over.id));
-
-    recentlyMovedToNewContainer.current = true;
-    requestAnimationFrame(() => {
-      recentlyMovedToNewContainer.current = false;
-    });
-
-    setColumns((prev) => {
-      const next = moveTaskAcrossColumns(prev, active.id, over.id, isOverTask);
-      columnsRef.current = next;
-      return next;
-    });
-  };
-
-  const onDragCancel = () => {
-    if (initialDragColumnsRef.current) {
-      columnsRef.current = initialDragColumnsRef.current;
-      setColumns(initialDragColumnsRef.current);
-    }
+  const resetDragState = useCallback(() => {
     activeDragTypeRef.current = null;
     setActiveColumn(null);
     setActiveTask(null);
     lastOverIdRef.current = null;
     recentlyMovedToNewContainer.current = false;
     initialDragColumnsRef.current = null;
-  };
+    initialTaskPositionRef.current = null;
+  }, []);
 
-  const onDragEnd = ({ active, over }: DragEndEvent) => {
-    const previousColumns = initialDragColumnsRef.current ?? columnsRef.current;
-    const type = active.data.current?.type ?? activeDragTypeRef.current;
-    activeDragTypeRef.current = null;
-    setActiveColumn(null);
-    setActiveTask(null);
-    lastOverIdRef.current = null;
-    recentlyMovedToNewContainer.current = false;
-    initialDragColumnsRef.current = null;
-    if (!over) return;
-
-    const currentCols = columnsRef.current;
-
-    if (type === "Column") {
-      if (
-        over.id === "store-column-button" ||
-        over.data.current?.type === "ColumnStoreButton"
-      ) {
-        onHideColumn?.(String(active.id));
+  const onDragStart = useCallback(
+    ({ active }: DragStartEvent) => {
+      if (disabled) {
+        onDisabledInteractionRef.current?.();
+        resetDragState();
         return;
       }
 
-      let targetOverColId = over.id;
-      if (over.data.current?.type !== "Column") {
-        const colOfTask = findColumnByTask(currentCols, over.id);
-        if (colOfTask) {
-          targetOverColId = colOfTask.id;
-        }
-      }
+      const data = active.data.current;
+      const dragType =
+        data?.type === "Column"
+          ? "Column"
+          : data?.type === "Task"
+            ? "Task"
+            : null;
+      activeDragTypeRef.current = dragType;
+      setActiveColumn(dragType === "Column" ? data?.column : null);
+      setActiveTask(dragType === "Task" ? data?.task : null);
+      lastOverIdRef.current = null;
+      recentlyMovedToNewContainer.current = false;
+      initialDragColumnsRef.current = masterColumnsRef.current;
 
-      if (active.id !== targetOverColId) {
-        const next = reorderColumns(currentCols, active.id, targetOverColId);
-        columnsRef.current = next;
-        setColumns(next);
-        onColumnReorder?.(next, previousColumns);
+      if (dragType === "Task") {
+        const startCol = findColumnByTask(masterColumnsRef.current, active.id);
+        const startIdx = startCol
+          ? startCol.tasks.findIndex((t) => t.id === active.id)
+          : -1;
+        initialTaskPositionRef.current =
+          startCol && startIdx >= 0
+            ? { columnId: startCol.id, index: startIdx }
+            : null;
+      } else {
+        initialTaskPositionRef.current = null;
       }
-    } else if (type === "Task") {
+    },
+    [disabled, onDisabledInteractionRef, resetDragState],
+  );
+
+  const onDragOver = useCallback(
+    ({ active, over }: DragOverEvent) => {
+      if (disabled || !over || active.id === over.id) return;
+      const dragType = active.data.current?.type ?? activeDragTypeRef.current;
+      if (dragType !== "Task") return;
+
+      const currentCols = masterColumnsRef.current;
       const fromCol = findColumnByTask(currentCols, active.id);
       const toCol =
-        currentCols.find((c) => c.id === over.id) ||
+        currentCols.find((col) => col.id === over.id) ||
         findColumnByTask(currentCols, over.id);
 
-      if (!fromCol || !toCol) return;
+      // Se não encontrou as colunas de origem e destino, ou se já estão na mesma coluna,
+      // não faz nada: o @dnd-kit cuida das animações visuais intra-coluna sem disparar re-renders de estado
+      if (!fromCol || !toCol || fromCol.id === toCol.id) return;
 
-      let next = currentCols;
-      if (fromCol.id !== toCol.id) {
-        const isOverTask =
-          toCol.tasks.some((t) => t.id === over.id) ||
-          over.data.current?.type === "Task";
-        next = moveTaskAcrossColumns(
-          currentCols,
+      const isOverTask =
+        over.data.current?.type === "Task" ||
+        Boolean(findColumnByTask(currentCols, over.id));
+
+      recentlyMovedToNewContainer.current = true;
+      requestAnimationFrame(() => {
+        recentlyMovedToNewContainer.current = false;
+      });
+
+      setColumns((prev) => {
+        const next = moveTaskAcrossColumns(
+          prev,
           active.id,
           over.id,
           isOverTask,
         );
-      } else if (active.id !== over.id) {
-        next = reorderTasks(currentCols, active.id, over.id);
+        masterColumnsRef.current = next;
+        return next;
+      });
+    },
+    [disabled, setColumns],
+  );
+
+  const onDragCancel = useCallback(() => {
+    if (initialDragColumnsRef.current) {
+      masterColumnsRef.current = initialDragColumnsRef.current;
+      setColumns(initialDragColumnsRef.current);
+    }
+    resetDragState();
+  }, [resetDragState, setColumns]);
+
+  const onDragEnd = useCallback(
+    ({ active, over }: DragEndEvent) => {
+      const previousColumns =
+        initialDragColumnsRef.current ?? masterColumnsRef.current;
+      const initialTaskPos = initialTaskPositionRef.current;
+      const type = active.data.current?.type ?? activeDragTypeRef.current;
+      resetDragState();
+
+      if (disabled) {
+        return;
       }
 
-      columnsRef.current = next;
-      setColumns(next);
+      if (!over) {
+        // Se onDragOver já moveu o card para outra coluna e o usuário soltou fora de qualquer alvo,
+        // reverte para o snapshot inicial evitando inconsistência local vs backend.
+        if (previousColumns !== masterColumnsRef.current) {
+          masterColumnsRef.current = previousColumns;
+          setColumns(previousColumns);
+        }
+        return;
+      }
 
-      // Notifica callback de persistência FORA da função de atualização de estado do React
-      const targetCol = next.find((c) =>
-        c.tasks.some((t) => t.id === active.id),
-      );
-      if (targetCol) {
+      const currentCols = masterColumnsRef.current;
+
+      if (type === "Column") {
+        if (
+          over.id === "store-column-button" ||
+          over.data.current?.type === "ColumnStoreButton"
+        ) {
+          onHideColumnRef.current?.(String(active.id));
+          return;
+        }
+
+        let targetOverColId = over.id;
+        if (over.data.current?.type !== "Column") {
+          const colOfTask = findColumnByTask(currentCols, over.id);
+          if (colOfTask) {
+            targetOverColId = colOfTask.id;
+          }
+        }
+
+        if (active.id !== targetOverColId) {
+          const next = reorderColumns(currentCols, active.id, targetOverColId);
+          masterColumnsRef.current = next;
+          setColumns(next);
+          onColumnReorderRef.current?.(next, previousColumns);
+        }
+      } else if (type === "Task") {
+        const fromCol = findColumnByTask(currentCols, active.id);
+        const toCol =
+          currentCols.find((c) => c.id === over.id) ||
+          findColumnByTask(currentCols, over.id);
+
+        if (!fromCol || !toCol) {
+          if (previousColumns !== currentCols) {
+            masterColumnsRef.current = previousColumns;
+            setColumns(previousColumns);
+          }
+          return;
+        }
+
+        let next = currentCols;
+        if (fromCol.id !== toCol.id) {
+          const isOverTask =
+            toCol.tasks.some((t) => t.id === over.id) ||
+            over.data.current?.type === "Task";
+          next = moveTaskAcrossColumns(
+            currentCols,
+            active.id,
+            over.id,
+            isOverTask,
+          );
+        } else if (active.id !== over.id) {
+          next = reorderTasks(currentCols, active.id, over.id);
+        }
+
+        const targetCol = next.find((c) =>
+          c.tasks.some((t) => t.id === active.id),
+        );
+        if (!targetCol) return;
+
         const newIndex = targetCol.tasks.findIndex((t) => t.id === active.id);
-        onTaskMove?.(
+
+        // Evita setColumns e Server Action moveTasks quando o card volta exatamente à posição original
+        if (
+          initialTaskPos &&
+          targetCol.id === initialTaskPos.columnId &&
+          newIndex === initialTaskPos.index
+        ) {
+          if (next !== masterColumnsRef.current) {
+            masterColumnsRef.current = previousColumns;
+            setColumns(previousColumns);
+          }
+          return;
+        }
+
+        masterColumnsRef.current = next;
+        setColumns(next);
+
+        // Notifica callback de persistência FORA da função de atualização de estado do React
+        onTaskMoveRef.current?.(
           String(active.id),
           targetCol.id,
           newIndex,
@@ -335,14 +417,30 @@ export function useRoutineBoardDnd({
           previousColumns,
         );
       }
-    }
-  };
+    },
+    [
+      disabled,
+      onColumnReorderRef,
+      onHideColumnRef,
+      onTaskMoveRef,
+      resetDragState,
+      setColumns,
+    ],
+  );
 
-  return {
-    sensors,
-    activeColumn,
-    activeTask,
-    collisionDetection,
-    handlers: { onDragStart, onDragOver, onDragEnd, onDragCancel },
-  };
+  const handlers = useMemo(
+    () => ({ onDragStart, onDragOver, onDragEnd, onDragCancel }),
+    [onDragStart, onDragOver, onDragEnd, onDragCancel],
+  );
+
+  return useMemo(
+    () => ({
+      sensors,
+      activeColumn,
+      activeTask,
+      collisionDetection,
+      handlers,
+    }),
+    [sensors, activeColumn, activeTask, collisionDetection, handlers],
+  );
 }

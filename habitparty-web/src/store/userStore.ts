@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { type AvatarFrameId, getAvatarFrame } from "@/constants/avatarFrames";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import type { UserResponseDTO } from "@/types/user";
 
 export type { UserResponseDTO };
@@ -118,6 +119,7 @@ export interface UserState {
   togglePremium: () => void;
   triggerAchievementCheck: () => void;
   resetAchievementSession: () => void;
+  clearUserSession: () => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -231,4 +233,39 @@ export const useUserStore = create<UserState>((set) => ({
     set((state) => ({
       achievementSessionEpoch: state.achievementSessionEpoch + 1,
     })),
+  clearUserSession: () =>
+    set((state) => ({
+      user: null,
+      is_Premium: false,
+      lastStreakSecuredDate: null,
+      todayMetricsDate: null,
+      todayTaskCompleted: false,
+      todayFocusMinutes: 0,
+      achievementCheckSeq: 0,
+      achievementSessionEpoch: state.achievementSessionEpoch + 1,
+    })),
 }));
+
+/**
+ * Resolve de forma pura e segura a moldura ativa do avatar considerando o status Premium.
+ */
+export function resolveUserAvatarFrame(
+  avatarFrame?: string | null,
+  isPremium = false,
+): AvatarFrameId {
+  const candidate = avatarFrame ?? (isPremium ? "cosmic_gold" : "none");
+  const resolved = getAvatarFrame(candidate);
+  if (resolved.isPremium && !isPremium) {
+    return "none";
+  }
+  return resolved.id;
+}
+
+/**
+ * Retorna a moldura ativa diretamente do `userStore` (fonte única de verdade, sem localStorage/re-render extra).
+ */
+export function useActiveAvatarFrame(): AvatarFrameId {
+  const avatarFrame = useUserStore((s) => s.user?.avatarFrame);
+  const isPremium = useUserStore((s) => s.is_Premium);
+  return resolveUserAvatarFrame(avatarFrame, isPremium);
+}

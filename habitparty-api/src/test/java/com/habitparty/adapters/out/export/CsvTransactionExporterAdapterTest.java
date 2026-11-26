@@ -14,9 +14,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.PageImpl;
 
 import com.habitparty.adapters.in.web.dtos.response.TransactionHistoryResponseDTO;
+import com.habitparty.application.ports.TransactionCsvExporterPort;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.enums.TransactionType;
 
@@ -60,7 +60,12 @@ class CsvTransactionExporterAdapterTest {
         serverCreatedAt);
 
     StringWriter writer = new StringWriter();
-    adapter.exportTransactions(page -> new PageImpl<>(List.of(tx)), writer, tokyoZone);
+    adapter.exportTransactionsKeyset(
+        (cursorCreatedAt, cursorId) -> cursorId == null ? List.of(tx) : List.of(),
+        500,
+        TransactionCsvExporterPort.CsvExportOptions.defaults(tokyoZone),
+        writer,
+        null);
 
     String csv = writer.toString();
     assertTrue(csv.contains(expectedFormatted), () -> "CSV esperado com horário convertido: " + expectedFormatted + "\nObtido:\n" + csv);
@@ -89,12 +94,53 @@ class CsvTransactionExporterAdapterTest {
         LocalDateTime.of(2026, 11, 21, 10, 0, 0));
 
     StringWriter writer = new StringWriter();
-    adapter.exportTransactions(page -> new PageImpl<>(List.of(debtTx)), writer, ZoneId.of("UTC"));
+    adapter.exportTransactionsKeyset(
+        (cursorCreatedAt, cursorId) -> cursorId == null ? List.of(debtTx) : List.of(),
+        500,
+        TransactionCsvExporterPort.CsvExportOptions.defaults(ZoneId.of("UTC")),
+        writer,
+        null);
 
     String csv = writer.toString();
     assertTrue(csv.contains("Dívida Paga"), () -> "Esperado 'Dívida Paga' no CSV:\n" + csv);
     assertTrue(com.habitparty.application.usecases.transaction.ListUserTransactionsUseCase
         .resolveTypesForTab("SHOPPING")
         .containsAll(List.of(TransactionType.REWARD_BOUGHT, TransactionType.DEBT_PAID)));
+  }
+
+  @Test
+  @DisplayName("CSV deve respeitar o teto maxRows e converter datas usando storageZone configurado")
+  void respectsMaxRowsSafetyCapAndStorageZone() {
+    CsvTransactionExporterAdapter adapter = new CsvTransactionExporterAdapter();
+    TransactionHistory tx1 = new TransactionHistory(
+        UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+        new BigDecimal("1.00"), 5, null, TransactionType.TASK_COMPLETED,
+        "Item 1", null, null, null, null, null, LocalDateTime.of(2026, 11, 21, 12, 0, 0));
+    TransactionHistory tx2 = new TransactionHistory(
+        UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+        new BigDecimal("2.00"), 10, null, TransactionType.TASK_COMPLETED,
+        "Item 2", null, null, null, null, null, LocalDateTime.of(2026, 11, 21, 13, 0, 0));
+
+    StringWriter writer = new StringWriter();
+    var options = new TransactionCsvExporterPort.CsvExportOptions(
+        ZoneId.of("America/Sao_Paulo"),
+        java.util.Locale.forLanguageTag("pt-BR"),
+        com.habitparty.core.domain.enums.UserExperienceMode.GAMIFIED,
+        "DD/MM/YYYY",
+        "24h",
+        ZoneId.of("UTC"),
+        1);
+
+    adapter.exportTransactionsKeyset(
+        (cursorCreatedAt, cursorId) -> cursorId == null ? List.of(tx1, tx2) : List.of(),
+        2,
+        options,
+        writer,
+        null);
+
+    String csv = writer.toString();
+    assertTrue(csv.contains("Item 1"));
+    assertTrue(csv.contains("21/11/2026 09:00:00"), () -> "Esperado 09:00:00 (UTC->Sao_Paulo):\n" + csv);
+    assertTrue(!csv.contains("Item 2"), () -> "Não deveria exceder maxRows=1:\n" + csv);
   }
 }

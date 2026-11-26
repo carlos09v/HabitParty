@@ -1,12 +1,17 @@
-"use client";
-
-import { useSyncExternalStore } from "react";
 import type { FocusActiveTarget } from "@/types/focus";
 import {
   formatFocusDisplayTime,
   getFocusProgressPercent,
   getFocusTimerDerivedState,
 } from "@/utils/focusFormatters";
+import {
+  type FocusPipMode,
+  type FocusPipSnapshot,
+  getFocusPipSnapshot,
+  updateFocusPipSnapshot,
+} from "@/utils/focusPipState";
+
+export type { FocusPipMode, FocusPipSnapshot };
 
 interface DocumentPictureInPictureOptions {
   width?: number;
@@ -17,16 +22,6 @@ interface DocumentPictureInPictureOptions {
 interface DocumentPictureInPictureApi {
   window: Window | null;
   requestWindow(options?: DocumentPictureInPictureOptions): Promise<Window>;
-}
-
-export type FocusPipMode = "document" | "video" | null;
-
-export interface FocusPipSnapshot {
-  isOpen: boolean;
-  isSupported: boolean;
-  mode: FocusPipMode;
-  container: HTMLElement | null;
-  pipWindow: Window | null;
 }
 
 export interface VideoPipFrameData {
@@ -63,16 +58,6 @@ interface VideoPipPalette {
 const VIDEO_PIP_LOGICAL_WIDTH = 480;
 const VIDEO_PIP_LOGICAL_HEIGHT = 260;
 
-const SERVER_SNAPSHOT: FocusPipSnapshot = {
-  isOpen: false,
-  isSupported: true,
-  mode: null,
-  container: null,
-  pipWindow: null,
-};
-
-const listeners = new Set<() => void>();
-
 let activePipWindow: Window | null = null;
 let activeContainer: HTMLElement | null = null;
 let activeVideoEl: HTMLVideoElement | null = null;
@@ -81,26 +66,57 @@ let activeCanvasCtx: CanvasRenderingContext2D | null = null;
 let activeStream: MediaStream | null = null;
 let activeVideoTrack: MediaStreamTrack | null = null;
 let cachedVideoPipPalette: VideoPipPalette | null = null;
-let programmaticVideoSyncUntil = 0;
 let desiredVideoPlaying = false;
 let isVideoPipReady = false;
 let deferredPauseTimeoutId: number | null = null;
 let deferredPauseRvfcHandle: number | null = null;
-let clientSupportDetected: boolean | null = null;
 let openGeneration = 0;
 let pendingOpenPromise: Promise<boolean> | null = null;
 
-let currentSnapshot: FocusPipSnapshot = SERVER_SNAPSHOT;
+// Contadores exatos de eventos programáticos play/pause em vez de janela cega de 450ms
+// (um clique real de Play logo após um pause programático nunca é engolido).
+let pendingProgrammaticPlays = 0;
+let pendingProgrammaticPauses = 0;
+let programmaticCounterResetId: number | null = null;
 
-function detectFocusPipSupport(): boolean {
-  if (typeof window === "undefined") return false;
-  if ("documentPictureInPicture" in window) return true;
-  if (typeof document !== "undefined") {
-    return Boolean(
-      document.pictureInPictureEnabled &&
-        typeof HTMLVideoElement !== "undefined" &&
-        "requestPictureInPicture" in HTMLVideoElement.prototype,
-    );
+// Cache leve de truncation no Canvas para não re-medir char a char a 1Hz
+const fitTextCache = new Map<string, string>();
+const MAX_FIT_TEXT_CACHE_SIZE = 64;
+
+function scheduleProgrammaticCounterReset() {
+  if (typeof window === "undefined") return;
+  if (programmaticCounterResetId !== null) {
+    window.clearTimeout(programmaticCounterResetId);
+  }
+  programmaticCounterResetId = window.setTimeout(() => {
+    programmaticCounterResetId = null;
+    pendingProgrammaticPlays = 0;
+    pendingProgrammaticPauses = 0;
+  }, 250);
+}
+
+function markProgrammaticPlay() {
+  pendingProgrammaticPlays += 1;
+  scheduleProgrammaticCounterReset();
+}
+
+function markProgrammaticPause() {
+  pendingProgrammaticPauses += 1;
+  scheduleProgrammaticCounterReset();
+}
+
+export function consumeProgrammaticVideoPlay(): boolean {
+  if (pendingProgrammaticPlays > 0) {
+    pendingProgrammaticPlays -= 1;
+    return true;
+  }
+  return false;
+}
+
+export function consumeProgrammaticVideoPause(): boolean {
+  if (pendingProgrammaticPauses > 0) {
+    pendingProgrammaticPauses -= 1;
+    return true;
   }
   return false;
 }
@@ -116,77 +132,18 @@ function getDocumentPipApi(): DocumentPictureInPictureApi | null {
   );
 }
 
-function rebuildSnapshot() {
-  if (clientSupportDetected === null && typeof window !== "undefined") {
-    clientSupportDetected = detectFocusPipSupport();
-  }
-  const isSupported = clientSupportDetected ?? false;
+function publishPipSnapshot() {
   const mode: FocusPipMode = activePipWindow
     ? "document"
     : activeVideoEl
       ? "video"
       : null;
 
-  const next: FocusPipSnapshot =
-    mode === null && isSupported === SERVER_SNAPSHOT.isSupported
-      ? SERVER_SNAPSHOT
-      : {
-          isOpen: mode !== null,
-          isSupported,
-          mode,
-          container: activeContainer,
-          pipWindow: activePipWindow,
-        };
-
-  if (
-    currentSnapshot.isOpen === next.isOpen &&
-    currentSnapshot.isSupported === next.isSupported &&
-    currentSnapshot.mode === next.mode &&
-    currentSnapshot.container === next.container &&
-    currentSnapshot.pipWindow === next.pipWindow
-  ) {
-    return;
-  }
-
-  currentSnapshot = next;
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function ensureInitialSnapshot(): FocusPipSnapshot {
-  if (typeof window === "undefined") {
-    return SERVER_SNAPSHOT;
-  }
-  if (clientSupportDetected === null) {
-    clientSupportDetected = detectFocusPipSupport();
-    currentSnapshot =
-      clientSupportDetected === SERVER_SNAPSHOT.isSupported
-        ? SERVER_SNAPSHOT
-        : {
-            isOpen: false,
-            isSupported: clientSupportDetected,
-            mode: null,
-            container: null,
-            pipWindow: null,
-          };
-  }
-  return currentSnapshot;
-}
-
-function getSnapshot(): FocusPipSnapshot {
-  return ensureInitialSnapshot();
-}
-
-function getServerSnapshot(): FocusPipSnapshot {
-  return SERVER_SNAPSHOT;
+  updateFocusPipSnapshot({
+    mode,
+    container: activeContainer,
+    pipWindow: activePipWindow,
+  });
 }
 
 export function syncDocumentPipTheme(
@@ -377,8 +334,8 @@ function cancelDeferredVideoPause(
 
 function pauseVideoProgrammatically(video: HTMLVideoElement): void {
   if (activeVideoEl !== video || desiredVideoPlaying) return;
-  programmaticVideoSyncUntil = Date.now() + 450;
   if (!video.paused) {
+    markProgrammaticPause();
     video.pause();
   }
 }
@@ -389,7 +346,6 @@ function scheduleDeferredVideoPause(video: HTMLVideoElement): void {
     return;
   }
 
-  programmaticVideoSyncUntil = Date.now() + 450;
   const finishPause = () => {
     cancelDeferredVideoPause(video);
     pauseVideoProgrammatically(video);
@@ -411,6 +367,10 @@ function scheduleDeferredVideoPause(video: HTMLVideoElement): void {
 function teardownVideoPip() {
   cancelDeferredVideoPause(activeVideoEl);
   cleanupVideoResources(activeVideoEl, activeStream);
+  if (activeCanvasEl) {
+    activeCanvasEl.width = 0;
+    activeCanvasEl.height = 0;
+  }
   activeVideoTrack = null;
   activeStream = null;
   activeVideoEl = null;
@@ -418,7 +378,13 @@ function teardownVideoPip() {
   activeCanvasCtx = null;
   desiredVideoPlaying = false;
   isVideoPipReady = false;
-  programmaticVideoSyncUntil = 0;
+  pendingProgrammaticPlays = 0;
+  pendingProgrammaticPauses = 0;
+  if (programmaticCounterResetId !== null && typeof window !== "undefined") {
+    window.clearTimeout(programmaticCounterResetId);
+    programmaticCounterResetId = null;
+  }
+  fitTextCache.clear();
   invalidateVideoPipThemeCache();
 }
 
@@ -426,19 +392,17 @@ export function getActiveVideoPipElement(): HTMLVideoElement | null {
   return activeVideoEl;
 }
 
-export function isProgrammaticVideoPipSync(): boolean {
-  return Date.now() < programmaticVideoSyncUntil;
-}
-
 export function syncVideoPipPlayback(isRunning: boolean): void {
   desiredVideoPlaying = isRunning;
   const video = activeVideoEl;
   if (!video || !isVideoPipReady) return;
-  programmaticVideoSyncUntil = Date.now() + 450;
   if (isRunning) {
     cancelDeferredVideoPause(video);
     if (video.paused) {
-      void video.play().catch(() => {});
+      markProgrammaticPlay();
+      void video.play().catch(() => {
+        pendingProgrammaticPlays = Math.max(0, pendingProgrammaticPlays - 1);
+      });
     }
   } else if (!video.paused) {
     scheduleDeferredVideoPause(video);
@@ -450,7 +414,7 @@ export function closeFocusPip() {
   pendingOpenPromise = null;
   teardownDocumentPip();
   teardownVideoPip();
-  rebuildSnapshot();
+  publishPipSnapshot();
 }
 
 export function buildVideoPipFrameData(
@@ -556,22 +520,34 @@ function fitCanvasText(
   text: string,
   maxWidth: number,
 ): string {
-  if (ctx.measureText(text).width <= maxWidth) {
-    return text;
+  const cacheKey = `${ctx.font}|${maxWidth}|${text}`;
+  const cached = fitTextCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
   }
-  let end = text.length;
-  while (
-    end > 1 &&
-    ctx.measureText(`${text.slice(0, end)}…`).width > maxWidth
-  ) {
-    end -= 1;
+
+  let result = text;
+  if (ctx.measureText(text).width > maxWidth) {
+    let end = text.length;
+    while (
+      end > 1 &&
+      ctx.measureText(`${text.slice(0, end)}…`).width > maxWidth
+    ) {
+      end -= 1;
+    }
+    result = `${text.slice(0, end).trimEnd()}…`;
   }
-  return `${text.slice(0, end).trimEnd()}…`;
+
+  if (fitTextCache.size >= MAX_FIT_TEXT_CACHE_SIZE) {
+    fitTextCache.clear();
+  }
+  fitTextCache.set(cacheKey, result);
+  return result;
 }
 
 export function renderVideoPipFrame(frame: VideoPipFrameData) {
   const canvas = activeCanvasEl;
-  if (!canvas) return;
+  if (!canvas || canvas.width === 0 || canvas.height === 0) return;
   const ctx = activeCanvasCtx ?? canvas.getContext("2d", { alpha: false });
   if (!ctx) return;
   activeCanvasCtx = ctx;
@@ -666,7 +642,7 @@ export function renderVideoPipFrame(frame: VideoPipFrameData) {
     !desiredVideoPlaying &&
     video.paused
   ) {
-    programmaticVideoSyncUntil = Date.now() + 450;
+    markProgrammaticPlay();
     void video
       .play()
       .then(() => {
@@ -674,8 +650,39 @@ export function renderVideoPipFrame(frame: VideoPipFrameData) {
           scheduleDeferredVideoPause(video);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        pendingProgrammaticPlays = Math.max(0, pendingProgrammaticPlays - 1);
+      });
   }
+}
+
+function createEfficientCanvasStream(canvas: HTMLCanvasElement): {
+  stream: MediaStream;
+  track: MediaStreamTrack | null;
+} {
+  // Prefere captureStream(0) + track.requestFrame() sob demanda (15× menos encoding que 15fps fixos).
+  // Em navegadores sem requestFrame() (ex.: Firefox), recai para 1fps (suficiente para relógio de 1Hz).
+  try {
+    const manualStream = canvas.captureStream(0);
+    const manualTrack = manualStream.getVideoTracks()[0] ?? null;
+    if (
+      manualTrack &&
+      typeof (manualTrack as MediaStreamTrack & { requestFrame?: () => void })
+        .requestFrame === "function"
+    ) {
+      return { stream: manualStream, track: manualTrack };
+    }
+    for (const t of manualStream.getTracks()) {
+      t.stop();
+    }
+  } catch {
+    // Fallback abaixo
+  }
+  const fallbackStream = canvas.captureStream(1);
+  return {
+    stream: fallbackStream,
+    track: fallbackStream.getVideoTracks()[0] ?? null,
+  };
 }
 
 async function executeOpenFocusPip(
@@ -749,13 +756,13 @@ async function executeOpenFocusPip(
         if (activePipWindow === currentPipWin) {
           activePipWindow = null;
           activeContainer = null;
-          rebuildSnapshot();
+          publishPipSnapshot();
         }
       });
 
-      rebuildSnapshot();
+      publishPipSnapshot();
       return true;
-    } catch {
+    } catch (err) {
       if (pipWin && !pipWin.closed) {
         try {
           pipWin.close();
@@ -763,9 +770,17 @@ async function executeOpenFocusPip(
           // Ignore close errors
         }
       }
-      teardownDocumentPip();
-      rebuildSnapshot();
+      // Verifica geração ANTES de derrubar estado global para não fechar outra janela PiP recém-aberta
       if (myGeneration !== openGeneration) return false;
+      teardownDocumentPip();
+      publishPipSnapshot();
+
+      // Se a API Document PiP existe e rejeitou por cancelamento/gesto do usuário,
+      // não dispara `onUnsupported` nem tenta Video PiP sem user activation.
+      const errorName = err instanceof Error ? err.name : "";
+      if (errorName === "NotAllowedError" || errorName === "AbortError") {
+        return false;
+      }
     }
   }
 
@@ -807,6 +822,15 @@ async function executeOpenFocusPip(
       activeCanvasCtx = canvas.getContext("2d", { alpha: false });
       desiredVideoPlaying = Boolean(options?.isInitiallyRunning);
       isVideoPipReady = false;
+
+      const { stream, track } = createEfficientCanvasStream(canvas);
+      localStream = stream;
+      activeStream = stream;
+      activeVideoTrack = track;
+      activeVideoEl = video;
+      video.srcObject = stream;
+      document.body.appendChild(video);
+
       renderVideoPipFrame(
         options?.initialVideoFrame ?? {
           timeText: "25:00",
@@ -819,18 +843,10 @@ async function executeOpenFocusPip(
         },
       );
 
-      const stream = canvas.captureStream(15);
-      localStream = stream;
-      activeStream = stream;
-      activeVideoTrack = stream.getVideoTracks()[0] ?? null;
-      activeVideoEl = video;
-      video.srcObject = stream;
-      document.body.appendChild(video);
-
       video.addEventListener("leavepictureinpicture", () => {
         if (activeVideoEl === video) {
           teardownVideoPip();
-          rebuildSnapshot();
+          publishPipSnapshot();
         }
       });
 
@@ -848,15 +864,19 @@ async function executeOpenFocusPip(
 
       isVideoPipReady = true;
       syncVideoPipPlayback(desiredVideoPlaying);
-      rebuildSnapshot();
+      publishPipSnapshot();
       return true;
     } catch {
+      if (myGeneration !== openGeneration) {
+        cleanupVideoResources(localVideo, localStream);
+        return false;
+      }
       if (activeVideoEl === localVideo) {
         teardownVideoPip();
       } else {
         cleanupVideoResources(localVideo, localStream);
       }
-      rebuildSnapshot();
+      publishPipSnapshot();
     }
   }
 
@@ -888,23 +908,9 @@ export async function toggleFocusPip(
   if (pendingOpenPromise) {
     return pendingOpenPromise;
   }
-  if (ensureInitialSnapshot().isOpen) {
+  if (getFocusPipSnapshot().isOpen) {
     closeFocusPip();
     return false;
   }
   return openFocusPip(options);
-}
-
-export function useFocusPip() {
-  const snapshot = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
-  return {
-    ...snapshot,
-    openPip: openFocusPip,
-    closePip: closeFocusPip,
-    togglePip: toggleFocusPip,
-  };
 }

@@ -7,8 +7,11 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.habitparty.application.ports.FriendshipRepository;
 import com.habitparty.application.ports.SocialNotificationRepository;
@@ -31,6 +34,7 @@ public class NotifyFriendsMilestoneUseCase {
   private final SocialNotificationRepository notificationRepository;
   private final UserRepository userRepository;
   private final UserTimeResolver timeResolver;
+  private TransactionTemplate requiresNewTx;
 
   public NotifyFriendsMilestoneUseCase(
       FriendshipRepository friendshipRepository,
@@ -43,7 +47,19 @@ public class NotifyFriendsMilestoneUseCase {
     this.timeResolver = timeResolver;
   }
 
-  @Transactional
+  @Autowired(required = false)
+  public void setTransactionManager(PlatformTransactionManager transactionManager) {
+    if (transactionManager != null) {
+      TransactionTemplate template = new TransactionTemplate(transactionManager);
+      template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+      this.requiresNewTx = template;
+    }
+  }
+
+  /**
+   * Executa em transação isolada {@code REQUIRES_NEW} com captura externa de erro para nunca
+   * marcar a transação pai (pagamentos, resgates, conclusão de tarefas) como {@code rollbackOnly}.
+   */
   public void notifyAchievementUnlocked(UUID actorId, Achievement achievement) {
     if (actorId == null || achievement == null) {
       return;
@@ -53,79 +69,98 @@ public class NotifyFriendsMilestoneUseCase {
       return;
     }
     try {
-      User actor = userRepository.findById(actorId).orElse(null);
-      if (actor == null
-          || actor.getProfileVisibility() == PrivacyLevel.PRIVATE
-          || actor.getAchievementsVisibility() == PrivacyLevel.PRIVATE) {
-        return;
-      }
-
-      List<UUID> friendIds = friendshipRepository.findAcceptedFriendIds(actorId);
-      if (friendIds.isEmpty()) {
-        return;
-      }
-
-      Instant now = timeResolver.nowInstant();
-      String payload = SocialNotificationPayloadHelper.achievementUnlocked(
-          actor,
-          achievement.getCode(),
-          achievement.getTitle(),
-          rarity);
-
-      List<SocialNotification> batch = new ArrayList<>(friendIds.size());
-      for (UUID friendId : friendIds) {
-        if (!actorId.equals(friendId)) {
-          batch.add(SocialNotification.create(
-              friendId,
-              actorId,
-              SocialNotificationType.FRIEND_MILESTONE_ACHIEVEMENT,
-              achievement.getId(),
-              payload,
-              now));
-        }
-      }
-      notificationRepository.saveAll(batch);
+      executeInIsolatedTransaction(() -> doNotifyAchievementUnlocked(actorId, achievement, rarity));
     } catch (Exception e) {
       log.warn("Falha não-bloqueante ao notificar amigos sobre conquista: {}", e.getMessage());
     }
   }
 
-  @Transactional
   public void notifyLevelMilestone(UUID actorId, UserLevel newLevel) {
     if (actorId == null || newLevel == null || newLevel.ordinal() < UserLevel.CHALLENGER.ordinal()) {
       return;
     }
     try {
-      User actor = userRepository.findById(actorId).orElse(null);
-      if (actor == null
-          || actor.getProfileVisibility() == PrivacyLevel.PRIVATE
-          || actor.getStatsVisibility() == PrivacyLevel.PRIVATE) {
-        return;
-      }
-
-      List<UUID> friendIds = friendshipRepository.findAcceptedFriendIds(actorId);
-      if (friendIds.isEmpty()) {
-        return;
-      }
-
-      Instant now = timeResolver.nowInstant();
-      String payload = SocialNotificationPayloadHelper.levelUp(actor, newLevel);
-
-      List<SocialNotification> batch = new ArrayList<>(friendIds.size());
-      for (UUID friendId : friendIds) {
-        if (!actorId.equals(friendId)) {
-          batch.add(SocialNotification.create(
-              friendId,
-              actorId,
-              SocialNotificationType.FRIEND_MILESTONE_LEVEL,
-              null,
-              payload,
-              now));
-        }
-      }
-      notificationRepository.saveAll(batch);
+      executeInIsolatedTransaction(() -> doNotifyLevelMilestone(actorId, newLevel));
     } catch (Exception e) {
       log.warn("Falha não-bloqueante ao notificar amigos sobre avanço de nível: {}", e.getMessage());
+    }
+  }
+
+  private void executeInIsolatedTransaction(Runnable action) {
+    if (requiresNewTx != null) {
+      requiresNewTx.executeWithoutResult(status -> action.run());
+    } else {
+      action.run();
+    }
+  }
+
+  private void doNotifyAchievementUnlocked(UUID actorId, Achievement achievement, AchievementRarity rarity) {
+    User actor = userRepository.findById(actorId).orElse(null);
+    if (actor == null
+        || actor.getProfileVisibility() == PrivacyLevel.PRIVATE
+        || actor.getAchievementsVisibility() == PrivacyLevel.PRIVATE) {
+      return;
+    }
+
+    List<UUID> friendIds = friendshipRepository.findAcceptedFriendIds(actorId);
+    if (friendIds.isEmpty()) {
+      return;
+    }
+
+    Instant now = timeResolver.nowInstant();
+    String payload = SocialNotificationPayloadHelper.achievementUnlocked(
+        actor,
+        achievement.getCode(),
+        achievement.getTitle(),
+        rarity);
+
+    List<SocialNotification> batch = new ArrayList<>(friendIds.size());
+    for (UUID friendId : friendIds) {
+      if (!actorId.equals(friendId)) {
+        batch.add(SocialNotification.create(
+            friendId,
+            actorId,
+            SocialNotificationType.FRIEND_MILESTONE_ACHIEVEMENT,
+            achievement.getId(),
+            payload,
+            now));
+      }
+    }
+    if (!batch.isEmpty()) {
+      notificationRepository.saveAll(batch);
+    }
+  }
+
+  private void doNotifyLevelMilestone(UUID actorId, UserLevel newLevel) {
+    User actor = userRepository.findById(actorId).orElse(null);
+    if (actor == null
+        || actor.getProfileVisibility() == PrivacyLevel.PRIVATE
+        || actor.getStatsVisibility() == PrivacyLevel.PRIVATE) {
+      return;
+    }
+
+    List<UUID> friendIds = friendshipRepository.findAcceptedFriendIds(actorId);
+    if (friendIds.isEmpty()) {
+      return;
+    }
+
+    Instant now = timeResolver.nowInstant();
+    String payload = SocialNotificationPayloadHelper.levelUp(actor, newLevel);
+
+    List<SocialNotification> batch = new ArrayList<>(friendIds.size());
+    for (UUID friendId : friendIds) {
+      if (!actorId.equals(friendId)) {
+        batch.add(SocialNotification.create(
+            friendId,
+            actorId,
+            SocialNotificationType.FRIEND_MILESTONE_LEVEL,
+            null,
+            payload,
+            now));
+      }
+    }
+    if (!batch.isEmpty()) {
+      notificationRepository.saveAll(batch);
     }
   }
 }

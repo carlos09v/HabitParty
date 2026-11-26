@@ -1,36 +1,40 @@
 package com.habitparty.application.usecases.auth;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
+import java.time.Duration;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.EmailSenderPort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.UserTokenRepository;
-import com.habitparty.core.domain.entities.EmailDispatchLog;
 import com.habitparty.core.domain.entities.User;
-import com.habitparty.core.domain.entities.UserToken;
-import com.habitparty.core.domain.enums.EmailDispatchStatus;
 import com.habitparty.core.domain.enums.EmailType;
 import com.habitparty.core.domain.enums.UserTokenType;
 
 @Service
 public class RequestPasswordResetUseCase {
   private static final Logger log = LoggerFactory.getLogger(RequestPasswordResetUseCase.class);
+  private static final Duration PASSWORD_RESET_TTL = Duration.ofMinutes(15);
 
   private final UserRepository userRepository;
   private final UserTokenRepository tokenRepository;
   private final EmailSenderPort emailSender;
   private final EmailDispatchLogRepository emailLogPort;
   private final String frontendUrl;
+  private AsyncAuthEmailDispatcher asyncEmailDispatcher;
+  private TransactionOperations transactionOperations;
 
+  @Autowired
   public RequestPasswordResetUseCase(
       UserRepository userRepository,
       UserTokenRepository tokenRepository,
@@ -41,50 +45,50 @@ public class RequestPasswordResetUseCase {
     this.tokenRepository = tokenRepository;
     this.emailSender = emailSender;
     this.emailLogPort = emailLogPort;
-    this.frontendUrl = frontendUrl.endsWith("/") ? frontendUrl.substring(0, frontendUrl.length() - 1) : frontendUrl;
+    this.frontendUrl = EmailTokenDispatchService.normalizeFrontendUrl(frontendUrl);
+  }
+
+  @Autowired(required = false)
+  public void setAsyncEmailDispatcher(@Nullable AsyncAuthEmailDispatcher asyncEmailDispatcher) {
+    this.asyncEmailDispatcher = asyncEmailDispatcher;
+  }
+
+  @Autowired(required = false)
+  public void setTransactionManager(@Nullable PlatformTransactionManager transactionManager) {
+    this.transactionOperations = transactionManager != null
+        ? new TransactionTemplate(transactionManager)
+        : null;
   }
 
   public void execute(String email) {
-    if (email == null) {
+    if (email == null || email.isBlank()) {
       return;
     }
-    var userOptional = userRepository.findByEmail(email.trim().toLowerCase());
+    var userOptional = userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT));
     if (userOptional.isEmpty()) {
-      log.info("[RequestPasswordReset] E-mail não encontrado no banco: {}", email);
+      log.debug("[RequestPasswordReset] Solicitação ignorada para conta inexistente.");
       return;
     }
 
     User user = userOptional.get();
-
-    tokenRepository.invalidateActiveTokensByUserIdAndType(user.getId(), UserTokenType.PASSWORD_RESET);
-
-    String rawTokenValue = UUID.randomUUID().toString();
-    String hashedTokenValue = UserToken.hashToken(rawTokenValue);
-
-    UserToken token = new UserToken(
-        UUID.randomUUID(),
+    String rawTokenValue = EmailTokenDispatchService.issueHashedToken(
         user.getId(),
         UserTokenType.PASSWORD_RESET,
-        hashedTokenValue,
-        Instant.now().plus(15, ChronoUnit.MINUTES),
-        false
-    );
-
-    tokenRepository.save(token);
+        PASSWORD_RESET_TTL,
+        tokenRepository,
+        transactionOperations);
 
     String resetLink = frontendUrl + "/reset-password?token=" + rawTokenValue;
-    boolean success = emailSender.sendPasswordResetEmail(user.getEmail(), resetLink);
-
-    emailLogPort.save(new EmailDispatchLog(
-        UUID.randomUUID(),
+    EmailTokenDispatchService.dispatchOrSendSync(
         user.getId(),
-        null,
-        EmailType.PASSWORD_RESET,
         user.getEmail(),
+        EmailType.PASSWORD_RESET,
         "Recuperação de Senha - HabitParty",
-        success ? EmailDispatchStatus.SENT : EmailDispatchStatus.FAILED,
-        success ? null : "Falha ao enviar e-mail via Resend",
-        LocalDateTime.now()
-    ));
+        "Falha ao enviar e-mail via Resend",
+        asyncEmailDispatcher != null
+            ? () -> asyncEmailDispatcher.dispatchPasswordReset(user.getId(), user.getEmail(), resetLink)
+            : null,
+        () -> emailSender.sendPasswordResetEmail(user.getEmail(), resetLink),
+        emailLogPort);
   }
 }

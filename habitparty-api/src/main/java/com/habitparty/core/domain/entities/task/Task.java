@@ -9,14 +9,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.OwnedByUser;
 import com.habitparty.core.domain.enums.task.TaskDifficulty;
 import com.habitparty.core.domain.enums.task.TaskPriority;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public abstract class Task {
+public abstract sealed class Task implements OwnedByUser permits Habit, Daily, Todo {
   private UUID id;
   private UUID boardColumnId; // FK (Soft-link)
   private UUID userId; // FK (Soft-link)
@@ -62,12 +62,6 @@ public abstract class Task {
     this.dueDate = dueDate;
     this.createdAt = createdAt;
     this.checklist = checklist != null ? checklist : new ArrayList<>();
-  }
-
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
   }
 
   // Métodos Abstratos (Os filhos são obrigados a implementar!)

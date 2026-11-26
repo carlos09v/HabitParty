@@ -2,11 +2,14 @@ package com.habitparty.application.usecases.achievement;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,8 @@ import com.habitparty.core.domain.enums.UserLevel;
 
 @Service
 public class EvaluateUserAchievementsUseCase {
+  private static final Logger log = LoggerFactory.getLogger(EvaluateUserAchievementsUseCase.class);
+
   private final AchievementRepository achievementPort;
   private final UserAchievementRepository userAchievementPort;
   private final ProfileHighlightRepository profileHighlightPort;
@@ -111,17 +116,20 @@ public class EvaluateUserAchievementsUseCase {
     return executeWithSnapshot(user, null).newlyUnlocked();
   }
 
+  /**
+   * Serializa avaliações assíncronas concorrentes por usuário usando {@code FOR UPDATE},
+   * prevenindo PK duplicada, notificações duplicadas e lost update em {@code achievementPoints}.
+   */
   @Transactional
   public List<Achievement> executeForUserId(UUID userId) {
     if (userId == null) {
       return List.of();
     }
-    return userPort.findById(userId)
+    return userPort.findByIdForUpdate(userId)
         .map(this::execute)
         .orElseGet(List::of);
   }
 
-  @Transactional
   public void notifyLevelMilestoneIfReached(UUID userId, UserLevel reachedLevel) {
     if (socialMilestoneNotifier != null && userId != null && reachedLevel != null) {
       socialMilestoneNotifier.notifyLevelMilestone(userId, reachedLevel);
@@ -192,13 +200,17 @@ public class EvaluateUserAchievementsUseCase {
     List<UserAchievement> allUnlocks = existingUnlocks;
     if (!newlyUnlockedRecords.isEmpty()) {
       List<UserAchievement> savedNew = userAchievementPort.saveAll(newlyUnlockedRecords);
-      allUnlocks = new ArrayList<>(existingUnlocks.size() + savedNew.size());
+      allUnlocks = new ArrayList<>(existingUnlocks.size() + newlyUnlockedRecords.size());
       allUnlocks.addAll(existingUnlocks);
       allUnlocks.addAll(savedNew.isEmpty() ? newlyUnlockedRecords : savedNew);
 
       if (socialMilestoneNotifier != null) {
         for (Achievement unlocked : newlyUnlockedAchievements) {
-          socialMilestoneNotifier.notifyAchievementUnlocked(user.getId(), unlocked);
+          try {
+            socialMilestoneNotifier.notifyAchievementUnlocked(user.getId(), unlocked);
+          } catch (Exception e) {
+            log.warn("Falha não-bloqueante ao notificar marco de conquista {}: {}", unlocked.getCode(), e.getMessage());
+          }
         }
       }
     }
@@ -237,7 +249,7 @@ public class EvaluateUserAchievementsUseCase {
         .collect(Collectors.toSet());
     Set<String> unlockedCodes = catalog.stream()
         .filter(a -> unlockedAchievementIds.contains(a.getId()))
-        .map(a -> a.getCode().trim().toUpperCase())
+        .map(a -> a.getCode().trim().toUpperCase(Locale.ROOT))
         .collect(Collectors.toSet());
 
     if (unlockedCodes.isEmpty()) {

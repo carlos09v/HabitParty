@@ -1,10 +1,11 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { ArchiveRestore, Columns3, SquarePlus } from "lucide-react";
+import { ArchiveRestore, Columns3, Crown, SquarePlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
+import { DEFAULT_BOARD_FILTERS } from "@/constants/task";
 import type { RoutineFiltersProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { BoardAlignmentSelector } from "./filters/BoardAlignmentSelector";
@@ -33,6 +34,7 @@ function StoreColumnButtonUI({
   // Apenas considera "isOver" se o elemento arrastado for de fato uma Coluna, nunca um Card de Tarefa
   const isOverValid = isOver && isDraggingColumn;
   const hasHiddenColumns = totalCount > visibleCount;
+  const hasSurplusColumns = totalCount > maxColumns;
 
   return (
     <button
@@ -50,7 +52,7 @@ function StoreColumnButtonUI({
             : t("storeColumnManageTitle")
       }
       className={cn(
-        "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-[transform,background-color,border-color,color] cursor-pointer select-none active:scale-98 shrink-0 px-3 py-2.5 text-body-s",
+        "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-[transform,background-color,border-color,color] cursor-pointer select-none active:scale-98 shrink-0 px-3 py-2.5 text-body-s focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
         isOverValid
           ? "bg-amber-500/20 border-amber-500 text-amber-900 dark:bg-gold/25 dark:border-gold dark:text-white ring-2 ring-amber-500/50 dark:ring-gold/70 dark:shadow-glow-gold scale-105"
           : isDraggingColumn
@@ -61,13 +63,18 @@ function StoreColumnButtonUI({
       {isDraggingColumn ? (
         <ArchiveRestore
           size={15}
+          aria-hidden="true"
           className={cn(
             "text-amber-700 dark:text-gold transition-transform",
             isOverValid && "scale-110",
           )}
         />
       ) : (
-        <Columns3 size={15} className="text-primary dark:text-primary-light" />
+        <Columns3
+          size={15}
+          aria-hidden="true"
+          className="text-primary dark:text-primary-light"
+        />
       )}
       <span>
         {isOverValid
@@ -76,14 +83,20 @@ function StoreColumnButtonUI({
             ? t("storeDragging")
             : t("columnsLabel")}
       </span>
-      <span className="text-primary dark:text-gold font-bold">
-        {totalCount}/{maxColumns}
+      <span className="text-primary dark:text-gold font-bold tabular-nums">
+        {hasSurplusColumns
+          ? `${visibleCount}/${maxColumns}`
+          : `${totalCount}/${maxColumns}`}
       </span>
-      {hasHiddenColumns && !isDraggingColumn && (
+      {!isDraggingColumn && hasSurplusColumns ? (
+        <span className="rounded bg-amber-500/12 border border-amber-500/30 dark:bg-gold/12 dark:border-gold/30 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-amber-800 dark:text-gold">
+          {t("surplusTotalBadge", { total: totalCount })}
+        </span>
+      ) : hasHiddenColumns && !isDraggingColumn ? (
         <span className="rounded bg-surface border border-neutral-700/80 dark:bg-white/10 dark:border-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-neutral-300">
           {t("visibleCountBadge", { count: visibleCount })}
         </span>
-      )}
+      ) : null}
     </button>
   );
 }
@@ -106,13 +119,7 @@ export function RoutineFilters({
   search = "",
   onSearch,
   viewMode,
-  filters = {
-    taskType: "all",
-    difficulty: "all",
-    priority: "all",
-    status: "all",
-    tag: null,
-  },
+  filters = DEFAULT_BOARD_FILTERS,
   onFilterChange,
   alignment = "left",
   onAlignmentChange,
@@ -122,7 +129,9 @@ export function RoutineFilters({
   onOpenCreateTask,
   maxColumns = 4,
   isPremium = false,
+  isReadOnly = false,
   canCreateColumn = true,
+  canCreateTask = true,
   visibleColumnIds = [],
   totalColumnsCount,
   onOpenColumnsDrawer,
@@ -172,31 +181,57 @@ export function RoutineFilters({
         />
       )}
 
-      <button
-        type="button"
-        onClick={onOpenCreateColumn}
-        disabled={!canCreateColumn}
-        title={
-          !canCreateColumn
-            ? !isPremium
-              ? t("newColumnFreeLimitTitle", { max: maxColumns })
-              : t("newColumnMaxReachedTitle", { max: maxColumns })
-            : t("newColumnCreateTitle")
-        }
-        className={cn(
-          "flex items-center gap-1.5 rounded-lg bg-card dark:bg-surface border font-semibold transition-[transform,background-color,border-color,color] shadow-xs shrink-0 px-3 py-2.5 text-body-s",
-          canCreateColumn
-            ? "border-neutral-700 text-neutral-100 hover:bg-surface hover:border-primary/40 hover:text-primary dark:border-white/15 dark:text-neutral-100 dark:hover:bg-surface-hover dark:hover:border-gold dark:hover:text-gold cursor-pointer active:scale-98"
-            : "border-neutral-700/60 text-neutral-400 bg-surface dark:border-white/10 dark:text-neutral-500 dark:bg-surface/50 cursor-not-allowed opacity-60",
-        )}
-      >
-        <SquarePlus size={16} className="shrink-0" />
-        <span className="hidden sm:inline">{t("newColumnButton")}</span>
-      </button>
+      {(() => {
+        const isFreeLimitUpgrade =
+          !canCreateColumn && !isPremium && !isReadOnly;
+        return (
+          <button
+            type="button"
+            onClick={onOpenCreateColumn}
+            disabled={!canCreateColumn && !isFreeLimitUpgrade}
+            title={
+              isReadOnly
+                ? t("newColumnReadOnlyTitle")
+                : !canCreateColumn
+                  ? !isPremium
+                    ? t("newColumnFreeLimitTitle", { max: maxColumns })
+                    : t("newColumnMaxReachedTitle", { max: maxColumns })
+                  : t("newColumnCreateTitle")
+            }
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg border font-semibold transition-[transform,background-color,border-color,color] shadow-xs shrink-0 px-3 py-2.5 text-body-s focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+              canCreateColumn
+                ? "bg-card dark:bg-surface border-neutral-700 text-neutral-100 hover:bg-surface hover:border-primary/40 hover:text-primary dark:border-white/15 dark:text-neutral-100 dark:hover:bg-surface-hover dark:hover:border-gold dark:hover:text-gold cursor-pointer active:scale-98"
+                : isFreeLimitUpgrade
+                  ? "bg-amber-500/10 border-amber-500/40 text-amber-800 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:border-gold/40 dark:text-gold dark:hover:bg-gold/20 dark:hover:border-gold cursor-pointer active:scale-98"
+                  : "border-neutral-700/60 text-neutral-400 bg-surface dark:border-white/10 dark:text-neutral-500 dark:bg-surface/50 cursor-not-allowed opacity-60",
+            )}
+          >
+            {isFreeLimitUpgrade ? (
+              <Crown
+                size={15}
+                className="fill-gold/20 shrink-0"
+                aria-hidden="true"
+              />
+            ) : (
+              <SquarePlus size={16} className="shrink-0" aria-hidden="true" />
+            )}
+            <span className="hidden sm:inline">{t("newColumnButton")}</span>
+          </button>
+        );
+      })()}
 
       <PrimaryActionButton
         label={t("newTaskButton")}
         onClick={onOpenCreateTask}
+        disabled={!canCreateTask}
+        title={
+          isReadOnly
+            ? t("newTaskReadOnlyTitle")
+            : !canCreateTask
+              ? t("newTaskNoColumnsTitle")
+              : t("newTaskCreateTitle")
+        }
       />
     </>
   );

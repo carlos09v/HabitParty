@@ -36,6 +36,7 @@
       "showPassword": "Show password",
       "hidePassword": "Hide password"
     },
+    "skipToContent": "Skip to main content",
     "select": {
       "placeholder": "Select an option",
       "emptyMessage": "No items available.",
@@ -48,6 +49,7 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "clear": "Clear",
+      "close": "Close",
       "noDueDate": "No due date",
       "dialogAriaLabel": "Select date",
       "prevMonth": "Previous month",
@@ -91,6 +93,13 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "processing": "Processing..."
+    },
+    "modal": {
+      "close": "Close"
+    },
+    "currency": {
+      "coin": "Coin",
+      "credit": "Credit"
     },
     "welcomeCard": {
       "hidePermanentlyTitle": "Permanently hide guidance card (can be re-enabled in Settings)",
@@ -138,11 +147,11 @@
           "subtitleGamified": "Use redeemed items, open mystery boxes, or send rewards to the Focus Stage.",
           "subtitleProductivity": "Manage vouchers, spin break draws, or apply redeemed rewards.",
           "bullet0": "Store and organize all items and coupons redeemed in the Showcase.",
-          "bullet1": "Use consumable items directly or send potions to the Focus Stage.",
+          "bullet1": "Use single-use items directly or send time vouchers to the Focus Stage.",
           "bullet2": "Single-use items disappear from your backpack once fully consumed.",
           "bullet2Gamified": "Single-use items disappear from your backpack once fully consumed.",
           "bullet2Productivity": "Single-use items disappear from your inventory once fully consumed.",
-          "bullet1Gamified": "Use consumable items directly or send potions to the Focus Stage.",
+          "bullet1Gamified": "Use single-use items directly or send time vouchers to the Focus Stage.",
           "bullet1Productivity": "Use direct rewards or send break vouchers to the Focus Stage."
         },
         "rewards": {
@@ -297,7 +306,8 @@
         "skull": "VIP Boss / Hardcore",
         "key": "VIP Master Key",
         "hourglass": "VIP Epic Hourglass",
-        "mountain": "VIP High Performance"
+        "mountain": "VIP High Performance",
+        "receipt": "Receipt / Debt"
       }
     },
     "rewardPreview": {
@@ -365,6 +375,10 @@
       "missingCoinsHint": "Need {missing} more",
       "missingCreditsHint": "Need {missing} more",
       "readyToRedeemHint": "Balance ready",
+      "ownedInBackpack": "{count} in backpack",
+      "ownedInInventory": "{count} in inventory",
+      "ownedInBackpackTooltip": "You already have {count, plural, one {# unit} other {# units}} in your backpack",
+      "ownedInInventoryTooltip": "You already have {count, plural, one {# unit} other {# units}} in your inventory",
       "statuses": {
         "activeSession": "Active session",
         "sealedBox": "Sealed box",

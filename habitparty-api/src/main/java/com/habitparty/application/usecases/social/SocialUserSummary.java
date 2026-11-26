@@ -1,7 +1,9 @@
 package com.habitparty.application.usecases.social;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.FriendRequestPolicy;
 import com.habitparty.core.domain.enums.PrivacyLevel;
@@ -20,6 +22,8 @@ public record SocialUserSummary(
     String avatarPreset,
     boolean isPremium,
     boolean isFounder,
+    boolean emailVerified,
+    OffsetDateTime createdAt,
     String levelTitle,
     int totalXp,
     int currentStreak,
@@ -37,10 +41,12 @@ public record SocialUserSummary(
       SocialRelationshipStatus status) {
     boolean isSelf = status == SocialRelationshipStatus.SELF;
     boolean isFriend = status == SocialRelationshipStatus.FRIENDS;
-    boolean canViewProfile = isAllowed(user.getProfileVisibility(), isSelf, isFriend);
+    boolean isBlocked = status == SocialRelationshipStatus.BLOCKED
+        || status == SocialRelationshipStatus.BLOCKED_BY_VIEWER;
+    boolean canViewProfile = !isBlocked && isAllowed(user.getProfileVisibility(), isSelf, isFriend);
     boolean canViewStats = canViewProfile && isAllowed(user.getStatsVisibility(), isSelf, isFriend);
     boolean canViewAchievements = canViewProfile && isAllowed(user.getAchievementsVisibility(), isSelf, isFriend);
-    boolean includeFriendCode = isSelf || isFriend;
+    boolean includeFriendCode = !isBlocked && (isSelf || isFriend);
     boolean maskStats = !canViewStats;
 
     int achPoints = user.getStats() != null ? user.getStats().getAchievementPoints() : 0;
@@ -55,11 +61,13 @@ public record SocialUserSummary(
         user.getAvatarPreset().orElse(null),
         user.isPremium(),
         user.isFounder(),
-        user.getCurrentLevel().getTitle(),
+        user.isEmailVerified(),
+        canViewProfile ? UtcDateTimeMapper.toUtcOffsetDateTime(user.getCreatedAt()) : null,
+        maskStats ? null : user.getCurrentLevel().getTitle(),
         maskStats ? 0 : user.getTotalXp(),
         maskStats ? 0 : Math.max(0, effectiveStreak),
         maskStats ? 0 : user.getHighestStreak(),
-        (maskStats || !canViewAchievements) ? 0 : achPoints,
+        !canViewAchievements ? 0 : achPoints,
         user.getProfileVisibility(),
         user.getStatsVisibility(),
         user.getAchievementsVisibility(),

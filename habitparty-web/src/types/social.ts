@@ -42,7 +42,9 @@ export interface SocialUserSummary {
   avatarPreset?: string | null;
   isPremium: boolean;
   isFounder: boolean;
-  levelTitle: string;
+  emailVerified?: boolean;
+  createdAt?: string | null;
+  levelTitle?: string | null;
   totalXp: number;
   currentStreak: number;
   highestStreak: number;

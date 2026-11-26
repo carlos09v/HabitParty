@@ -1,41 +1,12 @@
 "use client";
 
-import {
-  Backpack,
-  Check,
-  Clock,
-  FileText,
-  Flame,
-  History,
-  Hourglass,
-  ListTodo,
-  Lock,
-  Minus,
-  Package,
-  Pencil,
-  Plus,
-  Sparkles,
-  Target,
-  Timer,
-  X,
-} from "lucide-react";
+import { History, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useMemo } from "react";
+import { FocusManualScheduleFields } from "@/components/focus/modals/FocusManualScheduleFields";
+import { FocusManualTargetFields } from "@/components/focus/modals/FocusManualTargetFields";
+import { FocusModalFooter } from "@/components/focus/modals/FocusModalFooter";
 import { BaseModal } from "@/components/ui/BaseModal";
-import { DatePicker } from "@/components/ui/DatePicker";
-import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
-import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
-import { TimePicker } from "@/components/ui/TimePicker";
-import {
-  FOCUS_MANUAL_PRESETS,
-  getFocusIcon,
-  MAX_FOCUS_ACTIVITIES_FREE,
-  MAX_MANUAL_FOCUS_MINUTES,
-} from "@/constants/focus";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusManualRecordForm } from "@/hooks/useFocusManualRecordForm";
 import type {
@@ -44,8 +15,6 @@ import type {
   FocusRecord,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { cn } from "@/utils";
-import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 interface FocusManualRecordModalProps {
   isOpen: boolean;
@@ -90,13 +59,27 @@ function FocusManualRecordModalContent({
 }: FocusManualRecordModalProps) {
   const t = useTranslations("focus.manualRecord");
   const { isGamified } = useExperienceMode();
-  const durationHoursHintId = useId();
+
+  const effectiveFocusableTasks: FocusableTaskItem[] =
+    editingRecord?.taskId &&
+    !focusableTasks.some((task) => task.id === editingRecord.taskId)
+      ? [
+          {
+            id: editingRecord.taskId,
+            title: editingRecord.taskNameSnapshot || t("taskTypeTodoLabel"),
+            type: "todo" as const,
+            completed: true,
+          },
+          ...focusableTasks,
+        ]
+      : focusableTasks;
+
   const form = useFocusManualRecordForm({
     isOpen,
     activities,
     backpackItems,
     allInventoryItems,
-    focusableTasks,
+    focusableTasks: effectiveFocusableTasks,
     records,
     editingRecord,
     initialActivityId,
@@ -107,124 +90,7 @@ function FocusManualRecordModalContent({
     onClose,
   });
 
-  const SelectedActivityIcon = form.selectedActivity
-    ? getFocusIcon(form.selectedActivity.icon || "book")
-    : Target;
-
-  const averageMinutesPerPomo =
-    form.completedPomos > 0
-      ? Math.floor(form.durationMinutes / form.completedPomos)
-      : form.durationMinutes;
-
-  const effectiveFocusableTasks = useMemo(() => {
-    if (
-      editingRecord?.taskId &&
-      !focusableTasks.some((task) => task.id === editingRecord.taskId)
-    ) {
-      return [
-        {
-          id: editingRecord.taskId,
-          title: editingRecord.taskNameSnapshot || t("taskTypeTodoLabel"),
-          type: "todo" as const,
-          completed: true,
-        },
-        ...focusableTasks,
-      ];
-    }
-    return focusableTasks;
-  }, [
-    focusableTasks,
-    editingRecord?.taskId,
-    editingRecord?.taskNameSnapshot,
-    t,
-  ]);
-
-  const activitySelectOptions = useMemo(() => {
-    const mapped = form.selectableActivities.map((act) => ({
-      value: act.id,
-      label: act.name,
-    }));
-    if (form.isEditMode && (form.selectedTaskId || !form.selectedActivityId)) {
-      return [{ value: "", label: t("noActivityLinkedOption") }, ...mapped];
-    }
-    return mapped;
-  }, [
-    form.selectableActivities,
-    form.isEditMode,
-    form.selectedTaskId,
-    form.selectedActivityId,
-    t,
-  ]);
-
-  const taskSelectOptions = useMemo(() => {
-    const sortedTasks = [...effectiveFocusableTasks].sort((a, b) => {
-      const completedDiff =
-        Number(Boolean(a.completed)) - Number(Boolean(b.completed));
-      if (completedDiff !== 0) return completedDiff;
-      const focusDiff = (b.totalFocusMinutes ?? 0) - (a.totalFocusMinutes ?? 0);
-      if (focusDiff !== 0) return focusDiff;
-      return a.title.localeCompare(b.title);
-    });
-
-    return [
-      { value: "", label: t("noTaskLinkedOption") },
-      ...sortedTasks.map((task) => {
-        const typeLabel =
-          task.type === "daily"
-            ? t("taskTypeDailyLabel")
-            : t("taskTypeTodoLabel");
-        return {
-          value: task.id,
-          label: task.title,
-          group: task.type,
-          badge: task.columnTitle || typeLabel,
-          meta:
-            (task.totalFocusMinutes ?? 0) > 0
-              ? formatFocusMinutes(task.totalFocusMinutes ?? 0)
-              : undefined,
-          keywords: [typeLabel, task.columnTitle, task.workspaceName]
-            .filter(Boolean)
-            .join(" "),
-        };
-      }),
-    ];
-  }, [effectiveFocusableTasks, t]);
-
-  const taskFilterTabs = useMemo(
-    () => [
-      { value: "", label: t("taskFilterAll") },
-      { value: "daily", label: t("taskFilterDaily") },
-      { value: "todo", label: t("taskFilterTodo") },
-    ],
-    [t],
-  );
-
-  const itemSelectOptions = useMemo(
-    () =>
-      form.availableBackpackItems.map((item) => {
-        const itemId = item.inventoryItemId || "";
-        const mins = form.resolveItemEffectiveMinutes(itemId);
-        return {
-          value: itemId,
-          label: `${item.rewardName || t("defaultFocusItemName")}${mins > 0 ? ` (${mins}m)` : ""}`,
-        };
-      }),
-    [form.availableBackpackItems, form.resolveItemEffectiveMinutes, t],
-  );
-
-  const minPomos = form.isEditMode ? 0 : 1;
   const isItemMode = form.targetType === "ITEM";
-  const maxDurationMinutes = isItemMode
-    ? form.selectedItemMinutes > 0
-      ? form.selectedItemMinutes
-      : undefined
-    : MAX_MANUAL_FOCUS_MINUTES;
-  const durationPresets = isItemMode
-    ? FOCUS_MANUAL_PRESETS.filter(
-        (mins) =>
-          form.selectedItemMinutes <= 0 || mins <= form.selectedItemMinutes,
-      )
-    : FOCUS_MANUAL_PRESETS;
 
   return (
     <BaseModal
@@ -233,7 +99,11 @@ function FocusManualRecordModalContent({
       maxWidth="max-w-3xl"
       preventClose={form.isSubmitting}
       headerIcon={
-        form.isEditMode ? <Pencil size={20} /> : <History size={20} />
+        form.isEditMode ? (
+          <Pencil size={20} aria-hidden="true" />
+        ) : (
+          <History size={20} aria-hidden="true" />
+        )
       }
       title={form.isEditMode ? t("editTitle") : t("title")}
       headerBadge={
@@ -243,451 +113,79 @@ function FocusManualRecordModalContent({
       }
       description={form.isEditMode ? t("editDescription") : t("description")}
     >
-      <form onSubmit={form.handleSubmit} className="flex flex-col gap-4 mt-1">
-        {/* FORMULÁRIO EM 2 COLUNAS EQUILIBRADAS: ESQUERDA (VÍNCULO/NOTAS) E DIREITA (TEMPO/DATA/HORA) */}
+      <form
+        noValidate
+        onSubmit={form.handleSubmit}
+        className="flex flex-col gap-4 mt-1"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-          {/* ========================================================
-              COLUNA 1 (ESQUERDA): O QUE VOCÊ FOCOU?
-              ======================================================== */}
-          <div className="flex flex-col gap-3.5 justify-between">
-            <div className="flex flex-col gap-3.5">
-              {/* Seletor de Vínculo (Atividade vs Mochila) — Travado no modo edição */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-body-s text-neutral-100 font-medium">
-                    {t("linkSessionLabel")}
-                  </span>
-                  {form.isEditMode && (
-                    <Lock
-                      size={12}
-                      className="text-neutral-400 shrink-0"
-                      aria-hidden="true"
-                    />
-                  )}
-                </div>
-                <SegmentedControl
-                  value={form.targetType}
-                  onChange={form.handleTargetTypeChange}
-                  options={[
-                    {
-                      value: "ACTIVITY",
-                      label: t("activityOption"),
-                      icon: Sparkles,
-                      badge: form.selectableActivities.length,
-                      disabled:
-                        form.isEditMode && form.targetType !== "ACTIVITY",
-                    },
-                    {
-                      value: "ITEM",
-                      label: isGamified
-                        ? t("backpackOption")
-                        : t("inventoryOption"),
-                      icon: isGamified ? Backpack : Package,
-                      badge: form.availableBackpackItems.length,
-                      disabled: form.isEditMode && form.targetType !== "ITEM",
-                    },
-                  ]}
-                />
-                {form.isEditMode && (
-                  <span className="text-tiny text-neutral-400 px-0.5">
-                    {isGamified
-                      ? t("linkSessionLockedHint")
-                      : t("linkSessionLockedHintProductivity")}
-                  </span>
-                )}
-              </div>
+          <FocusManualTargetFields
+            isGamified={isGamified}
+            isEditMode={form.isEditMode}
+            isPremium={form.isPremium}
+            totalActivitiesCount={activities.length}
+            targetType={form.targetType}
+            onTargetTypeChange={form.handleTargetTypeChange}
+            selectableActivities={form.selectableActivities}
+            selectedActivityId={form.selectedActivityId}
+            selectedActivity={form.selectedActivity}
+            onSelectActivity={form.handleSelectActivity}
+            effectiveFocusableTasks={effectiveFocusableTasks}
+            selectedTaskId={form.selectedTaskId}
+            onSelectTask={form.setSelectedTaskId}
+            availableBackpackItems={form.availableBackpackItems}
+            selectedItemId={form.selectedItemId}
+            selectedItem={form.selectedItem}
+            selectedItemMinutes={form.selectedItemMinutes}
+            resolveItemEffectiveMinutes={form.resolveItemEffectiveMinutes}
+            onSelectBackpackItem={form.handleSelectBackpackItem}
+            recordType={form.recordType}
+            onRecordTypeChange={form.setRecordType}
+            notes={form.notes}
+            onNotesChange={form.setNotes}
+            targetError={form.fieldErrors.target}
+          />
 
-              {/* Atividade ou Item (Com meta/saldo integrado no próprio cabeçalho, sem card duplicado) */}
-              {form.targetType === "ACTIVITY" ? (
-                <div className="flex flex-col gap-1.5">
-                  <Select
-                    id="select-activity"
-                    compact
-                    icon={<SelectedActivityIcon size={16} />}
-                    label={
-                      <span className="flex items-center justify-between w-full">
-                        <span>{t("activitySelectLabel")}</span>
-                        {form.selectedActivity?.targetTimeMinutes && (
-                          <span className="text-tiny font-semibold text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 dark:text-gold dark:bg-gold/10 dark:border-gold/25">
-                            {t("targetBadge", {
-                              minutes: form.selectedActivity.targetTimeMinutes,
-                            })}
-                          </span>
-                        )}
-                      </span>
-                    }
-                    placeholder={
-                      form.selectableActivities.length === 0
-                        ? t("noActivitiesAvailable")
-                        : t("selectActivityPlaceholder")
-                    }
-                    emptyMessage={t("noActivitiesAvailable")}
-                    value={form.selectedActivityId}
-                    onChange={form.handleSelectActivity}
-                    options={activitySelectOptions}
-                  />
-
-                  {!form.isPremium &&
-                    activities.length > MAX_FOCUS_ACTIVITIES_FREE && (
-                      <span className="text-label-g text-amber-700 dark:text-gold/90 font-medium px-1 flex items-center gap-1.5">
-                        <span>👑</span>
-                        <span>
-                          {t("pausedFreePlanNotice", {
-                            count:
-                              activities.length - MAX_FOCUS_ACTIVITIES_FREE,
-                          })}
-                        </span>
-                      </span>
-                    )}
-
-                  {effectiveFocusableTasks.length > 0 && (
-                    <Select
-                      id="select-task"
-                      compact
-                      searchable
-                      searchPlaceholder={t("searchTasksPlaceholder")}
-                      noResultsMessage={t("noTasksMatchingSearch")}
-                      filterTabs={taskFilterTabs}
-                      icon={<ListTodo size={16} />}
-                      label={t("taskSelectLabel")}
-                      placeholder={t("noTaskLinkedOption")}
-                      value={form.selectedTaskId}
-                      onChange={form.setSelectedTaskId}
-                      options={taskSelectOptions}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  <Select
-                    id="select-item"
-                    compact
-                    icon={
-                      isGamified ? (
-                        <Backpack size={16} />
-                      ) : (
-                        <Package size={16} />
-                      )
-                    }
-                    label={
-                      <span className="flex items-center justify-between w-full">
-                        <span>
-                          {isGamified
-                            ? t("backpackItemSelectLabel")
-                            : t("inventoryItemSelectLabel")}
-                        </span>
-                        {form.selectedItem && form.selectedItemMinutes > 0 && (
-                          <span className="text-tiny font-semibold text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 dark:text-gold dark:bg-gold/10 dark:border-gold/25">
-                            {t("balanceBadge", {
-                              minutes: form.selectedItemMinutes,
-                            })}
-                          </span>
-                        )}
-                      </span>
-                    }
-                    placeholder={
-                      form.availableBackpackItems.length === 0
-                        ? t("noItemsAvailable")
-                        : isGamified
-                          ? t("selectItemPlaceholder")
-                          : t("selectItemPlaceholderProductivity")
-                    }
-                    emptyMessage={t("noItemsAvailable")}
-                    value={form.selectedItemId}
-                    onChange={form.handleSelectBackpackItem}
-                    options={itemSelectOptions}
-                  />
-                </div>
-              )}
-
-              {/* Modo Pomodoro ou Cronômetro (quando atividade) */}
-              {form.targetType !== "ITEM" && (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-body-s text-neutral-100 font-medium">
-                    {t("sessionModeLabel")}
-                  </span>
-                  <SegmentedControl
-                    value={form.recordType}
-                    onChange={form.setRecordType}
-                    options={[
-                      {
-                        value: "POMO",
-                        label: t("modePomoOption"),
-                        icon: Timer,
-                      },
-                      {
-                        value: "STOPWATCH",
-                        label: t("modeStopwatchOption"),
-                        icon: Hourglass,
-                      },
-                    ]}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Anotações / Observações */}
-            <Textarea
-              id="record-notes"
-              label={t("notesLabel")}
-              icon={<FileText size={14} />}
-              rows={form.targetType === "ITEM" ? 4 : 2}
-              value={form.notes}
-              onChange={(e) => form.setNotes(e.target.value)}
-              placeholder={t("notesPlaceholder")}
-              maxLength={500}
-            />
-          </div>
-
-          {/* ========================================================
-              COLUNA 2 (DIREITA): PAINEL UNIFICADO DE TEMPO & HORÁRIO
-              ======================================================== */}
-          <div className="p-3.5 rounded-xl border border-neutral-700 bg-background dark:border-primary/25 dark:bg-primary-dark/15 flex flex-col justify-between gap-3">
-            <div className="flex flex-col gap-3">
-              {/* Cabeçalho de Duração + Presets rápidos */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-body-s text-neutral-100 font-semibold flex items-center gap-1.5">
-                  <Clock size={14} className="text-primary dark:text-gold" />
-                  {t("focusTimeLabel")}
-                </span>
-                <div className="flex items-center gap-1">
-                  {durationPresets.map((mins) => (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => form.handlePresetSelect(mins)}
-                      className={cn(
-                        "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-colors cursor-pointer",
-                        form.durationMinutes === mins
-                          ? "bg-amber-500/20 border-amber-500 text-amber-800 dark:bg-gold/25 dark:border-gold dark:text-gold font-bold shadow-glow-gold-xs"
-                          : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40",
-                      )}
-                    >
-                      {mins}m
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Linha com Minutos Totais / A Deduzir e Stepper de Ciclos */}
-              <div
-                className={cn(
-                  "grid gap-2.5 items-start",
-                  !isItemMode && form.recordType === "POMO"
-                    ? "grid-cols-1 sm:grid-cols-2"
-                    : "grid-cols-1",
-                )}
-              >
-                <div className="flex flex-col gap-1.5">
-                  <NumberStepperInput
-                    id="duration-minutes"
-                    label={
-                      isItemMode
-                        ? t("durationToDeductLabel", {
-                            minutes: form.selectedItemMinutes,
-                          })
-                        : t("totalMinutesLabel")
-                    }
-                    compact
-                    min={0}
-                    max={maxDurationMinutes}
-                    value={form.durationInput}
-                    onChange={(e) =>
-                      form.handleDurationInputChange(e.target.value)
-                    }
-                    onStep={form.handleDurationStep}
-                    decrementDisabled={form.durationMinutes <= 1}
-                    incrementDisabled={
-                      maxDurationMinutes !== undefined &&
-                      form.durationMinutes >= maxDurationMinutes
-                    }
-                    icon={<Clock size={16} />}
-                    iconSize={13}
-                    aria-describedby={
-                      form.durationMinutes >= 60
-                        ? durationHoursHintId
-                        : undefined
-                    }
-                    className="font-bold"
-                  />
-                  <DurationHoursBadge
-                    id={durationHoursHintId}
-                    minutes={form.durationMinutes}
-                  />
-                </div>
-
-                {!isItemMode && form.recordType === "POMO" && (
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="pomo-stepper"
-                      className="font-medium text-neutral-100 select-none text-body-s flex items-center justify-between"
-                    >
-                      <span className="flex items-center gap-1">
-                        <Flame
-                          size={13}
-                          className="text-orange-800 dark:text-gold"
-                        />
-                        {t("cyclesLabel")}
-                      </span>
-                      <span className="text-tiny text-neutral-400 font-normal">
-                        {t("avgMinutesPerCycle", {
-                          minutes: averageMinutesPerPomo,
-                        })}
-                      </span>
-                    </label>
-
-                    <div
-                      id="pomo-stepper"
-                      className="flex items-center justify-between py-1 px-1.5 rounded-lg border border-neutral-600 bg-card shadow-xs dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => form.handleCompletedPomosStep(-1)}
-                        disabled={form.completedPomos <= minPomos}
-                        className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        aria-label={t("decreaseCyclesAria")}
-                      >
-                        <Minus size={14} />
-                      </button>
-
-                      <span className="text-body-s font-bold text-neutral-100 tabular-nums">
-                        {t("cyclesCount", { count: form.completedPomos })}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => form.handleCompletedPomosStep(1)}
-                        disabled={form.completedPomos >= 50}
-                        className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        aria-label={t("increaseCyclesAria")}
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {isItemMode && (
-                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-caption text-neutral-300">
-                  <span>{t("remainingBalanceAfterLog")}</span>
-                  <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
-                    {Math.max(
-                      0,
-                      form.selectedItemMinutes - form.durationMinutes,
-                    )}
-                    m
-                  </strong>
-                </div>
-              )}
-
-              {/* Divisor sutil integrando Data e Janela de Horário apenas para Atividades */}
-              {!isItemMode && (
-                <div className="border-t border-neutral-700 dark:border-white/10 pt-3 flex flex-col gap-2.5">
-                  <DatePicker
-                    id="session-date"
-                    label={t("sessionDateLabel")}
-                    value={form.sessionDate}
-                    onChange={form.setSessionDate}
-                    maxDate={form.maxDate}
-                    placeholder={t("todayPlaceholder")}
-                    compact
-                    allowClear={false}
-                    align="left"
-                  />
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
-                    <TimePicker
-                      id="session-start-time"
-                      label={t("startTimeLabel")}
-                      value={form.startTimeStr}
-                      onChange={form.handleStartTimeChange}
-                      compact
-                      align="left"
-                    />
-
-                    <TimePicker
-                      id="session-end-time"
-                      label={t("endTimeLabel")}
-                      value={form.endTimeStr}
-                      onChange={form.handleEndTimeChange}
-                      compact
-                      align="right"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Resumo sincronizado compacto na base do painel de tempo (apenas para Atividades) */}
-            {form.targetType !== "ITEM" && (
-              <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-tiny text-neutral-300">
-                <span>{t("syncedWindowLabel")}</span>
-                <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
-                  {t("syncedWindowSummary", {
-                    start: form.startTimeStr,
-                    end: form.endTimeStr,
-                    minutes: form.durationMinutes,
-                  })}
-                </strong>
-              </div>
-            )}
-          </div>
+          <FocusManualScheduleFields
+            isEditMode={form.isEditMode}
+            isItemMode={isItemMode}
+            recordType={form.recordType}
+            selectedItemMinutes={form.selectedItemMinutes}
+            durationMinutes={form.durationMinutes}
+            durationInput={form.durationInput}
+            onDurationInputChange={form.handleDurationInputChange}
+            onDurationStep={form.handleDurationStep}
+            onPresetSelect={form.handlePresetSelect}
+            completedPomos={form.completedPomos}
+            onCompletedPomosStep={form.handleCompletedPomosStep}
+            sessionDate={form.sessionDate}
+            maxDate={form.maxDate}
+            onSessionDateChange={form.setSessionDate}
+            startTimeStr={form.startTimeStr}
+            endTimeStr={form.endTimeStr}
+            crossesMidnight={form.crossesMidnight}
+            onStartTimeChange={form.handleStartTimeChange}
+            onEndTimeChange={form.handleEndTimeChange}
+            fieldErrors={form.fieldErrors}
+          />
         </div>
 
-        {/* ESTIMATIVA DE RECOMPENSA EM LARGURA TOTAL (Sem desbalancear as colunas) */}
         <RewardPreview
           estimate={form.rewardEstimate}
           label={t("rewardEstimateLabel")}
         />
 
-        {/* ========================================================
-            RODAPÉ DE AÇÕES DO MODAL
-            ======================================================== */}
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={form.isSubmitting}
-            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <X size={14} />
-            {t("cancelButton")}
-          </button>
-          <button
-            type="submit"
-            disabled={
-              form.isSubmitting ||
-              form.durationMinutes <= 0 ||
-              (form.targetType === "ACTIVITY" &&
-                !form.isOrphanedFreeSession &&
-                !form.selectedActivityId &&
-                !form.selectedTaskId) ||
-              (form.targetType === "ITEM" && !form.selectedItemId)
-            }
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-          >
-            {form.isSubmitting ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-on-gold border-t-transparent rounded-full animate-spin" />
-                <span>
-                  {form.isEditMode
-                    ? t("updatingButton")
-                    : t("submittingButton")}
-                </span>
-              </>
-            ) : (
-              <>
-                <Check size={15} />
-                <span>
-                  {form.isEditMode
-                    ? t("updateSubmitButton")
-                    : t("submitButton")}
-                </span>
-              </>
-            )}
-          </button>
-        </div>
+        <FocusModalFooter
+          cancelLabel={t("cancelButton")}
+          submitLabel={
+            form.isEditMode ? t("updateSubmitButton") : t("submitButton")
+          }
+          submittingLabel={
+            form.isEditMode ? t("updatingButton") : t("submittingButton")
+          }
+          isSubmitting={form.isSubmitting}
+          onCancel={onClose}
+        />
       </form>
     </BaseModal>
   );

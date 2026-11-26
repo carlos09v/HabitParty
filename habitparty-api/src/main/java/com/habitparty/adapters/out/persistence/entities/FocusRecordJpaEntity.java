@@ -12,19 +12,25 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "focus_records")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class FocusRecordJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class FocusRecordJpaEntity extends BaseUuidJpaEntity {
+
   @Id
+  @ToString.Include
   @Column(name = "focus_record_id", updatable = false, nullable = false)
   private UUID id;
 
@@ -68,6 +74,10 @@ public class FocusRecordJpaEntity {
   @Column(name = "xp_earned")
   private Integer xpEarned;
 
-  @Column(name = "coins_earned")
+  @Column(name = "coins_earned", precision = 10, scale = 2)
   private BigDecimal coinsEarned;
+
+  @Builder.Default
+  @Column(name = "reward_locked", nullable = false, columnDefinition = "boolean default false")
+  private boolean rewardLocked = false;
 }

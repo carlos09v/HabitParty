@@ -5,6 +5,7 @@ import {
   Languages,
   Layers,
   LineChart,
+  type LucideIcon,
   MessageSquare,
   Palette,
   Shield,
@@ -16,6 +17,8 @@ import {
   Users2,
   Zap,
 } from "lucide-react";
+import { LANDING_ANCHORS } from "@/constants/landingAnchors";
+import { APP_RELEASES, type AppReleaseLandingId } from "@/constants/releases";
 import type {
   LandingFaqKey,
   LandingFeatureConfig,
@@ -24,22 +27,19 @@ import type {
   LandingPlanConfig,
   LandingProductivityStepConfig,
   LandingRoadmapConfig,
+  LandingRoadmapStatus,
+  LandingRoadmapStatusStyle,
 } from "@/types/landing";
 
+export { LANDING_ANCHORS };
 export { SUPPORT_LINKS } from "@/constants/links";
 
-export const LANDING_ANCHORS = {
-  howItWorks: "how-it-works",
-  gamification: "demo",
-  features: "features",
-  roadmap: "roadmap",
-  pricing: "pricing",
-  faq: "faq",
-} as const;
-
+/**
+ * Ordem sincronizada com a sequência real das seções em `LandingPage`.
+ */
 export const LANDING_NAV_LINK_CONFIGS: readonly LandingNavLinkConfig[] = [
-  { id: "howItWorks", href: `#${LANDING_ANCHORS.howItWorks}` },
   { id: "gamification", href: `#${LANDING_ANCHORS.gamification}` },
+  { id: "howItWorks", href: `#${LANDING_ANCHORS.howItWorks}` },
   { id: "features", href: `#${LANDING_ANCHORS.features}` },
   { id: "roadmap", href: `#${LANDING_ANCHORS.roadmap}` },
   { id: "pricing", href: `#${LANDING_ANCHORS.pricing}` },
@@ -51,12 +51,12 @@ export const LANDING_HERO_HIGHLIGHT_CONFIGS: readonly LandingHeroHighlightConfig
     {
       id: "levels",
       icon: Zap,
-      colorClass: "text-gold",
+      colorClass: "text-gold-ink dark:text-gold",
     },
     {
       id: "streaks",
       icon: Flame,
-      colorClass: "text-warning-500",
+      colorClass: "text-warning-400 dark:text-warning-500",
     },
     {
       id: "pomodoro",
@@ -76,8 +76,7 @@ export const LANDING_PRODUCTIVITY_STEP_CONFIGS: readonly LandingProductivityStep
       id: "step1",
       number: "01",
       icon: CheckSquare,
-      color: "from-primary to-primary-light",
-      numberColor: "text-primary/25 dark:text-white/12",
+      numberColor: "text-primary/25 dark:text-white/15",
       iconBoxClass:
         "bg-purple-500/10 border border-purple-500/25 dark:border-transparent dark:bg-gradient-to-br dark:from-primary dark:to-primary-light dark:p-0.5",
       iconColor: "text-primary dark:text-neutral-50",
@@ -87,22 +86,20 @@ export const LANDING_PRODUCTIVITY_STEP_CONFIGS: readonly LandingProductivityStep
       id: "step2",
       number: "02",
       icon: Timer,
-      color: "from-blue to-info",
-      numberColor: "text-sky-600/25 dark:text-white/12",
+      numberColor: "text-sky-600/25 dark:text-white/15",
       iconBoxClass:
         "bg-sky-500/10 border border-sky-500/25 dark:border-transparent dark:bg-gradient-to-br dark:from-blue dark:to-info dark:p-0.5",
-      iconColor: "text-sky-700 dark:text-neutral-50",
+      iconColor: "text-info dark:text-neutral-50",
       borderColor: "border-sky-500/25 dark:border-info/30",
     },
     {
       id: "step3",
       number: "03",
       icon: Gift,
-      color: "from-gold via-warning-500 to-gold",
-      numberColor: "text-amber-600/25 dark:text-white/12",
+      numberColor: "text-amber-600/25 dark:text-white/15",
       iconBoxClass:
         "bg-amber-500/10 border border-amber-500/30 dark:border-transparent dark:bg-gradient-to-br dark:from-gold dark:via-warning-500 dark:to-gold dark:p-0.5",
-      iconColor: "text-amber-700 dark:text-neutral-50",
+      iconColor: "text-gold-ink dark:text-neutral-50",
       borderColor: "border-amber-500/35 dark:border-gold/40",
     },
   ] as const;
@@ -111,9 +108,9 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
   {
     id: "experienceMode",
     icon: SlidersHorizontal,
-    badgeColor: "bg-amber-500/12 text-amber-800 dark:bg-gold/12 dark:text-gold",
+    badgeColor: "bg-amber-500/12 text-gold-ink dark:bg-gold/12 dark:text-gold",
     iconBoxColor:
-      "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
+      "bg-amber-500/10 text-gold-ink border-amber-500/25 dark:bg-card dark:text-gold dark:border-white/10",
   },
   {
     id: "rewardShop",
@@ -127,16 +124,16 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
     id: "hardcoreMode",
     icon: Flame,
     badgeColor:
-      "bg-rose-500/10 text-rose-700 dark:bg-danger-500/15 dark:text-danger-400",
+      "bg-rose-500/10 text-rose-700 dark:bg-danger-500/15 dark:text-danger-300",
     iconBoxColor:
       "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-card dark:text-danger-400 dark:border-white/10",
   },
   {
     id: "workspaces",
     icon: Layers,
-    badgeColor: "bg-info/12 text-sky-700 dark:bg-info/15 dark:text-info",
+    badgeColor: "bg-info/12 text-info dark:bg-info/15 dark:text-info",
     iconBoxColor:
-      "bg-sky-500/10 text-sky-700 border-sky-500/20 dark:bg-card dark:text-info dark:border-white/10",
+      "bg-sky-500/10 text-info border-sky-500/20 dark:bg-card dark:text-info dark:border-white/10",
   },
   {
     id: "analytics",
@@ -149,9 +146,9 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
   {
     id: "soundEffects",
     icon: Swords,
-    badgeColor: "bg-amber-500/12 text-amber-800 dark:bg-gold/12 dark:text-gold",
+    badgeColor: "bg-amber-500/12 text-gold-ink dark:bg-gold/12 dark:text-gold",
     iconBoxColor:
-      "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
+      "bg-amber-500/10 text-gold-ink border-amber-500/25 dark:bg-card dark:text-gold dark:border-white/10",
   },
   {
     id: "partyGuild",
@@ -163,126 +160,79 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
   },
 ] as const;
 
-export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
-  {
-    id: "r11",
-    release: "Release 1.1",
-    status: "completed",
-    statusBadgeColor:
-      "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    icon: Languages,
-    iconBoxColor:
-      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-800 dark:text-emerald-400",
+export const ROADMAP_STATUS_STYLES: Record<
+  LandingRoadmapStatus,
+  LandingRoadmapStatusStyle
+> = {
+  completed: {
+    statusBadgeColor: "bg-success-500/15 text-success-400",
+    iconBoxColor: "bg-success-500/15 border-success-500/35 text-success-400",
+    checkColor: "text-success-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
-    borderGlowColor: "",
-    hasExtras: true,
   },
-  {
-    id: "r12",
-    release: "Release 1.2",
-    status: "completed",
+  next: {
     statusBadgeColor:
-      "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    icon: Trophy,
+      "bg-amber-500/12 text-gold-ink dark:bg-gold/15 dark:text-gold",
     iconBoxColor:
-      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-800 dark:text-emerald-400",
-    accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
-    borderGlowColor: "",
-  },
-  {
-    id: "r13",
-    release: "Release 1.3",
-    status: "completed",
-    statusBadgeColor:
-      "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    icon: Timer,
-    iconBoxColor:
-      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-800 dark:text-emerald-400",
-    accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
-    borderGlowColor: "",
-    hasExtras: true,
-  },
-  {
-    id: "r14",
-    release: "Release 1.4",
-    status: "completed",
-    statusBadgeColor:
-      "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    icon: Palette,
-    iconBoxColor:
-      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400",
-    checkColor: "text-emerald-800 dark:text-emerald-400",
-    accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
-    borderGlowColor: "",
-    hasExtras: true,
-  },
-  {
-    id: "r15",
-    release: "Release 1.5",
-    status: "next",
-    statusBadgeColor:
-      "bg-amber-500/12 text-amber-800 dark:bg-gold/15 dark:text-gold",
-    icon: Users2,
-    iconBoxColor:
-      "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
-    checkColor: "text-amber-800 dark:text-gold",
+      "bg-amber-500/10 border-amber-500/25 text-gold-ink dark:bg-card dark:border-white/15 dark:text-gold",
+    checkColor: "text-gold-ink dark:text-gold",
     accentColor: "from-gold to-warning-500",
-    borderGlowColor: "",
   },
-  {
-    id: "r16",
-    release: "Release 1.6",
-    status: "planned",
-    statusBadgeColor:
-      "bg-sky-500/12 text-sky-700 dark:bg-info/15 dark:text-info",
-    icon: MessageSquare,
+  planned: {
+    statusBadgeColor: "bg-info/12 text-info dark:bg-info/15 dark:text-info",
     iconBoxColor:
-      "bg-sky-500/10 border-sky-500/25 text-sky-700 dark:bg-card dark:border-white/15 dark:text-info",
-    checkColor: "text-sky-700 dark:text-info",
+      "bg-info/10 border-info/25 text-info dark:bg-card dark:border-white/15 dark:text-info",
+    checkColor: "text-info",
     accentColor: "from-blue to-info",
-    borderGlowColor: "",
   },
-  {
-    id: "r20",
-    release: "Release 2.0+",
-    status: "epic",
+  epic: {
     statusBadgeColor:
-      "bg-danger-500/12 text-danger-500 dark:bg-danger-500/15 dark:text-danger-400",
-    icon: Swords,
+      "bg-danger-500/12 text-danger-400 dark:bg-danger-500/15 dark:text-danger-300",
     iconBoxColor:
-      "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:bg-card dark:border-white/15 dark:text-danger-400",
-    checkColor: "text-rose-700 dark:text-danger-400",
+      "bg-danger-500/10 border-danger-500/25 text-danger-400 dark:bg-card dark:border-white/15 dark:text-danger-400",
+    checkColor: "text-danger-400",
     accentColor: "from-danger-500 to-warning-500",
-    borderGlowColor: "",
   },
-] as const;
+};
+
+const ROADMAP_ICONS_BY_RELEASE: Record<AppReleaseLandingId, LucideIcon> = {
+  r11: Languages,
+  r12: Trophy,
+  r13: Timer,
+  r14: Palette,
+  r15: Users2,
+  r16: MessageSquare,
+  r20: Swords,
+};
+
+export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] =
+  APP_RELEASES.map((release) => ({
+    id: release.landingId,
+    status: release.status,
+    icon: ROADMAP_ICONS_BY_RELEASE[release.landingId],
+    ...(release.hasLandingExtras ? { hasExtras: true } : {}),
+  }));
 
 export const LANDING_PLAN_CONFIGS: readonly LandingPlanConfig[] = [
   {
     id: "adventurer",
     badgeColor:
       "bg-surface border-neutral-700 dark:border-white/10 text-neutral-300",
-    highlight: false,
     ctaLink: "/signUp",
   },
   {
     id: "founder",
     badgeColor:
-      "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:bg-gold/20 dark:border-gold/60 dark:text-gold",
-    highlight: true,
+      "bg-amber-500/15 border-amber-500/40 text-gold-ink dark:bg-gold/20 dark:border-gold/60 dark:text-gold",
     isFounder: true,
     hasOriginalPrice: true,
-    ctaLink: "/signUp",
+    ctaLink: "/signUp?plan=founder",
   },
   {
     id: "guardian",
     badgeColor:
       "bg-primary/15 dark:bg-primary/20 border-primary/30 dark:border-primary-light/40 text-primary dark:text-primary-light",
-    highlight: false,
-    ctaLink: "/signUp",
+    ctaLink: "/signUp?plan=guardian",
   },
 ] as const;
 

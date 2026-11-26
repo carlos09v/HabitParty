@@ -1,8 +1,10 @@
 package com.habitparty.application.usecases.reward;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,18 +35,43 @@ public class DeleteRewardGroupUseCase {
       throw new DomainValidationException("Informe ao menos uma recompensa para excluir.");
     }
     Set<UUID> uniqueIds = new LinkedHashSet<>(rewardIds);
+    Map<UUID, Reward> rewardsById = loadRewardsByIds(uniqueIds);
+
     for (UUID rewardId : uniqueIds) {
-      Reward reward = port.findById(rewardId)
-          .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada!"));
+      Reward reward = rewardsById.get(rewardId);
+      if (reward == null) {
+        throw new ResourceNotFoundException("Recompensa não encontrada!");
+      }
       reward.validateOwnership(userIdLogado);
     }
 
+    List<UUID> idList = new ArrayList<>(uniqueIds);
     if (deleteHistory) {
-      transactionPort.deleteAllByReferenceIdsAndUserId(new ArrayList<>(uniqueIds), userIdLogado);
+      transactionPort.deleteAllByReferenceIdsAndUserId(idList, userIdLogado);
     }
 
-    for (UUID rewardId : uniqueIds) {
-      port.deleteById(rewardId);
+    if (port.deleteAllByIds(idList, userIdLogado).isEmpty()) {
+      for (UUID rewardId : uniqueIds) {
+        port.deleteById(rewardId);
+      }
     }
+  }
+
+  private Map<UUID, Reward> loadRewardsByIds(Set<UUID> rewardIds) {
+    Map<UUID, Reward> map = new HashMap<>(rewardIds.size());
+    port.findAllByIds(rewardIds).ifPresentOrElse(
+        rewards -> {
+          for (Reward reward : rewards) {
+            if (reward != null && reward.getId() != null) {
+              map.put(reward.getId(), reward);
+            }
+          }
+        },
+        () -> {
+          for (UUID rewardId : rewardIds) {
+            port.findById(rewardId).ifPresent(reward -> map.put(rewardId, reward));
+          }
+        });
+    return map;
   }
 }

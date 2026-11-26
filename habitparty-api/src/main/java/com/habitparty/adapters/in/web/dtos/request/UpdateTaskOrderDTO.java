@@ -11,6 +11,8 @@ public record UpdateTaskOrderDTO(
     
     UUID boardColumnId, // Pode ser a mesma coluna, ou a nova coluna para onde foi arrastada
 
-    @NotNull @Min(0) int newOrderIndex) {
+    @NotNull(message = "O índice de ordem é obrigatório")
+    @Min(value = 0, message = "O índice de ordem não pode ser negativo")
+    Integer newOrderIndex) {
 
 }

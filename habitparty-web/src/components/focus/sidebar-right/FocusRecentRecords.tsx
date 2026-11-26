@@ -1,5 +1,3 @@
-"use client";
-
 import {
   ChevronDown,
   History,
@@ -10,25 +8,67 @@ import {
   Timer,
   Trash2,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, useCallback, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
-import { formatCoins, formatDateTime } from "@/utils";
+import type { DateFormat, TimeFormat } from "@/types/ui";
+import { cn, formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
 import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
-import { FocusRecordDetailsPopover } from "./FocusRecordDetailsPopover";
+import { resolveFocusRecordTitle } from "@/utils/focusRecordDisplay";
+
+const ConfirmationModal = dynamic(
+  () =>
+    import("@/components/ui/ConfirmationModal").then(
+      (mod) => mod.ConfirmationModal,
+    ),
+  { ssr: false },
+);
+
+const ContextMenu = dynamic(
+  () => import("@/components/ui/ContextMenu").then((mod) => mod.ContextMenu),
+  { ssr: false },
+);
+
+const FocusRecordDetailsPopover = dynamic(
+  () =>
+    import("./FocusRecordDetailsPopover").then(
+      (mod) => mod.FocusRecordDetailsPopover,
+    ),
+  { ssr: false },
+);
+
+const INITIAL_FOLD_COUNT = 10;
+
+interface FocusRecentRecordItemLabels {
+  freeSession: string;
+  rowTooltip: string;
+  leisureLabel: string;
+  editRecordAria: string;
+  deleteRecordAria: string;
+  formatPomos: (count: number) => string;
+}
 
 interface FocusRecentRecordItemProps {
   record: FocusRecord;
-  onRowClick: (e: React.MouseEvent, record: FocusRecord) => void;
+  isBelowInitialFold: boolean;
+  isGamified: boolean;
+  locale: AppLocale;
+  dateFormat: DateFormat;
+  timeFormat: TimeFormat;
+  userTimeZone?: string | null;
+  labels: FocusRecentRecordItemLabels;
+  onRowClick: (
+    e: React.MouseEvent<HTMLButtonElement>,
+    record: FocusRecord,
+  ) => void;
   onContextMenu: (e: React.MouseEvent, record: FocusRecord) => void;
   onRequestEdit?: (record: FocusRecord) => void;
   onRequestDelete?: (record: FocusRecord) => void;
@@ -36,22 +76,23 @@ interface FocusRecentRecordItemProps {
 
 const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   record: rec,
+  isBelowInitialFold,
+  isGamified,
+  locale,
+  dateFormat,
+  timeFormat,
+  userTimeZone,
+  labels,
   onRowClick,
   onContextMenu,
   onRequestEdit,
   onRequestDelete,
 }: FocusRecentRecordItemProps) {
-  const t = useTranslations("focus.records");
-  const { isGamified } = useExperienceMode();
-  const locale = useLocale() as AppLocale;
-  const { dateFormat } = useDateFormat();
-  const { timeFormat } = useTimeFormat();
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const {
     title: displayTitle,
     subtitle: displaySubtitle,
     IconComp,
-  } = resolveFocusRecordDisplay(rec, t("freeSession"));
+  } = resolveFocusRecordDisplay(rec, labels.freeSession);
   const fullTitle = displaySubtitle
     ? `${displayTitle} • ${displaySubtitle}`
     : displayTitle;
@@ -63,111 +104,111 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
 
   return (
     <article
-      onClick={(e) => onRowClick(e, rec)}
       onContextMenu={(e) => onContextMenu(e, rec)}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onRowClick(e as unknown as React.MouseEvent, rec);
-        }
-      }}
-      title={t("rowTooltip")}
-      className="group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-colors cursor-pointer select-none p-2.5"
+      className={cn(
+        "group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-colors select-none p-2.5",
+        // Aplica content-visibility apenas nos itens abaixo da dobra inicial (após "Ver mais")
+        isBelowInitialFold &&
+          "[content-visibility:auto] [contain-intrinsic-size:auto_none_auto_64px]",
+      )}
     >
-      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <div className="w-8 h-8 rounded-lg bg-primary-dark/40 border border-primary/30 flex items-center justify-center shrink-0 text-primary-light group-hover/row:border-gold/40 transition-colors">
-          <IconComp size={15} />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors truncate">
-              {fullTitle}
-            </span>
-            {rec.notes && rec.notes.trim() !== "" && (
-              <span
-                title={rec.notes}
-                className="text-neutral-400 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors shrink-0 p-0.5"
-              >
-                <MessageSquare size={12} />
-              </span>
-            )}
+      <button
+        type="button"
+        onClick={(e) => onRowClick(e, rec)}
+        title={labels.rowTooltip}
+        className="flex items-center justify-between gap-2.5 min-w-0 flex-1 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="w-8 h-8 rounded-lg bg-primary-dark/40 border border-primary/30 flex items-center justify-center shrink-0 text-primary-light group-hover/row:border-gold/40 transition-colors">
+            <IconComp size={15} aria-hidden="true" />
           </div>
-          <span className="text-tiny text-neutral-400 truncate">
-            {formatDateTime(rec.endTime, {
-              isLocal: true,
-              locale,
-              dateFormat,
-              timeFormat,
-              timeZone: userTimeZone,
-            })}
-          </span>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors truncate">
+                {fullTitle}
+              </span>
+              {rec.notes && rec.notes.trim() !== "" && (
+                <span
+                  title={rec.notes}
+                  className="text-neutral-400 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors shrink-0 p-0.5"
+                >
+                  <MessageSquare size={12} aria-hidden="true" />
+                </span>
+              )}
+            </div>
+            <span className="text-tiny text-neutral-400 truncate">
+              {formatDateTime(rec.endTime, {
+                isLocal: true,
+                locale,
+                dateFormat,
+                timeFormat,
+                timeZone: userTimeZone,
+              })}
+            </span>
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        <div className="flex flex-col items-end">
-          <span className="text-body-s font-bold text-gold">
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-body-s font-bold text-amber-800 dark:text-gold tabular-nums">
             {durationLabel}
           </span>
           {!rec.inventoryItemId &&
           ((rec.xpEarned ?? 0) > 0 || (rec.coinsEarned ?? 0) > 0) ? (
-            <span className="text-tiny text-neutral-400 font-medium inline-flex items-center gap-1">
+            <span className="text-tiny text-neutral-400 font-medium inline-flex items-center gap-1 tabular-nums">
               <span>
                 +{rec.xpEarned ?? 0} {isGamified ? "XP" : "pts"}
               </span>
               <span>•</span>
-              <span className="inline-flex items-center gap-0.5 text-gold font-semibold">
+              <span className="inline-flex items-center gap-0.5 text-amber-800 dark:text-gold font-semibold">
                 +{formatCoins(rec.coinsEarned ?? 0, { locale })}
                 <CoinIcon size={10} />
               </span>
             </span>
           ) : rec.completedPomos && rec.completedPomos > 0 ? (
             <span className="text-tiny text-neutral-400">
-              {t("pomosCount", { count: rec.completedPomos })}
+              {labels.formatPomos(rec.completedPomos)}
             </span>
           ) : rec.inventoryItemId ? (
             <span className="text-tiny text-neutral-400 font-medium">
-              {t("leisureLabel")}
+              {labels.leisureLabel}
             </span>
           ) : null}
         </div>
+      </button>
 
-        {/* Ações diretas: Editar (lápis) e Excluir (lixeira) */}
-        {(onRequestEdit || onRequestDelete) && (
-          <div className="flex items-center gap-0.5 shrink-0">
-            {onRequestEdit && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRequestEdit(rec);
-                }}
-                className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-amber-500/15 dark:hover:bg-gold/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
-                title={t("editRecordAria")}
-                aria-label={t("editRecordAria")}
-              >
-                <Pencil size={13} />
-              </button>
-            )}
+      {(onRequestEdit || onRequestDelete) && (
+        <div className="flex items-center gap-0.5 shrink-0">
+          {onRequestEdit && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRequestEdit(rec);
+              }}
+              className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-amber-500/15 dark:hover:bg-gold/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
+              title={labels.editRecordAria}
+              aria-label={labels.editRecordAria}
+            >
+              <Pencil size={13} aria-hidden="true" />
+            </button>
+          )}
 
-            {onRequestDelete && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRequestDelete(rec);
-                }}
-                className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
-                title={t("deleteRecordAria")}
-                aria-label={t("deleteRecordAria")}
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+          {onRequestDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRequestDelete(rec);
+              }}
+              className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
+              title={labels.deleteRecordAria}
+              aria-label={labels.deleteRecordAria}
+            >
+              <Trash2 size={13} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      )}
     </article>
   );
 });
@@ -185,8 +226,10 @@ interface FocusRecentRecordsProps {
   onDeleteRecord?: (
     recordId: string,
     deleteHistory: boolean,
-  ) => void | Promise<void>;
+  ) => Promise<boolean> | boolean | undefined;
   onRecordUpdated?: (updatedRecord: FocusRecord) => void;
+  selectedActivityName?: string | null;
+  onClearSelectedActivity?: () => void;
 }
 
 export function FocusRecentRecords({
@@ -200,13 +243,32 @@ export function FocusRecentRecords({
   onEditRecord,
   onDeleteRecord,
   onRecordUpdated,
+  selectedActivityName,
+  onClearSelectedActivity,
 }: FocusRecentRecordsProps) {
+  // 6 assinaturas lidas uma única vez no container (em vez de 6N por linha)
   const t = useTranslations("focus.records");
   const { isGamified } = useExperienceMode();
-  // Popover de edição ancorado
+  const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
+
+  const itemLabels: FocusRecentRecordItemLabels = {
+    freeSession: t("freeSession"),
+    rowTooltip: t("rowTooltip"),
+    leisureLabel: t("leisureLabel"),
+    editRecordAria: t("editRecordAria"),
+    deleteRecordAria: t("deleteRecordAria"),
+    formatPomos: (count: number) => t("pomosCount", { count }),
+  };
+
+  // Popover de edição ancorado (com referência ao elemento para scroll-tracking e foco)
   const [selectedRecordForEdit, setSelectedRecordForEdit] =
     useState<FocusRecord | null>(null);
   const [editAnchorRect, setEditAnchorRect] = useState<DOMRect | null>(null);
+  const [editAnchorElement, setEditAnchorElement] =
+    useState<HTMLElement | null>(null);
 
   // Menu de contexto com botão direito
   const [contextMenu, setContextMenu] = useState<{
@@ -214,14 +276,16 @@ export function FocusRecentRecords({
     position: { x: number; y: number };
     record: FocusRecord | null;
     anchorRect: DOMRect | null;
+    anchorElement: HTMLElement | null;
   }>({
     isOpen: false,
     position: { x: 0, y: 0 },
     record: null,
     anchorRect: null,
+    anchorElement: null,
   });
 
-  // Confirmação única de exclusão (botão da linha, menu de contexto e popover)
+  // Confirmação única de exclusão
   const [pendingDeleteRecord, setPendingDeleteRecord] =
     useState<FocusRecord | null>(null);
   const [deleteHistory, setDeleteHistory] = useState(false);
@@ -236,21 +300,23 @@ export function FocusRecentRecords({
     if (!pendingDeleteRecord || !onDeleteRecord) return;
     setIsDeletingRecord(true);
     try {
-      // Itens de lazer (mochila) não geram registro no Histórico
-      await onDeleteRecord(
+      const deleted = await onDeleteRecord(
         pendingDeleteRecord.id,
         !pendingDeleteRecord.inventoryItemId && deleteHistory,
       );
-      setPendingDeleteRecord(null);
+      if (deleted !== false) {
+        setPendingDeleteRecord(null);
+      }
     } finally {
       setIsDeletingRecord(false);
     }
   };
 
   const handleRowClick = useCallback(
-    (e: React.MouseEvent, record: FocusRecord) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      setEditAnchorRect(rect);
+    (e: React.MouseEvent<HTMLButtonElement>, record: FocusRecord) => {
+      const el = e.currentTarget;
+      setEditAnchorElement(el);
+      setEditAnchorRect(el.getBoundingClientRect());
       setSelectedRecordForEdit(record);
     },
     [],
@@ -260,12 +326,13 @@ export function FocusRecentRecords({
     (e: React.MouseEvent, record: FocusRecord) => {
       e.preventDefault();
       e.stopPropagation();
-      const rect = e.currentTarget.getBoundingClientRect();
+      const el = e.currentTarget as HTMLElement;
       setContextMenu({
         isOpen: true,
         position: { x: e.clientX, y: e.clientY },
         record,
-        anchorRect: rect,
+        anchorRect: el.getBoundingClientRect(),
+        anchorElement: el,
       });
     },
     [],
@@ -273,21 +340,24 @@ export function FocusRecentRecords({
 
   return (
     <div className="flex flex-col gap-2.5 w-full xl:flex-1 xl:min-h-0">
-      {/* Header com Título, Contador e Ações (+ e ...) */}
+      {/* Header com Título (<h3>), Contador e Ações */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-1.5 text-neutral-300">
-          <History size={15} className="text-primary-light" />
-          <h4 className="text-body-s font-bold text-neutral-100">
+          <History
+            size={15}
+            aria-hidden="true"
+            className="text-primary-light"
+          />
+          <h3 className="text-body-s font-bold text-neutral-100">
             {t("title")}
-          </h4>
+          </h3>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-tiny text-neutral-400 font-medium mr-1">
+          <span className="text-tiny text-neutral-400 font-medium mr-1 tabular-nums">
             {t("sessionsCount", { count: totalRecordsCount ?? records.length })}
           </span>
 
-          {/* Botão + (Novo Registro) */}
           <button
             type="button"
             onClick={onAddRecord}
@@ -295,10 +365,9 @@ export function FocusRecentRecords({
             aria-label={t("addRecordAria")}
             className="min-w-8 min-h-8 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-amber-500/15 dark:hover:bg-gold/20 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/50 flex items-center justify-center transition-colors cursor-pointer shadow-xs"
           >
-            <Plus size={14} />
+            <Plus size={14} aria-hidden="true" />
           </button>
 
-          {/* Botão ... (Opções da Seção) */}
           <button
             type="button"
             onClick={onOptionsClick}
@@ -306,7 +375,7 @@ export function FocusRecentRecords({
             aria-label={t("viewFullHistoryAria")}
             className="min-w-8 min-h-8 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-surface-hover dark:hover:bg-white/15 text-neutral-400 hover:text-neutral-100 transition-colors flex items-center justify-center cursor-pointer shadow-xs"
           >
-            <History size={14} />
+            <History size={14} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -314,25 +383,47 @@ export function FocusRecentRecords({
       {/* Lista de Registros */}
       <div className="flex flex-col gap-2 xl:overflow-y-auto xl:overscroll-contain xl:min-h-[180px] custom-scrollbar xl:flex-1 xl:pr-1">
         {records.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-primary/30 bg-surface/30">
-            <Timer size={24} className="text-neutral-500 mb-1" />
-            <p className="text-xs text-neutral-400">{t("emptyState")}</p>
-            {onAddRecord && (
-              <button
-                type="button"
-                onClick={onAddRecord}
-                className="mt-2 text-xs font-bold text-gold hover:underline cursor-pointer"
-              >
-                {t("addFirstRecord")}
-              </button>
-            )}
+          <div className="flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-primary/30 bg-surface/30 gap-2">
+            <Timer size={24} aria-hidden="true" className="text-neutral-500" />
+            <p className="text-xs text-neutral-400">
+              {selectedActivityName
+                ? t("emptyFilteredState", { name: selectedActivityName })
+                : t("emptyState")}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-0.5">
+              {selectedActivityName && onClearSelectedActivity && (
+                <button
+                  type="button"
+                  onClick={onClearSelectedActivity}
+                  className="min-h-7 px-2.5 py-1 rounded-lg border border-amber-500/40 dark:border-gold/40 bg-amber-500/10 dark:bg-gold/10 text-xs font-bold text-amber-800 dark:text-gold hover:bg-amber-500/20 dark:hover:bg-gold/20 transition-colors cursor-pointer"
+                >
+                  {t("clearFilterButton")}
+                </button>
+              )}
+              {onAddRecord && (
+                <button
+                  type="button"
+                  onClick={onAddRecord}
+                  className="min-h-7 px-2 py-1 text-xs font-bold text-amber-700 dark:text-gold hover:underline cursor-pointer"
+                >
+                  {t("addFirstRecord")}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <>
-            {records.map((rec) => (
+            {records.map((rec, index) => (
               <FocusRecentRecordItem
                 key={rec.id}
                 record={rec}
+                isBelowInitialFold={index >= INITIAL_FOLD_COUNT}
+                isGamified={isGamified}
+                locale={locale}
+                dateFormat={dateFormat}
+                timeFormat={timeFormat}
+                userTimeZone={userTimeZone}
+                labels={itemLabels}
                 onRowClick={handleRowClick}
                 onContextMenu={handleContextMenu}
                 onRequestEdit={onEditRecord}
@@ -346,16 +437,20 @@ export function FocusRecentRecords({
                 type="button"
                 onClick={onShowMore}
                 disabled={isLoadingMore}
-                className="mt-1 flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-neutral-700 dark:border-primary/30 bg-card/80 dark:bg-surface/40 hover:bg-surface-hover dark:hover:bg-white/10 text-xs font-semibold text-neutral-300 hover:text-gold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-1 flex items-center justify-center gap-1.5 w-full min-h-9 py-2 px-3 rounded-xl border border-neutral-700 dark:border-primary/30 bg-card/80 dark:bg-surface/40 hover:bg-surface-hover dark:hover:bg-white/10 text-xs font-semibold text-neutral-300 hover:text-amber-700 dark:hover:text-gold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoadingMore ? (
                   <>
-                    <Loader2 size={13} className="animate-spin text-gold" />
+                    <Loader2
+                      size={13}
+                      aria-hidden="true"
+                      className="animate-spin text-amber-700 dark:text-gold"
+                    />
                     <span>{t("loadingMore")}</span>
                   </>
                 ) : (
                   <>
-                    <ChevronDown size={14} />
+                    <ChevronDown size={14} aria-hidden="true" />
                     <span>{t("showMore")}</span>
                   </>
                 )}
@@ -365,108 +460,115 @@ export function FocusRecentRecords({
         )}
       </div>
 
-      {/* Popover Ancorado de Detalhes / Anotações do Registro */}
-      <FocusRecordDetailsPopover
-        isOpen={selectedRecordForEdit !== null}
-        onClose={() => {
-          setSelectedRecordForEdit(null);
-          setEditAnchorRect(null);
-        }}
-        record={selectedRecordForEdit}
-        anchorRect={editAnchorRect}
-        onRequestEdit={onEditRecord}
-        onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
-        onRecordUpdated={onRecordUpdated}
-      />
+      {/* Popover Ancorado de Detalhes / Anotações (carregado e montado sob demanda) */}
+      {selectedRecordForEdit && (
+        <FocusRecordDetailsPopover
+          isOpen={true}
+          onClose={() => {
+            setSelectedRecordForEdit(null);
+            setEditAnchorRect(null);
+            setEditAnchorElement(null);
+          }}
+          record={selectedRecordForEdit}
+          anchorRect={editAnchorRect}
+          anchorElement={editAnchorElement}
+          onRequestEdit={onEditRecord}
+          onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
+          onRecordUpdated={onRecordUpdated}
+        />
+      )}
 
-      {/* Confirmação de exclusão com opção de limpar o Histórico */}
-      <ConfirmationModal
-        isOpen={pendingDeleteRecord !== null}
-        onClose={() => !isDeletingRecord && setPendingDeleteRecord(null)}
-        onConfirm={handleConfirmDelete}
-        isLoading={isDeletingRecord}
-        title={t("deleteConfirmTitle")}
-        description={
-          <p>
-            {t.rich(
-              isGamified
-                ? "deleteConfirmDescription"
-                : "deleteConfirmDescriptionProductivity",
-              {
-                name: pendingDeleteRecord
-                  ? resolveFocusRecordDisplay(
-                      pendingDeleteRecord,
-                      t("freeSession"),
-                    ).title
-                  : t("freeSession"),
-                strong: (chunks) => (
-                  <strong className="text-neutral-100">{chunks}</strong>
-                ),
+      {/* Confirmação de exclusão (carregada e montada sob demanda) */}
+      {pendingDeleteRecord && (
+        <ConfirmationModal
+          isOpen={true}
+          onClose={() => !isDeletingRecord && setPendingDeleteRecord(null)}
+          onConfirm={handleConfirmDelete}
+          isLoading={isDeletingRecord}
+          title={t("deleteConfirmTitle")}
+          description={
+            <p>
+              {t.rich(
+                isGamified
+                  ? "deleteConfirmDescription"
+                  : "deleteConfirmDescriptionProductivity",
+                {
+                  name: resolveFocusRecordTitle(
+                    pendingDeleteRecord,
+                    t("freeSession"),
+                  ).title,
+                  strong: (chunks) => (
+                    <strong className="text-neutral-100">{chunks}</strong>
+                  ),
+                },
+              )}
+            </p>
+          }
+          confirmText={t("deleteConfirmButton")}
+          variant="danger"
+          checkboxLabel={
+            !pendingDeleteRecord.inventoryItemId
+              ? t("deleteHistoryLabel")
+              : undefined
+          }
+          checkboxHint={
+            isGamified
+              ? t("deleteHistoryHint")
+              : t("deleteHistoryHintProductivity")
+          }
+          checkboxChecked={deleteHistory}
+          onCheckboxChange={setDeleteHistory}
+        />
+      )}
+
+      {/* Menu de Contexto (carregado e montado sob demanda) */}
+      {contextMenu.isOpen && (
+        <ContextMenu
+          isOpen={contextMenu.isOpen}
+          position={contextMenu.position}
+          onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
+          items={[
+            ...(onEditRecord
+              ? [
+                  {
+                    label: t("contextEditRecord"),
+                    icon: <Pencil size={14} />,
+                    onClick: () => {
+                      if (contextMenu.record) {
+                        onEditRecord(contextMenu.record);
+                      }
+                    },
+                  },
+                ]
+              : []),
+            {
+              label: t("contextEditNotes"),
+              icon: <MessageSquare size={14} />,
+              onClick: () => {
+                if (contextMenu.record) {
+                  setEditAnchorElement(contextMenu.anchorElement);
+                  setEditAnchorRect(contextMenu.anchorRect);
+                  setSelectedRecordForEdit(contextMenu.record);
+                }
               },
-            )}
-          </p>
-        }
-        confirmText={t("deleteConfirmButton")}
-        variant="danger"
-        checkboxLabel={
-          pendingDeleteRecord && !pendingDeleteRecord.inventoryItemId
-            ? t("deleteHistoryLabel")
-            : undefined
-        }
-        checkboxHint={
-          isGamified
-            ? t("deleteHistoryHint")
-            : t("deleteHistoryHintProductivity")
-        }
-        checkboxChecked={deleteHistory}
-        onCheckboxChange={setDeleteHistory}
-      />
-
-      {/* Menu de Contexto (Clique com Botão Direito) */}
-      <ContextMenu
-        isOpen={contextMenu.isOpen}
-        position={contextMenu.position}
-        onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
-        items={[
-          ...(onEditRecord
-            ? [
-                {
-                  label: t("contextEditRecord"),
-                  icon: <Pencil size={14} />,
-                  onClick: () => {
-                    if (contextMenu.record) {
-                      onEditRecord(contextMenu.record);
-                    }
-                  },
-                },
-              ]
-            : []),
-          {
-            label: t("contextEditNotes"),
-            icon: <MessageSquare size={14} />,
-            onClick: () => {
-              if (contextMenu.record) {
-                setEditAnchorRect(contextMenu.anchorRect);
-                setSelectedRecordForEdit(contextMenu.record);
-              }
             },
-          },
-          ...(onDeleteRecord
-            ? [
-                {
-                  label: t("contextDeleteRecord"),
-                  icon: <Trash2 size={14} />,
-                  variant: "destructive" as const,
-                  onClick: () => {
-                    if (contextMenu.record) {
-                      handleRequestDelete(contextMenu.record);
-                    }
+            ...(onDeleteRecord
+              ? [
+                  {
+                    label: t("contextDeleteRecord"),
+                    icon: <Trash2 size={14} />,
+                    variant: "destructive" as const,
+                    onClick: () => {
+                      if (contextMenu.record) {
+                        handleRequestDelete(contextMenu.record);
+                      }
+                    },
                   },
-                },
-              ]
-            : []),
-        ]}
-      />
+                ]
+              : []),
+          ]}
+        />
+      )}
     </div>
   );
 }

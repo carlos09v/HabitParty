@@ -23,6 +23,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.usecases.workspace.GetFullKanbanBoardUseCase;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.entities.task.Todo;
 
 @ExtendWith(MockitoExtension.class)
 class ListTasksByColumnUseCaseTest {
@@ -42,7 +43,7 @@ class ListTasksByColumnUseCaseTest {
     UUID userId = UUID.randomUUID();
     UUID colId = UUID.randomUUID();
     BoardColumn col = mock(BoardColumn.class);
-    Task active = mock(Task.class);
+    Task active = mock(Todo.class);
     LocalDate today = LocalDate.of(2026, 11, 15);
     LocalDate expectedCutoff = today.minusDays(GetFullKanbanBoardUseCase.ARCHIVE_CUTOFF_DAYS);
 
@@ -63,7 +64,7 @@ class ListTasksByColumnUseCaseTest {
     UUID userId = UUID.randomUUID();
     UUID colId = UUID.randomUUID();
     BoardColumn col = mock(BoardColumn.class);
-    Task archived = mock(Task.class);
+    Task archived = mock(Todo.class);
     LocalDate today = LocalDate.of(2026, 11, 15);
     LocalDate expectedCutoff = today.minusDays(GetFullKanbanBoardUseCase.ARCHIVE_CUTOFF_DAYS);
     LocalDateTime expectedCutoffAt = expectedCutoff.atStartOfDay();

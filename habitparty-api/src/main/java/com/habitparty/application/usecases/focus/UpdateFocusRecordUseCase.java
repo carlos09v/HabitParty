@@ -24,6 +24,7 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.application.usecases.task.DailyResetUseCase;
 import com.habitparty.application.usecases.user.GlobalStreakSupport;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.UserStats;
@@ -49,6 +50,7 @@ public class UpdateFocusRecordUseCase {
   private TaskRepository taskPort;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private DailyResetUseCase dailyResetUseCase;
+  private WorkspaceWriteGuard workspaceWriteGuard;
   private Clock clock = Clock.systemUTC();
 
   public UpdateFocusRecordUseCase(FocusRecordRepository port) {
@@ -96,6 +98,11 @@ public class UpdateFocusRecordUseCase {
   public void setEvaluateUserAchievementsUseCase(
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+  }
+
+  @Autowired
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
   public FocusRecord execute(UUID userIdLogado, UUID recordId, String notes) {
@@ -281,6 +288,7 @@ public class UpdateFocusRecordUseCase {
           userIdLogado,
           command.taskId(),
           taskPort,
+          workspaceWriteGuard,
           "Repositório de tarefas não disponível para vincular tarefa.");
       taskNameSnapshot = loadedTask.getName();
     } else if (existing.getTaskId().isEmpty()) {
@@ -350,7 +358,37 @@ public class UpdateFocusRecordUseCase {
     LocalDate targetDate = userEndTime.toLocalDate();
     int priorMinutesExcludingSelf = port.sumFocusMinutesOnDateExcludingRecord(
         userIdLogado, targetDate, userZone, existing.getId());
-    FocusReward newReward = FocusRewardCalculator.calculate(preliminaryUserRecord, priorMinutesExcludingSelf);
+    FocusReward computedReward = FocusRewardCalculator.calculate(preliminaryUserRecord, priorMinutesExcludingSelf);
+
+    int oldXp = existing.getXpEarned().orElse(0);
+    BigDecimal oldCoins = existing.getCoinsEarned().orElse(BigDecimal.ZERO);
+
+    // Antifraude: se este registro já sofreu estorno parcial anterior (moedas gastas ou piso de nível),
+    // bloqueia ganho líquido adicional ao expandir novamente (evita farm infinito shrink/expand).
+    FocusReward effectiveReward = existing.isRewardLocked()
+        ? new FocusReward(
+            Math.min(oldXp, computedReward.xp()),
+            oldCoins.min(computedReward.coins()))
+        : computedReward;
+
+    boolean nextRewardLocked = existing.isRewardLocked();
+    if (!nextRewardLocked && loadedUser != null && loadedUser.getStats() != null) {
+      UserStats stats = loadedUser.getStats();
+      int xpDeltaPreview = effectiveReward.xp() - oldXp;
+      BigDecimal coinsDeltaPreview = effectiveReward.coins().subtract(oldCoins);
+      boolean xpFullyReverted = true;
+      if (xpDeltaPreview < 0) {
+        int minXpForCurrentLevel = stats.getCurrentLevel().getMinXpRequired();
+        xpFullyReverted = (stats.getTotalXp() - (-xpDeltaPreview)) >= minXpForCurrentLevel;
+      }
+      boolean coinsFullyReverted = true;
+      if (coinsDeltaPreview.compareTo(BigDecimal.ZERO) < 0) {
+        coinsFullyReverted = stats.getCurrentCoins().compareTo(coinsDeltaPreview.negate()) >= 0;
+      }
+      if (!xpFullyReverted || !coinsFullyReverted) {
+        nextRewardLocked = true;
+      }
+    }
 
     LocalDate userToday = LocalDate.now(clock.withZone(userZone));
     int priorProductiveMinutesTodayExcludingSelf = port.sumProductiveFocusMinutesOnDateExcludingRecord(
@@ -372,8 +410,9 @@ public class UpdateFocusRecordUseCase {
         effectiveType,
         resolvedPomos,
         resolvedPomoTargetMinutes,
-        newReward.xp(),
-        newReward.coins());
+        effectiveReward.xp(),
+        effectiveReward.coins(),
+        nextRewardLocked);
 
     FocusRecord savedRecord = port.save(updatedRecord);
 
@@ -384,7 +423,7 @@ public class UpdateFocusRecordUseCase {
           loadedUser,
           existing,
           savedRecord,
-          newReward,
+          effectiveReward,
           loadedActivity,
           userZone,
           userToday,
@@ -402,8 +441,8 @@ public class UpdateFocusRecordUseCase {
           userIdLogado,
           snapshot.nameSnapshot(),
           snapshot.iconSnapshot(),
-          newReward.coins(),
-          newReward.xp(),
+          effectiveReward.coins(),
+          effectiveReward.xp(),
           List.of(snapshot.durationLabel()),
           snapshot.descriptionSnapshot(),
           savedRecord.getEndTime());
@@ -492,11 +531,9 @@ public class UpdateFocusRecordUseCase {
     boolean oldQualifiedStats = oldDuration >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
     boolean newQualifiedStats = newDuration >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
 
-    stats.revertFocusActivityCounters(oldDuration, oldPomos);
+    stats.revertFocusActivityCounters(oldDuration, oldQualifiedStats ? oldPomos : 0);
     if (newQualifiedStats) {
       stats.recordFocusCompleted(newDuration, newPomos);
-    } else if (newPomos > 0) {
-      stats.recordFocusCompleted(0, newPomos);
     }
 
     if (oldDuration >= stats.getLongestFocusSessionMinutes() && newDuration < oldDuration) {

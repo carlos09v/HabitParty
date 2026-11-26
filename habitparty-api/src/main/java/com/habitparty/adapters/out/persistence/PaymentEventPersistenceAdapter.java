@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.adapters.out.persistence.entities.ProcessedPaymentEventJpaEntity;
 import com.habitparty.adapters.out.persistence.repository.ProcessedPaymentEventJpaRepository;
@@ -28,11 +29,13 @@ public class PaymentEventPersistenceAdapter implements PaymentEventRepository {
   }
 
   @Override
+  @Transactional
   public void recordEvent(String stripeEventId, String eventType) {
     recordEvent(stripeEventId, eventType, null, PaymentEventStatus.PROCESSED, null);
   }
 
   @Override
+  @Transactional
   public void recordEvent(
       String stripeEventId,
       String eventType,
@@ -55,51 +58,57 @@ public class PaymentEventPersistenceAdapter implements PaymentEventRepository {
         repository.saveAndFlush(existing);
         return;
       }
-      if (targetStatus != PaymentEventStatus.PROCESSED) {
-        return;
+      boolean changed = false;
+      if (existing.getUserId() == null && userId != null) {
+        existing.setUserId(userId);
+        changed = true;
       }
+      if (existing.getStatus() != targetStatus && targetStatus == PaymentEventStatus.IGNORED) {
+        existing.setStatus(targetStatus);
+        existing.setErrorMessage(errorMessage);
+        changed = true;
+      }
+      if (changed) {
+        repository.saveAndFlush(existing);
+      }
+      return;
     }
-    ProcessedPaymentEventJpaEntity entity = new ProcessedPaymentEventJpaEntity(
-        UUID.randomUUID(),
-        userId,
-        stripeEventId,
-        eventType,
-        targetStatus,
-        errorMessage,
-        LocalDateTime.now()
-    );
+    ProcessedPaymentEventJpaEntity entity = ProcessedPaymentEventJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .stripeEventId(stripeEventId)
+        .eventType(eventType)
+        .status(targetStatus)
+        .errorMessage(errorMessage)
+        .processedAt(LocalDateTime.now())
+        .build();
     repository.saveAndFlush(entity);
   }
 
   @Override
+  @Transactional
   public boolean claimEvent(String stripeEventId, String eventType, UUID userId) {
     if (stripeEventId == null || stripeEventId.isBlank()) {
       return true;
     }
-    var existingOpt = repository.findByStripeEventId(stripeEventId);
-    if (existingOpt.isPresent()) {
-      ProcessedPaymentEventJpaEntity existing = existingOpt.get();
-      if (existing.getStatus() != PaymentEventStatus.FAILED) {
-        return false;
-      }
-      existing.setEventType(eventType);
-      existing.setUserId(userId);
-      existing.setStatus(PaymentEventStatus.PROCESSED);
-      existing.setErrorMessage(null);
-      existing.setProcessedAt(LocalDateTime.now());
-      repository.saveAndFlush(existing);
-      return true;
-    }
-    ProcessedPaymentEventJpaEntity entity = new ProcessedPaymentEventJpaEntity(
+    LocalDateTime now = LocalDateTime.now();
+    int inserted = repository.insertIfAbsent(
         UUID.randomUUID(),
         userId,
         stripeEventId,
         eventType,
+        PaymentEventStatus.PROCESSED.name(),
+        now);
+    if (inserted > 0) {
+      return true;
+    }
+    int reclaimed = repository.reclaimFailedEvent(
+        stripeEventId,
+        eventType,
+        userId,
+        PaymentEventStatus.FAILED,
         PaymentEventStatus.PROCESSED,
-        null,
-        LocalDateTime.now()
-    );
-    repository.saveAndFlush(entity);
-    return true;
+        now);
+    return reclaimed > 0;
   }
 }

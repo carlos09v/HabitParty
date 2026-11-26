@@ -31,41 +31,52 @@ public final class FocusRewardCalculator {
     return Math.min(durationMinutes, MAX_SESSION_MINUTES);
   }
 
-  private record BaseReward(double xp, BigDecimal coins) {}
+  private static final BigDecimal THIRTY = BigDecimal.valueOf(30);
+  private static final BigDecimal SEVEN = BigDecimal.valueOf(7);
+  private static final BigDecimal SIX = BigDecimal.valueOf(6);
+  private static final BigDecimal STOPWATCH_COINS_PER_30 = new BigDecimal("0.45");
+  private static final BigDecimal FALLBACK_POMO_COINS_PER_30 = new BigDecimal("0.30");
+  private static final BigDecimal SHORT_POMO_XP = BigDecimal.valueOf(4);
+  private static final BigDecimal SHORT_POMO_COINS = new BigDecimal("0.25");
+  private static final BigDecimal STANDARD_POMO_XP = BigDecimal.valueOf(8);
+  private static final BigDecimal STANDARD_POMO_COINS = new BigDecimal("0.50");
+  private static final BigDecimal DEEP_POMO_XP = BigDecimal.valueOf(15);
+  private static final BigDecimal DEEP_POMO_COINS = new BigDecimal("1.00");
+
+  private record BaseReward(BigDecimal xpTimes30, BigDecimal coinsTimes30) {
+    BaseReward add(BaseReward other) {
+      return new BaseReward(this.xpTimes30.add(other.xpTimes30), this.coinsTimes30.add(other.coinsTimes30));
+    }
+  }
 
   private static BaseReward calculateStopwatchBase(int minutes) {
-    double xp = (minutes / 30.0) * 7.0;
-    BigDecimal coins = BigDecimal.valueOf(minutes)
-        .multiply(new BigDecimal("0.45"))
-        .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
-    return new BaseReward(xp, coins);
+    BigDecimal mins = BigDecimal.valueOf(minutes);
+    return new BaseReward(mins.multiply(SEVEN), mins.multiply(STOPWATCH_COINS_PER_30));
   }
 
   private static BaseReward calculatePomoCycleBase(int minutesPerPomo, int completedPomos, int totalPomoMinutes) {
     if (minutesPerPomo < 15) {
       // Anti-exploit: muitos pomos declarados para pouco tempo decorrido
-      double xp = (totalPomoMinutes / 30.0) * 6.0;
-      BigDecimal coins = BigDecimal.valueOf(totalPomoMinutes)
-          .multiply(new BigDecimal("0.30"))
-          .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
-      return new BaseReward(xp, coins);
+      BigDecimal mins = BigDecimal.valueOf(totalPomoMinutes);
+      return new BaseReward(mins.multiply(SIX), mins.multiply(FALLBACK_POMO_COINS_PER_30));
     }
+    BigDecimal pomos = BigDecimal.valueOf(completedPomos);
     if (minutesPerPomo < 25) {
       // Pomodoro curto (15 a 24 min)
       return new BaseReward(
-          completedPomos * 4.0,
-          new BigDecimal("0.25").multiply(BigDecimal.valueOf(completedPomos)));
+          pomos.multiply(SHORT_POMO_XP).multiply(THIRTY),
+          pomos.multiply(SHORT_POMO_COINS).multiply(THIRTY));
     }
     if (minutesPerPomo < 50) {
       // Pomodoro padrão (25 a 49 min)
       return new BaseReward(
-          completedPomos * 8.0,
-          new BigDecimal("0.50").multiply(BigDecimal.valueOf(completedPomos)));
+          pomos.multiply(STANDARD_POMO_XP).multiply(THIRTY),
+          pomos.multiply(STANDARD_POMO_COINS).multiply(THIRTY));
     }
     // Pomodoro longo / Deep work (>= 50 min)
     return new BaseReward(
-        completedPomos * 15.0,
-        new BigDecimal("1.00").multiply(BigDecimal.valueOf(completedPomos)));
+        pomos.multiply(DEEP_POMO_XP).multiply(THIRTY),
+        pomos.multiply(DEEP_POMO_COINS).multiply(THIRTY));
   }
 
   public static FocusReward calculate(FocusRecord record, int priorFocusMinutesToday) {
@@ -86,72 +97,67 @@ public final class FocusRewardCalculator {
       return FocusReward.ZERO;
     }
 
-    double baseXp;
-    BigDecimal baseCoins;
+    BaseReward baseReward;
 
     FocusRecordType type = record.getRecordType().orElse(FocusRecordType.STOPWATCH);
     Integer completedPomos = record.getCompletedPomos().orElse(0);
     Integer pomoTargetMinutes = record.getPomoTargetMinutes().orElse(null);
 
     if (type == FocusRecordType.POMO && completedPomos != null && completedPomos > 0) {
-      if (pomoTargetMinutes != null && pomoTargetMinutes > 0 && effectiveMinutes > completedPomos * pomoTargetMinutes) {
+      long configuredPomoMinutesLong = pomoTargetMinutes != null && pomoTargetMinutes > 0
+          ? (long) completedPomos * pomoTargetMinutes
+          : -1L;
+      if (configuredPomoMinutesLong > 0 && effectiveMinutes > configuredPomoMinutesLong) {
         // Mantém os ciclos Pomodoros travados na duração configurada e recompensa o excedente como Cronômetro Livre
-        int configuredPomoMinutes = completedPomos * pomoTargetMinutes;
+        int configuredPomoMinutes = (int) configuredPomoMinutesLong;
         int overtimeMinutes = effectiveMinutes - configuredPomoMinutes;
         BaseReward pomoPart = calculatePomoCycleBase(pomoTargetMinutes, completedPomos, configuredPomoMinutes);
         BaseReward overtimePart = calculateStopwatchBase(overtimeMinutes);
-        baseXp = pomoPart.xp() + overtimePart.xp();
-        baseCoins = pomoPart.coins().add(overtimePart.coins());
+        baseReward = pomoPart.add(overtimePart);
       } else {
         int minutesPerPomo = effectiveMinutes / completedPomos;
-        BaseReward pomoBase = calculatePomoCycleBase(minutesPerPomo, completedPomos, effectiveMinutes);
-        baseXp = pomoBase.xp();
-        baseCoins = pomoBase.coins();
+        baseReward = calculatePomoCycleBase(minutesPerPomo, completedPomos, effectiveMinutes);
       }
     } else if (type == FocusRecordType.POMO) {
       // Pomodoro com tempo válido >= 10m mas sem ciclo concluído formalmente
-      baseXp = (effectiveMinutes / 30.0) * 6.0;
-      baseCoins = BigDecimal.valueOf(effectiveMinutes)
-          .multiply(new BigDecimal("0.30"))
-          .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
+      BigDecimal mins = BigDecimal.valueOf(effectiveMinutes);
+      baseReward = new BaseReward(mins.multiply(SIX), mins.multiply(FALLBACK_POMO_COINS_PER_30));
     } else {
       // STOPWATCH (Cronômetro Livre): ~7 XP e 0,45 moedas a cada bloco de 30 minutos
-      BaseReward stopwatchBase = calculateStopwatchBase(effectiveMinutes);
-      baseXp = stopwatchBase.xp();
-      baseCoins = stopwatchBase.coins();
+      baseReward = calculateStopwatchBase(effectiveMinutes);
     }
 
     // Trava 4: Rendimento Decrescente Diário em Escada (0-4h: 100%, 4h-6h: 50%, 6h-8h: 25%, >8h: 0%)
-    BigDecimal multiplier = calculateDailyMultiplierDecimal(priorFocusMinutesToday, effectiveMinutes);
-
-    if (multiplier.compareTo(BigDecimal.ZERO) <= 0) {
+    // Cálculo racional exato em BigDecimal: (baseTimes30 * weightedMinutes) / (30 * effectiveMinutes)
+    BigDecimal weightedMinutes = calculateWeightedSessionMinutes(priorFocusMinutesToday, effectiveMinutes);
+    if (weightedMinutes.compareTo(BigDecimal.ZERO) <= 0) {
       return FocusReward.ZERO;
     }
 
-    int finalXp = BigDecimal.valueOf(baseXp)
-        .multiply(multiplier)
-        .setScale(0, RoundingMode.HALF_UP)
+    BigDecimal denominator = THIRTY.multiply(BigDecimal.valueOf(effectiveMinutes));
+    int finalXp = baseReward.xpTimes30()
+        .multiply(weightedMinutes)
+        .divide(denominator, 0, RoundingMode.HALF_UP)
         .intValue();
-    BigDecimal finalCoins = baseCoins.multiply(multiplier)
-        .setScale(2, RoundingMode.HALF_UP);
+    BigDecimal finalCoins = baseReward.coinsTimes30()
+        .multiply(weightedMinutes)
+        .divide(denominator, 2, RoundingMode.HALF_UP);
 
     return new FocusReward(finalXp, finalCoins);
   }
 
-  public static BigDecimal calculateDailyMultiplierDecimal(int priorMinutes, int sessionMinutes) {
+  private static BigDecimal calculateWeightedSessionMinutes(int priorMinutes, int sessionMinutes) {
     if (sessionMinutes <= 0) {
       return BigDecimal.ZERO;
     }
     int safePrior = Math.max(0, priorMinutes);
     if (safePrior >= DAILY_TIER3_MINUTES) {
-      return BigDecimal.ZERO; // Teto diário de 8h excedido
+      return BigDecimal.ZERO;
     }
-
     int sessionEnd = safePrior + sessionMinutes;
     if (sessionEnd <= DAILY_TIER1_MINUTES) {
-      return BigDecimal.ONE;
+      return BigDecimal.valueOf(sessionMinutes);
     }
-
     int tier1Minutes = Math.max(0, Math.min(sessionEnd, DAILY_TIER1_MINUTES) - safePrior);
     int tier2Minutes = Math.max(
         0,
@@ -160,9 +166,19 @@ public final class FocusRewardCalculator {
         0,
         Math.min(sessionEnd, DAILY_TIER3_MINUTES) - Math.max(safePrior, DAILY_TIER2_MINUTES));
 
-    BigDecimal weightedSum = BigDecimal.valueOf(tier1Minutes)
+    return BigDecimal.valueOf(tier1Minutes)
         .add(BigDecimal.valueOf(tier2Minutes).multiply(HALF_MULTIPLIER))
         .add(BigDecimal.valueOf(tier3Minutes).multiply(QUARTER_MULTIPLIER));
+  }
+
+  public static BigDecimal calculateDailyMultiplierDecimal(int priorMinutes, int sessionMinutes) {
+    BigDecimal weightedSum = calculateWeightedSessionMinutes(priorMinutes, sessionMinutes);
+    if (weightedSum.compareTo(BigDecimal.ZERO) <= 0) {
+      return BigDecimal.ZERO;
+    }
+    if (weightedSum.compareTo(BigDecimal.valueOf(sessionMinutes)) == 0) {
+      return BigDecimal.ONE;
+    }
     return weightedSum.divide(BigDecimal.valueOf(sessionMinutes), 6, RoundingMode.HALF_UP);
   }
 

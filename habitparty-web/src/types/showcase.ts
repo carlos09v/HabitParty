@@ -121,6 +121,11 @@ export interface UserShowcaseResponseDTO {
   achievements: AchievementItemResponseDTO[];
   artifacts?: ArtifactItemResponseDTO[];
   taskStreaks?: TaskStreakHighlightDTO[];
+  friendsCount?: number;
+  pendingFriendRequestsCount?: number;
+  hasSeasonalRetroBanner?: boolean;
+  seasonalRetroYear?: number | null;
+  eligibleRetroArchetypes?: string[];
 }
 
 export interface HighlightSlotInputDTO {

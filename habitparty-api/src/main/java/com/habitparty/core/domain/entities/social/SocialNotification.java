@@ -68,10 +68,38 @@ public class SocialNotification {
   }
 
   private static String truncatePayload(String value) {
-    if (value == null) {
-      return null;
+    if (value == null || value.length() <= MAX_PAYLOAD_LENGTH) {
+      return value;
     }
-    return value.length() <= MAX_PAYLOAD_LENGTH ? value : value.substring(0, MAX_PAYLOAD_LENGTH);
+    String trimmed = value.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      String prefix = "{\"truncated\":true,\"preview\":\"";
+      String suffix = "\"}";
+      int maxPreviewBudget = MAX_PAYLOAD_LENGTH - prefix.length() - suffix.length();
+      StringBuilder escaped = new StringBuilder(maxPreviewBudget);
+      for (int i = 0; i < trimmed.length(); i++) {
+        String token = escapeJsonChar(trimmed.charAt(i));
+        if (escaped.length() + token.length() > maxPreviewBudget) {
+          break;
+        }
+        escaped.append(token);
+      }
+      return prefix + escaped + suffix;
+    }
+    return value.substring(0, MAX_PAYLOAD_LENGTH);
+  }
+
+  private static String escapeJsonChar(char c) {
+    return switch (c) {
+      case '"' -> "\\\"";
+      case '\\' -> "\\\\";
+      case '\b' -> "\\b";
+      case '\f' -> "\\f";
+      case '\n' -> "\\n";
+      case '\r' -> "\\r";
+      case '\t' -> "\\t";
+      default -> c < 0x20 ? String.format("\\u%04x", (int) c) : String.valueOf(c);
+    };
   }
 
   public UUID getId() {

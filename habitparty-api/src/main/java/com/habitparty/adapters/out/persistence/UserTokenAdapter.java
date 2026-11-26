@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.habitparty.adapters.out.persistence.entities.UserTokenJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.UserTokenMapper;
 import com.habitparty.adapters.out.persistence.repository.UserTokenJpaRepository;
 import com.habitparty.application.ports.UserTokenRepository;
@@ -24,8 +25,13 @@ public class UserTokenAdapter implements UserTokenRepository {
 
   @Override
   public UserToken save(UserToken token) {
-    var entity = mapper.toEntity(token);
-    var saved = repository.save(entity);
+    UserTokenJpaEntity entity = repository.findById(token.getId())
+        .map(existing -> {
+          mapper.updateEntityFromDomain(existing, token);
+          return existing;
+        })
+        .orElseGet(() -> mapper.toEntity(token));
+    UserTokenJpaEntity saved = repository.save(entity);
     return mapper.toDomain(saved);
   }
 

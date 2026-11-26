@@ -1,36 +1,43 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Backpack, Clock, Gift } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { getDefaultEconomyBars } from "@/constants/dashboard";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import type { AppLocale } from "@/i18n/config";
 import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type { EconomyWidgetProps } from "@/types/dashboard";
-import { formatCoins } from "@/utils";
+import { cn, formatCoins } from "@/utils";
+import { applyOptimisticEconomyDelta } from "@/utils/economy";
 import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 import { EconomyWeeklyChart } from "./EconomyWeeklyChart";
 
 /**
- * Widget de Economia e Histórico Financeiro do Usuário.
- * Client Component (Leaf Node): exibe a carteira dinâmica sincronizada com o userStore
- * e o gráfico de ganhos e gastos semanais interativo com barras duplas e tooltips ricos.
+ * Widget de Economia, Histórico Financeiro e Ponte para Recompensas & Mochila.
+ * Client Component (Leaf Node): sincronizado com userStore e optimisticDashboardStore,
+ * recalculando proporcionalmente todas as 4 barras em tempo real.
  */
 export function EconomyWidget({
   balance = 0,
   weeklyEarnings = 0,
   weeklySpent = 0,
   bars = [],
+  rewardsBridge,
+  timeZone,
 }: EconomyWidgetProps) {
   const t = useTranslations("dashboard.sidebarRight.economyWidget");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
-  const storeUser = useUserStore((s) => s.user);
-  const currentBalance = storeUser?.currentCoins ?? balance;
+  const storeTimeZone = useUserStore((s) => s.user?.timezone);
+  const storeCoins = useUserStore((s) => s.user?.currentCoins);
+  const userTimeZone = storeTimeZone ?? timeZone;
+  useMidnightRollover(userTimeZone);
+  const currentBalance = storeCoins ?? balance;
   const leisureEquivalence =
     !isGamified && currentBalance > 0
       ? formatCreditsLeisureEquivalence(currentBalance)
@@ -43,62 +50,28 @@ export function EconomyWidget({
     (s) => s.transactions,
   );
 
-  const { liveWeeklyEarnings, liveWeeklySpent, liveBars } = useMemo(() => {
-    if (optimisticTransactions.length === 0) {
-      return {
-        liveWeeklyEarnings: weeklyEarnings,
-        liveWeeklySpent: weeklySpent,
-        liveBars: displayBars,
-      };
-    }
-
-    let extraEarned = 0;
-    let extraSpent = 0;
-
-    for (const tx of optimisticTransactions) {
-      const gold = tx.goldAmount ?? 0;
-      if (
-        tx.transactionType === "REWARD_BOUGHT" ||
-        tx.transactionType === "DEBT_PAID"
-      ) {
-        extraSpent += Math.abs(gold !== 0 ? gold : (tx.priceSnapshot ?? 0));
-      } else if (tx.transactionType === "BAD_HABIT_PENALTY") {
-        if (gold < 0) extraSpent += Math.abs(gold);
-      } else if (gold > 0) {
-        extraEarned += gold;
-      } else if (gold < 0) {
-        extraSpent += Math.abs(gold);
-      }
-    }
-
-    const round2 = (n: number) => Math.round(n * 100) / 100;
-    const nextEarnings = round2(weeklyEarnings + extraEarned);
-    const nextSpent = round2(weeklySpent + extraSpent);
-    const lastIndex = displayBars.length - 1;
-    const nextBars = displayBars.map((bar, idx) =>
-      idx === lastIndex
-        ? {
-            ...bar,
-            gold: round2(bar.gold + extraEarned),
-            spent: round2((bar.spent ?? 0) + extraSpent),
-          }
-        : bar,
-    );
-
-    return {
-      liveWeeklyEarnings: nextEarnings,
-      liveWeeklySpent: nextSpent,
-      liveBars: nextBars,
-    };
-  }, [optimisticTransactions, weeklyEarnings, weeklySpent, displayBars]);
+  const {
+    bars: liveBars,
+    weeklyEarnings: liveWeeklyEarnings,
+    weeklySpent: liveWeeklySpent,
+  } = useMemo(
+    () =>
+      applyOptimisticEconomyDelta(
+        displayBars,
+        weeklyEarnings,
+        weeklySpent,
+        optimisticTransactions,
+      ),
+    [displayBars, weeklyEarnings, weeklySpent, optimisticTransactions],
+  );
 
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {/* Header com Saldo Dinâmico e Link para o Extrato */}
       <div className="flex items-center justify-between w-full gap-2">
-        <h4 className="text-subtitle-s font-bold text-neutral-100">
+        <h3 className="text-subtitle-s font-bold text-neutral-100">
           {t("title")}
-        </h4>
+        </h3>
 
         <Link
           href="/history"
@@ -146,6 +119,89 @@ export function EconomyWidget({
         weeklySpent={liveWeeklySpent}
         displayBars={liveBars}
       />
+
+      {/* Ponte rápida para Recompensas & Mochila (fecha o ciclo do produto no Dashboard) */}
+      {rewardsBridge && (
+        <div className="grid grid-cols-2 gap-1.5">
+          <Link
+            href="/rewards"
+            className={cn(
+              "flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-lg border transition-colors group",
+              rewardsBridge.redeemableCount > 0
+                ? "bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/15 hover:border-emerald-500/50 dark:bg-emerald-500/10 dark:border-emerald-400/30"
+                : "bg-card dark:bg-primary-dark/20 border-neutral-700 dark:border-primary/30 hover:border-amber-500/40 dark:hover:border-gold/40",
+            )}
+            title={
+              rewardsBridge.redeemableCount > 0
+                ? t("rewardsBridgeRedeemableTitle", {
+                    count: rewardsBridge.redeemableCount,
+                  })
+                : t("rewardsBridgeStoreTitle")
+            }
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Gift
+                size={13}
+                className={cn(
+                  "shrink-0",
+                  rewardsBridge.redeemableCount > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-amber-700 dark:text-gold",
+                )}
+                aria-hidden="true"
+              />
+              <span className="text-tiny font-semibold text-neutral-200 group-hover:text-neutral-50 truncate">
+                {isGamified
+                  ? t("rewardsBridgeStoreLabel")
+                  : t("rewardsBridgeStoreLabelProductivity")}
+              </span>
+            </div>
+            <span
+              className={cn(
+                "text-tiny font-bold tabular-nums px-1.5 py-0.5 rounded shrink-0",
+                rewardsBridge.redeemableCount > 0
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "bg-surface dark:bg-white/10 text-neutral-400",
+              )}
+            >
+              {rewardsBridge.redeemableCount > 0
+                ? rewardsBridge.redeemableCount
+                : rewardsBridge.totalRewardsCount}
+            </span>
+          </Link>
+
+          <Link
+            href="/inventory"
+            className="flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-lg border bg-card dark:bg-primary-dark/20 border-neutral-700 dark:border-primary/30 hover:border-amber-500/40 dark:hover:border-gold/40 transition-colors group"
+            title={t("rewardsBridgeBackpackTitle", {
+              count: rewardsBridge.inventoryAvailableCount,
+            })}
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Backpack
+                size={13}
+                className="text-primary dark:text-primary-light shrink-0"
+                aria-hidden="true"
+              />
+              <span className="text-tiny font-semibold text-neutral-200 group-hover:text-neutral-50 truncate">
+                {isGamified
+                  ? t("rewardsBridgeBackpackLabel")
+                  : t("rewardsBridgeBackpackLabelProductivity")}
+              </span>
+            </div>
+            <span
+              className={cn(
+                "text-tiny font-bold tabular-nums px-1.5 py-0.5 rounded shrink-0",
+                rewardsBridge.inventoryAvailableCount > 0
+                  ? "bg-primary/15 dark:bg-primary/25 text-primary dark:text-primary-light"
+                  : "bg-surface dark:bg-white/10 text-neutral-400",
+              )}
+            >
+              {rewardsBridge.inventoryAvailableCount}
+            </span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

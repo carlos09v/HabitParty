@@ -6,6 +6,8 @@
   "layout": {
     "headerBadge": "Initial Setup",
     "quickSetupHint": "~45 sec • Editable anytime",
+    "signOut": "Sign out",
+    "signOutAria": "Sign out of current account",
     "copyright": "HabitParty © {year}"
   },
   "wizard": {
@@ -72,6 +74,7 @@
   "profileContext": {
     "goalsLegend": "Pick up to 2 main goals ({count}/{max})",
     "goalsHint": "Helps balance habits, Kanban milestones, and break rewards.",
+    "maxGoalsReplaceHint": "2 selected — clicking another option replaces your oldest pick.",
     "goals": {
       "focus": {
         "label": "Deep focus",
@@ -182,6 +185,7 @@
         "descriptionProductivity": "Priority To-Dos start with Strict Deadline"
       }
     },
+    "personalizationHeading": "Quick personalization",
     "themeLegend": "Pick your starting theme (free live preview)",
     "themes": {
       "dark": "Cosmic Dark",
@@ -211,7 +215,11 @@
     "calibratedPrefix": "Tailored for:",
     "modeRecommended": "Recommended Starter Pack",
     "modeBlank": "Start with a blank board",
-    "ratioHint": "Calibrated 4:1 ratio (1 coin/credit ≈ 4 min of earned leisure)",
+    "blankStateTitle": "Clean blank workspace",
+    "blankStateNote": "We'll create an empty workspace so you can build your own columns, tasks, focus activities, and rewards from scratch.",
+    "allUncheckedNotice": "No items selected — your workspace will be created blank.",
+    "tasksRequireColumnsHint": "Requires initial columns enabled",
+    "ratioHint": "Prices calibrated to balance productive focus with earned leisure",
     "currencyGamified": "Coins",
     "currencyProductivity": "Credits",
     "badgeDailyFocus": "{minutes}m cycles",

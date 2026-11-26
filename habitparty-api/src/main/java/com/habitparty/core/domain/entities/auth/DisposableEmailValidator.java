@@ -1,5 +1,6 @@
 package com.habitparty.core.domain.entities.auth;
 
+import java.util.Locale;
 import java.util.Set;
 
 import com.habitparty.core.exceptions.DomainValidationException;
@@ -48,8 +49,24 @@ public final class DisposableEmailValidator {
     if (email == null || !email.contains("@")) {
       return false;
     }
-    String domain = email.substring(email.lastIndexOf('@') + 1).trim().toLowerCase();
-    return DISPOSABLE_DOMAINS.contains(domain);
+    String domain = email.substring(email.lastIndexOf('@') + 1).trim().toLowerCase(Locale.ROOT);
+    while (domain.endsWith(".")) {
+      domain = domain.substring(0, domain.length() - 1);
+    }
+    if (domain.isEmpty()) {
+      return false;
+    }
+    String candidate = domain;
+    while (true) {
+      if (DISPOSABLE_DOMAINS.contains(candidate)) {
+        return true;
+      }
+      int dotIdx = candidate.indexOf('.');
+      if (dotIdx < 0 || dotIdx == candidate.length() - 1) {
+        return false;
+      }
+      candidate = candidate.substring(dotIdx + 1);
+    }
   }
 
   public static void validate(String email) {

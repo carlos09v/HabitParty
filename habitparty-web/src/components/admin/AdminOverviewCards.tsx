@@ -1,6 +1,7 @@
 import { CheckCircle2, Crown, HardDrive, Mail, Users } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ADMIN_DATABASE_LIMIT_BYTES } from "@/constants/admin";
 import type { AppLocale } from "@/i18n/config";
 import type { AdminOverviewDTO } from "@/types/admin";
 import type { DateFormat } from "@/types/ui";
@@ -27,6 +28,14 @@ export async function AdminOverviewCards({
   const isHighQuota = overview.resendQuotaPercentage >= 80;
   const isMediumQuota =
     overview.resendQuotaPercentage >= 50 && overview.resendQuotaPercentage < 80;
+  const remainingEmailQuota = Math.max(
+    0,
+    overview.resendMonthlyQuota - overview.emailsSentThisMonth,
+  );
+  const completedTasksCount = Math.max(
+    0,
+    overview.totalTasksCount - overview.totalActiveTasksCount,
+  );
 
   const formattedResetDate = overview.resendQuotaResetDate
     ? formatShortDate(overview.resendQuotaResetDate, {
@@ -47,13 +56,13 @@ export async function AdminOverviewCards({
                 {t("resendQuota.title")}
               </span>
               {formattedResetDate && (
-                <span className="text-tiny text-amber-700 dark:text-amber-400/90 font-medium">
+                <span className="text-tiny text-gold-ink dark:text-amber-400/90 font-medium">
                   {t("resendQuota.renewsOn", { date: formattedResetDate })}
                 </span>
               )}
             </div>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-400 shrink-0">
-              <Mail size={18} />
+            <div className="p-2 rounded-xl bg-amber-500/10 text-gold-ink dark:text-amber-400 shrink-0">
+              <Mail size={18} aria-hidden="true" />
             </div>
           </div>
 
@@ -74,9 +83,9 @@ export async function AdminOverviewCards({
               fillClassName={cn(
                 "rounded-full transition-transform duration-500",
                 isHighQuota
-                  ? "bg-red-500"
+                  ? "bg-danger-500"
                   : isMediumQuota
-                    ? "bg-amber-400"
+                    ? "bg-warning-500"
                     : "bg-gold",
               )}
               ariaLabel={t("resendQuota.consumed", {
@@ -92,9 +101,7 @@ export async function AdminOverviewCards({
               </span>
               <span>
                 {t("resendQuota.remaining", {
-                  count: (
-                    overview.resendMonthlyQuota - overview.emailsSentThisMonth
-                  ).toLocaleString(locale),
+                  count: remainingEmailQuota.toLocaleString(locale),
                 })}
               </span>
             </div>
@@ -108,7 +115,7 @@ export async function AdminOverviewCards({
               {t("users.title")}
             </span>
             <div className="p-2 rounded-xl bg-primary/15 dark:bg-primary/20 text-primary dark:text-primary-light shrink-0">
-              <Users size={18} />
+              <Users size={18} aria-hidden="true" />
             </div>
           </div>
 
@@ -120,28 +127,29 @@ export async function AdminOverviewCards({
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-surface text-neutral-200 border border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:border-white/5">
                 {t("users.free", { count: overview.freeUsers })}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-gold/15 text-amber-700 dark:text-gold border border-gold/30">
-                <Crown size={12} />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-gold/15 text-gold-ink dark:text-gold border border-gold/30">
+                <Crown size={12} aria-hidden="true" />
                 {t("users.vip", { count: overview.premiumUsers })}
               </span>
               {overview.founderUsers !== undefined &&
                 overview.founderUsers > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-gold/25 text-amber-700 dark:text-gold border border-gold/40 shadow-xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-gold/25 text-gold-ink dark:text-gold border border-gold/40 shadow-xs">
                     <Crown
                       size={12}
+                      aria-hidden="true"
                       className="fill-amber-500 dark:fill-gold"
                     />
                     {t("users.founders", { count: overview.founderUsers })}
                   </span>
                 )}
               {overview.adminUsers > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-magenta/15 text-magenta dark:text-fuchsia-300 border border-magenta/35">
                   {t("users.admin", { count: overview.adminUsers })}
                 </span>
               )}
               {overview.verifiedUsers !== undefined && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                  <CheckCircle2 size={11} />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-g font-semibold bg-success-500/15 text-success-400 border border-success-500/35">
+                  <CheckCircle2 size={11} aria-hidden="true" />
                   {t("users.verified", { count: overview.verifiedUsers })}
                 </span>
               )}
@@ -155,8 +163,8 @@ export async function AdminOverviewCards({
             <span className="text-body-s font-semibold uppercase tracking-wider text-neutral-400 min-w-0">
               {t("tasks.title")}
             </span>
-            <div className="p-2 rounded-xl bg-sky-500/15 dark:bg-blue/20 text-info shrink-0">
-              <CheckCircle2 size={18} />
+            <div className="p-2 rounded-xl bg-info/15 dark:bg-blue/20 text-info shrink-0">
+              <CheckCircle2 size={18} aria-hidden="true" />
             </div>
           </div>
 
@@ -165,16 +173,14 @@ export async function AdminOverviewCards({
               {overview.totalTasksCount.toLocaleString(locale)}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-3 text-label-g text-neutral-400 font-normal">
-              <span className="text-amber-700 dark:text-amber-400 font-semibold">
+              <span className="text-gold-ink dark:text-amber-400 font-semibold">
                 {t("tasks.pending", {
                   count: overview.totalActiveTasksCount.toLocaleString(locale),
                 })}
               </span>
-              <span className="text-neutral-400 dark:text-neutral-500">
+              <span className="text-neutral-400">
                 {t("tasks.completed", {
-                  count: (
-                    overview.totalTasksCount - overview.totalActiveTasksCount
-                  ).toLocaleString(locale),
+                  count: completedTasksCount.toLocaleString(locale),
                 })}
               </span>
             </div>
@@ -187,14 +193,14 @@ export async function AdminOverviewCards({
             <span className="text-body-s font-semibold uppercase tracking-wider text-neutral-400 min-w-0">
               {t("storage.title")}
             </span>
-            <div className="p-2 rounded-xl bg-success-500/15 text-emerald-700 dark:text-success-500 shrink-0">
-              <HardDrive size={18} />
+            <div className="p-2 rounded-xl bg-success-500/15 text-success-400 shrink-0">
+              <HardDrive size={18} aria-hidden="true" />
             </div>
           </div>
 
           <div>
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-2xl font-black text-emerald-700 dark:text-success-500 font-mono">
+              <span className="text-2xl font-black text-success-400 font-mono">
                 {overview.estimatedDatabaseSizeFormatted}
               </span>
               <span className="text-xs text-neutral-400 font-mono">
@@ -204,7 +210,8 @@ export async function AdminOverviewCards({
 
             <ProgressBar
               percent={
-                (overview.estimatedDatabaseSizeBytes / (1024 * 1024 * 1024)) *
+                (overview.estimatedDatabaseSizeBytes /
+                  ADMIN_DATABASE_LIMIT_BYTES) *
                 100
               }
               minVisualPercent={1}

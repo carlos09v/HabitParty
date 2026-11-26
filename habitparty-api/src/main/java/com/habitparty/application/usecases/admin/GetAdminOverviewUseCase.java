@@ -55,12 +55,21 @@ public class GetAdminOverviewUseCase {
   }
 
   public AdminOverviewProjection execute() {
-    long totalUsers = userRepository.countAll();
-    long freeUsers = userRepository.countByIsPremium(false);
-    long premiumUsers = userRepository.countByIsPremium(true);
-    long founderUsers = userRepository.countFounders();
-    long adminUsers = userRepository.countByRole(UserRole.ADMIN);
-    long verifiedUsers = userRepository.countByEmailVerified(true);
+    UserRepository.AdminUserStatsSummary userStats = userRepository.summarizeAdminUserStats()
+        .orElseGet(() -> new UserRepository.AdminUserStatsSummary(
+            userRepository.countAll(),
+            userRepository.countByIsPremium(false),
+            userRepository.countByIsPremium(true),
+            userRepository.countFounders(),
+            userRepository.countByRole(UserRole.ADMIN),
+            userRepository.countByEmailVerified(true)));
+
+    long totalUsers = userStats.totalUsers();
+    long freeUsers = userStats.freeUsers();
+    long premiumUsers = userStats.premiumUsers();
+    long founderUsers = userStats.founderUsers();
+    long adminUsers = userStats.adminUsers();
+    long verifiedUsers = userStats.verifiedUsers();
 
     LocalDate today = LocalDate.now(clock);
     LocalDate cycleStartDate = resolveCycleStartDate(today, resendResetDay);

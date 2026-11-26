@@ -101,7 +101,7 @@ export const APP_THEMES: readonly ThemeDefinition[] = [
     swatches: {
       background: "#FBF7EC",
       card: "#FFFEFA",
-      primary: "#8A5400",
+      primary: "#723E00",
       gold: "#EAB308",
       accent: "#881337",
     },

@@ -74,13 +74,14 @@ export function QuickAddConfigBar({
             <button
               key={opt.id}
               type="button"
+              aria-pressed={isSelected}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 onDifficultyChange(opt.id);
                 onFocusInput?.();
               }}
               className={cn(
-                "flex items-center gap-1 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "flex items-center gap-1 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                 isSelected
                   ? "bg-card text-neutral-50 border border-neutral-600 shadow-2xs dark:bg-white/15 dark:text-neutral-100 dark:border-white/25 dark:shadow-none"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -130,13 +131,14 @@ export function QuickAddConfigBar({
                 <button
                   key={String(opt.offset)}
                   type="button"
+                  aria-pressed={isSelected}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onDueOffsetChange(opt.offset);
                     onFocusInput?.();
                   }}
                   className={cn(
-                    "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                    "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                     isSelected
                       ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                       : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -177,13 +179,14 @@ export function QuickAddConfigBar({
           <div className="flex items-center gap-1 flex-wrap">
             <button
               type="button"
+              aria-pressed={habitType === "POSITIVE"}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 onHabitTypeChange("POSITIVE");
                 onFocusInput?.();
               }}
               className={cn(
-                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                 habitType === "POSITIVE"
                   ? "bg-emerald-500/15 text-emerald-700 border border-emerald-500/35 dark:bg-success-500/20 dark:text-success-500 dark:border-success-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -194,13 +197,14 @@ export function QuickAddConfigBar({
             </button>
             <button
               type="button"
+              aria-pressed={habitType === "NEGATIVE"}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 onHabitTypeChange("NEGATIVE");
                 onFocusInput?.();
               }}
               className={cn(
-                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                 habitType === "NEGATIVE"
                   ? "bg-rose-500/15 text-rose-700 border border-rose-500/35 dark:bg-danger-500/20 dark:text-danger-400 dark:border-danger-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -211,13 +215,14 @@ export function QuickAddConfigBar({
             </button>
             <button
               type="button"
+              aria-pressed={habitType === "BOTH"}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 onHabitTypeChange("BOTH");
                 onFocusInput?.();
               }}
               className={cn(
-                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                 habitType === "BOTH"
                   ? "bg-purple-500/15 text-purple-700 border border-purple-500/35 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -247,13 +252,14 @@ export function QuickAddConfigBar({
                 <button
                   key={imp.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onImportanceChange(imp.id);
                     onFocusInput?.();
                   }}
                   className={cn(
-                    "flex items-center gap-1 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                    "flex items-center gap-1 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                     isSelected
                       ? "bg-card text-neutral-50 border border-neutral-600 shadow-2xs dark:bg-white/15 dark:text-neutral-100 dark:border-white/25 dark:shadow-none"
                       : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -312,13 +318,14 @@ export function QuickAddConfigBar({
         <div className="flex items-center gap-1 flex-wrap">
           <button
             type="button"
+            aria-pressed={dailyFreq === "DAILY"}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               onDailyFreqChange("DAILY");
               onFocusInput?.();
             }}
             className={cn(
-              "px-2 py-1 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+              "px-2 py-1 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               dailyFreq === "DAILY"
                 ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                 : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -328,13 +335,14 @@ export function QuickAddConfigBar({
           </button>
           <button
             type="button"
+            aria-pressed={dailyFreq === "WEEKDAYS"}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               onDailyFreqChange("WEEKDAYS");
               onFocusInput?.();
             }}
             className={cn(
-              "px-2 py-1 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+              "px-2 py-1 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               dailyFreq === "WEEKDAYS"
                 ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                 : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",

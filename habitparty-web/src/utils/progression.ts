@@ -1,4 +1,4 @@
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import { DIFFICULTY_REWARDS, HABIT_IMPORTANCE_REWARDS } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import type { FriendConnectionItem } from "@/types/social";
@@ -259,12 +259,17 @@ export function calculateRankEffortBreakdown(
 
 /**
  * Agrupa amigos aceitos pela patente atual correspondente ao seu totalXp.
+ * Amigos cujas estatísticas estão ocultas por privacidade (`levelTitle == null`) são omitidos
+ * para não aparecerem falsamente como `NOVICE` com `0 XP`.
  */
 export function groupFriendsByLevelTier(
   friends: readonly FriendConnectionItem[] = [],
 ): Map<UserLevelTier, FriendConnectionItem[]> {
   const grouped = new Map<UserLevelTier, FriendConnectionItem[]>();
   for (const conn of friends) {
+    if (!conn.user.levelTitle) {
+      continue;
+    }
     const friendXp = Math.max(0, conn.user.totalXp ?? 0);
     const tier = getCurrentLevel(friendXp).tier;
     const list = grouped.get(tier) ?? [];

@@ -15,12 +15,13 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { Select } from "@/components/ui/Select";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { isValidLocale } from "@/i18n/config";
+import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import type { DatePickerEventSchedulePatch, DatePickerProps } from "@/types/ui";
 import { cn } from "@/utils";
@@ -123,6 +124,7 @@ export function DatePicker({
   const currentValue = isControlled ? value : internalValue;
 
   const userTimeZone = useUserStore((s) => s.user?.timezone);
+  const todayIsoRollover = useMidnightRollover(userTimeZone);
 
   const selectedParts = useMemo(
     () => parseDateParts(currentValue),
@@ -132,14 +134,18 @@ export function DatePicker({
   const today = useMemo(() => {
     const now = new Date();
     const parts = getDatePartsInTimeZone(now, userTimeZone);
+    const isoString =
+      todayIsoRollover ||
+      formatDateParts(parts.year, parts.month - 1, parts.day);
+    const rolloverParts = parseDateParts(isoString);
     return {
-      year: parts.year,
-      month: parts.month - 1,
-      day: parts.day,
-      isoString: formatDateParts(parts.year, parts.month - 1, parts.day),
+      year: rolloverParts?.year ?? parts.year,
+      month: rolloverParts?.month ?? parts.month - 1,
+      day: rolloverParts?.day ?? parts.day,
+      isoString,
       tomorrowIso: getOffsetDateString(1, now, userTimeZone),
     };
-  }, [userTimeZone]);
+  }, [userTimeZone, todayIsoRollover]);
 
   const resolveDefaultView = useCallback(() => {
     if (selectedParts) {
@@ -169,7 +175,7 @@ export function DatePicker({
   const isPremium = useUserStore((s) =>
     Boolean(s.user?.isPremium ?? s.is_Premium),
   );
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
 
   const hourTriggerId = `${pickerId}-hour-trigger`;
   const eventTriggerId = `${pickerId}-event-trigger`;
@@ -186,6 +192,7 @@ export function DatePicker({
     maxAllowedHeight: 340,
     offset: 6,
     zIndex: 160,
+    restoreFocusOnEscape: true,
   });
 
   const eventPopover = useFloatingPopover<
@@ -200,22 +207,10 @@ export function DatePicker({
     maxAllowedHeight: 340,
     offset: 6,
     zIndex: 160,
+    restoreFocusOnEscape: true,
   });
 
   const isSubOverlayOpen = hourPopover.isOpen || eventPopover.isOpen;
-
-  useEffect(() => {
-    if (!isSubOverlayOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        hourPopover.close();
-        eventPopover.close();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [isSubOverlayOpen, hourPopover.close, eventPopover.close]);
 
   const {
     containerRef,
@@ -225,6 +220,7 @@ export function DatePicker({
     toggle,
     coords,
     shouldRenderPortal,
+    portalContainer,
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align,
@@ -236,6 +232,7 @@ export function DatePicker({
     matchTriggerWidth: false,
     offset: 6,
     disabled,
+    restoreFocusOnEscape: true,
     onOpen: () => {
       hourPopover.close();
       eventPopover.close();
@@ -483,7 +480,7 @@ export function DatePicker({
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   const calendarPopover =
-    isOpen && shouldRenderPortal && coords
+    isOpen && shouldRenderPortal && coords && portalContainer
       ? createPortal(
           <div
             ref={popoverRef}
@@ -611,7 +608,10 @@ export function DatePicker({
                         if (!currentValue) updateValue(today.isoString);
                         if (hasEventValue || !timeValue) {
                           const defaultHour = String(
-                            (new Date().getHours() + 1) % 24,
+                            (getDatePartsInTimeZone(new Date(), userTimeZone)
+                              .hour +
+                              1) %
+                              24,
                           ).padStart(2, "0");
                           applyEventSchedulePatch({
                             ...(hasEventValue
@@ -667,6 +667,7 @@ export function DatePicker({
                   {hourPopover.isOpen &&
                     hourPopover.shouldRenderPortal &&
                     hourPopover.coords &&
+                    hourPopover.portalContainer &&
                     createPortal(
                       <div
                         ref={hourPopover.popoverRef}
@@ -693,10 +694,10 @@ export function DatePicker({
                           <button
                             type="button"
                             onClick={hourPopover.close}
-                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer"
-                            aria-label={t("clear")}
+                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                            aria-label={t("close")}
                           >
-                            <X size={14} />
+                            <X size={14} aria-hidden="true" />
                           </button>
                         </div>
 
@@ -753,7 +754,7 @@ export function DatePicker({
                           </button>
                         </div>
                       </div>,
-                      document.body,
+                      hourPopover.portalContainer,
                     )}
                 </div>
 
@@ -779,7 +780,7 @@ export function DatePicker({
                           hourPopover.close();
                           eventPopover.close();
                           close();
-                          setIsUpgradeModalOpen(true);
+                          openUpgradeModal();
                           return;
                         }
                         if (eventPopover.isOpen) {
@@ -789,8 +790,11 @@ export function DatePicker({
                         hourPopover.close();
                         if (!currentValue) updateValue(today.isoString);
                         if (!allDayValue && !startTimeValue) {
-                          const now = new Date();
-                          const startH = (now.getHours() + 1) % 24;
+                          const startH =
+                            (getDatePartsInTimeZone(new Date(), userTimeZone)
+                              .hour +
+                              1) %
+                            24;
                           const endH = (startH + 1) % 24;
                           const defaultStart = `${String(startH).padStart(2, "0")}:00`;
                           const defaultEnd =
@@ -866,6 +870,7 @@ export function DatePicker({
                   {eventPopover.isOpen &&
                     eventPopover.shouldRenderPortal &&
                     eventPopover.coords &&
+                    eventPopover.portalContainer &&
                     createPortal(
                       <div
                         ref={eventPopover.popoverRef}
@@ -896,10 +901,10 @@ export function DatePicker({
                           <button
                             type="button"
                             onClick={eventPopover.close}
-                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer"
-                            aria-label={t("clear")}
+                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                            aria-label={t("close")}
                           >
-                            <X size={14} />
+                            <X size={14} aria-hidden="true" />
                           </button>
                         </div>
 
@@ -1085,7 +1090,7 @@ export function DatePicker({
                           </button>
                         </div>
                       </div>,
-                      document.body,
+                      eventPopover.portalContainer,
                     )}
                 </div>
               </div>
@@ -1140,7 +1145,7 @@ export function DatePicker({
               </div>
             </div>
           </div>,
-          document.body,
+          portalContainer,
         )
       : null;
 
@@ -1231,9 +1236,9 @@ export function DatePicker({
               disabled={disabled}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
-              aria-invalid={error ? true : undefined}
+              aria-invalid={Boolean(error)}
               aria-describedby={describedBy}
-              className="flex-1 flex items-center gap-2.5 min-w-0 text-left cursor-pointer outline-none"
+              className="flex-1 flex items-center gap-2.5 min-w-0 text-left cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-focus-ring rounded-md"
             >
               <CalendarIcon
                 size={compact ? 16 : 18}
@@ -1286,13 +1291,6 @@ export function DatePicker({
         <span id={hintId} className="text-xs text-neutral-400 mt-0.5">
           {hint}
         </span>
-      )}
-
-      {isUpgradeModalOpen && (
-        <LazyUpgradePremiumModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
       )}
     </div>
   );

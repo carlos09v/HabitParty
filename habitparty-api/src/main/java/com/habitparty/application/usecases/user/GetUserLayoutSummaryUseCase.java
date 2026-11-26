@@ -11,12 +11,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.in.web.dtos.response.UserLayoutSummaryResponseDTO;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.usecases.common.UtcDateTimeMapper;
 
 @Service
 public class GetUserLayoutSummaryUseCase {
+  public record UserLayoutSummary(
+      OffsetDateTime lastTaskCompletionAt,
+      int todayFocusMinutes) {
+  }
+
   private final TransactionHistoryRepository transactionHistoryRepository;
   private final UserTimeResolver userTimeResolver;
   private final FocusRecordRepository focusRecordRepository;
@@ -41,14 +46,12 @@ public class GetUserLayoutSummaryUseCase {
   }
 
   @Transactional(readOnly = true)
-  public UserLayoutSummaryResponseDTO execute(UUID userId) {
+  public UserLayoutSummary execute(UUID userId) {
     ZoneId effectiveZone = userTimeResolver != null ? userTimeResolver.resolveZone(userId) : clock.getZone();
     LocalDateTime latestCreatedAt = transactionHistoryRepository
         .findLatestTaskCompletionCreatedAtByUserId(userId)
         .orElse(null);
-    OffsetDateTime zonedLastTaskCompletionAt = latestCreatedAt != null
-        ? latestCreatedAt.atZone(ZoneId.systemDefault()).withZoneSameInstant(effectiveZone).toOffsetDateTime()
-        : null;
+    OffsetDateTime zonedLastTaskCompletionAt = UtcDateTimeMapper.toUserOffsetDateTime(latestCreatedAt, effectiveZone);
 
     int todayFocusMinutes = 0;
     if (focusRecordRepository != null && userId != null) {
@@ -56,6 +59,6 @@ public class GetUserLayoutSummaryUseCase {
       todayFocusMinutes = focusRecordRepository.sumProductiveFocusMinutesOnDate(userId, today, effectiveZone);
     }
 
-    return new UserLayoutSummaryResponseDTO(zonedLastTaskCompletionAt, todayFocusMinutes);
+    return new UserLayoutSummary(zonedLastTaskCompletionAt, todayFocusMinutes);
   }
 }

@@ -2,18 +2,21 @@ package com.habitparty.infrastructure.security;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.habitparty.adapters.in.web.dtos.response.ErrorResponseDTO;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Filtro de proteção contra Bots, Força Bruta e abuso de disparo de e-mails (Rate Limiting por IP + Turnstile + Honeypot).
@@ -33,16 +36,39 @@ public class BotProtectionFilter extends OncePerRequestFilter {
   private static final int EMAIL_ACTION_MAX_REQUESTS = 3;
   private static final long EMAIL_ACTION_WINDOW_SECONDS = 15 * 60; // 15 min
 
-  private final Map<String, RateBucket> buckets = new ConcurrentHashMap<>();
-  private final TurnstileVerifier turnstileVerifier;
+  private static final int PASSWORD_RESET_MAX_REQUESTS = 5;
+  private static final long PASSWORD_RESET_WINDOW_SECONDS = 15 * 60; // 15 min
 
-  public BotProtectionFilter() {
-    this(new TurnstileVerifier(""));
+  private static final int VERIFY_EMAIL_MAX_REQUESTS = 10;
+  private static final long VERIFY_EMAIL_WINDOW_SECONDS = 15 * 60; // 15 min
+
+  private static final int REFRESH_MAX_REQUESTS = 30;
+  private static final long REFRESH_WINDOW_SECONDS = 5 * 60; // 5 min
+
+  // Cache LRU limitado O(1) — evita OOM e varredura O(N) sob ataque de rotação de IPs
+  private final Map<String, RateBucket> buckets = new LinkedHashMap<>(256, 0.75f, true) {
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<String, RateBucket> eldest) {
+      return size() > MAX_BUCKETS;
+    }
+  };
+  private final TurnstileVerifier turnstileVerifier;
+  private final boolean enforceTurnstile;
+  private final boolean trustProxyHeaders;
+  private final JsonMapper jsonMapper = JsonMapper.builder().build();
+
+  public BotProtectionFilter(TurnstileVerifier turnstileVerifier) {
+    this(turnstileVerifier, true, false);
   }
 
   @Autowired
-  public BotProtectionFilter(TurnstileVerifier turnstileVerifier) {
+  public BotProtectionFilter(
+      TurnstileVerifier turnstileVerifier,
+      @Value("${turnstile.enforce-required:${TURNSTILE_ENFORCE_REQUIRED:true}}") boolean enforceTurnstile,
+      @Value("${app.security.trust-proxy-headers:${TRUST_PROXY_HEADERS:false}}") boolean trustProxyHeaders) {
     this.turnstileVerifier = turnstileVerifier;
+    this.enforceTurnstile = enforceTurnstile;
+    this.trustProxyHeaders = trustProxyHeaders;
   }
 
   @Override
@@ -85,11 +111,11 @@ public class BotProtectionFilter extends OncePerRequestFilter {
       return;
     }
 
-    // 3. Verifica token do Cloudflare Turnstile quando enviado pelo cliente ou exigido pela rota
+    // 3. Verifica token do Cloudflare Turnstile quando habilitado em produção ou enviado pelo cliente
     String turnstileToken = request.getHeader("X-Turnstile-Token");
-    boolean shouldVerifyTurnstile = (policy.requiresTurnstile() || (turnstileToken != null && !turnstileToken.isBlank()))
-        && turnstileVerifier != null
-        && turnstileVerifier.isEnabled();
+    boolean shouldVerifyTurnstile = turnstileVerifier != null
+        && turnstileVerifier.isEnabled()
+        && (policy.requiresTurnstile() || (turnstileToken != null && !turnstileToken.isBlank()));
     if (shouldVerifyTurnstile) {
       if (!turnstileVerifier.verify(turnstileToken, clientIp)) {
         writeErrorResponse(
@@ -110,10 +136,14 @@ public class BotProtectionFilter extends OncePerRequestFilter {
       return null;
     }
     return switch (path) {
-      case "/users" -> new RatePolicy("signup", SIGNUP_MAX_REQUESTS, SIGNUP_WINDOW_SECONDS, false);
-      case "/auth/login" -> new RatePolicy("login", LOGIN_MAX_REQUESTS, LOGIN_WINDOW_SECONDS, false);
-      case "/auth/forgot-password" -> new RatePolicy("forgot-pwd", EMAIL_ACTION_MAX_REQUESTS, EMAIL_ACTION_WINDOW_SECONDS, false);
-      case "/auth/resend-verification" -> new RatePolicy("resend-verif", EMAIL_ACTION_MAX_REQUESTS, EMAIL_ACTION_WINDOW_SECONDS, false);
+      case "/users" -> new RatePolicy("signup", SIGNUP_MAX_REQUESTS, SIGNUP_WINDOW_SECONDS, enforceTurnstile);
+      case "/auth/login" -> new RatePolicy("login", LOGIN_MAX_REQUESTS, LOGIN_WINDOW_SECONDS, enforceTurnstile);
+      case "/auth/google" -> new RatePolicy("google-login", LOGIN_MAX_REQUESTS, LOGIN_WINDOW_SECONDS, false);
+      case "/auth/forgot-password" -> new RatePolicy("forgot-pwd", EMAIL_ACTION_MAX_REQUESTS, EMAIL_ACTION_WINDOW_SECONDS, enforceTurnstile);
+      case "/auth/resend-verification" -> new RatePolicy("resend-verif", EMAIL_ACTION_MAX_REQUESTS, EMAIL_ACTION_WINDOW_SECONDS, enforceTurnstile);
+      case "/auth/reset-password" -> new RatePolicy("reset-pwd", PASSWORD_RESET_MAX_REQUESTS, PASSWORD_RESET_WINDOW_SECONDS, false);
+      case "/auth/verify-email" -> new RatePolicy("verify-email", VERIFY_EMAIL_MAX_REQUESTS, VERIFY_EMAIL_WINDOW_SECONDS, false);
+      case "/auth/refresh" -> new RatePolicy("refresh", REFRESH_MAX_REQUESTS, REFRESH_WINDOW_SECONDS, false);
       default -> null;
     };
   }
@@ -121,53 +151,59 @@ public class BotProtectionFilter extends OncePerRequestFilter {
   private boolean tryConsume(String key, int maxRequests, long windowSeconds) {
     long nowEpochSec = Instant.now().getEpochSecond();
 
-    if (buckets.size() > MAX_BUCKETS) {
-      buckets.entrySet().removeIf(e -> nowEpochSec >= e.getValue().resetAtEpochSec);
-    }
-
-    RateBucket bucket = buckets.compute(key, (k, existing) -> {
+    synchronized (buckets) {
+      RateBucket existing = buckets.get(key);
       if (existing == null || nowEpochSec >= existing.resetAtEpochSec) {
-        return new RateBucket(new AtomicInteger(1), nowEpochSec + windowSeconds);
+        buckets.put(key, new RateBucket(1, nowEpochSec + windowSeconds));
+        return true;
       }
-      existing.counter.incrementAndGet();
-      return existing;
-    });
-
-    return bucket.counter.get() <= maxRequests;
+      int nextCount = existing.count + 1;
+      existing.count = nextCount;
+      return nextCount <= maxRequests;
+    }
   }
 
   private String extractClientIp(HttpServletRequest request) {
-    String cfConnectingIp = request.getHeader("CF-Connecting-IP");
-    if (cfConnectingIp != null && !cfConnectingIp.isBlank()) {
-      return cfConnectingIp.trim();
-    }
-    String xForwardedFor = request.getHeader("X-Forwarded-For");
-    if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-      return xForwardedFor.split(",")[0].trim();
-    }
-    String xRealIp = request.getHeader("X-Real-IP");
-    if (xRealIp != null && !xRealIp.isBlank()) {
-      return xRealIp.trim();
+    if (trustProxyHeaders) {
+      String cfConnectingIp = request.getHeader("CF-Connecting-IP");
+      if (cfConnectingIp != null && !cfConnectingIp.isBlank()) {
+        return cfConnectingIp.trim();
+      }
+      String xForwardedFor = request.getHeader("X-Forwarded-For");
+      if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+        return xForwardedFor.split(",")[0].trim();
+      }
+      String xRealIp = request.getHeader("X-Real-IP");
+      if (xRealIp != null && !xRealIp.isBlank()) {
+        return xRealIp.trim();
+      }
     }
     return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
   }
 
-  private void writeErrorResponse(HttpServletResponse response, int status, String title, String detail)
+  private void writeErrorResponse(HttpServletResponse response, int status, String error, String message)
       throws IOException {
     response.setContentType("application/json;charset=UTF-8");
     response.setStatus(status);
-    response.getWriter().write(
-        String.format("{\"title\": \"%s\", \"detail\": \"%s\"}", title, detail)
-    );
+    response.getWriter().write(jsonMapper.writeValueAsString(new ErrorResponseDTO(error, message)));
   }
 
   public void clearBuckets() {
-    buckets.clear();
+    synchronized (buckets) {
+      buckets.clear();
+    }
   }
 
   private record RatePolicy(String keyPrefix, int maxRequests, long windowSeconds, boolean requiresTurnstile) {
   }
 
-  private record RateBucket(AtomicInteger counter, long resetAtEpochSec) {
+  private static final class RateBucket {
+    int count;
+    final long resetAtEpochSec;
+
+    RateBucket(int count, long resetAtEpochSec) {
+      this.count = count;
+      this.resetAtEpochSec = resetAtEpochSec;
+    }
   }
 }

@@ -26,6 +26,7 @@ import com.habitparty.adapters.out.persistence.mappers.ChecklistItemMapper;
 import com.habitparty.adapters.out.persistence.mappers.TaskMapper;
 import com.habitparty.adapters.out.persistence.repository.ChecklistItemJpaRepository;
 import com.habitparty.adapters.out.persistence.repository.TaskJpaRepository;
+import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.task.TaskType;
 
@@ -71,12 +72,13 @@ class TaskAdapterResetMetricsTest {
   void shouldSkipChecklistQueryWhenLoadingOnlyHabits() {
     UUID userId = UUID.randomUUID();
     UUID habitId = UUID.randomUUID();
-    HabitJpaEntity habitEntity = new HabitJpaEntity();
-    habitEntity.setId(habitId);
-    habitEntity.setUserId(userId);
-    habitEntity.setTaskType(TaskType.HABIT);
+    HabitJpaEntity habitEntity = HabitJpaEntity.builder()
+        .id(habitId)
+        .userId(userId)
+        .taskType(TaskType.HABIT)
+        .build();
 
-    Task mappedHabit = mock(Task.class);
+    Task mappedHabit = mock(Habit.class);
     when(taskJpaRepository.findRecurringTasksByUserIds(List.of(userId))).thenReturn(List.of(habitEntity));
     when(taskJpaRepository.findById(habitId)).thenReturn(Optional.of(habitEntity));
     when(taskMapper.toDomain(habitEntity, List.of())).thenReturn(mappedHabit);

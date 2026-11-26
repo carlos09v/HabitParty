@@ -1,6 +1,7 @@
 let globalTimerInterval: ReturnType<typeof setInterval> | null = null;
 let globalTimerWorker: Worker | null = null;
 let activeGlobalTickFn: (() => void) | null = null;
+let workerUnavailable = false;
 
 function startFallbackInterval() {
   if (typeof window === "undefined" || globalTimerInterval) return;
@@ -10,7 +11,11 @@ function startFallbackInterval() {
 }
 
 function ensureTimerWorker(): Worker | null {
-  if (typeof window === "undefined" || typeof Worker === "undefined") {
+  if (
+    workerUnavailable ||
+    typeof window === "undefined" ||
+    typeof Worker === "undefined"
+  ) {
     return null;
   }
   if (globalTimerWorker) return globalTimerWorker;
@@ -27,6 +32,7 @@ function ensureTimerWorker(): Worker | null {
       }
     };
     worker.onerror = () => {
+      workerUnavailable = true;
       try {
         worker.terminate();
       } catch {
@@ -42,6 +48,7 @@ function ensureTimerWorker(): Worker | null {
     globalTimerWorker = worker;
     return worker;
   } catch {
+    workerUnavailable = true;
     return null;
   }
 }

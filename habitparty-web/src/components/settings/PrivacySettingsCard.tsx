@@ -9,18 +9,28 @@ import {
   Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { updatePrivacySettingsAction } from "@/actions/socialActions";
+import { useRegisterSettingsDirty } from "@/components/settings/SettingsDirtyContext";
 import { SettingsOptionGrid } from "@/components/settings/SettingsOptionGrid";
+import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import { FriendCodeCard } from "@/components/social/FriendCodeCard";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
+import { useSyncedSettingsForm } from "@/hooks/useSyncedSettingsForm";
 import { useUserStore } from "@/store/userStore";
 import type { FriendRequestPolicy, PrivacyLevel } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
-import { cn } from "@/utils";
 
 interface PrivacySettingsCardProps {
   initialUser: UserResponseDTO | null;
+}
+
+interface PrivacyFormValues extends Record<string, unknown> {
+  profileVisibility: PrivacyLevel;
+  statsVisibility: PrivacyLevel;
+  achievementsVisibility: PrivacyLevel;
+  friendRequestPolicy: FriendRequestPolicy;
 }
 
 const PRIVACY_LEVEL_OPTIONS: ReadonlyArray<{
@@ -43,10 +53,10 @@ const FRIEND_REQUEST_POLICY_OPTIONS: ReadonlyArray<{
 
 export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
   const t = useTranslations("settings.privacy");
-  const storeUser = useUserStore((s) => s.user);
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
 
-  const user = storeUser || initialUser;
+  const user = useResolvedUser(initialUser);
+  const userId = user?.id;
   const savedProfileVisibility: PrivacyLevel =
     user?.profileVisibility ?? "PUBLIC";
   const savedStatsVisibility: PrivacyLevel = user?.statsVisibility ?? "PUBLIC";
@@ -54,41 +64,39 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
     user?.achievementsVisibility ?? "PUBLIC";
   const savedFriendRequestPolicy: FriendRequestPolicy =
     user?.friendRequestPolicy ?? "EVERYONE";
+  const friendCode = user?.friendCode ?? "";
 
-  const [profileVisibility, setProfileVisibility] = useState<PrivacyLevel>(
-    savedProfileVisibility,
+  const persisted = useMemo<PrivacyFormValues>(
+    () => ({
+      profileVisibility: savedProfileVisibility,
+      statsVisibility: savedStatsVisibility,
+      achievementsVisibility: savedAchievementsVisibility,
+      friendRequestPolicy: savedFriendRequestPolicy,
+    }),
+    [
+      savedProfileVisibility,
+      savedStatsVisibility,
+      savedAchievementsVisibility,
+      savedFriendRequestPolicy,
+    ],
   );
-  const [statsVisibility, setStatsVisibility] =
-    useState<PrivacyLevel>(savedStatsVisibility);
-  const [achievementsVisibility, setAchievementsVisibility] =
-    useState<PrivacyLevel>(savedAchievementsVisibility);
-  const [friendRequestPolicy, setFriendRequestPolicy] =
-    useState<FriendRequestPolicy>(savedFriendRequestPolicy);
-  const [friendCode, setFriendCode] = useState<string>(user?.friendCode ?? "");
+
+  const {
+    values,
+    setField,
+    markSaved,
+    isDirty: hasChanges,
+  } = useSyncedSettingsForm(persisted, { resetKey: userId });
+  const {
+    profileVisibility,
+    statsVisibility,
+    achievementsVisibility,
+    friendRequestPolicy,
+  } = values;
 
   const [isSavingPrivacy, startSaveTransition] = useTransition();
 
-  useEffect(() => {
-    setProfileVisibility(savedProfileVisibility);
-    setStatsVisibility(savedStatsVisibility);
-    setAchievementsVisibility(savedAchievementsVisibility);
-    setFriendRequestPolicy(savedFriendRequestPolicy);
-    if (user?.friendCode) {
-      setFriendCode(user.friendCode);
-    }
-  }, [
-    savedProfileVisibility,
-    savedStatsVisibility,
-    savedAchievementsVisibility,
-    savedFriendRequestPolicy,
-    user?.friendCode,
-  ]);
-
-  const hasChanges =
-    profileVisibility !== savedProfileVisibility ||
-    statsVisibility !== savedStatsVisibility ||
-    achievementsVisibility !== savedAchievementsVisibility ||
-    friendRequestPolicy !== savedFriendRequestPolicy;
+  useRegisterSettingsDirty("privacy-settings", hasChanges);
 
   const levelOptions = PRIVACY_LEVEL_OPTIONS.map((opt) => ({
     value: opt.value,
@@ -104,19 +112,36 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
     description: t(`policies.${opt.value}Desc`),
   }));
 
+  const isProfilePrivate = profileVisibility === "PRIVATE";
+  const statsRestrictedByFriendsOnly =
+    profileVisibility === "FRIENDS_ONLY" && statsVisibility === "PUBLIC";
+  const achievementsRestrictedByFriendsOnly =
+    profileVisibility === "FRIENDS_ONLY" && achievementsVisibility === "PUBLIC";
+
   const handleSavePrivacy = () => {
+    if (isSavingPrivacy || !hasChanges) return;
+    const submitted: PrivacyFormValues = {
+      profileVisibility,
+      statsVisibility,
+      achievementsVisibility,
+      friendRequestPolicy,
+    };
     startSaveTransition(async () => {
-      const res = await updatePrivacySettingsAction({
-        profileVisibility,
-        statsVisibility,
-        achievementsVisibility,
-        friendRequestPolicy,
-      });
-      if (!res.success || !res.user) {
+      const res = await updatePrivacySettingsAction(submitted);
+      if (!res.success) {
         toast.error(res.error || t("saveError"));
         return;
       }
-      updateUserPartial(res.user);
+      markSaved(submitted, {
+        profileVisibility:
+          res.data.profileVisibility ?? submitted.profileVisibility,
+        statsVisibility: res.data.statsVisibility ?? submitted.statsVisibility,
+        achievementsVisibility:
+          res.data.achievementsVisibility ?? submitted.achievementsVisibility,
+        friendRequestPolicy:
+          res.data.friendRequestPolicy ?? submitted.friendRequestPolicy,
+      });
+      updateUserPartial(res.data);
       toast.success(t("saveSuccess"));
     });
   };
@@ -124,10 +149,10 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
   return (
     <div className="flex flex-col gap-6">
       {!user?.emailVerified && (
-        <output className="flex items-center gap-2.5 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3.5 py-2.5 text-xs font-medium text-amber-800 dark:text-amber-300">
+        <aside className="flex items-center gap-2.5 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3.5 py-2.5 text-xs font-medium text-amber-800 dark:text-amber-300">
           <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
           <span>{t("unverifiedWarning")}</span>
-        </output>
+        </aside>
       )}
 
       <FriendCodeCard
@@ -137,13 +162,18 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
         copyLabel={t("copyFriendCode")}
         regenerateLabel={t("regenerateFriendCode")}
         regeneratingLabel={t("regeneratingFriendCode")}
+        confirmRegenerate={{
+          title: t("confirmRegenerateTitle"),
+          description: t("confirmRegenerateDesc"),
+          confirmLabel: t("confirmRegenerateBtn"),
+          cancelLabel: t("confirmCancelBtn"),
+        }}
         messages={{
           copied: t("copiedFriendCode"),
           copyError: t("copyError"),
           regenerated: t("friendCodeRegenerated"),
           regenerateError: t("friendCodeRegenerateError"),
         }}
-        onRegenerated={setFriendCode}
       />
 
       <SettingsOptionGrid
@@ -153,7 +183,7 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
         description={t("profileVisibilityDesc")}
         selectedValue={profileVisibility}
         options={levelOptions}
-        onSelect={setProfileVisibility}
+        onSelect={(val) => setField("profileVisibility", val)}
         disabled={isSavingPrivacy}
       />
 
@@ -164,8 +194,16 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
         description={t("statsVisibilityDesc")}
         selectedValue={statsVisibility}
         options={levelOptions}
-        onSelect={setStatsVisibility}
-        disabled={isSavingPrivacy}
+        onSelect={(val) => setField("statsVisibility", val)}
+        disabled={isSavingPrivacy || isProfilePrivate}
+        dimmed={isProfilePrivate}
+        dependencyHint={
+          isProfilePrivate
+            ? t("profilePrivateDependencyHint")
+            : statsRestrictedByFriendsOnly
+              ? t("profileFriendsDependencyHint")
+              : undefined
+        }
       />
 
       <SettingsOptionGrid
@@ -175,8 +213,16 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
         description={t("achievementsVisibilityDesc")}
         selectedValue={achievementsVisibility}
         options={levelOptions}
-        onSelect={setAchievementsVisibility}
-        disabled={isSavingPrivacy}
+        onSelect={(val) => setField("achievementsVisibility", val)}
+        disabled={isSavingPrivacy || isProfilePrivate}
+        dimmed={isProfilePrivate}
+        dependencyHint={
+          isProfilePrivate
+            ? t("profilePrivateDependencyHint")
+            : achievementsRestrictedByFriendsOnly
+              ? t("profileFriendsDependencyHint")
+              : undefined
+        }
       />
 
       <SettingsOptionGrid
@@ -186,24 +232,19 @@ export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
         description={t("friendRequestPolicyDesc")}
         selectedValue={friendRequestPolicy}
         options={policyOptions}
-        onSelect={setFriendRequestPolicy}
+        onSelect={(val) => setField("friendRequestPolicy", val)}
         disabled={isSavingPrivacy}
       />
 
-      <div className="flex justify-end pt-1">
-        <button
+      <div className="flex justify-end pt-4 border-t border-neutral-700 dark:border-primary/20">
+        <SettingsSaveButton
           type="button"
           onClick={handleSavePrivacy}
-          disabled={!hasChanges || isSavingPrivacy}
-          className={cn(
-            "px-5 py-2.5 rounded-xl text-sm font-extrabold transition-colors cursor-pointer",
-            hasChanges
-              ? "bg-gold text-on-gold hover:bg-amber-300 shadow-glow-gold-xs"
-              : "bg-surface text-neutral-300 border border-neutral-600 cursor-not-allowed",
-          )}
-        >
-          {isSavingPrivacy ? t("saving") : t("save")}
-        </button>
+          isPending={isSavingPrivacy}
+          disabled={!hasChanges}
+          label={t("save")}
+          savingLabel={t("saving")}
+        />
       </div>
     </div>
   );

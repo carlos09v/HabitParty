@@ -26,6 +26,8 @@ public enum UserLevel {
   // O objetivo final (Mais de 1 ano de disciplina diária)
   LEGEND("Lenda", 60000);
 
+  private static final UserLevel[] VALUES = values();
+
   private final String title;
   private final int minXpRequired;
 
@@ -45,9 +47,11 @@ public enum UserLevel {
   // Método que descobre o nível baseado no XP
   public static UserLevel calculateLevel(int totalXp) {
     UserLevel currentLevel = NOVICE;
-    for (UserLevel level : values()) {
+    for (UserLevel level : VALUES) {
       if (totalXp >= level.getMinXpRequired()) {
         currentLevel = level;
+      } else {
+        break;
       }
     }
     return currentLevel;
@@ -56,8 +60,8 @@ public enum UserLevel {
   // Método para descobrir o próximo nível (útil para a barra de progresso)
   public UserLevel getNextLevel() {
     int nextOrdinal = this.ordinal() + 1;
-    if (nextOrdinal < values().length) {
-      return values()[nextOrdinal];
+    if (nextOrdinal < VALUES.length) {
+      return VALUES[nextOrdinal];
     }
     return this; // Se já for Lenda, o próximo nível é ele mesmo
   }

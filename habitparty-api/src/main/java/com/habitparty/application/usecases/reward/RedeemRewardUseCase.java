@@ -16,15 +16,12 @@ import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsU
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
-import com.habitparty.core.domain.entities.reward.MysteryBoxResult;
-import com.habitparty.core.domain.entities.reward.MysteryBoxLootTable;
 import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.domain.enums.TransactionType;
-import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -52,35 +49,23 @@ public class RedeemRewardUseCase {
 
   @Transactional
   public void execute(UUID rewardId, UUID userIdLogado) {
-    execute(rewardId, userIdLogado, 1);
-  }
+    // 1. Bloqueia a linha do Usuário (PESSIMISTIC_WRITE) ANTES de carregar a Recompensa
+    // para serializar liquidações concorrentes de dívidas descartáveis, débitos e contagem da mochila
+    User user = userPort.findByIdForUpdate(userIdLogado)
+        .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
-  @Transactional
-  public void execute(UUID rewardId, UUID userIdLogado, int quantity) {
-    if (quantity < 1 || quantity > 50) {
-      throw new DomainValidationException("A quantidade para resgate deve estar entre 1 e 50.");
-    }
-
-    // 1. Busca a Recompensa e valida propriedade (evita IDOR)
+    // 2. Busca a Recompensa sob lock exclusivo do usuário e valida propriedade (evita IDOR e double-charge)
     Reward reward = port.findById(rewardId)
         .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada."));
     reward.validateOwnership(userIdLogado);
-
-    // 2. Busca o Usuário
-    User user = userPort.findById(userIdLogado)
-        .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
     Reward.validateCategoryAndType(reward.getCategory().orElse(null), reward.getType());
 
     boolean isImmediateDebtSettlement =
         reward.getCategory().map(category -> category == RewardCategory.DEBT).orElse(false)
             && reward.getType() == RewardType.SINGLE_USE;
-    if (quantity > 1) {
-      throw new DomainValidationException(
-          "O resgate deve ser unitário (quantidade igual a 1).");
-    }
 
-    BigDecimal totalPrice = reward.getPrice().multiply(BigDecimal.valueOf(quantity));
+    BigDecimal totalPrice = reward.getPrice();
 
     // Limite de itens no inventário (20 Free / 100 Premium) - apenas para itens que vão para a mochila
     if (!isImmediateDebtSettlement) {
@@ -99,11 +84,8 @@ public class RedeemRewardUseCase {
       user.getStats().recordRewardRedeemed();
     }
 
-    // 4. Salva usuário e avalia conquistas antes de decidir persistência na mochila
+    // 4. Salva usuário antes de persistir item na mochila e recibo
     userPort.save(user); // update no price
-    if (!isImmediateDebtSettlement && evaluateUserAchievementsUseCase != null) {
-      evaluateUserAchievementsUseCase.execute(user);
-    }
 
     // Dívida é descontada e liquidada imediatamente, sem ir para a mochila
     if (!isImmediateDebtSettlement) {
@@ -154,8 +136,7 @@ public class RedeemRewardUseCase {
         .orElse(null);
 
     // -> Transaction_History -> Cria o recibo da compra / quitação da dívida
-    String rewardNameSnapshot =
-        quantity > 1 ? reward.getName() + " (" + quantity + "x)" : reward.getName();
+    String rewardNameSnapshot = reward.getName();
     TransactionType transactionType =
         isImmediateDebtSettlement ? TransactionType.DEBT_PAID : TransactionType.REWARD_BOUGHT;
     RewardPackageLevel packageLevelSnapshot =
@@ -184,6 +165,8 @@ public class RedeemRewardUseCase {
     // Dívida é descartável: uma vez quitada e salva no histórico, é removida da vitrine automaticamente
     if (isImmediateDebtSettlement) {
       port.deleteById(reward.getId());
+    } else if (evaluateUserAchievementsUseCase != null) {
+      evaluateUserAchievementsUseCase.execute(user);
     }
   }
 }

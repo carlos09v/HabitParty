@@ -1,16 +1,21 @@
 "use client";
 
 import { arrayMove } from "@dnd-kit/sortable";
+import { History, Store } from "lucide-react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 import { reorderInventory } from "@/actions/inventoryActions";
 import { InventoryCatalogView } from "@/components/inventory/InventoryCatalogView";
+import {
+  CatalogCapacityPill,
+  useResolvedIsPremium,
+} from "@/components/ui/CatalogItemShared";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import { REWARD_CATEGORY_FILTER_VALUES } from "@/constants/reward";
 import {
   ExperienceModeFallbackProvider,
   useExperienceMode,
@@ -21,11 +26,16 @@ import { useReorderableList } from "@/hooks/useReorderableList";
 import type { AppLocale } from "@/i18n/config";
 import type { InventoryItem } from "@/types/inventory";
 import type { ExperienceMode, SelectOption } from "@/types/ui";
-import { calculateInventoryWelcomeStats } from "@/utils/catalogMetrics";
 import {
-  toCategoryMessageKey,
-  toRewardTypeMessageKey,
-} from "@/utils/rewardMapper";
+  buildCatalogCategoryOptions,
+  buildCatalogPackageOptions,
+  buildCatalogTypeOptions,
+  matchesCatalogSearchAndMeta,
+} from "@/utils/catalogFiltering";
+import { calculateInventoryWelcomeStats } from "@/utils/catalogMetrics";
+
+const FREE_INVENTORY_CAPACITY = 20;
+const PREMIUM_INVENTORY_CAPACITY = 100;
 
 const MysteryBoxRouletteModal = dynamic(
   () =>
@@ -37,17 +47,20 @@ const MysteryBoxRouletteModal = dynamic(
 
 interface InventoryContainerProps {
   initialItems: InventoryItem[];
+  initialIsPremium?: boolean;
   initialExperienceMode?: ExperienceMode;
 }
 
 export function InventoryContainer({
   initialItems,
+  initialIsPremium = false,
   initialExperienceMode = "PRODUCTIVITY",
 }: InventoryContainerProps) {
   return (
     <ExperienceModeFallbackProvider mode={initialExperienceMode}>
       <InventoryContainerContent
         initialItems={initialItems}
+        initialIsPremium={initialIsPremium}
         initialExperienceMode={initialExperienceMode}
       />
     </ExperienceModeFallbackProvider>
@@ -56,12 +69,14 @@ export function InventoryContainer({
 
 function InventoryContainerContent({
   initialItems,
+  initialIsPremium,
   initialExperienceMode,
 }: Required<InventoryContainerProps>) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("inventory.container");
   const tRewardOptions = useTranslations("rewards.options");
   const { isGamified } = useExperienceMode(initialExperienceMode);
+  const isPremium = useResolvedIsPremium(initialIsPremium);
 
   const resolveInventoryStackOrder = useCallback(
     (activeId: string, overId: string, currentItems: InventoryItem[]) => {
@@ -150,30 +165,31 @@ function InventoryContainerContent({
   );
 
   const typeOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: t("filters.typeAll"), value: "" },
-      { label: t("filters.typeSingleUse"), value: "SingleUse" },
-      { label: t("filters.typeTimeBased"), value: "TimeBased" },
-      {
-        label: isGamified
-          ? t("filters.typeMysteryBox")
-          : t("filters.typeMysteryBoxProductivity"),
-        value: "MysteryBox",
-      },
-    ],
+    () =>
+      buildCatalogTypeOptions({
+        allLabel: t("filters.typeAll"),
+        isGamified,
+        getTypeLabel: (typeKey) => t(`filters.type${typeKey}`),
+      }),
     [isGamified, t],
   );
 
   const categoryOptions = useMemo<SelectOption[]>(
     () =>
-      REWARD_CATEGORY_FILTER_VALUES.filter(
-        (value) => toCategoryMessageKey(value) !== "DEBT",
-      ).map((value) => ({
-        value,
-        label: value
-          ? tRewardOptions(`categories.${toCategoryMessageKey(value)}`)
-          : tRewardOptions("categories.all"),
-      })),
+      buildCatalogCategoryOptions({
+        allLabel: tRewardOptions("categories.all"),
+        getCategoryLabel: (key) => tRewardOptions(`categories.${key}`),
+        excludeDebt: true,
+      }),
+    [tRewardOptions],
+  );
+
+  const packageOptions = useMemo<SelectOption[]>(
+    () =>
+      buildCatalogPackageOptions({
+        allLabel: tRewardOptions("packages.all"),
+        getPackageLabel: (key) => tRewardOptions(`packages.${key}`),
+      }),
     [tRewardOptions],
   );
 
@@ -188,17 +204,25 @@ function InventoryContainerContent({
 
   const {
     openingBoxItem,
+    lastWonInventoryItem,
+    remainingBoxesInOpeningStack,
     handleOpenMysteryBox,
+    handleOpenNextMysteryBox,
     handleCloseMysteryBox,
     handleMysteryBoxOpened,
     itemToDiscard,
     setItemToDiscard,
     isDiscarding,
     handleConfirmDiscard,
+    activeReturnConfirm,
+    setActiveReturnConfirm,
+    isReturningActive,
+    handleConfirmReturnActive,
     handleUseItem,
     handleSendToFocus,
     usingItemIds,
     sendingItemIds,
+    returningItemIds,
     contextMenu,
     closeContextMenu,
     handleItemContextMenu,
@@ -210,34 +234,21 @@ function InventoryContainerContent({
       return items;
     }
 
-    const searchLower = filters.search.trim().toLowerCase();
-    const filterTypeKey = filters.type
-      ? toRewardTypeMessageKey(filters.type)
-      : null;
-    const filterCategoryKey = filters.category
-      ? toCategoryMessageKey(filters.category)
-      : null;
-
     let result = items.filter((item) => {
-      const matchSearch =
-        !searchLower ||
-        item.reward.title.toLowerCase().includes(searchLower) ||
-        (item.reward.description || "").toLowerCase().includes(searchLower);
+      if (!matchesCatalogSearchAndMeta(item.reward, filters)) {
+        return false;
+      }
 
-      const matchType =
-        !filterTypeKey ||
-        toRewardTypeMessageKey(item.reward.type) === filterTypeKey;
-      const matchCat =
-        !filterCategoryKey ||
-        toCategoryMessageKey(item.reward.category) === filterCategoryKey;
-
-      const matchStatus =
-        !filters.status ||
+      if (
+        filters.status &&
         (filters.status === "IN_FOCUS"
-          ? item.status === "IN_FOCUS"
-          : item.status !== "IN_FOCUS");
+          ? item.status !== "IN_FOCUS"
+          : item.status === "IN_FOCUS")
+      ) {
+        return false;
+      }
 
-      return matchSearch && matchType && matchCat && matchStatus;
+      return true;
     });
 
     if (filters.sortBy === "quantity-desc") {
@@ -251,9 +262,13 @@ function InventoryContainerContent({
     return result;
   }, [items, isFiltering, filters, locale]);
 
-  const welcomeStats = useMemo(() => {
-    const { stats } = calculateInventoryWelcomeStats(items, locale, isGamified);
-    return stats.map((stat, index) => {
+  const { welcomeStats, totalPhysicalItems } = useMemo(() => {
+    const { stats, totalQuantity } = calculateInventoryWelcomeStats(
+      items,
+      locale,
+      isGamified,
+    );
+    const mappedStats = stats.map((stat, index) => {
       if (index === 0) {
         return {
           ...stat,
@@ -282,6 +297,7 @@ function InventoryContainerContent({
       }
       return stat;
     });
+    return { welcomeStats: mappedStats, totalPhysicalItems: totalQuantity };
   }, [
     items,
     locale,
@@ -292,6 +308,11 @@ function InventoryContainerContent({
     handleFilterChange,
     handleClearFilters,
   ]);
+
+  const maxCapacity = isPremium
+    ? PREMIUM_INVENTORY_CAPACITY
+    : FREE_INVENTORY_CAPACITY;
+  const isNearCapacity = totalPhysicalItems >= Math.floor(maxCapacity * 0.9);
 
   return (
     <>
@@ -327,6 +348,12 @@ function InventoryContainerContent({
               value: filters.type,
             },
             {
+              id: "packageLevel",
+              label: t("filters.packageLabel"),
+              options: packageOptions,
+              value: filters.packageLevel || "",
+            },
+            {
               id: "sortBy",
               label: t("filters.sortLabel"),
               options: sortOptions,
@@ -335,18 +362,55 @@ function InventoryContainerContent({
           ]}
           onDropdownChange={(id, value) => handleFilterChange({ [id]: value })}
           onClearDropdowns={handleClearFilters}
+          rightActions={
+            <div className="flex items-center gap-2 flex-wrap">
+              <CatalogCapacityPill
+                current={totalPhysicalItems}
+                max={maxCapacity}
+                isPremium={isPremium}
+                isWarning={isNearCapacity}
+                title={t("capacityTitle", {
+                  current: totalPhysicalItems,
+                  max: maxCapacity,
+                })}
+              />
+
+              <Link
+                href="/history"
+                className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-neutral-700 dark:border-white/15 bg-card dark:bg-surface/60 hover:border-gold/45 hover:text-gold text-neutral-300 text-xs font-semibold transition-colors"
+              >
+                <History size={14} aria-hidden="true" />
+                <span>{t("quickLinks.history")}</span>
+              </Link>
+
+              <Link
+                href="/rewards"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gold/15 hover:bg-gold/25 border border-gold/40 text-amber-800 dark:text-gold text-xs font-bold transition-colors"
+              >
+                <Store size={14} aria-hidden="true" />
+                <span>
+                  {isGamified
+                    ? t("quickLinks.storeGamified")
+                    : t("quickLinks.storeProductivity")}
+                </span>
+              </Link>
+            </div>
+          }
         />
 
         <InventoryCatalogView
           filteredItems={filteredItems}
           totalItemsCount={items.length}
           viewMode={viewMode}
+          isGamified={isGamified}
+          isReorderDisabled={isFiltering}
           sensors={sensors}
           onDragEnd={handleDragEnd}
           onUse={handleUseItem}
           onSendToFocus={handleSendToFocus}
           usingItemIds={usingItemIds}
           sendingItemIds={sendingItemIds}
+          returningItemIds={returningItemIds}
           onOpenMysteryBox={handleOpenMysteryBox}
           onContextMenu={handleItemContextMenu}
           onClearFilters={handleClearFilters}
@@ -371,19 +435,28 @@ function InventoryContainerContent({
               : t("discardModal.titleProductivity")
           }
           description={
-            <span>
-              {t.rich(
-                isGamified
-                  ? "discardModal.description"
-                  : "discardModal.descriptionProductivity",
-                {
-                  title: itemToDiscard.reward.title,
-                  strong: (chunks) => (
-                    <strong className="text-neutral-100">{chunks}</strong>
-                  ),
-                },
+            <div className="flex flex-col gap-1.5">
+              <span>
+                {t.rich(
+                  isGamified
+                    ? "discardModal.description"
+                    : "discardModal.descriptionProductivity",
+                  {
+                    title: itemToDiscard.reward.title,
+                    strong: (chunks) => (
+                      <strong className="text-neutral-100">{chunks}</strong>
+                    ),
+                  },
+                )}
+              </span>
+              {itemToDiscard.quantity > 1 && (
+                <span className="text-xs text-neutral-400">
+                  {t("discardModal.remainingUnitsHint", {
+                    remaining: itemToDiscard.quantity - 1,
+                  })}
+                </span>
               )}
-            </span>
+            </div>
           }
           confirmText={t("discardModal.confirmText")}
           cancelText={t("discardModal.cancelText")}
@@ -392,12 +465,45 @@ function InventoryContainerContent({
         />
       )}
 
+      {activeReturnConfirm && (
+        <ConfirmationModal
+          isOpen={Boolean(activeReturnConfirm)}
+          onClose={() => !isReturningActive && setActiveReturnConfirm(null)}
+          onConfirm={handleConfirmReturnActive}
+          title={
+            isGamified
+              ? t("returnActiveModal.titleGamified")
+              : t("returnActiveModal.titleProductivity")
+          }
+          description={t.rich(
+            isGamified
+              ? "returnActiveModal.descriptionGamified"
+              : "returnActiveModal.descriptionProductivity",
+            {
+              title: activeReturnConfirm.item.reward.title,
+              strong: (chunks) => (
+                <strong className="text-neutral-100">{chunks}</strong>
+              ),
+            },
+          )}
+          confirmText={t("returnActiveModal.confirmText")}
+          cancelText={t("returnActiveModal.cancelText")}
+          variant="warning"
+          isLoading={isReturningActive}
+        />
+      )}
+
       {openingBoxItem && (
         <MysteryBoxRouletteModal
           isOpen={Boolean(openingBoxItem)}
           onClose={handleCloseMysteryBox}
           item={openingBoxItem}
+          wonInventoryItem={lastWonInventoryItem}
+          remainingBoxesCount={remainingBoxesInOpeningStack}
           onSuccess={handleMysteryBoxOpened}
+          onSendWonToFocus={handleSendToFocus}
+          onUseWonItem={handleUseItem}
+          onOpenNextBox={handleOpenNextMysteryBox}
         />
       )}
     </>

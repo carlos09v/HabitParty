@@ -1,5 +1,5 @@
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
-import type { FocusRecord } from "@/types/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
+import type { DashboardFocusRecordSummary } from "@/types/dashboard";
 import { toLocalDateKey } from "./focusMetrics";
 
 /**
@@ -16,7 +16,7 @@ export function getRewardableFocusMinutes(durationMinutes: number): number {
 }
 
 function sumDateFocusMinutes(
-  records: FocusRecord[],
+  records: DashboardFocusRecordSummary[],
   dateKey: string,
   timeZone: string | null | undefined,
   dateField: "endTime" | "startTime",
@@ -36,7 +36,7 @@ function sumDateFocusMinutes(
  * Soma os minutos produtivos reais (excluindo itens da mochila/lazer) registrados na data informada.
  */
 export function calculateProductiveMinutesForDate(
-  records: FocusRecord[],
+  records: DashboardFocusRecordSummary[],
   dateKey: string,
   timeZone?: string | null,
   dateField: "endTime" | "startTime" = "endTime",
@@ -51,7 +51,7 @@ export function calculateProductiveMinutesForDate(
  * agrupados por endTime no fuso do usuário, espelhando a query do backend para o cap diário.
  */
 export function calculateRewardableMinutesForDate(
-  records: FocusRecord[],
+  records: DashboardFocusRecordSummary[],
   dateKey: string,
   timeZone?: string | null,
   dateField: "endTime" | "startTime" = "endTime",
@@ -66,6 +66,22 @@ export function calculateRewardableMinutesForDate(
 }
 
 export type DailyFocusYieldStatus = "full" | "half" | "quarter" | "capped";
+
+export type DailyFocusYieldTierPercent = 0 | 25 | 50 | 100;
+
+/**
+ * Estilos centralizados para badges de rendimento diário (evita duplicação entre
+ * FocusDailyYieldBadge e FocusMetricsGrid).
+ */
+export const DAILY_YIELD_TIER_STYLES: Record<
+  DailyFocusYieldTierPercent,
+  string
+> = {
+  100: "bg-emerald-500/12 border-emerald-500/35 text-emerald-700 dark:text-emerald-300",
+  50: "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300",
+  25: "bg-orange-500/15 border-orange-500/40 text-orange-700 dark:text-orange-300",
+  0: "bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300",
+};
 
 export interface DailyFocusYieldInfo {
   loggedMinutesToday: number;

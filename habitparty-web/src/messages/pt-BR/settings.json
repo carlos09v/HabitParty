@@ -10,20 +10,19 @@
   "headerSubtitle": "Gerencie seu perfil, preferências, assinatura, aparência e segurança da conta.",
   "tabs": {
     "profile": "Perfil",
-    "profileDesc": "Identidade cósmica e foto de perfil",
     "preferences": "Preferências",
-    "preferencesDesc": "Idioma, fuso horário, formatos e experiência",
     "appearance": "Aparência",
-    "appearanceDesc": "Tema claro/escuro e cards introdutórios",
     "audio": "Áudio & Avisos",
-    "audioDesc": "Sons de clique, alarmes e ambiente VIP",
     "privacy": "Privacidade & Social",
-    "privacyDesc": "Visibilidade da vitrine, pedidos de amizade e código",
-    "subscription": "Assinatura",
-    "subscriptionDesc": "Plano, limites e cobrança",
     "security": "Segurança",
-    "securityDesc": "Senha, redefinição de dados e exclusão",
     "navAria": "Navegação de Configurações"
+  },
+  "unsavedGuard": {
+    "title": "Descartar alterações não salvas?",
+    "description": "Você tem alterações pendentes nesta aba. Se sair agora sem salvar, elas serão perdidas.",
+    "discardBtn": "Descartar e trocar aba",
+    "stayBtn": "Continuar editando",
+    "unsavedDotAria": "Alterações não salvas nesta aba"
   },
   "cards": {
     "profile": "Meu Perfil",
@@ -32,6 +31,8 @@
     "appearanceThemeDesc": "Escolha entre 4 temas gratuitos (2 escuros e 2 claros) ou desbloqueie atmosferas exclusivas VIP.",
     "experienceMode": "Perfil de Experiência (Modo Essencial vs. Modo Aventura)",
     "experienceModeDesc": "Escolha o estilo da sua gamificação: interface executiva com créditos e pontos no Modo Essencial ou imersão RPG com moedas de ouro, XP e caixas misteriosas no Modo Aventura.",
+    "routine": "Rotina & Meta Diária de Foco",
+    "routineDesc": "Ajuste sua meta diária de foco, período de pico, estilo de disciplina e objetivos principais definidos no início da jornada.",
     "language": "Idioma da Interface",
     "languageDesc": "Escolha o idioma de exibição dos menus, painéis e mensagens do HabitParty.",
     "dateFormat": "Formato de Data",
@@ -56,21 +57,13 @@
     "dangerZoneDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível."
   },
   "profileHeader": {
-    "changePhoto": "Alterar foto",
     "viewProfile": "Ver Perfil",
     "viewProfileTitle": "Ir para sua vitrine de perfil e molduras (/profile)",
-    "uploading": "Enviando...",
-    "currentLevel": "Nível {level} • {title}",
-    "coins": "{amount} Moedas",
-    "xp": "{amount} XP Vitalício",
-    "vipBadge": "Guardião Cósmico",
-    "founderBadge": "Membro Fundador",
+    "openShowcaseBtn": "Abrir Vitrine & Personalização",
     "invalidImageToast": "Por favor, selecione um arquivo de imagem válido.",
     "imageSizeToast": "A imagem deve ter no máximo 5MB.",
     "photoSuccessToast": "Foto de perfil atualizada com sucesso!",
     "photoErrorToast": "Erro ao atualizar foto de perfil.",
-    "changePhotoAria": "Alterar foto de perfil",
-    "dropzoneTitle": "Clique ou solte uma imagem aqui para alterar sua foto de perfil",
     "dropzoneActive": "Solte a imagem aqui",
     "dropzoneDefault": "Arraste uma foto aqui",
     "dropzoneHint": "ou clique para anexar (máx. 5MB)",
@@ -80,8 +73,6 @@
     "adminBadge": "ADMIN",
     "adventurer": "Aventureiro",
     "member": "Membro",
-    "novice": "Novato",
-    "premiumMember": "Membro Premium",
     "coinsLabel": "moedas",
     "creditsLabel": "créditos",
     "xpLabel": "XP acumulado",
@@ -91,7 +82,6 @@
     "fullNameLabel": "Nome Completo",
     "fullNamePlaceholder": "Seu nome ou apelido",
     "birthdayLabel": "Data de Nascimento",
-    "birthdayOptional": "(opcional)",
     "genderLabel": "Gênero",
     "save": "Salvar Alterações",
     "saving": "Salvando...",
@@ -103,8 +93,6 @@
       "NON_BINARY": "Não-binário",
       "PREFER_NOT_TO_SAY": "Prefiro não informar"
     },
-    "cardTitle": "Dados Pessoais",
-    "cardDesc": "Atualize seus dados públicos e identificação no HabitParty.",
     "noChangesToast": "Nenhuma alteração foi realizada.",
     "noChangesTitle": "Nenhuma alteração para salvar",
     "nameMaxToast": "O nome deve ter no máximo 150 caracteres.",
@@ -155,19 +143,123 @@
     "defaultBadge": "Padrão",
     "statusGamified": "Modo Aventura (Imersão RPG) — Recompensas em destaque, Caixas Misteriosas, ícones de espadas e economia em XP e Moedas de Ouro.",
     "statusProductivity": "Modo Essencial (Produtividade) — Interface executiva limpa com economia de Créditos e Pontos (pts) e foco direto nas entregas.",
-    "activeLabel": "Perfil de Experiência Ativo:"
+    "activeLabel": "Perfil de Experiência Ativo:",
+    "saveError": "Não foi possível salvar o perfil de experiência.",
+    "previewLabel": "Prévia ao vivo",
+    "previewSampleTask": "Entregar relatório semanal",
+    "previewGamifiedReward": "+15 Moedas • +30 XP",
+    "previewProductivityReward": "+15 Créditos • +30 pts",
+    "previewGamifiedBadge": "Modo Hardcore",
+    "previewProductivityBadge": "Prazo Rígido"
+  },
+  "routineCard": {
+    "dailyFocusGoalTitle": "Meta Diária de Foco",
+    "dailyFocusGoalDesc": "Define a referência diária exibida no widget de progresso e nas suas metas de foco.",
+    "focusGoals": {
+      "30": {
+        "label": "30 min / dia",
+        "desc": "Ritmo leve para construir consistência diária sem pressão"
+      },
+      "90": {
+        "label": "90 min / dia",
+        "desc": "Equilíbrio ideal de 2 a 3 blocos profundos de foco"
+      },
+      "180": {
+        "label": "3 horas / dia",
+        "desc": "Rotina intensa de alta imersão e estudos avançados"
+      }
+    },
+    "peakPeriodTitle": "Período de Maior Energia",
+    "peakPeriodDesc": "Período do dia em que você costuma render melhor em tarefas exigentes.",
+    "peakPeriods": {
+      "morning": {
+        "label": "Manhã",
+        "desc": "Pico de concentração logo nas primeiras horas"
+      },
+      "afternoon": {
+        "label": "Tarde",
+        "desc": "Ritmo consolidado após o meio do dia"
+      },
+      "night": {
+        "label": "Noite",
+        "desc": "Foco silencioso e profundo no período noturno"
+      }
+    },
+    "disciplineStyleTitle": "Estilo de Cobrança",
+    "disciplineStyleDesc": "Como você prefere equilibrar flexibilidade e rigor nos seus prazos.",
+    "disciplineStyles": {
+      "flexible": {
+        "label": "Sustentável & Flexível",
+        "desc": "Prioriza constância leve sem penalidades severas"
+      },
+      "strict": {
+        "label": "Rigoroso & Desafiador",
+        "desc": "Prazos rígidos e compromisso máximo com entregas"
+      }
+    },
+    "usageModeTitle": "Contexto Principal de Uso",
+    "usageModeDesc": "Área principal onde você aplica o HabitParty hoje.",
+    "usageModes": {
+      "personal": {
+        "label": "Vida Pessoal",
+        "desc": "Saúde, casa e hábitos cotidianos"
+      },
+      "studies": {
+        "label": "Estudos",
+        "desc": "Provas, cursos, leituras e revisões"
+      },
+      "work": {
+        "label": "Trabalho",
+        "desc": "Projetos, entregas e deep work"
+      },
+      "all": {
+        "label": "Tudo Integrado",
+        "desc": "Rotina pessoal, estudos e trabalho juntos"
+      }
+    },
+    "primaryGoalsTitle": "Objetivos Principais",
+    "primaryGoalsDesc": "Escolha até {max} focos prioritários da sua jornada atual.",
+    "goals": {
+      "focus": "Aprofundar foco",
+      "habits": "Construir hábitos",
+      "projects": "Entregar projetos",
+      "routine": "Organizar rotina",
+      "balance": "Descansar sem culpa"
+    },
+    "mainObstacleTitle": "Maior Desafio Atual",
+    "mainObstacleDesc": "Principal obstáculo que você quer superar na sua rotina.",
+    "obstacles": {
+      "procrastination": {
+        "label": "Procrastinação",
+        "desc": "Dificuldade para dar o primeiro passo"
+      },
+      "distractions": {
+        "label": "Distrações",
+        "desc": "Interrupções constantes durante o foco"
+      },
+      "consistency": {
+        "label": "Constância",
+        "desc": "Manter o ritmo por várias semanas seguidas"
+      },
+      "burnout": {
+        "label": "Sobrecarga",
+        "desc": "Equilibrar esforço e recuperação sem culpa"
+      }
+    },
+    "minGoalsHint": "Mantenha pelo menos 1 objetivo selecionado.",
+    "save": "Salvar Rotina",
+    "saving": "Salvando...",
+    "saveSuccess": "Preferências de rotina atualizadas!",
+    "saveError": "Não foi possível salvar suas preferências de rotina."
   },
   "languageCard": {
-    "title": "Idioma da Interface",
-    "description": "Escolha o idioma de exibição de todos os menus, painéis e mensagens do HabitParty.",
     "enLabel": "English (US)",
     "enDesc": "Exibir toda a interface em inglês.",
     "ptLabel": "Português (Brasil)",
     "ptDesc": "Exibir toda a interface em português brasileiro.",
     "statusEn": "English (US) está ativo como idioma principal da interface.",
     "statusPt": "Português (Brasil) está ativo como idioma principal da interface.",
-    "activeLabel": "Idioma ativo: ",
-    "statusDesc": "O Português (Brasil) está ativo em toda a sua interface."
+    "activeLabel": "Idioma ativo: "
   },
   "dateFormatCard": {
     "ddmmyyyyLabel": "Dia / Mês / Ano",
@@ -199,6 +291,7 @@
     "activeLabel": "Fuso ativo: ",
     "browserDiffHint": "Navegador detectado em {browserTz} ({browserOffset}).",
     "searchPlaceholder": "Buscar cidade ou fuso (ex: Sao_Paulo, New_York, London)...",
+    "clearSearchAria": "Limpar busca de fuso horário",
     "selectLabel": "Selecionar fuso horário IANA",
     "detectBrowserButton": "Usar do navegador",
     "saveButton": "Salvar Fuso",
@@ -213,11 +306,8 @@
     "toastError": "Não foi possível atualizar o fuso horário."
   },
   "welcomeCards": {
-    "hiddenCount": "{count, plural, one {# card ocultado} other {# cards ocultados}}",
     "allVisible": "Todos os cards estão visíveis",
-    "restoreAll": "Restaurar todos os cards",
     "restoreAllSuccess": "Todos os cards de boas-vindas foram restaurados!",
-    "ariaToggle": "Visibilidade do card {title}",
     "items": {
       "tasks": {
         "title": "Gerencie suas Tarefas!",
@@ -256,19 +346,13 @@
       }
     },
     "statusLabel": "Status: ",
-    "statusSummary": "{count} de {total} cards informativos estão ocultados.",
+    "statusSummary": "{count, plural, one {# de {total} card informativo está oculto.} other {# de {total} cards informativos estão ocultos.}}",
     "restoreAllBtn": "Reativar Todos",
     "hiddenBadge": "Oculto",
     "visibleBadge": "Visível",
-    "reactivateBtn": "Reativar na Tela",
     "cardAria": "Alternar visibilidade do card de boas-vindas da página {pageName}"
   },
   "soundNotifications": {
-    "soundEffectsTitle": "Efeitos Sonoros de Interface",
-    "soundEffectsDesc": "Sons de clique, conclusão de tarefas, subida de nível e ações do sistema.",
-    "alarmTonesTitle": "Toque do Alarme de Conclusão (Pomodoro)",
-    "alarmTonesDesc": "Escolha o toque reproduzido quando um ciclo de foco ou intervalo chega ao fim.",
-    "testSound": "Testar som",
     "tones": {
       "zen": {
         "label": "Sino Zen Suave",
@@ -309,13 +393,6 @@
         "description": "Crepitar acolhedor de lenha e brasas na lareira."
       }
     },
-    "volume": "Volume:",
-    "vipLockedBadge": "Exclusivo VIP",
-    "upgradeBannerTitle": "Desbloqueie Sons Ambientes com o Plano Guardião Cósmico",
-    "upgradeBannerDesc": "Entre no estado de fluxo com Chuva Suave, Cafeteria, Lofi Zen e Fogueira tocando diretamente no seu Pomodoro.",
-    "upgradeButton": "Ver Planos Premium",
-    "cardTitle": "Preferências de Notificações & Sons",
-    "cardDesc": "Personalize o feedback auditivo das suas ações no aplicativo, alarmes do Pomodoro e ruídos ambientes de foco.",
     "browserTitle": "Notificações de Foco do Navegador",
     "browserDesc": "Receba um aviso na área de trabalho quando uma sessão de foco ou pausa terminar, mesmo em outra aba.",
     "browserDenied": "Bloqueado pelo Navegador",
@@ -326,8 +403,9 @@
     "browserDeniedHelp": "As notificações estão bloqueadas nas permissões do seu navegador. Para reativar, clique no ícone de cadeado na barra de endereços e permita notificações para o HabitParty.",
     "browserAria": "Ativar notificações do navegador para término de sessões",
     "uiSoundsTitle": "Sons de Cliques & Conquistas",
-    "uiSoundsDesc": "Feedback de áudio ao completar tarefas, avançar hábitos e comprar recompensas.",
+    "uiSoundsDesc": "Feedback de áudio ao completar tarefas, avançar hábitos, desbloquear conquistas e comprar recompensas.",
     "uiSoundsAria": "Ativar ou silenciar sons de clique e gamificação",
+    "testAchievementSound": "Testar Som de Conquista",
     "pomodoroTitle": "Alarmes do Pomodoro & Pausas",
     "pomodoroDesc": "Tocar sinos sonoros ao iniciar o foco, nas pausas e ao concluir os ciclos.",
     "pomodoroAria": "Ativar ou desativar alarmes do Pomodoro",
@@ -339,32 +417,22 @@
     "ambientTitle": "Sons de Foco Ambiente",
     "ambientDesc": "Ruídos procedurais e atmosferas relaxantes geradas pelo navegador para bloquear distrações.",
     "unlockVip": "Liberar VIP",
+    "ambientPlayPreview": "Ouvir prévia",
+    "ambientStopPreview": "Parar prévia",
     "ambientVolumeTitle": "Volume do Som Ambiente",
     "ambientVolumeAria": "Volume padrão do som ambiente"
   },
   "subscriptionCard": {
-    "currentPlan": "Plano Atual:",
-    "statusActive": "Ativo",
-    "statusFree": "Gratuito",
-    "freePlanTitle": "Aventureiro Cósmico (Gratuito)",
-    "freePlanDesc": "Acesso completo a tarefas, hábitos, economia matemática e loja pessoal.",
-    "premiumPlanTitle": "Guardião Cósmico (Premium VIP)",
-    "founderPlanTitle": "Membro Fundador (VIP Vitalício)",
-    "renewsOn": "Renovação em {date}",
-    "expiresOn": "Válido até {date}",
     "cancelScheduledUntil": "Cancelamento agendado — ativo até {date}",
     "cancelScheduledBadge": "Encerra no fim do ciclo",
-    "managePortal": "Gerenciar Assinatura (Portal Stripe)",
-    "upgradeCta": "Fazer Upgrade para Guardião Cósmico",
     "redirectingPortal": "Redirecionando para o Portal de Assinatura do Stripe...",
     "portalError": "Erro ao abrir o portal de assinaturas.",
-    "cardTitle": "Plano & Assinatura",
-    "cardDesc": "Gerencie seu status VIP, renovação, faturas e cancelamento seguro pelo Stripe.",
     "founderActiveTitle": "Membro Fundador (Premium VIP)",
     "founderExpiredTitle": "Membro Fundador (Acesso Gratuito)",
     "guardianTitle": "Guardião Cósmico (Premium VIP)",
     "adventurerTitle": "Aventureiro (Gratuito)",
     "vipActiveBadge": "VIP Ativo",
+    "oneTimePlanBadge": "Sem renovação automática",
     "premiumAccessDesc": "Você possui acesso irrestrito a 4 ambientes, 6 colunas, sons ambientes e molduras exclusivas.",
     "founderExpiredDesc": "Seu período anual de lançamento expirou. Você mantém sua insígnia vitalícia de Fundador, com os recursos do plano gratuito.",
     "freeAccessDesc": "Você está usando a versão gratuita com até 2 ambientes e 4 colunas por quadro.",
@@ -372,9 +440,10 @@
     "portalTooltip": "Acesse o portal da Stripe para atualizar cartão, ver faturas ou cancelar",
     "openingStripe": "Abrindo Stripe...",
     "manageOrCancel": "Gerenciar ou Cancelar Assinatura",
+    "renewOrExtend": "Renovar ou Estender Acesso",
     "viewPerks": "Ver Benefícios",
-    "renewPlan": "Renovar Plano Premium 👑",
-    "upgradePlan": "Evoluir para Premium 👑",
+    "renewPlan": "Renovar Plano Premium",
+    "upgradePlan": "Evoluir para Premium",
     "transparentNoteTitle": "Cancelamento e Renovação Descomplicados:",
     "transparentNoteDesc": "Se você assinou no cartão recorrente, pode cancelar a qualquer momento pelo portal com 1 clique (o acesso continuará liberado até o fim do ciclo pago). Se pagou via Pix, não há cobrança automática e o acesso simplesmente expira ao final dos dias contratados.",
     "missingPortalUrl": "URL do portal não encontrada.",
@@ -383,20 +452,12 @@
   "changePassword": {
     "unverifiedEmailWarning": "Confirme seu e-mail para alterar a senha:",
     "unverifiedEmailDesc": "Por motivos de segurança, a alteração direta de senha requer que o seu endereço de e-mail ({email}) esteja verificado. Utilize o aviso no topo da tela para reenviar o link de confirmação.",
-    "googleNoticeTitle": "Conta vinculada via Google",
-    "googleNoticeDesc": "Se você faz login com o Google e ainda não cadastrou uma senha tradicional, envie um link para definir sua primeira senha por e-mail.",
-    "sendSetupEmail": "Enviar link de definição de senha",
     "sendingEmail": "Enviando...",
     "currentPasswordLabel": "Senha Atual",
     "newPasswordLabel": "Nova Senha",
     "confirmPasswordLabel": "Confirmar Nova Senha",
-    "submitButton": "Salvar Nova Senha",
-    "submittingButton": "Alterando...",
     "successToast": "Senha alterada com sucesso!",
-    "emailSentToast": "Link de definição de senha enviado para seu e-mail!",
     "samePasswordError": "A nova senha não pode ser igual à senha atual.",
-    "cardTitle": "Segurança & Senha",
-    "cardDesc": "Mantenha sua conta protegida atualizando sua senha periodicamente.",
     "userEmailNotFound": "E-mail do usuário não encontrado.",
     "setupLinkSent": "Enviamos um link para {email} para você definir ou redefinir sua senha!",
     "setupLinkError": "Não foi possível enviar o e-mail de definição de senha.",
@@ -405,30 +466,29 @@
     "requirementsNotMet": "A nova senha deve atender a todos os requisitos de segurança.",
     "passwordsDoNotMatch": "A confirmação de senha não confere.",
     "changePasswordError": "Erro ao alterar senha. Verifique sua senha atual.",
-    "googleNoticeTitleFull": "Criou sua conta com o Google ou não sabe sua senha atual?",
-    "googleNoticeDescFull": "Contas criadas via Google não possuem uma senha manual inicial. Se desejar definir uma senha própria para também entrar com e-mail e senha, solicite um link de definição no seu e-mail.",
-    "linkSent": "Link enviado no e-mail",
+    "forgotNoticeTitle": "Esqueceu sua senha atual?",
+    "forgotNoticeDesc": "Envie um link seguro de redefinição para o seu e-mail para escolher uma nova senha sem informar a atual.",
+    "oauthSetupTitle": "Conta conectada com o Google (sem senha manual)",
+    "oauthSetupDesc": "Sua conta foi criada via login social e ainda não possui senha própria. Solicite um link para {email} se quiser também entrar com e-mail e senha.",
+    "definePasswordBtn": "Definir primeira senha por e-mail",
+    "resendCooldown": "Reenviar em {seconds}s",
     "receiveLink": "Receber link por e-mail",
     "currentPasswordPlaceholder": "Digite sua senha atual",
     "newPasswordPlaceholder": "Digite a nova senha",
     "confirmPasswordPlaceholder": "Confirme a nova senha",
-    "requirementsTitle": "Requisitos da senha:",
-    "ruleMinLength": "Mínimo de 8 caracteres",
-    "ruleUpperCase": "1 letra maiúscula",
-    "ruleSpecialChar": "1 caractere especial (@$!%*?&#)",
-    "ruleMatch": "Senhas coincidem",
-    "ruleDifferent": "Diferente da senha atual",
     "submitBtn": "Alterar Senha",
     "submittingBtn": "Alterando..."
   },
   "dangerZone": {
+    "warningNote": "Esta ação remove sua conta, tarefas, recompensas, histórico e conquistas permanentemente e não pode ser desfeita.",
     "deleteButton": "Excluir Conta",
     "modalTitle": "Excluir permanentemente sua conta?",
     "modalConfirm": "Sim, excluir minha conta",
     "modalCancel": "Não, manter conta",
     "modalDesc": "Tem certeza de que deseja excluir sua conta no HabitParty? Todo o seu progresso, histórico, conquistas e configurações serão excluídos imediatamente e não poderão ser recuperados.",
-    "cardTitle": "Zona de Perigo",
-    "cardDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível.",
+    "activeSubscriptionAutoCancelNotice": "Você possui uma assinatura recorrente ativa no Stripe. Ao confirmar, ela será cancelada automaticamente antes da exclusão da conta para evitar cobranças futuras.",
+    "deleteConfirmInputLabel": "Para confirmar, digite {value} abaixo:",
+    "deleteConfirmFallback": "EXCLUIR",
     "errorToast": "Erro ao excluir conta."
   },
   "accountReset": {
@@ -449,6 +509,8 @@
     "completeModalTitle": "Apagar todos os dados e recomeçar do zero?",
     "completeModalDesc": "Esta ação excluirá permanentemente todos os seus workspaces, colunas, tarefas, checklists, recompensas, itens, atividades/registros de foco, transações, conquistas e bio/moldura. Sua conta, e-mail, amigos e assinatura ativa serão preservados para você continuar sem precisar se cadastrar novamente.",
     "completeModalConfirm": "Sim, apagar tudo e resetar",
+    "completeConfirmKeyword": "RESETAR",
+    "completeConfirmInputLabel": "Para confirmar o reset completo, digite {keyword} abaixo:",
     "completeSuccessToast": "Conta redefinida completamente! Tudo pronto para um novo começo.",
     "modalCancel": "Cancelar",
     "errorToast": "Não foi possível concluir o reset da conta."
@@ -457,35 +519,8 @@
     "defaultLabel": "Seja Premium"
   },
   "upgradeModal": {
-    "title": "Eleve sua Jornada ao Nível Cósmico",
-    "subtitle": "Desbloqueie personalizações exclusivas, sons ambiente relaxantes e capacidade expandida para dominar sua rotina.",
-    "founderBadge": "Cota de Fundador ({remaining}/30)",
-    "plans": {
-      "founder": "Membro Fundador (Anual)",
-      "founderDesc": "Acesso anual com desconto histórico de pioneiro.",
-      "monthly": "Plano Mensal",
-      "monthlyDesc": "Cobrança mensal com cancelamento a qualquer momento.",
-      "annual": "Plano Anual (~17% OFF)",
-      "annualDesc": "12 meses pelo preço de 10. Maior economia para consistência."
-    },
-    "paymentMethods": {
-      "creditCard": "Cartão de Crédito",
-      "pix": "Pix Avulso (Sem renovação automática)"
-    },
-    "benefits": {
-      "frames": "5 Molduras Animadas de Avatar",
-      "sounds": "4 Sons Ambientes Nativos no Pomodoro",
-      "icons": "Pacote Completo de Ícones VIP Dourados",
-      "workspaces": "Até 4 Workspaces & 6 Colunas por Quadro",
-      "focus": "Até 6 Atividades Personalizadas no Foco",
-      "backpack": "Mochila para 100 Itens & 50 Cards na Loja"
-    },
-    "checkoutButton": "Assinar Agora",
-    "checkoutButtonPix": "Gerar QR Code Pix",
-    "startingCheckout": "Iniciando checkout...",
     "portalRedirect": "Redirecionando para o portal de assinaturas...",
     "portalError": "Não foi possível abrir o portal de assinaturas.",
-    "unverifiedWarning": "Confirme seu e-mail antes de assinar.",
     "perks": [
       "Agendamento de Afazeres como Eventos (início, término ou dia inteiro)",
       "Molduras animadas exclusivas para seu perfil e avatar",
@@ -500,7 +535,6 @@
     ],
     "modalTitle": "Evoluir para Guardião Cósmico",
     "modalSubtitle": "Desbloqueie todo o poder da produtividade gamificada sem barreiras.",
-    "alreadyAcquired": "Já Adquirido 👑",
     "founderRenewBadge": "Fundador · Renovar 👑",
     "remainingSlots": "{count} vagas",
     "founderAnnual": "Fundador",
@@ -566,12 +600,18 @@
     "regeneratingFriendCode": "Gerando...",
     "friendCodeRegenerated": "Novo código de amigo gerado! O código anterior deixou de funcionar.",
     "friendCodeRegenerateError": "Não foi possível gerar um novo código de amigo.",
+    "confirmRegenerateTitle": "Gerar novo Código de Amigo?",
+    "confirmRegenerateDesc": "Seu código atual deixará de funcionar imediatamente para novos convites. Amizades já aceitas não serão afetadas.",
+    "confirmRegenerateBtn": "Gerar novo código",
+    "confirmCancelBtn": "Cancelar",
     "profileVisibilityTitle": "Visibilidade do Perfil / Vitrine",
     "profileVisibilityDesc": "Quem pode abrir seu perfil público e visualizar sua bio, moldura e destaques.",
     "statsVisibilityTitle": "Visibilidade de Estatísticas & Retrospectiva",
     "statsVisibilityDesc": "Quem pode visualizar suas ofensivas, tarefas concluídas, horas em foco e retrospectiva anual.",
     "achievementsVisibilityTitle": "Visibilidade de Conquistas & Medalhas",
     "achievementsVisibilityDesc": "Quem pode explorar sua galeria completa de medalhas desbloqueadas.",
+    "profilePrivateDependencyHint": "Seu perfil está Privado — esta seção fica oculta para todos os terceiros enquanto a vitrine principal estiver privada.",
+    "profileFriendsDependencyHint": "Como seu perfil está em Somente Amigos, apenas amigos conectados conseguirão acessar esta seção mesmo marcada como Pública.",
     "friendRequestPolicyTitle": "Quem pode enviar pedidos de amizade",
     "friendRequestPolicyDesc": "Controle se outros jogadores podem solicitar amizade por busca/username ou apenas via Código de Amigo.",
     "levels": {

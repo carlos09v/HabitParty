@@ -3,33 +3,57 @@
 import { CheckCircle2, Mail, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { requestPasswordReset } from "@/actions/auth";
+import { AuthFormAlert } from "@/components/auth/AuthFormAlert";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { validateEmail } from "@/utils/validators";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth.forgotPassword");
+  const tValidation = useTranslations("auth.validation");
   const [isPending, startTransition] = useTransition();
+  const emailRef = useRef<HTMLInputElement>(null);
+
   const [email, setEmail] = useState("");
+  const [touched, setTouched] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const emailValidation = validateEmail(email);
+  const emailError =
+    touched && !emailValidation.isValid && emailValidation.errorKey
+      ? tValidation(emailValidation.errorKey)
+      : undefined;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email.trim()) {
-      toast.error(t("emptyEmailError"));
+    setTouched(true);
+    setFormError(null);
+
+    if (!validateEmail(email).isValid) {
+      emailRef.current?.focus();
       return;
     }
 
     startTransition(async () => {
-      const result = await requestPasswordReset(email);
+      try {
+        const result = await requestPasswordReset(email);
 
-      if (!result.success) {
-        toast.error(result.error);
-      } else {
+        if (!result.success) {
+          setFormError(result.error);
+          toast.error(result.error);
+          return;
+        }
+
         setIsSubmitted(true);
         toast.success(t("instructionsSentToast"));
+      } catch {
+        const fallbackError = t("connectionError");
+        setFormError(fallbackError);
+        toast.error(fallbackError);
       }
     });
   };
@@ -38,7 +62,7 @@ export function ForgotPasswordForm() {
     return (
       <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
         <div className="rounded-xl border border-neutral-700 bg-surface/60 dark:border-primary/40 dark:bg-primary-dark/30 p-6 flex flex-col items-center text-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/40 flex items-center justify-center text-gold shadow-glow-gold-sm">
+          <div className="w-12 h-12 rounded-full bg-amber-500/15 border border-amber-500/35 dark:bg-gold/10 dark:border-gold/40 flex items-center justify-center text-gold-ink dark:text-gold shadow-none dark:shadow-glow-gold-sm">
             <CheckCircle2 size={26} aria-hidden="true" />
           </div>
 
@@ -57,7 +81,7 @@ export function ForgotPasswordForm() {
           <button
             type="button"
             onClick={() => setIsSubmitted(false)}
-            className="w-full py-3 px-4 rounded-lg border border-neutral-700 hover:border-neutral-500 text-sm font-semibold text-neutral-300 hover:text-neutral-100 bg-surface hover:bg-surface-hover dark:bg-transparent dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            className="w-full py-3 px-4 rounded-lg border border-neutral-700 hover:border-neutral-500 text-sm font-semibold text-neutral-300 hover:text-neutral-100 bg-surface hover:bg-surface-hover dark:bg-transparent dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <RotateCw size={16} aria-hidden="true" />
             {t("tryAnotherEmail")}
@@ -65,7 +89,7 @@ export function ForgotPasswordForm() {
 
           <Link
             href="/signIn"
-            className="w-full text-center py-2 text-sm text-neutral-400 hover:text-gold transition-colors"
+            className="w-full text-center py-2 text-sm text-neutral-400 hover:text-primary dark:hover:text-gold transition-colors rounded-md outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             {t("backToLogin")}
           </Link>
@@ -75,19 +99,35 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-4 w-full"
+    >
+      <AuthFormAlert message={formError} />
+
       <Input
+        ref={emailRef}
         label={t("emailLabel")}
         id="email"
         name="email"
         type="email"
+        autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        enterKeyHint="send"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (formError) setFormError(null);
+        }}
+        onBlur={() => setTouched(true)}
+        error={emailError}
         placeholder={t("emailPlaceholder")}
         icon={<Mail size={18} aria-hidden="true" />}
         required
         disabled={isPending}
-        autoFocus
       />
 
       <SubmitButton

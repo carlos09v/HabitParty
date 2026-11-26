@@ -17,43 +17,44 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Version;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "inventory_items")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class InventoryItemJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class InventoryItemJpaEntity extends BaseUuidJpaEntity {
+
   @Id
-  // @GeneratedValue(strategy = GenerationType.UUID) => O usecase que irá gerar
+  @ToString.Include
   @Column(name = "inventory_item_id")
   private UUID id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserJpaEntity user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
   @Column(name = "reward_id", nullable = false)
   private UUID rewardId;
 
-  // === SNAPSHOTS ===
+  @ToString.Include
   @Column(name = "name_snapshot", nullable = false)
   private String nameSnapshot;
 
   @Column(name = "icon_snapshot")
-  private String iconSnapshot; // Ícones geralmente podem ser nulos
+  private String iconSnapshot;
 
-  @Column(name = "price_snapshot", nullable = false)
+  @Column(name = "price_snapshot", nullable = false, precision = 10, scale = 2)
   private BigDecimal priceSnapshot;
 
   @Enumerated(EnumType.STRING)
@@ -63,8 +64,8 @@ public class InventoryItemJpaEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "reward_type_snapshot", nullable = false)
   private RewardType rewardTypeSnapshot;
-  // =================
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private InventoryItemStatus status;
@@ -79,7 +80,11 @@ public class InventoryItemJpaEntity {
   @Column(name = "loot_items_snapshot")
   private List<MysteryBoxLootItem> lootItemsSnapshot;
 
-  // @CreationTimestamp => O usecase irá gerar
   @Column(name = "acquired_at", nullable = false, updatable = false)
   private LocalDateTime acquiredAt;
+
+  @Version
+  @Setter(AccessLevel.NONE)
+  @Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+  private Long version;
 }

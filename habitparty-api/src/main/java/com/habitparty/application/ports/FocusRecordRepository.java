@@ -22,9 +22,6 @@ public interface FocusRecordRepository {
 
   // Busca o histórico de uma ÚNICA atividade (Gráfico específico)
   List<FocusRecord> findAllByFocusActivityId(UUID focusActivityId);
-  
-  // Busca o histórico de uso de um ÚNICO item do inventário
-  List<FocusRecord> findAllByInventoryItemId(UUID inventoryItemId);
 
   // Busca o histórico de foco vinculado a uma ÚNICA tarefa
   List<FocusRecord> findAllByTaskId(UUID taskId);
@@ -46,6 +43,12 @@ public interface FocusRecordRepository {
   void nullifyFocusActivityId(UUID focusActivityId);
 
   void nullifyTaskId(UUID taskId);
+
+  default void nullifyTaskIds(Collection<UUID> taskIds) {
+    if (taskIds != null) {
+      taskIds.forEach(this::nullifyTaskId);
+    }
+  }
 
   Page<FocusRecord> findAllByFocusActivityId(UUID focusActivityId, int page, int size);
 
@@ -82,6 +85,26 @@ public interface FocusRecordRepository {
   default List<FocusRecord> findAllByUserIdAndPeriod(
       UUID userId, java.time.LocalDateTime startInclusive, java.time.LocalDateTime endInclusive) {
     return List.of();
+  }
+
+  record RetrospectiveFocusBucket(
+      int year,
+      int month,
+      int day,
+      int hour,
+      int quarterHour,
+      int totalMinutes,
+      int sessionsCount,
+      int pomodorosCompleted,
+      boolean hasActiveDaySession) {}
+
+  default Optional<List<RetrospectiveFocusBucket>> aggregateForRetrospective(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endExclusive, int minActiveDayMinutes) {
+    return Optional.empty();
+  }
+
+  default Optional<List<FocusRecord>> findAllProductiveByUserIds(Collection<UUID> userIds) {
+    return Optional.empty();
   }
 
   default java.util.Optional<java.time.LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
@@ -137,5 +160,30 @@ public interface FocusRecordRepository {
   default List<FocusSessionSummary> findProductiveFocusSessionsByUserIdsSince(
       Collection<UUID> userIds, LocalDateTime since) {
     return List.of();
+  }
+
+  record FocusAnalyticsEntry(
+      UUID focusActivityId,
+      LocalDateTime endTime,
+      int durationMinutes,
+      int completedPomos,
+      int xpEarned,
+      BigDecimal coinsEarned) {}
+
+  default List<FocusAnalyticsEntry> findProductiveAnalyticsEntriesByUserId(UUID userId) {
+    List<FocusRecord> records = findAllByUserId(userId);
+    if (records == null || records.isEmpty()) {
+      return List.of();
+    }
+    return records.stream()
+        .filter(r -> r.getInventoryItemId().isEmpty() && r.getDurationMinutes() > 0 && r.getEndTime() != null)
+        .map(r -> new FocusAnalyticsEntry(
+            r.getFocusActivityId().orElse(null),
+            r.getEndTime(),
+            r.getDurationMinutes(),
+            Math.max(0, r.getCompletedPomos().orElse(0)),
+            Math.max(0, r.getXpEarned().orElse(0)),
+            r.getCoinsEarned().orElse(BigDecimal.ZERO)))
+        .toList();
   }
 }

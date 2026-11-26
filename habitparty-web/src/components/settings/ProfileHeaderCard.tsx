@@ -2,27 +2,42 @@
 
 import { ExternalLink, Sparkles, UploadCloud } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useSettingsDirtyState } from "@/components/settings/SettingsDirtyContext";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { UserPlanBadge, UserRoleBadge } from "@/components/ui/UserStatusBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
+import { useResolvedUser } from "@/hooks/useResolvedUser";
 import type { AppLocale } from "@/i18n/config";
-import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
-import { useUserStore } from "@/store/userStore";
+import {
+  resolveUserAvatarFrame,
+  useActiveAvatarFrame,
+  useUserStore,
+} from "@/store/userStore";
 import type { ProfileHeaderCardProps } from "@/types/settings";
-import { cn, formatCoins, resolveUserLevelState } from "@/utils";
+import { cn } from "@/utils/cn";
+import { formatCoins } from "@/utils/economy";
+import { resolveUserLevelState } from "@/utils/levels";
 import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 
 export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
   const t = useTranslations("settings.profileHeader");
+  const format = useFormatter();
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
+  const { guardLinkClick } = useSettingsDirtyState();
 
   const storeUser = useUserStore((s) => s.user);
-  const user = storeUser || initialUser;
-  const activeFrameId = useActiveAvatarFrame();
+  const storeFrameId = useActiveAvatarFrame();
+  const user = useResolvedUser(initialUser);
+  const isSameStoreUser = Boolean(
+    storeUser && (!initialUser || storeUser.id === initialUser.id),
+  );
+  const activeFrameId = isSameStoreUser
+    ? storeFrameId
+    : resolveUserAvatarFrame(user?.avatarFrame, Boolean(user?.isPremium));
 
   const {
     fileInputRef,
@@ -48,12 +63,13 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
   const { levelTitle } = resolveUserLevelState(user, locale, isGamified);
 
   return (
-    <div className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8 p-4 sm:p-7">
+    <section className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8 p-4 sm:p-7">
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1 w-full">
         {/* AVATAR COM LINK PARA VITRINE DE PERFIL (/profile) */}
         <div className="relative group shrink-0">
           <Link
             href="/profile?from=settings"
+            onClick={(e) => guardLinkClick(e, "/profile?from=settings", "push")}
             className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block"
             title={t("viewProfileTitle")}
             aria-label={t("viewProfileTitle")}
@@ -68,15 +84,17 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
               className="shadow-md dark:shadow-xl"
             />
 
-            {/* Overlay sutil de navegação para /profile no hover */}
             <div className="absolute inset-0 rounded-full bg-black/65 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
-              <ExternalLink size={20} className="text-white drop-shadow-sm" />
+              <ExternalLink
+                size={20}
+                className="text-white drop-shadow-sm"
+                aria-hidden="true"
+              />
               <span className="text-tiny font-bold mt-1 text-white drop-shadow-sm">
                 {t("viewProfile")}
               </span>
             </div>
 
-            {/* Selo persistente de navegação em telas touch (< md) */}
             <span
               aria-hidden="true"
               className="md:hidden absolute -bottom-0.5 -right-0.5 z-30 w-7 h-7 rounded-full bg-surface border border-neutral-600 dark:border-primary/40 text-neutral-100 shadow-md flex items-center justify-center"
@@ -120,12 +138,12 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
 
           <div className="flex items-center gap-2 mt-2 flex-wrap justify-center sm:justify-start">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs text-neutral-200">
-              <Sparkles size={14} className="text-gold" />
+              <Sparkles size={14} className="text-gold" aria-hidden="true" />
               <span>{levelTitle}</span>
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs text-neutral-200">
-              <span className="text-gold font-bold">
+              <span className="text-gold font-bold tabular-nums">
                 {formatCoins(user?.currentCoins ?? 0, { locale })}
               </span>
               <span>{isGamified ? t("coinsLabel") : t("creditsLabel")}</span>
@@ -137,12 +155,21 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs text-neutral-200">
-              <span className="text-magenta dark:text-fuchsia-300 font-bold">
-                {user?.totalXp ?? 0}
+              <span className="text-magenta dark:text-fuchsia-300 font-bold tabular-nums">
+                {format.number(user?.totalXp ?? 0)}
               </span>
               <span>{isGamified ? t("xpLabel") : t("pointsLabel")}</span>
             </div>
           </div>
+
+          <Link
+            href="/profile?from=settings"
+            onClick={(e) => guardLinkClick(e, "/profile?from=settings", "push")}
+            className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-neutral-700 dark:border-primary/25 bg-surface/70 hover:bg-surface text-neutral-200 hover:border-gold/50 hover:text-amber-800 dark:hover:text-gold transition-colors"
+          >
+            <ExternalLink size={13} aria-hidden="true" />
+            <span>{t("openShowcaseBtn")}</span>
+          </Link>
         </div>
       </div>
 
@@ -172,6 +199,7 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
           >
             <UploadCloud
               size={18}
+              aria-hidden="true"
               className={isPending ? "animate-pulse opacity-70" : ""}
             />
           </div>
@@ -187,6 +215,6 @@ export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
           </span>
         </button>
       </div>
-    </div>
+    </section>
   );
 }

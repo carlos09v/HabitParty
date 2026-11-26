@@ -1,10 +1,9 @@
 package com.habitparty.application.usecases.auth;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +17,7 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.AuthTokens;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.auth.OAuthUserProfile;
-import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserGender;
-import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
@@ -75,14 +72,20 @@ public class GoogleSignInUseCase {
       throw new DomainValidationException("Não foi possível obter o e-mail da sua conta Google.");
     }
 
-    String emailNormalized = profile.email().trim().toLowerCase();
+    String emailNormalized = profile.email().trim().toLowerCase(Locale.ROOT);
 
     // 2. Localiza ou cria o usuário na base de dados
     User user = userRepository.findByEmail(emailNormalized)
         .map(existing -> {
           boolean needsSave = false;
           if (!existing.isEmailVerified()) {
+            // Anti-pre-hijacking: uma conta previamente cadastrada sem verificação de e-mail pode ter sido
+            // criada por um atacante com senha própria; ao autenticar via Google verificado, invalidamos
+            // a senha local não verificada e revogamos eventuais sessões antigas.
             existing.verifyEmail();
+            existing.updatePassword(passwordHasher.encode(UUID.randomUUID().toString()));
+            existing.setHasPassword(false);
+            refreshTokenRepository.revokeAllByUserId(existing.getId());
             needsSave = true;
           }
           // Limpa data de nascimento fictícia legada (2000-01-01) para permitir preenchimento pelo usuário
@@ -103,6 +106,9 @@ public class GoogleSignInUseCase {
     if (baseUsername.isBlank()) {
       baseUsername = "user";
     }
+    if (baseUsername.length() > 20) {
+      baseUsername = baseUsername.substring(0, 20);
+    }
 
     String uniqueUsername = baseUsername;
     int counter = 1;
@@ -114,34 +120,18 @@ public class GoogleSignInUseCase {
         ? profile.name().trim()
         : uniqueUsername;
 
-    LocalDateTime now = LocalDateTime.now(clock.withZone(java.time.ZoneOffset.UTC));
-
-    User newUser = new User(
-        UUID.randomUUID(),
-        UserRole.USER,
-        false,
-        false,
-        null,
-        null,
-        SubscriptionStatus.FREE,
-        null,
+    User newUser = User.createNew(
         fullName,
         uniqueUsername,
         emailNormalized,
         passwordHasher.encode(UUID.randomUUID().toString()),
+        false,
         true, // Conta Google já tem e-mail verificado pelo provedor OAuth
-        now,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
         null,
         profile.picture(),
         UserGender.PREFER_NOT_TO_SAY,
-        0,
-        0,
-        0,
-        now
-    );
-    newUser.initializeTimezone(timezone, clock);
+        timezone,
+        clock);
 
     return userRepository.save(newUser);
   }

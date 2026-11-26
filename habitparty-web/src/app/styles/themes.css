@@ -77,6 +77,7 @@ html.light {
   --color-gold-pressed: rgb(200 138 4);
   --color-gold-ink: rgb(158 72 7);
   --color-on-gold: rgb(30 30 42);
+  --color-focus-ring: var(--color-primary);
   --color-magenta: rgb(147 36 214);
   --color-blue: rgb(67 56 202);
 
@@ -152,6 +153,7 @@ html[data-theme="dark-knight"],
 html[data-theme="cyberpunk-neon"],
 html[data-theme="forest-ranger"] {
   --color-gold-ink: var(--color-gold);
+  --color-focus-ring: var(--color-gold);
 }
 
 /* ==========================================================================
@@ -243,6 +245,7 @@ html[data-theme="solar-parchment"] {
   --color-gold-pressed: rgb(200 138 4);
   --color-gold-ink: rgb(146 64 14);
   --color-on-gold: rgb(30 25 18);
+  --color-focus-ring: var(--color-primary);
   --color-magenta: rgb(126 34 206);
   --color-blue: rgb(29 78 216);
 
@@ -467,6 +470,7 @@ html[data-theme="royal-gold"] {
   --color-gold-pressed: rgb(186 132 0);
   --color-gold-ink: rgb(156 66 10);
   --color-on-gold: rgb(28 20 8);
+  --color-focus-ring: var(--color-primary);
   --color-magenta: rgb(126 34 206);
   --color-blue: rgb(30 64 175);
 

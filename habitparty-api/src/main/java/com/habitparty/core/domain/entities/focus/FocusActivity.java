@@ -4,11 +4,11 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.OwnedByUser;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class FocusActivity {
+public class FocusActivity implements OwnedByUser {
   private final UUID id;
   private final UUID userId;
   private String name;
@@ -34,13 +34,7 @@ public class FocusActivity {
     this.recordType = recordType;
     this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
 
-    validateAndAssignTargetTime(pomoDurationMinutes);
-  }
-
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
+    this.pomoDurationMinutes = resolveValidatedTargetTime(recordType, pomoDurationMinutes);
   }
 
   private void validateInputs(String name, String icon) {
@@ -55,35 +49,35 @@ public class FocusActivity {
     }
   }
 
-  private void validateAndAssignTargetTime(Integer timeMinutes) {
-    if (this.recordType == FocusRecordType.POMO) {
+  private Integer resolveValidatedTargetTime(FocusRecordType targetType, Integer timeMinutes) {
+    if (targetType == FocusRecordType.POMO) {
       // O Front-end deve mandar o 30 (ou o valor escolhido), o Back-end barra se esquecerem
       if (timeMinutes == null || timeMinutes <= 0) {
         throw new DomainValidationException("Para o tipo Pomodoro (POMO), um tempo alvo maior que zero é obrigatório.");
       }
-      this.pomoDurationMinutes = timeMinutes;
-    } else if (this.recordType == FocusRecordType.STOPWATCH) {
-      this.pomoDurationMinutes = null;
+      return timeMinutes;
     }
+    if (targetType == FocusRecordType.STOPWATCH) {
+      return null;
+    }
+    return this.pomoDurationMinutes;
   }
 
   public void updateDetails(String newName, String newIcon, FocusRecordType newRecordType,
       Integer newPomoTimeMinutes) {
-    if (newName != null && !newName.trim().isEmpty()) {
-      this.name = newName;
-    }
-    if (newIcon != null && !newIcon.trim().isEmpty()) {
-      this.icon = newIcon;
-    }
-    if (newRecordType != null) {
-      this.recordType = newRecordType;
-    }
-
-    // Usamos o novo valor de tempo se vier no update, senão mantemos o atual para revalidar
+    String nextName = (newName != null && !newName.trim().isEmpty()) ? newName : this.name;
+    String nextIcon = (newIcon != null && !newIcon.trim().isEmpty()) ? newIcon : this.icon;
+    FocusRecordType nextRecordType = newRecordType != null ? newRecordType : this.recordType;
     Integer timeToValidate = newPomoTimeMinutes != null ? newPomoTimeMinutes : this.pomoDurationMinutes;
-    validateAndAssignTargetTime(timeToValidate);
 
-    validateInputs(this.name, this.icon);
+    // Valida todas as invariantes antes de mutar qualquer campo (atomicidade em caso de erro)
+    validateInputs(nextName, nextIcon);
+    Integer nextPomoDurationMinutes = resolveValidatedTargetTime(nextRecordType, timeToValidate);
+
+    this.name = nextName;
+    this.icon = nextIcon;
+    this.recordType = nextRecordType;
+    this.pomoDurationMinutes = nextPomoDurationMinutes;
   }
 
   public void updateOrderIndex(int newOrderIndex) {

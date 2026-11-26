@@ -12,11 +12,13 @@ import com.habitparty.adapters.in.web.api.FocusRecordApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusRecordResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.FocusSummaryResponseDTO;
 import com.habitparty.application.usecases.focus.CreateFocusRecordCommand;
 import com.habitparty.application.usecases.focus.CreateFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.DeleteFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByActivityUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByTaskUseCase;
+import com.habitparty.application.usecases.focus.GetFocusSummaryUseCase;
 import com.habitparty.application.usecases.focus.GetUserFocusRecordsUseCase;
 import com.habitparty.application.usecases.focus.UpdateFocusRecordCommand;
 import com.habitparty.application.usecases.focus.UpdateFocusRecordUseCase;
@@ -34,7 +36,16 @@ public class FocusRecordController implements FocusRecordApi {
   private final GetFocusRecordsByActivityUseCase getByActivityUseCase;
   private final GetFocusRecordsByTaskUseCase getByTaskUseCase;
   private final GetUserFocusRecordsUseCase getUserRecordsUseCase;
+  private final GetFocusSummaryUseCase getSummaryUseCase;
   private final UserTimeResolver userTimeResolver;
+
+  @Override
+  public ResponseEntity<FocusSummaryResponseDTO> getSummary(
+      UUID activityId,
+      AuthenticatedUser usuarioLogado) {
+    var result = getSummaryUseCase.execute(usuarioLogado.id(), activityId);
+    return ResponseEntity.ok(FocusSummaryResponseDTO.fromResult(result));
+  }
 
   @Override
   public ResponseEntity<Page<FocusRecordResponseDTO>> getMyRecords(

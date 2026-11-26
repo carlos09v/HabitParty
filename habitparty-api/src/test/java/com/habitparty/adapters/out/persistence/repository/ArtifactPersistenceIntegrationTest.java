@@ -124,39 +124,42 @@ class ArtifactPersistenceIntegrationTest {
     user = userRepository.save(user);
 
     if (achievementJpaRepository.findByCode("FOCUS_HOURS_10").isEmpty()) {
-      achievementJpaRepository.save(new AchievementJpaEntity(
-          UUID.randomUUID(),
-          "FOCUS_HOURS_10",
-          "Aprendiz do Templo",
-          "Acumule 10 horas de foco.",
-          "Clock",
-          50,
-          AchievementCategory.FOCUS,
-          AchievementRarity.RARE,
-          600,
-          28,
-          false));
+      achievementJpaRepository.save(AchievementJpaEntity.builder()
+          .id(UUID.randomUUID())
+          .code("FOCUS_HOURS_10")
+          .title("Aprendiz do Templo")
+          .description("Acumule 10 horas de foco.")
+          .iconName("Clock")
+          .points(50)
+          .category(AchievementCategory.FOCUS)
+          .rarity(AchievementRarity.RARE)
+          .targetValue(600)
+          .displayOrder(28)
+          .secret(false)
+          .build());
     }
 
     if (artifactJpaRepository.findByCodeIgnoreCase("QUARTZ_HOURGLASS").isEmpty()) {
-      artifactJpaRepository.save(new ArtifactJpaEntity(
-          UUID.fromString("b1000000-0000-4000-8000-000000000002"),
-          "QUARTZ_HOURGLASS",
-          "Hourglass",
-          AchievementRarity.RARE,
-          ArtifactSourceType.ACHIEVEMENT,
-          "FOCUS_HOURS_10",
-          2));
+      artifactJpaRepository.save(ArtifactJpaEntity.builder()
+          .id(UUID.fromString("b1000000-0000-4000-8000-000000000002"))
+          .code("QUARTZ_HOURGLASS")
+          .iconName("Hourglass")
+          .rarity(AchievementRarity.RARE)
+          .sourceType(ArtifactSourceType.ACHIEVEMENT)
+          .requiredAchievementCode("FOCUS_HOURS_10")
+          .displayOrder(2)
+          .build());
     }
     if (artifactJpaRepository.findByCodeIgnoreCase("FATE_DICE").isEmpty()) {
-      artifactJpaRepository.save(new ArtifactJpaEntity(
-          UUID.fromString("b1000000-0000-4000-8000-000000000017"),
-          "FATE_DICE",
-          "Dices",
-          AchievementRarity.RARE,
-          ArtifactSourceType.MYSTERY_BOX,
-          null,
-          17));
+      artifactJpaRepository.save(ArtifactJpaEntity.builder()
+          .id(UUID.fromString("b1000000-0000-4000-8000-000000000017"))
+          .code("FATE_DICE")
+          .iconName("Dices")
+          .rarity(AchievementRarity.RARE)
+          .sourceType(ArtifactSourceType.MYSTERY_BOX)
+          .requiredAchievementCode(null)
+          .displayOrder(17)
+          .build());
     }
 
     // 1. Conquista não vista deve carregar grantedArtifact

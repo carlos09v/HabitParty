@@ -11,7 +11,12 @@ public record UserShowcaseResponseDTO(
     List<ProfileHighlightResponseDTO> highlights,
     List<AchievementItemResponseDTO> achievements,
     List<ArtifactItemResponseDTO> artifacts,
-    List<TaskStreakHighlightDTO> taskStreaks) {
+    List<TaskStreakHighlightDTO> taskStreaks,
+    long friendsCount,
+    long pendingFriendRequestsCount,
+    boolean hasSeasonalRetroBanner,
+    Integer seasonalRetroYear,
+    List<String> eligibleRetroArchetypes) {
 
   public UserShowcaseResponseDTO(
       UserResponseDTO user,
@@ -19,7 +24,17 @@ public record UserShowcaseResponseDTO(
       List<ProfileHighlightResponseDTO> highlights,
       List<AchievementItemResponseDTO> achievements,
       List<ArtifactItemResponseDTO> artifacts) {
-    this(user, stats, highlights, achievements, artifacts, List.of());
+    this(user, stats, highlights, achievements, artifacts, List.of(), 0L, 0L, false, null, List.of());
+  }
+
+  public UserShowcaseResponseDTO(
+      UserResponseDTO user,
+      ShowcaseStatsResponseDTO stats,
+      List<ProfileHighlightResponseDTO> highlights,
+      List<AchievementItemResponseDTO> achievements,
+      List<ArtifactItemResponseDTO> artifacts,
+      List<TaskStreakHighlightDTO> taskStreaks) {
+    this(user, stats, highlights, achievements, artifacts, taskStreaks, 0L, 0L, false, null, List.of());
   }
 
   public static UserShowcaseResponseDTO fromDomain(UserShowcaseResult result) {
@@ -40,6 +55,11 @@ public record UserShowcaseResponseDTO(
         ProfileHighlightResponseDTO.fromDomainList(result.highlights(), result.resolvedHighlightTaskStreaks()),
         result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList(),
         result.artifacts().stream().map(ArtifactItemResponseDTO::fromDomain).toList(),
-        result.taskStreaks().stream().map(TaskStreakHighlightDTO::fromSummary).toList());
+        result.taskStreaks().stream().map(TaskStreakHighlightDTO::fromSummary).toList(),
+        result.friendsCount(),
+        result.pendingFriendRequestsCount(),
+        result.hasSeasonalRetroBanner(),
+        result.seasonalRetroYear(),
+        result.eligibleRetroArchetypes() != null ? result.eligibleRetroArchetypes() : List.of());
   }
 }

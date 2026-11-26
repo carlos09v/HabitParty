@@ -17,23 +17,23 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
+import { SlideOverDrawer } from "@/components/ui/SlideOverDrawer";
 import { TRANSACTION_CONTEXT_ROUTE_MAP } from "@/constants/history";
-import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
-import { useClickOutside } from "@/hooks/useClickOutside";
+import { useCopyFeedback } from "@/hooks/useCopyFeedback";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useIsClient } from "@/hooks/useIsClient";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { DateFormat, TimeFormat } from "@/types/ui";
-import { cn, formatCoins, formatDateTime } from "@/utils";
+import { cn } from "@/utils/cn";
+import { formatDateTime } from "@/utils/date";
+import { formatCoins } from "@/utils/economy";
 import {
   resolveTransactionMetadata,
   type TransactionMetadataLabels,
@@ -43,10 +43,9 @@ interface TransactionDetailPopoverProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: TransactionHistoryResponseDTO | null;
-  anchorRect: DOMRect | null;
   /** Solicita exclusão (a confirmação é exibida pelo componente pai). */
   onRequestDelete?: (transaction: TransactionHistoryResponseDTO) => void;
-  /** Suspende o fechamento por clique-fora/ESC (ex.: modal de confirmação aberto). */
+  /** Suspende o fechamento por clique-fora/ESC (ex.: modal de confirmação aberto por cima). */
   suspendDismiss?: boolean;
   dateFormat?: DateFormat;
   timeFormat?: TimeFormat;
@@ -54,18 +53,14 @@ interface TransactionDetailPopoverProps {
   metadataLabels?: TransactionMetadataLabels;
 }
 
-const POPOVER_OPTIONS = {
-  preferredSide: "left" as const,
-  popoverWidth: 380,
-  popoverHeight: 460,
-  margin: 16,
-};
-
+/**
+ * Painel de detalhes da transação em formato Slide-over Drawer (desktop) / Bottom Sheet (mobile),
+ * usando `<dialog>` nativo para focus trap, top-layer, tecla Escape e restauração de foco.
+ */
 export function TransactionDetailPopover({
   isOpen,
   onClose,
   transaction,
-  anchorRect,
   onRequestDelete,
   suspendDismiss = false,
   dateFormat: propDateFormat,
@@ -84,34 +79,20 @@ export function TransactionDetailPopover({
   const timeFormat = propTimeFormat ?? hookTimeFormat;
   const userTimeZone = propUserTimeZone ?? storeUserTimeZone;
 
-  const mounted = useIsClient();
-  const [copiedId, setCopiedId] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleId = useId();
+  const {
+    copied: copiedId,
+    copy: copyId,
+    reset: resetCopiedId,
+  } = useCopyFeedback();
 
+  // Reseta estado visual de "copiado" ao trocar a transação exibida ou fechar
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Reseta copiedId ao mudar de registro ou fechar
   useEffect(() => {
-    return () => {
-      if (copyTimerRef.current) {
-        clearTimeout(copyTimerRef.current);
-      }
-    };
-  }, []);
+    resetCopiedId();
+  }, [transaction?.id, isOpen, resetCopiedId]);
 
-  const position = useAnchoredPopoverPosition(
-    isOpen,
-    anchorRect,
-    popoverRef,
-    POPOVER_OPTIONS,
-    mounted,
-  );
-
-  // Fecha no clique fora e ESC respeitando o modal de confirmação (hospedado no pai)
-  useClickOutside(popoverRef, onClose, {
-    enabled: isOpen && !suspendDismiss,
-    onEscape: onClose,
-  });
-
-  if (!isOpen || !mounted || !transaction) return null;
+  if (!isOpen || !transaction) return null;
 
   const metadata = resolveTransactionMetadata(
     transaction,
@@ -130,16 +111,12 @@ export function TransactionDetailPopover({
   const description = transaction.description?.trim();
 
   const handleCopyId = () => {
-    if (!transaction.id) return;
-    navigator.clipboard.writeText(transaction.id);
-    setCopiedId(true);
-    if (copyTimerRef.current) {
-      clearTimeout(copyTimerRef.current);
-    }
-    copyTimerRef.current = setTimeout(() => setCopiedId(false), 2000);
+    void copyId(transaction.id, {
+      success: t("copiedToast"),
+      error: t("copyFailedToast"),
+    });
   };
 
-  // Atalho contextual para o módulo de origem (apenas se houver referência)
   const routeConfig = transaction.referenceId
     ? TRANSACTION_CONTEXT_ROUTE_MAP[metadata.resolvedType]
     : undefined;
@@ -155,301 +132,293 @@ export function TransactionDetailPopover({
         : tUtils(`contextRoutes.${routeConfig.routeKey}`)
     : undefined;
 
-  const anchorStyle = {
-    "--pop-top": `${position.top}px`,
-    "--pop-left": `${position.left}px`,
-  } as CSSProperties;
-
-  const popoverContent = (
-    <>
-      {/* Mobile Backdrop */}
+  return (
+    <SlideOverDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabelledBy={titleId}
+      responsiveBottomSheet
+      preventClose={suspendDismiss}
+      panelClassName=""
+    >
+      {/* Indicador de alça mobile */}
       <div
-        className="md:hidden fixed inset-0 z-50 bg-black/70 animate-in fade-in duration-150"
-        onClick={onClose}
         aria-hidden="true"
-      />
-
-      {/* Popover Card */}
-      <div
-        ref={popoverRef}
-        role="dialog"
-        aria-label={t("dialogAria")}
-        style={anchorStyle}
-        className={cn(
-          "fixed z-60 flex flex-col w-95 max-w-[calc(100vw-32px)] max-h-[calc(100vh-48px)] overflow-hidden",
-          "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-          "md:top-(--pop-top) md:left-(--pop-left) md:translate-x-0 md:translate-y-0",
-          "rounded-2xl border border-neutral-700 dark:border-white/10 bg-card shadow-2xl text-neutral-100",
-          "animate-in fade-in zoom-in-95 duration-150",
-        )}
+        className="md:hidden flex justify-center pt-2 pb-1 bg-surface/50"
       >
-        {/* CABEÇALHO DO POPOVER */}
-        <header className="p-4 border-b border-neutral-700 dark:border-white/10 flex items-start justify-between gap-3 bg-surface/50">
-          <div className="flex items-start gap-3 min-w-0">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-xs",
-                metadata.badgeClass,
-              )}
-            >
-              <IconComponent size={20} />
-            </div>
+        <span className="w-10 h-1 rounded-full bg-neutral-600/60" />
+      </div>
 
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <span
-                  className={cn(
-                    "inline-flex items-center px-1.5 py-0.5 rounded-md border text-tiny font-bold",
-                    metadata.badgeClass,
-                  )}
-                >
-                  {metadata.label}
-                </span>
-
-                {transaction.id && (
-                  <button
-                    type="button"
-                    onClick={handleCopyId}
-                    title={t("copyIdTitle")}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-mono text-neutral-400 bg-surface dark:bg-white/5 hover:bg-surface-hover dark:hover:bg-white/10 hover:text-neutral-200 transition-colors cursor-pointer"
-                  >
-                    {copiedId ? (
-                      <Check
-                        size={10}
-                        className="text-emerald-800 dark:text-emerald-400"
-                      />
-                    ) : (
-                      <Copy size={10} />
-                    )}
-                    <span>#{transaction.id.slice(0, 8)}</span>
-                  </button>
-                )}
-              </div>
-
-              <h3 className="text-sm font-bold text-neutral-100 leading-snug break-words">
-                {transaction.name || t("defaultTransactionName")}
-              </h3>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("closeAria")}
-            className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+      {/* CABEÇALHO DO DRAWER */}
+      <header className="p-4 sm:p-5 border-b border-neutral-700 dark:border-white/10 flex items-start justify-between gap-3 bg-surface/50">
+        <div className="flex items-start gap-3 min-w-0">
+          <div
+            className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-xs",
+              metadata.badgeClass,
+            )}
           >
-            <X size={16} />
-          </button>
-        </header>
-
-        {/* CORPO DO POPOVER COM SCROLL SE NECESSÁRIO */}
-        <div className="p-4 flex flex-col gap-3.5 overflow-y-auto max-h-[calc(100vh-200px)]">
-          {/* PAINEL DE IMPACTO FINANCEIRO / XP */}
-          <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface/70 border border-neutral-700 dark:border-white/10">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
-                {gold > 0 ? (
-                  <ArrowUpRight size={12} className="text-success-500" />
-                ) : gold < 0 ? (
-                  <ArrowDownLeft size={12} className="text-danger-500" />
-                ) : null}
-                {isGamified
-                  ? t("coinBalanceLabel")
-                  : t("coinBalanceLabelProductivity")}
-              </span>
-              <div className="flex items-center gap-1">
-                <CoinAmount amount={gold} size="lg" />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-0.5">
-              <span className="text-label-g font-semibold text-neutral-400">
-                {isGamified ? t("xpLabel") : t("xpLabelProductivity")}
-              </span>
-              <div className="flex items-center gap-1">
-                <XpAmount amount={xp} size="lg" withIcon />
-              </div>
-            </div>
+            <IconComponent size={20} aria-hidden="true" />
           </div>
 
-          {/* DESCRIÇÃO (SNAPSHOT DE RECOMPENSA) */}
-          {description && (
-            <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-surface/50 border border-neutral-700/70 dark:bg-white/[0.03] dark:border-white/10">
-              <FileText
-                size={13}
-                className="text-neutral-400 shrink-0 mt-0.5"
-                aria-hidden="true"
-              />
-              <p
-                title={description}
-                className="text-xs text-neutral-300 leading-relaxed line-clamp-2 break-words"
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+              <span
+                className={cn(
+                  "inline-flex items-center px-1.5 py-0.5 rounded-md border text-tiny font-bold",
+                  metadata.badgeClass,
+                )}
               >
-                <span className="sr-only">{t("descriptionLabel")}: </span>
-                {description}
-              </p>
-            </div>
-          )}
-
-          {/* DETALHES CONTEXTUAIS DA TAREFA / RECOMPENSA */}
-          <div className="flex flex-col gap-2 text-xs text-neutral-300">
-            {priceSnapshot != null && priceSnapshot > 0 && (
-              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
-                <span className="text-neutral-400">
-                  {t("originalListPriceLabel")}
-                </span>
-                <span className="font-semibold text-neutral-200 inline-flex items-center gap-1">
-                  {formatCoins(priceSnapshot, { locale })}{" "}
-                  <CoinIcon size={12} />
-                </span>
-              </div>
-            )}
-
-            {transaction.columnName && (
-              <div className="flex items-center justify-between gap-3 py-1 border-b border-neutral-700/70 dark:border-white/5">
-                <span className="text-neutral-400 shrink-0">
-                  {t("columnLabel")}
-                </span>
-                <span
-                  className="inline-flex items-center gap-1 min-w-0 px-1.5 py-0.5 rounded-md border font-semibold text-label-g bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100"
-                  title={transaction.columnName}
-                >
-                  <FolderKanban
-                    size={12}
-                    className="shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">{transaction.columnName}</span>
-                </span>
-              </div>
-            )}
-
-            {metadata.difficultyLabel && (
-              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
-                <span className="text-neutral-400">
-                  {isGamified
-                    ? t("taskDifficultyLabel")
-                    : t("taskDifficultyLabelProductivity")}
-                </span>
-                <span
-                  className={cn(
-                    "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g",
-                    metadata.secondaryBadgeClass ||
-                      "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100",
-                  )}
-                >
-                  {metadata.difficultyLabel}
-                </span>
-              </div>
-            )}
-
-            {metadata.packageLabel && (
-              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
-                <span className="text-neutral-400">
-                  {t("packageRarityLabel")}
-                </span>
-                <span
-                  className={cn(
-                    "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g",
-                    metadata.secondaryBadgeClass ||
-                      "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100",
-                  )}
-                >
-                  {metadata.packageLabel}
-                </span>
-              </div>
-            )}
-
-            {metadata.isFocus && tags.length > 0 && (
-              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
-                <span className="text-neutral-400">
-                  {t("sessionDurationLabel")}
-                </span>
-                <span className="inline-flex items-center gap-1 font-bold text-gold bg-gold/15 border-gold/30 px-1.5 py-0.5 rounded-md border text-label-g">
-                  <Timer size={12} />
-                  {tags[0]}
-                </span>
-              </div>
-            )}
-
-            {/* Data e Hora Exatas */}
-            <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
-              <span className="text-neutral-400 flex items-center gap-1">
-                <Calendar size={12} /> {t("recordedAtLabel")}
+                {metadata.label}
               </span>
-              <span className="font-medium text-neutral-200 text-label-g">
-                {formatDateTime(transaction.createdAt, {
-                  includeSeconds: true,
-                  includeYearFull: true,
-                  locale,
-                  dateFormat,
-                  timeFormat,
-                  timeZone: userTimeZone,
-                })}
-              </span>
+
+              {transaction.id && (
+                <button
+                  type="button"
+                  onClick={handleCopyId}
+                  title={t("copyIdTitle")}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-mono text-neutral-400 bg-surface dark:bg-white/5 hover:bg-surface-hover dark:hover:bg-white/10 hover:text-neutral-200 transition-colors cursor-pointer"
+                >
+                  {copiedId ? (
+                    <Check
+                      size={10}
+                      aria-hidden="true"
+                      className="text-emerald-700 dark:text-emerald-400"
+                    />
+                  ) : (
+                    <Copy size={10} aria-hidden="true" />
+                  )}
+                  <span>#{transaction.id.slice(0, 8)}</span>
+                </button>
+              )}
             </div>
 
-            {tags.length > 0 && (!metadata.isFocus || tags.length > 1) && (
-              <div className="flex flex-col gap-1 pt-1">
-                <span className="text-neutral-400 flex items-center gap-1 text-label-g">
-                  <Tag size={12} /> {t("linkedTagsLabel")}
-                </span>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {(metadata.isFocus ? tags.slice(1) : tags).map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-neutral-300 font-medium text-tiny"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {routeConfig && contextualRouteLabel && (
-              <div className="pt-1">
-                <Link
-                  href={routeConfig.href}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface dark:bg-primary-dark/40 border border-neutral-700 dark:border-primary/40 hover:bg-surface-hover dark:hover:bg-primary-dark/70 hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-200 dark:text-neutral-300 hover:text-amber-700 dark:hover:text-gold text-xs font-semibold transition-colors group"
-                  onClick={onClose}
-                >
-                  <span>{contextualRouteLabel}</span>
-                  <ExternalLink
-                    size={12}
-                    className="group-hover:translate-x-0.5 transition-transform"
-                  />
-                </Link>
-              </div>
-            )}
+            <h2
+              id={titleId}
+              className="text-base font-bold text-neutral-100 leading-snug break-words"
+            >
+              {transaction.name || t("defaultTransactionName")}
+            </h2>
           </div>
         </div>
 
-        {/* RODAPÉ DO POPOVER COM AÇÕES */}
-        <footer className="p-3 border-t border-neutral-700 dark:border-white/10 flex items-center justify-between gap-2 bg-surface/40 shrink-0">
-          {onRequestDelete && transaction.id ? (
-            <button
-              type="button"
-              onClick={() => onRequestDelete(transaction)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors cursor-pointer"
-            >
-              <Trash2 size={13} />
-              {t("deleteButton")}
-            </button>
-          ) : (
-            <div />
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("closeAria")}
+          className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+      </header>
+
+      {/* CORPO COM SCROLL */}
+      <div className="p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto overscroll-contain flex-1 custom-scrollbar">
+        {/* PAINEL DE IMPACTO FINANCEIRO / XP */}
+        <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-surface/70 border border-neutral-700 dark:border-white/10">
+          <div className="flex flex-col gap-1">
+            <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
+              {gold > 0 ? (
+                <ArrowUpRight
+                  size={12}
+                  aria-hidden="true"
+                  className="text-success-500"
+                />
+              ) : gold < 0 ? (
+                <ArrowDownLeft
+                  size={12}
+                  aria-hidden="true"
+                  className="text-danger-500"
+                />
+              ) : null}
+              {isGamified
+                ? t("coinChangeLabel")
+                : t("coinChangeLabelProductivity")}
+            </span>
+            <div className="flex items-center gap-1">
+              <CoinAmount amount={gold} size="lg" />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-label-g font-semibold text-neutral-400">
+              {isGamified ? t("xpLabel") : t("xpLabelProductivity")}
+            </span>
+            <div className="flex items-center gap-1">
+              <XpAmount amount={xp} size="lg" withIcon />
+            </div>
+          </div>
+        </div>
+
+        {/* DESCRIÇÃO COMPLETA SEM TRUNCAMENTO */}
+        {description && (
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-surface/50 border border-neutral-700/70 dark:bg-white/[0.03] dark:border-white/10">
+            <FileText
+              size={14}
+              className="text-neutral-400 shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-tiny font-semibold text-neutral-400 uppercase tracking-wider">
+                {t("descriptionLabel")}
+              </span>
+              <p className="text-xs text-neutral-200 leading-relaxed whitespace-pre-wrap break-words">
+                {description}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* DETALHES CONTEXTUAIS */}
+        <dl className="flex flex-col gap-2 text-xs text-neutral-300">
+          {priceSnapshot != null && priceSnapshot > 0 && (
+            <div className="flex items-center justify-between py-1.5 border-b border-neutral-700/70 dark:border-white/5">
+              <dt className="text-neutral-400">
+                {t("originalListPriceLabel")}
+              </dt>
+              <dd className="font-semibold text-neutral-200 inline-flex items-center gap-1 tabular-nums">
+                {formatCoins(priceSnapshot, { locale })} <CoinIcon size={12} />
+              </dd>
+            </div>
           )}
 
+          {transaction.columnName && (
+            <div className="flex items-center justify-between gap-3 py-1.5 border-b border-neutral-700/70 dark:border-white/5">
+              <dt className="text-neutral-400 shrink-0">{t("columnLabel")}</dt>
+              <dd
+                className="inline-flex items-center gap-1 min-w-0 px-2 py-0.5 rounded-md border font-semibold text-label-g bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100"
+                title={transaction.columnName}
+              >
+                <FolderKanban
+                  size={12}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="truncate">{transaction.columnName}</span>
+              </dd>
+            </div>
+          )}
+
+          {metadata.difficultyLabel && (
+            <div className="flex items-center justify-between py-1.5 border-b border-neutral-700/70 dark:border-white/5">
+              <dt className="text-neutral-400">
+                {isGamified
+                  ? t("taskDifficultyLabel")
+                  : t("taskDifficultyLabelProductivity")}
+              </dt>
+              <dd
+                className={cn(
+                  "inline-flex items-center px-2 py-0.5 rounded-md border font-semibold text-label-g",
+                  metadata.secondaryBadgeClass ||
+                    "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100",
+                )}
+              >
+                {metadata.difficultyLabel}
+              </dd>
+            </div>
+          )}
+
+          {metadata.packageLabel && (
+            <div className="flex items-center justify-between py-1.5 border-b border-neutral-700/70 dark:border-white/5">
+              <dt className="text-neutral-400">{t("packageRarityLabel")}</dt>
+              <dd
+                className={cn(
+                  "inline-flex items-center px-2 py-0.5 rounded-md border font-semibold text-label-g",
+                  metadata.secondaryBadgeClass ||
+                    "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100",
+                )}
+              >
+                {metadata.packageLabel}
+              </dd>
+            </div>
+          )}
+
+          {metadata.isFocus && tags.length > 0 && (
+            <div className="flex items-center justify-between py-1.5 border-b border-neutral-700/70 dark:border-white/5">
+              <dt className="text-neutral-400">{t("sessionDurationLabel")}</dt>
+              <dd className="inline-flex items-center gap-1 font-bold text-amber-800 dark:text-gold bg-amber-500/15 dark:bg-gold/15 border-amber-500/35 dark:border-gold/30 px-2 py-0.5 rounded-md border text-label-g">
+                <Timer size={12} aria-hidden="true" />
+                {tags[0]}
+              </dd>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between py-1.5 border-b border-neutral-700/70 dark:border-white/5">
+            <dt className="text-neutral-400 flex items-center gap-1.5">
+              <Calendar size={12} aria-hidden="true" /> {t("recordedAtLabel")}
+            </dt>
+            <dd className="font-medium text-neutral-200 text-label-g tabular-nums">
+              {formatDateTime(transaction.createdAt, {
+                includeSeconds: true,
+                includeYearFull: true,
+                locale,
+                dateFormat,
+                timeFormat,
+                timeZone: userTimeZone,
+              })}
+            </dd>
+          </div>
+        </dl>
+
+        {tags.length > 0 && (!metadata.isFocus || tags.length > 1) && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-neutral-400 flex items-center gap-1 text-label-g font-semibold">
+              <Tag size={12} aria-hidden="true" /> {t("linkedTagsLabel")}
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(metadata.isFocus ? tags.slice(1) : tags).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-neutral-200 font-medium text-tiny"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {routeConfig && contextualRouteLabel && (
+          <div className="pt-1">
+            <Link
+              href={routeConfig.href}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface dark:bg-primary-dark/40 border border-neutral-700 dark:border-primary/40 hover:bg-surface-hover dark:hover:bg-primary-dark/70 hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-200 dark:text-neutral-300 hover:text-amber-800 dark:hover:text-gold text-xs font-semibold transition-colors group"
+              onClick={onClose}
+            >
+              <span>{contextualRouteLabel}</span>
+              <ExternalLink
+                size={12}
+                aria-hidden="true"
+                className="group-hover:translate-x-0.5 transition-transform"
+              />
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* RODAPÉ */}
+      <footer className="p-3.5 sm:p-4 border-t border-neutral-700 dark:border-white/10 flex items-center justify-between gap-2 bg-surface/40 shrink-0">
+        {onRequestDelete && transaction.id ? (
           <button
             type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:border-white/15 text-neutral-200 hover:text-neutral-50 hover:bg-surface-hover dark:hover:text-white dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer"
+            onClick={() => onRequestDelete(transaction)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors cursor-pointer"
           >
-            {t("closeButton")}
+            <Trash2 size={13} aria-hidden="true" />
+            {t("deleteButton")}
           </button>
-        </footer>
-      </div>
-    </>
-  );
+        ) : (
+          <div />
+        )}
 
-  return createPortal(popoverContent, document.body);
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:border-white/15 text-neutral-200 hover:text-neutral-50 hover:bg-surface-hover dark:hover:text-white dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer"
+        >
+          {t("closeButton")}
+        </button>
+      </footer>
+    </SlideOverDrawer>
+  );
 }

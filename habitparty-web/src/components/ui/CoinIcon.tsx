@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useId } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { cn } from "@/utils";
@@ -13,6 +14,10 @@ export interface CoinIconProps {
   withGlow?: boolean;
   /** Variante visual: automática pelo modo de experiência, moeda (Aventura) ou crédito (Essencial) */
   variant?: "auto" | "coin" | "credit";
+  /** Quando verdadeiro (padrão), oculta o ícone decorativo da árvore de acessibilidade */
+  decorative?: boolean;
+  /** Texto alternativo explícito quando usado sem rótulo textual adjacente */
+  ariaLabel?: string;
 }
 
 const SIZE_MAP: Record<string, number> = {
@@ -31,8 +36,11 @@ export function CoinIcon({
   className,
   withGlow = false,
   variant = "auto",
+  decorative = true,
+  ariaLabel,
 }: CoinIconProps) {
   const { isProductivity } = useExperienceMode();
+  const tCurrency = useTranslations("ui.currency");
   const uniqueId = useId();
   const cleanId = uniqueId.replace(/:/g, "");
   const gradId = `coin-grad-${cleanId}`;
@@ -42,6 +50,11 @@ export function CoinIcon({
   const pixelSize = typeof size === "number" ? size : (SIZE_MAP[size] ?? 14);
   const resolvedVariant =
     variant === "auto" ? (isProductivity ? "credit" : "coin") : variant;
+  const isDecorative = !ariaLabel && decorative;
+  const resolvedAriaLabel = isDecorative
+    ? undefined
+    : (ariaLabel ??
+      (resolvedVariant === "credit" ? tCurrency("credit") : tCurrency("coin")));
 
   if (resolvedVariant === "credit") {
     return (
@@ -56,9 +69,11 @@ export function CoinIcon({
           withGlow && "filter drop-shadow-[0_0_4px_rgba(56,189,248,0.45)]",
           className,
         )}
-        role="img"
-        aria-label="Crédito"
+        role={isDecorative ? undefined : "img"}
+        aria-hidden={isDecorative ? true : undefined}
+        aria-label={resolvedAriaLabel}
       >
+        {resolvedAriaLabel && <title>{resolvedAriaLabel}</title>}
         <defs>
           <linearGradient
             id={gradId}
@@ -145,9 +160,11 @@ export function CoinIcon({
         withGlow && "filter drop-shadow-[0_0_4px_rgba(234,168,8,0.45)]",
         className,
       )}
-      role="img"
-      aria-label="Moeda"
+      role={isDecorative ? undefined : "img"}
+      aria-hidden={isDecorative ? true : undefined}
+      aria-label={resolvedAriaLabel}
     >
+      {resolvedAriaLabel && <title>{resolvedAriaLabel}</title>}
       <defs>
         {/* Gradiente da Face da Moeda */}
         <linearGradient

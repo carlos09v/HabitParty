@@ -1,37 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import {
+  type MainRouteLoadingId,
+  ROUTE_LOADING_LABEL_KEYS,
+} from "@/components/layout/RouteLoadingAnnouncement";
 import { Loading } from "@/components/ui/Loading";
 
-export type MainRouteLoadingId =
-  | "dashboard"
-  | "tasks"
-  | "focus"
-  | "rewards"
-  | "inventory"
-  | "history"
-  | "help"
-  | "admin"
-  | "settings"
-  | "showcase";
+export type { MainRouteLoadingId };
 
 interface RouteLoadingProps {
   route?: MainRouteLoadingId;
   label?: string;
 }
-
-const ROUTE_LABEL_KEYS = {
-  dashboard: "dashboard.loading",
-  tasks: "tasks.loading.label",
-  focus: "focus.loading.ariaLabel",
-  rewards: "rewards.loading.label",
-  inventory: "inventory.loading.label",
-  history: "history.loading.ariaLabel",
-  help: "help.loading.label",
-  admin: "admin.loading.label",
-  settings: "settings.loading.label",
-  showcase: "showcase.loading.ariaLabel",
-} as const;
 
 /**
  * Componente reutilizável de estado de carregamento (fallback síncrono de `loading.tsx`)
@@ -43,7 +24,7 @@ const ROUTE_LABEL_KEYS = {
 export function RouteLoading({ route, label }: RouteLoadingProps) {
   const t = useTranslations();
   const resolvedLabel =
-    label ?? (route ? t(ROUTE_LABEL_KEYS[route]) : undefined);
+    label ?? (route ? t(ROUTE_LOADING_LABEL_KEYS[route]) : undefined);
 
   return (
     <div className="flex-1 flex items-center justify-center min-h-[50vh] p-8">

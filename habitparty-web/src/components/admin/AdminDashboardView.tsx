@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useCallback, useState, useTransition } from "react";
+import { type ReactNode, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   getAdminUserDetailAction,
@@ -10,10 +11,17 @@ import {
 } from "@/actions/adminActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import type { AdminUserDetailDTO, AdminUserSummaryDTO } from "@/types/admin";
-import { AdminUserDetailModal } from "./AdminUserDetailModal";
+import { buildAdminUsersUrl } from "@/utils/adminUtils";
 import { AdminUsersTable } from "./AdminUsersTable";
 
+const AdminUserDetailModal = dynamic(
+  () =>
+    import("./AdminUserDetailModal").then((mod) => mod.AdminUserDetailModal),
+  { ssr: false },
+);
+
 interface AdminDashboardViewProps {
+  currentAdminId: string;
   overviewCards?: ReactNode;
   users: AdminUserSummaryDTO[];
   totalPages: number;
@@ -24,6 +32,7 @@ interface AdminDashboardViewProps {
 }
 
 export function AdminDashboardView({
+  currentAdminId,
   overviewCards,
   users,
   totalPages,
@@ -43,87 +52,73 @@ export function AdminDashboardView({
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const [roleModalUser, setRoleModalUser] =
     useState<AdminUserSummaryDTO | null>(null);
+  const detailRequestSeqRef = useRef(0);
 
   const [isPendingNav, startNavTransition] = useTransition();
   const [isPendingRole, startRoleTransition] = useTransition();
 
-  const buildUrl = useCallback(
-    (updates: { search?: string; filter?: string; page?: number }) => {
-      const params = new URLSearchParams(searchParams.toString());
+  const buildUrl = (updates: {
+    search?: string;
+    filter?: string;
+    page?: number;
+  }) =>
+    buildAdminUsersUrl({
+      basePath: pathname,
+      currentParams: searchParams.toString(),
+      ...updates,
+    });
 
-      if (updates.search !== undefined) {
-        if (updates.search) {
-          params.set("search", updates.search);
-        } else {
-          params.delete("search");
-        }
-      }
-
-      if (updates.filter !== undefined) {
-        if (updates.filter && updates.filter !== "ALL") {
-          params.set("filter", updates.filter);
-        } else {
-          params.delete("filter");
-        }
-      }
-
-      if (updates.page !== undefined) {
-        if (updates.page > 1) {
-          params.set("page", String(updates.page));
-        } else {
-          params.delete("page");
-        }
-      }
-
-      const qs = params.toString();
-      return qs ? `${pathname}?${qs}` : pathname;
-    },
-    [pathname, searchParams],
-  );
-
-  const handleSearchChange = useCallback(
-    (newSearch: string) => {
-      startNavTransition(() => {
-        router.replace(buildUrl({ search: newSearch, page: 1 }), {
-          scroll: false,
-        });
+  const handleSearchChange = (newSearch: string) => {
+    startNavTransition(() => {
+      router.replace(buildUrl({ search: newSearch, page: 1 }), {
+        scroll: false,
       });
-    },
-    [buildUrl, router],
-  );
+    });
+  };
 
-  const handleFilterChange = useCallback(
-    (newFilter: string) => {
-      startNavTransition(() => {
-        router.replace(buildUrl({ filter: newFilter, page: 1 }), {
+  const handleFilterChange = (newFilter: string, currentSearch?: string) => {
+    startNavTransition(() => {
+      router.replace(
+        buildUrl({
+          filter: newFilter,
+          ...(currentSearch !== undefined ? { search: currentSearch } : {}),
+          page: 1,
+        }),
+        {
           scroll: false,
-        });
-      });
-    },
-    [buildUrl, router],
-  );
+        },
+      );
+    });
+  };
 
-  const buildPageHref = useCallback(
-    (page1Based: number) => buildUrl({ page: page1Based }),
-    [buildUrl],
-  );
+  const buildPageHref = (page1Based: number) => buildUrl({ page: page1Based });
 
   const handleSelectUser = async (user: AdminUserSummaryDTO) => {
+    const requestSeq = ++detailRequestSeqRef.current;
     setLoadingUserId(user.id);
     try {
       const res = await getAdminUserDetailAction(user.id);
+      if (requestSeq !== detailRequestSeqRef.current) return;
       if (!res.success) {
         toast.error(res.error || t("userDetailLoadError"));
         return;
       }
       setSelectedUserDetail(res.data);
       setIsDetailOpen(true);
+    } catch {
+      if (requestSeq !== detailRequestSeqRef.current) return;
+      toast.error(t("userDetailLoadError"));
     } finally {
-      setLoadingUserId(null);
+      if (requestSeq === detailRequestSeqRef.current) {
+        setLoadingUserId(null);
+      }
     }
   };
 
   const handleToggleRole = (user: AdminUserSummaryDTO) => {
+    if (user.id === currentAdminId && user.role === "ADMIN") {
+      return;
+    }
     setRoleModalUser(user);
   };
 
@@ -131,19 +126,26 @@ export function AdminDashboardView({
     if (!roleModalUser) return;
     const targetUser = roleModalUser;
     const newRole = targetUser.role === "ADMIN" ? "USER" : "ADMIN";
+    if (targetUser.id === currentAdminId && newRole !== "ADMIN") {
+      setRoleModalUser(null);
+      return;
+    }
 
     startRoleTransition(async () => {
-      const res = await updateUserRoleAction(targetUser.id, newRole);
-      if (res.success) {
-        setRoleModalUser(null);
-        router.refresh();
-        toast.success(
-          newRole === "ADMIN"
-            ? t("promotedMessage", { fullName: targetUser.fullName })
-            : t("demotedMessage", { fullName: targetUser.fullName }),
-        );
-      } else {
-        toast.error(res.error || t("roleUpdateError"));
+      try {
+        const res = await updateUserRoleAction(targetUser.id, newRole);
+        if (res.success) {
+          setRoleModalUser(null);
+          toast.success(
+            newRole === "ADMIN"
+              ? t("promotedMessage", { fullName: targetUser.fullName })
+              : t("demotedMessage", { fullName: targetUser.fullName }),
+          );
+        } else {
+          toast.error(res.error || t("roleUpdateError"));
+        }
+      } catch {
+        toast.error(t("roleUpdateError"));
       }
     });
   };
@@ -155,6 +157,7 @@ export function AdminDashboardView({
 
       {/* TABELA DE GESTÃO DE USUÁRIOS */}
       <AdminUsersTable
+        currentAdminId={currentAdminId}
         users={users}
         totalPages={totalPages}
         currentPage={currentPage}
@@ -170,15 +173,17 @@ export function AdminDashboardView({
         onToggleRole={handleToggleRole}
       />
 
-      {/* MODAL DE DETALHES DE ARMAZENAMENTO E E-MAILS */}
-      <AdminUserDetailModal
-        detail={selectedUserDetail}
-        isOpen={isDetailOpen}
-        onClose={() => {
-          setIsDetailOpen(false);
-          setSelectedUserDetail(null);
-        }}
-      />
+      {/* MODAL DE DETALHES DE ARMAZENAMENTO E E-MAILS (CARREGADO SOB DEMANDA) */}
+      {isDetailOpen && selectedUserDetail && (
+        <AdminUserDetailModal
+          detail={selectedUserDetail}
+          isOpen={isDetailOpen}
+          onClose={() => {
+            setIsDetailOpen(false);
+            setSelectedUserDetail(null);
+          }}
+        />
+      )}
 
       {/* MODAL DE CONFIRMAÇÃO DE ALTERAÇÃO DE CARGO */}
       <ConfirmationModal
@@ -218,7 +223,7 @@ export function AdminDashboardView({
                     </strong>{" "}
                     (@{roleModalUser.username}){" "}
                     {t("roleModal.promoteDescriptionTo")}{" "}
-                    <strong className="text-gold">
+                    <strong className="text-magenta dark:text-fuchsia-300">
                       {t("roleModal.promoteRoleBadge")}
                     </strong>
                     {t("roleModal.promoteDescriptionSuffix")}

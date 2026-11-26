@@ -9,11 +9,12 @@ import com.habitparty.core.domain.entities.achievement.UserAchievement;
 public class UserAchievementMapper {
 
   public UserAchievementJpaEntity toEntity(UserAchievement domain) {
-    return new UserAchievementJpaEntity(
-        domain.getUserId(),
-        domain.getAchievementId(),
-        domain.getUnlockedAt(),
-        domain.isSeen());
+    return UserAchievementJpaEntity.builder()
+        .userId(domain.getUserId())
+        .achievementId(domain.getAchievementId())
+        .unlockedAt(domain.getUnlockedAt())
+        .seen(domain.isSeen())
+        .build();
   }
 
   public UserAchievement toDomain(UserAchievementJpaEntity entity) {

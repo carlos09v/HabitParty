@@ -3,39 +3,37 @@ package com.habitparty.adapters.out.persistence.mappers;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.adapters.out.persistence.entities.BoardColumnJpaEntity;
-import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
-import com.habitparty.adapters.out.persistence.entities.WorkspaceJpaEntity;
 import com.habitparty.core.domain.entities.BoardColumn;
 
 @Component
 public class BoardColumnMapper {
+
   public BoardColumnJpaEntity toEntity(BoardColumn domain) {
-    // Cria um user vazio apenas para carregar o ID
-    UserJpaEntity userReference = new UserJpaEntity();
-    userReference.setId(domain.getUserId());
+    return BoardColumnJpaEntity.builder()
+        .id(domain.getId())
+        .userId(domain.getUserId())
+        .workspaceId(domain.getWorkspaceId())
+        .isVisible(domain.isVisible())
+        .name(domain.getName())
+        .icon(domain.getIcon().orElse(null))
+        .orderIndex(domain.getOrderIndex())
+        .build();
+  }
 
-    // Cria um workspace vazio apenas para carregar o ID
-    WorkspaceJpaEntity workspaceReference = new WorkspaceJpaEntity();
-    workspaceReference.setId(domain.getWorkspaceId());
-
-
-    BoardColumnJpaEntity entity = new BoardColumnJpaEntity();
-    entity.setId(domain.getId());
-    entity.setUser(userReference);
-    entity.setWorkspace(workspaceReference);
+  public void updateEntityFromDomain(BoardColumnJpaEntity entity, BoardColumn domain) {
+    entity.setUserId(domain.getUserId());
+    entity.setWorkspaceId(domain.getWorkspaceId());
     entity.setVisible(domain.isVisible());
     entity.setName(domain.getName());
     entity.setIcon(domain.getIcon().orElse(null));
     entity.setOrderIndex(domain.getOrderIndex());
-
-    return entity;
   }
 
   public BoardColumn toDomain(BoardColumnJpaEntity entity) {
     return new BoardColumn(
         entity.getId(),
-        entity.getUser().getId(),
-        entity.getWorkspace().getId(),
+        entity.getUserId(),
+        entity.getWorkspaceId(),
         entity.getName(),
         entity.getOrderIndex(),
         entity.getIcon(),

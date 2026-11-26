@@ -18,7 +18,9 @@ import type {
   TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
-import { cn, resolveHighlightSlotCard, resolveUserLevelState } from "@/utils";
+import { cn } from "@/utils/cn";
+import { resolveUserLevelState } from "@/utils/levels";
+import { resolveHighlightSlotCard } from "@/utils/showcaseUtils";
 
 interface ShowcaseHighlightsSectionProps {
   user: UserResponseDTO;
@@ -257,6 +259,8 @@ export function ShowcaseHighlightsSection({
                 key={`slot-${index}`}
                 type="button"
                 onClick={() => onOpenPicker(index)}
+                onMouseEnter={onPreloadPicker}
+                onFocus={onPreloadPicker}
                 className={cn(
                   "group relative overflow-hidden rounded-2xl border p-4 flex flex-col justify-between gap-3 min-h-[140px] bg-card dark:bg-surface/60 transition-[transform,border-color,background-color] duration-200 cursor-pointer hover:-translate-y-0.5 text-left",
                   theme.cardBorder,

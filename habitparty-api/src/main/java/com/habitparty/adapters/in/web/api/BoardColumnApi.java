@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
 @RequestMapping("/board_columns")
 @Validated
@@ -44,7 +45,7 @@ public interface BoardColumnApi {
     @PutMapping("/workspace/{workspaceId}/reorder")
     ResponseEntity<Void> updateOrderIndex(
         @PathVariable UUID workspaceId,
-        @RequestBody List<@Valid UpdateBoardColumnOrderDTO> newOrderList,
+        @RequestBody @Size(max = 500, message = "Máximo de 500 itens por reordenação.") List<@Valid UpdateBoardColumnOrderDTO> newOrderList,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

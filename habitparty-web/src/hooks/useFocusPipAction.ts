@@ -5,18 +5,21 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
-import { buildVideoPipFrameData, useFocusPip } from "@/utils/focusPip";
+import { useFocusPipState } from "@/utils/focusPipState";
 
 /**
- * Hook unificado para abrir/alternar a janela Picture-in-Picture com título traduzido,
- * frame inicial sincronizado no modo fallback de vídeo e aviso quando não suportado.
+ * Hook unificado para abrir/alternar a janela Picture-in-Picture carregando o motor
+ * Canvas/Document PiP sob demanda apenas quando o usuário interage com o botão.
  */
 export function useFocusPipAction() {
   const t = useTranslations("focusWidget.pip");
   const { isGamified } = useExperienceMode();
-  const { isOpen, isSupported, togglePip } = useFocusPip();
+  const { isOpen, isSupported } = useFocusPipState();
 
   const handleTogglePip = useCallback(async () => {
+    const { buildVideoPipFrameData, toggleFocusPip } = await import(
+      "@/utils/focusPip"
+    );
     const timerState = useFocusTimerStore.getState();
     const initialVideoFrame = buildVideoPipFrameData(timerState, {
       windowTitle: t("windowTitle"),
@@ -30,13 +33,13 @@ export function useFocusPipAction() {
         : t("sessionCapBadgeProductivity"),
     });
 
-    return togglePip({
+    return toggleFocusPip({
       windowTitle: t("windowTitle"),
       initialVideoFrame,
       isInitiallyRunning: timerState.isActive && !timerState.isPaused,
       onUnsupported: () => toast.info(t("unsupported")),
     });
-  }, [isGamified, t, togglePip]);
+  }, [isGamified, t]);
 
   return {
     isPipOpen: isOpen,

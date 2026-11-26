@@ -5,9 +5,17 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Check, FileText } from "lucide-react";
+import { Check, ExternalLink, FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type MutableRefObject, useCallback, useEffect, useRef } from "react";
+import {
+  type MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { toast } from "sonner";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import {
   MARKDOWN_FORMAT_OPTIONS,
@@ -40,6 +48,35 @@ const NonInclusiveLink = Link.extend({
     return false;
   },
 });
+
+const BASE_EXTENSIONS = [
+  StarterKit.configure({
+    heading: false,
+    blockquote: false,
+    codeBlock: false,
+    horizontalRule: false,
+    orderedList: false,
+    strike: false,
+    underline: false,
+    link: false,
+  }),
+  NonInclusiveLink.configure({
+    autolink: true,
+    linkOnPaste: false,
+    openOnClick: false,
+    defaultProtocol: "https",
+    protocols: ["http", "https"],
+    HTMLAttributes: {
+      target: "_blank",
+      rel: "noopener noreferrer",
+      class:
+        "text-info hover:text-info/80 underline underline-offset-2 font-medium transition-colors cursor-pointer break-all",
+    },
+  }),
+  Highlight.configure({
+    multicolor: false,
+  }),
+];
 
 function getExternalAnchorHref(event: MouseEvent): string | null {
   const target =
@@ -90,11 +127,28 @@ export function RichTextDescriptionEditor({
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
   const maxLengthRef = useRef(maxLength);
+  const disabledRef = useRef(disabled);
+  const lastLimitToastAtRef = useRef(0);
   const onChangeRef = useRef(onChange);
   const onBlurRef = useRef(onBlur);
-  maxLengthRef.current = maxLength;
-  onChangeRef.current = onChange;
-  onBlurRef.current = onBlur;
+  const [initialContent] = useState(() => markdownToEditorHtml(value));
+
+  useEffect(() => {
+    maxLengthRef.current = maxLength;
+    disabledRef.current = disabled;
+    onChangeRef.current = onChange;
+    onBlurRef.current = onBlur;
+  }, [maxLength, disabled, onChange, onBlur]);
+
+  const extensions = useMemo(
+    () => [
+      ...BASE_EXTENSIONS,
+      Placeholder.configure({
+        placeholder,
+      }),
+    ],
+    [placeholder],
+  );
 
   const clearPendingDebounce = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -102,6 +156,35 @@ export function RichTextDescriptionEditor({
       debounceTimerRef.current = null;
     }
   }, []);
+
+  const notifyMaxLengthReached = useCallback(() => {
+    const now = Date.now();
+    if (now - lastLimitToastAtRef.current < 2500) return;
+    lastLimitToastAtRef.current = now;
+    toast.warning(tFooter("maxLengthToast", { max: maxLengthRef.current }));
+  }, [tFooter]);
+
+  const revertEditorToLastValid = useCallback(
+    (activeEditor: NonNullable<ReturnType<typeof useEditor>>): string => {
+      isRevertingRef.current = true;
+      activeEditor.commands.undo();
+      let candidate = tiptapJsonToMarkdown(activeEditor.getJSON());
+      if (candidate.length > maxLengthRef.current) {
+        const fallback = lastEmittedMarkdownRef.current.slice(
+          0,
+          maxLengthRef.current,
+        );
+        activeEditor.commands.setContent(markdownToEditorHtml(fallback), {
+          emitUpdate: false,
+        });
+        candidate = fallback;
+      }
+      isRevertingRef.current = false;
+      notifyMaxLengthReached();
+      return candidate;
+    },
+    [notifyMaxLengthReached],
+  );
 
   const flushSerialization = useCallback(
     (targetEditor?: ReturnType<typeof useEditor> | null): string => {
@@ -113,10 +196,7 @@ export function RichTextDescriptionEditor({
 
       let nextMarkdown = tiptapJsonToMarkdown(activeEditor.getJSON());
       if (nextMarkdown.length > maxLengthRef.current) {
-        isRevertingRef.current = true;
-        activeEditor.commands.undo();
-        isRevertingRef.current = false;
-        nextMarkdown = tiptapJsonToMarkdown(activeEditor.getJSON());
+        nextMarkdown = revertEditorToLastValid(activeEditor);
       }
 
       if (nextMarkdown !== lastEmittedMarkdownRef.current) {
@@ -125,7 +205,7 @@ export function RichTextDescriptionEditor({
       }
       return lastEmittedMarkdownRef.current;
     },
-    [clearPendingDebounce],
+    [clearPendingDebounce, revertEditorToLastValid],
   );
 
   const resolvedMinHeight =
@@ -137,44 +217,16 @@ export function RichTextDescriptionEditor({
   const editor = useEditor({
     immediatelyRender: false,
     editable: !disabled,
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        blockquote: false,
-        codeBlock: false,
-        horizontalRule: false,
-        orderedList: false,
-        strike: false,
-        underline: false,
-        link: false,
-      }),
-      NonInclusiveLink.configure({
-        autolink: true,
-        linkOnPaste: false,
-        openOnClick: false,
-        defaultProtocol: "https",
-        protocols: ["http", "https"],
-        HTMLAttributes: {
-          target: "_blank",
-          rel: "noopener noreferrer",
-          class:
-            "text-info hover:text-info/80 underline underline-offset-2 font-medium transition-colors cursor-pointer break-all",
-        },
-      }),
-      Highlight.configure({
-        multicolor: false,
-      }),
-      Placeholder.configure({
-        placeholder,
-      }),
-    ],
-    content: markdownToEditorHtml(value),
+    extensions,
+    content: initialContent,
     editorProps: {
       handleClick: (_view, _pos, event) => {
-        if (!(event.ctrlKey || event.metaKey) || event.button !== 0) {
-          return false;
+        if (event.button !== 0) return false;
+        // Em modo somente leitura, permite toque/clique direto nos links; no modo edição, exige Ctrl/Cmd+Click
+        if (disabledRef.current || event.ctrlKey || event.metaKey) {
+          return openExternalAnchor(event);
         }
-        return openExternalAnchor(event);
+        return false;
       },
       handleDOMEvents: {
         mousedown: (_view, event) => {
@@ -214,10 +266,12 @@ export function RichTextDescriptionEditor({
 
       const textLength = currentEditor.state.doc.textContent.length;
       if (textLength > maxLengthRef.current) {
-        isRevertingRef.current = true;
         queueMicrotask(() => {
-          currentEditor.commands.undo();
-          isRevertingRef.current = false;
+          const reverted = revertEditorToLastValid(currentEditor);
+          if (reverted !== lastEmittedMarkdownRef.current) {
+            lastEmittedMarkdownRef.current = reverted;
+            onChangeRef.current(reverted);
+          }
         });
         return;
       }
@@ -241,7 +295,9 @@ export function RichTextDescriptionEditor({
     },
   });
 
-  editorRef.current = editor;
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   useEffect(() => {
     if (!flushRef) return;
@@ -283,8 +339,14 @@ export function RichTextDescriptionEditor({
           bullet: false,
           code: false,
           isFocused: false,
+          activeLinkHref: null as string | null,
         };
       }
+      const rawHref = currentEditor.isActive("link")
+        ? (currentEditor.getAttributes("link")?.href as string | undefined)
+        : undefined;
+      const activeLinkHref =
+        rawHref && /^https?:\/\/\S+$/i.test(rawHref) ? rawHref : null;
       return {
         bold: currentEditor.isActive("bold"),
         italic: currentEditor.isActive("italic"),
@@ -292,6 +354,7 @@ export function RichTextDescriptionEditor({
         bullet: currentEditor.isActive("bulletList"),
         code: currentEditor.isActive("code"),
         isFocused: currentEditor.isFocused,
+        activeLinkHref,
       };
     },
   });
@@ -365,25 +428,46 @@ export function RichTextDescriptionEditor({
                 aria-label={label}
                 aria-pressed={isActive}
                 className={cn(
-                  "p-1 rounded-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                  "min-h-7 min-w-7 pointer-coarse:min-h-10 pointer-coarse:min-w-10 inline-flex items-center justify-center p-1 rounded-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                   isActive
                     ? "bg-primary/15 text-primary dark:bg-gold/15 dark:text-gold"
                     : "text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-surface-hover dark:hover:bg-white/10",
                 )}
               >
-                <Icon size={12} />
+                <Icon size={13} aria-hidden="true" />
               </button>
             );
           })}
+
+          {editorState?.activeLinkHref && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (editorState.activeLinkHref) {
+                  window.open(
+                    editorState.activeLinkHref,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }
+              }}
+              title={editorState.activeLinkHref}
+              className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/12 border border-sky-500/35 text-sky-700 hover:bg-sky-500/20 dark:bg-info/15 dark:border-info/35 dark:text-info dark:hover:bg-info/25 text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <ExternalLink size={10} aria-hidden="true" />
+              <span>{tFooter("openLinkButton")}</span>
+            </button>
+          )}
 
           {variant === "popover" && doneLabel && editorState?.isFocused && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor?.commands.blur()}
-              className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-white dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:hover:bg-gold dark:hover:text-on-gold text-tiny font-bold transition-colors cursor-pointer"
+              className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-white dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:hover:bg-gold dark:hover:text-on-gold text-tiny font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             >
-              <Check size={10} />
+              <Check size={10} aria-hidden="true" />
               <span>{doneLabel}</span>
             </button>
           )}

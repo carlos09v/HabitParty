@@ -15,12 +15,12 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import { DIFFICULTY_REWARDS, HABIT_IMPORTANCE_REWARDS } from "@/constants/task";
 import {
   calculateRankEffortBreakdown,
   type RankEffortBreakdown,
-} from "@/utils";
+} from "@/utils/progression";
 
 type DailyPaceOption = "30" | "60" | "100" | "150";
 
@@ -98,11 +98,13 @@ const EFFORT_TILES: readonly EffortTileConfig[] = [
 
 interface EffortSimulatorCardProps {
   remainingXp: number;
+  targetRankTitle?: string;
   isGamified?: boolean;
 }
 
 export function EffortSimulatorCard({
   remainingXp,
+  targetRankTitle,
   isGamified = false,
 }: EffortSimulatorCardProps) {
   const t = useTranslations("showcase.progression.simulator");
@@ -121,16 +123,23 @@ export function EffortSimulatorCard({
 
   return (
     <section className="rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/65 p-5 flex flex-col gap-3.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2 min-w-0">
           <ShieldCheck
             size={16}
-            className="text-sky-700 dark:text-sky-300 shrink-0"
+            className="text-sky-700 dark:text-sky-300 shrink-0 mt-0.5"
             aria-hidden="true"
           />
-          <h3 className="text-sm font-black text-neutral-100 truncate">
-            {t("title")}
-          </h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-neutral-100 truncate">
+              {t("title")}
+            </h3>
+            {targetRankTitle && effortBreakdown.remainingXp > 0 && (
+              <p className="text-[11px] font-semibold text-amber-700 dark:text-gold truncate mt-0.5">
+                {t("targetLabel", { title: targetRankTitle })}
+              </p>
+            )}
+          </div>
         </div>
         <InfoTooltip
           title={t("infoTitle")}

@@ -1,5 +1,6 @@
 import { Award } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { LandingSectionHeader } from "@/components/landing/LandingSectionHeader";
 import { LANDING_ANCHORS, LANDING_FEATURE_CONFIGS } from "@/constants/landing";
 import { cn } from "@/utils";
 
@@ -7,20 +8,22 @@ export function LandingFeaturesGrid() {
   const t = useTranslations("landing.features");
 
   return (
-    <section id={LANDING_ANCHORS.features} className="py-20 md:py-28 relative">
+    <section
+      id={LANDING_ANCHORS.features}
+      className="landing-section-deferred py-20 md:py-28 relative scroll-mt-20"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-card dark:bg-surface border border-neutral-700 dark:border-white/10 text-neutral-200 text-xs font-semibold uppercase tracking-wider mb-3">
-            <Award className="w-3.5 h-3.5 text-gold" />
-            {t("badge")}
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-neutral-50 tracking-tight">
-            {t("title")}
-          </h2>
-          <p className="mt-4 text-base sm:text-lg text-neutral-300">
-            {t("subtitle")}
-          </p>
-        </div>
+        <LandingSectionHeader
+          badge={t("badge")}
+          badgeIcon={
+            <Award
+              className="w-3.5 h-3.5 text-gold-ink dark:text-gold"
+              aria-hidden="true"
+            />
+          }
+          title={t("title")}
+          subtitle={t("subtitle")}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {LANDING_FEATURE_CONFIGS.map((item) => {
@@ -48,7 +51,7 @@ export function LandingFeaturesGrid() {
                       item.iconBoxColor,
                     )}
                   >
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <span
                     className={cn(

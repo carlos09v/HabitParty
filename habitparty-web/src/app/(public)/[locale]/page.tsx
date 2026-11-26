@@ -13,8 +13,10 @@ import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingProductivityLoop } from "@/components/landing/LandingProductivityLoop";
 import { LandingRoadmap } from "@/components/landing/LandingRoadmap";
+import { SkipLink } from "@/components/ui/SkipLink";
 import { isValidLocale, SITE_URL } from "@/i18n/config";
 import { setStaticLocale } from "@/i18n/request";
+import { getFoundersQuota } from "@/services/paymentService";
 
 export async function generateMetadata({
   params,
@@ -75,21 +77,30 @@ export default async function LandingPage({
   }
 
   setStaticLocale(rawLocale);
+  const [tUi, foundersQuota] = await Promise.all([
+    getTranslations({
+      locale: rawLocale,
+      namespace: "ui",
+    }),
+    getFoundersQuota(),
+  ]);
 
   return (
     <div className="min-h-screen bg-background text-neutral-50 flex flex-col selection:bg-gold selection:text-on-gold">
+      <SkipLink label={tUi("skipToContent")} />
+
       {/* Barra de Navegação Fixa */}
       <LandingNavbar />
 
       {/* Conteúdo Principal da Landing Page */}
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <LandingHero />
         <LandingInteractiveDemo />
         <LandingProductivityLoop />
         <LandingHonestyManifesto />
         <LandingFeaturesGrid />
-        <LandingRoadmap />
-        <LandingPricing />
+        <LandingRoadmap quota={foundersQuota} />
+        <LandingPricing quota={foundersQuota} />
         <LandingFaq />
         <LandingCtaBanner />
       </main>

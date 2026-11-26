@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
 @RequestMapping("/inventory")
 @Validated
@@ -32,7 +33,7 @@ public interface InventoryItemApi {
     @Operation(summary = "Reordenar Inventário", description = "Atualiza a ordem de exibição dos itens no inventário.")
     @PutMapping("/reorder")
     ResponseEntity<Void> reorderInventory(
-        @RequestBody List<@Valid UpdateInventoryOrderDTO> orderList,
+        @RequestBody @Size(max = 500, message = "Máximo de 500 itens por reordenação.") List<@Valid UpdateInventoryOrderDTO> orderList,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

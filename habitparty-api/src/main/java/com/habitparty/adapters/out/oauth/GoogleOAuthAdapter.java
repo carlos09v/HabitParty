@@ -1,50 +1,73 @@
 package com.habitparty.adapters.out.oauth;
 
-import java.io.IOException;
-import java.net.ProxySelector;
-import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.habitparty.application.ports.OAuthIdentityProviderPort;
 import com.habitparty.core.domain.entities.auth.OAuthUserProfile;
 import com.habitparty.core.exceptions.DomainValidationException;
+import com.habitparty.infrastructure.ExternalHttpClientConfig;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
   private static final Logger log = LoggerFactory.getLogger(GoogleOAuthAdapter.class);
+  private static final String GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+  private static final String GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+  private static final Set<String> VALID_GOOGLE_ISSUERS = Set.of(
+      "https://accounts.google.com",
+      "accounts.google.com");
 
-  private final ObjectMapper objectMapper;
-  private final HttpClient httpClient;
+  private final JsonMapper jsonMapper;
+  private final RestClient restClient;
   private final String clientId;
   private final String clientSecret;
   private final String redirectUri;
 
+  private record GoogleTokens(String accessToken, String idToken) {}
+
+  private record HttpCallResult(int statusCode, String body) {}
+
+  @Autowired
   public GoogleOAuthAdapter(
       @Value("${google.client.id:${GOOGLE_CLIENT_ID:}}") String clientId,
       @Value("${google.client.secret:${GOOGLE_CLIENT_SECRET:}}") String clientSecret,
-      @Value("${google.client.redirect-uri:${GOOGLE_REDIRECT_URI:http://localhost:3000/auth/callback}}") String redirectUri) {
-    this.objectMapper = new ObjectMapper();
+      @Value("${google.client.redirect-uri:${GOOGLE_REDIRECT_URI:http://localhost:3000/auth/callback}}") String redirectUri,
+      @Qualifier(ExternalHttpClientConfig.EXTERNAL_REST_CLIENT_BEAN) @Nullable RestClient externalRestClient,
+      @Nullable JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper != null ? jsonMapper : JsonMapper.builder().build();
+    this.restClient = externalRestClient != null ? externalRestClient : buildFallbackRestClient();
     this.clientId = clientId != null ? clientId.trim() : "";
     this.clientSecret = clientSecret != null ? clientSecret.trim() : "";
     this.redirectUri = redirectUri != null ? redirectUri.trim() : "http://localhost:3000/auth/callback";
-    this.httpClient = HttpClient.newBuilder()
-        .version(HttpClient.Version.HTTP_1_1)
-        .proxy(ProxySelector.getDefault())
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .connectTimeout(Duration.ofSeconds(20))
-        .build();
+  }
+
+  public GoogleOAuthAdapter(String clientId, String clientSecret, String redirectUri) {
+    this(clientId, clientSecret, redirectUri, null, null);
+  }
+
+  private static RestClient buildFallbackRestClient() {
+    JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
+    factory.setReadTimeout(Duration.ofSeconds(15));
+    return RestClient.builder().requestFactory(factory).build();
   }
 
   @Override
@@ -70,8 +93,6 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
     return fetchGoogleUserProfile(tokens.accessToken());
   }
 
-  private record GoogleTokens(String accessToken, String idToken) {}
-
   private GoogleTokens exchangeCodeForGoogleToken(String code) {
     try {
       String formBody = String.format(
@@ -82,24 +103,24 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
           URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
       );
 
-      HttpRequest request = HttpRequest.newBuilder()
-          .uri(URI.create("https://oauth2.googleapis.com/token"))
-          .timeout(Duration.ofSeconds(15))
-          .header("Content-Type", "application/x-www-form-urlencoded")
-          .POST(HttpRequest.BodyPublishers.ofString(formBody))
-          .build();
+      // authorization_code é de uso único no OAuth2 — não repetir POST cegamente em caso de erro de leitura
+      HttpCallResult response = restClient.post()
+          .uri(GOOGLE_TOKEN_URL)
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+          .body(formBody)
+          .exchange((req, res) -> new HttpCallResult(
+              res.getStatusCode().value(),
+              new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8)));
 
-      HttpResponse<String> response = sendWithRetry(request);
-
-      if (response.statusCode() != 200) {
+      if (response == null || response.statusCode() != 200) {
         log.error("[GoogleOAuthAdapter] Erro ao trocar code pelo token do Google. Status: {}, Body: {}",
-            response.statusCode(), response.body());
+            response != null ? response.statusCode() : -1, response != null ? response.body() : "<vazio>");
         throw new DomainValidationException("Código de autenticação do Google expirado ou inválido.");
       }
 
-      JsonNode jsonNode = objectMapper.readTree(response.body());
-      String accessToken = jsonNode.path("access_token").asText(null);
-      String idToken = jsonNode.path("id_token").asText(null);
+      JsonNode jsonNode = jsonMapper.readTree(response.body());
+      String accessToken = jsonNode.path("access_token").asString(null);
+      String idToken = jsonNode.path("id_token").asString(null);
 
       if (accessToken == null || accessToken.isBlank()) {
         throw new DomainValidationException("Resposta do Google não continha token de acesso.");
@@ -114,7 +135,7 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
     }
   }
 
-  private OAuthUserProfile extractProfileFromIdToken(String idToken) {
+  OAuthUserProfile extractProfileFromIdToken(String idToken) {
     if (idToken == null || idToken.isBlank()) {
       return null;
     }
@@ -123,13 +144,30 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
       if (parts.length < 2) {
         return null;
       }
-      byte[] decodedBytes = java.util.Base64.getUrlDecoder().decode(parts[1]);
+      byte[] decodedBytes = Base64.getUrlDecoder().decode(parts[1]);
       String payloadJson = new String(decodedBytes, StandardCharsets.UTF_8);
-      JsonNode node = objectMapper.readTree(payloadJson);
+      JsonNode node = jsonMapper.readTree(payloadJson);
 
-      String email = node.path("email").asText(null);
-      String name = node.path("name").asText(null);
-      String picture = node.path("picture").asText(null);
+      // Validação OIDC obrigatória (Core §3.1.3.7): iss, aud e exp
+      String iss = node.path("iss").asString(null);
+      if (iss == null || !VALID_GOOGLE_ISSUERS.contains(iss)) {
+        log.warn("[GoogleOAuthAdapter] id_token rejeitado: issuer inválido ({})", iss);
+        throw new DomainValidationException("Token de identidade do Google com emissor inválido.");
+      }
+      String aud = node.path("aud").asString(null);
+      if (aud == null || !aud.equals(clientId)) {
+        log.warn("[GoogleOAuthAdapter] id_token rejeitado: audience divergente.");
+        throw new DomainValidationException("Token de identidade do Google não pertence a esta aplicação.");
+      }
+      long expEpochSeconds = node.path("exp").asLong(0L);
+      if (expEpochSeconds <= 0L || Instant.ofEpochSecond(expEpochSeconds).isBefore(Instant.now())) {
+        log.warn("[GoogleOAuthAdapter] id_token rejeitado: expirado (exp={}).", expEpochSeconds);
+        throw new DomainValidationException("Token de identidade do Google expirado.");
+      }
+
+      String email = node.path("email").asString(null);
+      String name = node.path("name").asString(null);
+      String picture = node.path("picture").asString(null);
 
       if (email != null && !email.isBlank()) {
         JsonNode verifiedNode = node.get("email_verified");
@@ -150,25 +188,23 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
 
   private OAuthUserProfile fetchGoogleUserProfile(String googleAccessToken) {
     try {
-      HttpRequest request = HttpRequest.newBuilder()
-          .uri(URI.create("https://www.googleapis.com/oauth2/v3/userinfo"))
-          .timeout(Duration.ofSeconds(10))
-          .header("Authorization", "Bearer " + googleAccessToken)
-          .GET()
-          .build();
+      HttpCallResult response = restClient.get()
+          .uri(GOOGLE_USERINFO_URL)
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + googleAccessToken)
+          .exchange((req, res) -> new HttpCallResult(
+              res.getStatusCode().value(),
+              new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8)));
 
-      HttpResponse<String> response = sendWithRetry(request);
-
-      if (response.statusCode() != 200) {
+      if (response == null || response.statusCode() != 200) {
         log.error("[GoogleOAuthAdapter] Falha ao obter dados do usuário no Google. Status: {}, Body: {}",
-            response.statusCode(), response.body());
+            response != null ? response.statusCode() : -1, response != null ? response.body() : "<vazio>");
         throw new DomainValidationException("Falha ao recuperar informações da conta Google.");
       }
 
-      JsonNode node = objectMapper.readTree(response.body());
-      String email = node.path("email").asText(null);
-      String name = node.path("name").asText(null);
-      String picture = node.path("picture").asText(null);
+      JsonNode node = jsonMapper.readTree(response.body());
+      String email = node.path("email").asString(null);
+      String name = node.path("name").asString(null);
+      String picture = node.path("picture").asString(null);
 
       if (email == null || email.isBlank()) {
         throw new DomainValidationException("A conta Google não retornou um endereço de e-mail válido.");
@@ -187,22 +223,6 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
     }
   }
 
-  private HttpResponse<String> sendWithRetry(HttpRequest request) throws IOException, InterruptedException {
-    try {
-      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (IOException firstException) {
-      log.warn("[GoogleOAuthAdapter] Falha de conexão na 1ª tentativa ({}). Tentando novamente em 150ms...",
-          firstException.toString());
-      try {
-        Thread.sleep(150);
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-        throw ie;
-      }
-      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-  }
-
   private boolean isEmailVerified(JsonNode node) {
     JsonNode verifiedNode = node.get("email_verified");
     if (verifiedNode == null || verifiedNode.isNull()) {
@@ -211,6 +231,6 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
     if (verifiedNode.isBoolean()) {
       return verifiedNode.booleanValue();
     }
-    return "true".equalsIgnoreCase(verifiedNode.asText());
+    return "true".equalsIgnoreCase(verifiedNode.asString(""));
   }
 }

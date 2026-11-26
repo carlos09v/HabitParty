@@ -1,15 +1,15 @@
 "use client";
 
 import { ArrowRightLeft, Sparkles } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   searchTasksAcrossWorkspacesAction,
   type TaskSearchWorkspaceCountDTO,
 } from "@/actions/taskActions";
-import { useProgressStore } from "@/store/progressStore";
+import { useSwitchWorkspace } from "@/hooks/useSwitchWorkspace";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { replaceUrlSearchParams } from "@/utils/urlParams";
 
 interface WorkspaceSearchHintBannerProps {
   searchQuery: string;
@@ -27,11 +27,7 @@ export function WorkspaceSearchHintBanner({
   const t = useTranslations("tasks.workspaceSearchHint");
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const setActiveWorkspaceId = useWorkspaceStore((s) => s.setActiveWorkspaceId);
-
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { switchWorkspace } = useSwitchWorkspace();
 
   const trimmedQuery = searchQuery.trim();
   const normalizedQueryKey = trimmedQuery.toLowerCase();
@@ -41,25 +37,57 @@ export function WorkspaceSearchHintBanner({
   const [remoteMatches, setRemoteMatches] = useState<
     TaskSearchWorkspaceCountDTO[]
   >([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Invalida cache de busca entre workspaces sempre que tarefas são mutadas
+  useEffect(() => {
+    const handleTasksChanged = () => {
+      searchCacheRef.current.clear();
+    };
+    window.addEventListener("habitparty:tasks-changed", handleTasksChanged);
+    return () => {
+      window.removeEventListener(
+        "habitparty:tasks-changed",
+        handleTasksChanged,
+      );
+    };
+  }, []);
+
+  // Limpa ?q= da URL quando o usuário esvazia o campo de busca
+  useEffect(() => {
+    if (trimmedQuery !== "") return;
+    replaceUrlSearchParams((params) => {
+      params.delete("q");
+    });
+  }, [trimmedQuery]);
 
   useEffect(() => {
     if (trimmedQuery.length < 2 || workspaces.length <= 1) {
       setRemoteMatches([]);
+      setIsSearching(false);
       return;
     }
 
     const cached = searchCacheRef.current.get(normalizedQueryKey);
     if (cached) {
       setRemoteMatches(cached);
+      setIsSearching(false);
       return;
     }
 
     let cancelled = false;
+    setIsSearching(true);
     const timer = setTimeout(async () => {
-      const results = await searchTasksAcrossWorkspacesAction(trimmedQuery);
-      if (!cancelled) {
-        searchCacheRef.current.set(normalizedQueryKey, results);
-        setRemoteMatches(results);
+      try {
+        const results = await searchTasksAcrossWorkspacesAction(trimmedQuery);
+        if (!cancelled) {
+          searchCacheRef.current.set(normalizedQueryKey, results);
+          setRemoteMatches(results);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSearching(false);
+        }
       }
     }, 320);
 
@@ -86,7 +114,7 @@ export function WorkspaceSearchHintBanner({
     [remoteMatches, activeWorkspaceId],
   );
 
-  if (!trimmedQuery || otherWorkspaces.length === 0) {
+  if (trimmedQuery.length < 2 || isSearching || otherWorkspaces.length === 0) {
     return null;
   }
 
@@ -96,26 +124,9 @@ export function WorkspaceSearchHintBanner({
   }
 
   const handleSwitchWorkspace = (targetWorkspaceId: string) => {
-    if (!targetWorkspaceId || targetWorkspaceId === activeWorkspaceId) return;
-
-    setActiveWorkspaceId(targetWorkspaceId);
-    if (typeof document !== "undefined") {
-      // biome-ignore lint/suspicious/noDocumentCookie: Sincroniza workspace ativo no cliente imediatamente
-      document.cookie = `activeWorkspaceId=${targetWorkspaceId}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-    if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/tasks")) {
-      useWorkspaceStore.setState({ isSwitchingWorkspace: true });
-      useProgressStore.getState().start("workspace-switch");
-    }
-
-    const params = new URLSearchParams(
-      searchParams ? searchParams.toString() : "",
-    );
-    params.set("workspaceId", targetWorkspaceId);
-    if (trimmedQuery) {
-      params.set("q", trimmedQuery);
-    }
-    router.push(`?${params.toString()}`);
+    switchWorkspace(targetWorkspaceId, {
+      extraParams: { q: trimmedQuery || null },
+    });
   };
 
   return (

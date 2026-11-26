@@ -5,13 +5,16 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
 import { cn } from "@/utils";
+import { resolvePortalContainer } from "@/utils/portal";
 
 export interface InfoTooltipProps {
   /** Rótulo acessível para leitores de tela */
@@ -64,6 +67,7 @@ export function InfoTooltip({
   const [isOpen, setIsOpen] = useState(false);
   const mounted = useIsClient();
   const [coords, setCoords] = useState<Coords | null>(null);
+  const triggerId = useId();
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -146,55 +150,41 @@ export function InfoTooltip({
     updatePosition();
   }, [isOpen, updatePosition]);
 
-  // Acompanha scrolls e redimensionamentos enquanto aberto
+  // Acompanha scrolls e redimensionamentos enquanto aberto (throttled via rAF)
   useEffect(() => {
     if (!isOpen) return;
 
+    let rafId: number | null = null;
     const handleScrollOrResize = () => {
-      updatePosition();
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        updatePosition();
+      });
     };
 
     window.addEventListener("scroll", handleScrollOrResize, true);
     window.addEventListener("resize", handleScrollOrResize);
 
     return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
     };
   }, [isOpen, updatePosition]);
 
-  // Fecha ao clicar fora tanto do botão gatilho quanto do portal flutuante
-  useEffect(() => {
-    if (!isOpen) return;
+  const closeTooltip = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
-    const handleDocumentClick = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (
-        buttonRef.current?.contains(target) ||
-        popoverRef.current?.contains(target)
-      ) {
-        return;
-      }
-      setIsOpen(false);
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleDocumentClick);
-    document.addEventListener("touchstart", handleDocumentClick);
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleDocumentClick);
-      document.removeEventListener("touchstart", handleDocumentClick);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isOpen]);
+  // Fecha ao clicar fora tanto do botão gatilho quanto do portal flutuante (e participa da pilha LIFO de Escape)
+  useClickOutside(buttonRef, closeTooltip, {
+    enabled: isOpen,
+    onEscape: closeTooltip,
+    extraRefs: [popoverRef],
+  });
 
   useEffect(() => {
     return () => {
@@ -224,9 +214,14 @@ export function InfoTooltip({
     }, 150);
   };
 
+  const portalContainer = mounted
+    ? resolvePortalContainer(buttonRef.current)
+    : null;
+
   return (
     <div className={cn("inline-flex items-center", className)}>
       <button
+        id={triggerId}
         ref={buttonRef}
         type="button"
         onClick={(e) => {
@@ -277,9 +272,11 @@ export function InfoTooltip({
       {isOpen &&
         mounted &&
         coords &&
+        portalContainer &&
         createPortal(
           <div
             ref={popoverRef}
+            data-select-for={triggerId}
             role="tooltip"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -303,7 +300,7 @@ export function InfoTooltip({
 
             {children}
           </div>,
-          document.body,
+          portalContainer,
         )}
     </div>
   );

@@ -9,14 +9,15 @@ import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 public class ProfileHighlightMapper {
 
   public ProfileHighlightJpaEntity toEntity(ProfileHighlight domain) {
-    return new ProfileHighlightJpaEntity(
-        domain.getId(),
-        domain.getUserId(),
-        domain.getDisplayOrder(),
-        domain.getHighlightType(),
-        domain.getReferenceId().orElse(null),
-        domain.getHighlightKey().orElse(null),
-        domain.getCreatedAt());
+    return ProfileHighlightJpaEntity.builder()
+        .id(domain.getId())
+        .userId(domain.getUserId())
+        .displayOrder(domain.getDisplayOrder())
+        .highlightType(domain.getHighlightType())
+        .referenceId(domain.getReferenceId().orElse(null))
+        .highlightKey(domain.getHighlightKey().orElse(null))
+        .createdAt(domain.getCreatedAt())
+        .build();
   }
 
   public ProfileHighlight toDomain(ProfileHighlightJpaEntity entity) {

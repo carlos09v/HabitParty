@@ -1,10 +1,12 @@
 import { toast } from "sonner";
 import { changeTaskStatus } from "@/actions/taskActions";
-import { DEFAULT_POMO_MINUTES } from "@/constants/focus";
+import { DEFAULT_POMO_MINUTES } from "@/constants/focusRules";
+import { pauseAmbientIfSynced } from "@/store/focus/focusAmbientSync";
 import {
   buildIdleTimerPatch,
   type FocusStoreGetter,
   type FocusStoreSetter,
+  notifyFocusSessionSaved,
 } from "@/store/focus/focusTimerState";
 import { stopGlobalTicker } from "@/store/focus/focusTimerTicker";
 import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
@@ -12,11 +14,12 @@ import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
+import { resolveLinkedTask } from "@/utils/focusFormatters";
 import {
   getBrowserDocumentLocale,
+  tStoreMsg,
   updateDocumentTitle,
 } from "@/utils/focusTimerBrowser";
-import { tStoreMsg } from "@/utils/focusTimerMessages";
 import { awardUserRewards, deductUserPenalty } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -40,12 +43,9 @@ export async function executeCompleteLinkedTask(
 
   try {
     const stateBeforeComplete = get();
-    const currentTargetTaskId =
-      stateBeforeComplete.target?.type === "task"
-        ? stateBeforeComplete.target.taskId || stateBeforeComplete.target.id
-        : stateBeforeComplete.target?.type === "activity"
-          ? stateBeforeComplete.target.taskId
-          : undefined;
+    const { taskId: currentTargetTaskId } = resolveLinkedTask(
+      stateBeforeComplete.target,
+    );
     const isLinkedToTarget = currentTargetTaskId === taskId;
     if (
       isLinkedToTarget &&
@@ -170,9 +170,7 @@ export async function executeCompleteLinkedTask(
       let shouldFinalizeDirectTaskSession = false;
       set((prev) => {
         if (!prev.target) return prev;
-        const currentTaskId =
-          prev.target.taskId ||
-          (prev.target.type === "task" ? prev.target.id : undefined);
+        const { taskId: currentTaskId } = resolveLinkedTask(prev.target);
         if (currentTaskId !== taskId) return prev;
         if (prev.target.type === "activity") {
           return {
@@ -195,8 +193,9 @@ export async function executeCompleteLinkedTask(
       });
       if (shouldFinalizeDirectTaskSession) {
         stopGlobalTicker();
+        pauseAmbientIfSynced();
         updateDocumentTitle(get());
-        get().onSessionSavedCallback?.();
+        notifyFocusSessionSaved();
       }
       return true;
     }

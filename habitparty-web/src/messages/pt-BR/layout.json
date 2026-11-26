@@ -166,6 +166,12 @@
     "stopResetTitle": "Parar / Reiniciar tempo",
     "stopAria": "Parar",
     "stopLabel": "Parar",
+    "resetConfirm": {
+      "title": "Reiniciar sessão atual?",
+      "description": "Você já acumulou {elapsed} de foco nesta sessão. Se reiniciar agora, esse tempo não será registrado.",
+      "confirm": "Descartar e reiniciar",
+      "cancel": "Continuar focando"
+    },
     "linkActivityBadge": "Vincular a uma atividade?",
     "linkActivityTitle": "Vincular esta sessão de foco a uma atividade",
     "loadActivitiesError": "Não foi possível carregar as atividades.",
@@ -191,7 +197,9 @@
       "selectActivityPrompt": "Selecionar atividade no HabitParty",
       "close": "Fechar",
       "unsupported": "Janela flutuante (Picture-in-Picture) indisponível neste navegador.",
-      "sessionCapBadgeProductivity": "⏱️ Teto 1h30"
+      "sessionCapBadgeProductivity": "⏱️ Teto 1h30",
+      "actionFailed": "Não foi possível salvar. Tente novamente.",
+      "minDurationHint": "Mínimo de 1 minuto para salvar."
     },
     "modeInventory": "Inventário"
   },
@@ -210,6 +218,7 @@
     "resendButton": "Reenviar confirmação",
     "sending": "Enviando...",
     "resent": "Link reenviado",
+    "resendCooldown": "Reenviar em {seconds}s",
     "resendSuccessToast": "E-mail de confirmação reenviado para {target}!",
     "resendDefaultTarget": "sua caixa de entrada",
     "resendErrorToast": "Não foi possível reenviar o e-mail de confirmação."

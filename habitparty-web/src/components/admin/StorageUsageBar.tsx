@@ -35,7 +35,7 @@ export function StorageUsageBar({
 
   if (variant === "badge") {
     return (
-      <div className="px-3 py-1 rounded-full bg-success-500/15 border border-success-500/30 text-emerald-700 dark:text-success-500 font-mono font-bold text-xs">
+      <div className="px-3 py-1 rounded-full bg-success-500/15 border border-success-500/30 text-success-400 font-mono font-bold text-xs">
         {badgeText
           ? badgeText({
               used: usedFormatted,
@@ -50,8 +50,8 @@ export function StorageUsageBar({
   return (
     <div className="flex flex-col gap-1 min-w-0 w-full sm:min-w-[130px]">
       <div className="flex items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-500/10 text-emerald-700 dark:text-success-500 border border-success-500/25 font-bold text-label-g">
-          <HardDrive size={11} />
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-500/10 text-success-400 border border-success-500/25 font-bold text-label-g">
+          <HardDrive size={11} aria-hidden="true" />
           {usedFormatted}
         </span>
         <span className="text-tiny text-neutral-400">/ {limitFormatted}</span>

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusRecordResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.FocusSummaryResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +21,13 @@ import jakarta.validation.Valid;
 @RequestMapping("/focus-records")
 @Tag(name = "Focus Records", description = "Endpoints para gerenciamento do histórico de sessões de foco")
 public interface FocusRecordApi {
+
+    @Operation(summary = "Resumo Agregado de Métricas de Foco", description = "Retorna métricas completas (Hoje, Total, Ofensiva, Rendimento Diário e minutos por dia) globais ou filtradas por atividade.")
+    @GetMapping("/summary")
+    ResponseEntity<FocusSummaryResponseDTO> getSummary(
+        @RequestParam(required = false) UUID activityId,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
 
     @Operation(summary = "Histórico Geral de Foco do Usuário", description = "Retorna histórico paginado de todas as sessões de foco do usuário (atividades e tarefas).")
     @GetMapping("/me")

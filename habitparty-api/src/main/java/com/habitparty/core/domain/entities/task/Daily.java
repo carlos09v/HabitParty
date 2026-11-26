@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.temporal.TemporalAdjusters;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -19,15 +21,17 @@ import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.DomainValidationException;
 
-public class Daily extends Task {
+public non-sealed class Daily extends Task {
   public static final int CONSISTENCY_BONUS_THRESHOLD = 14;
 
   private int currentStreak;
   private int highestStreak;
+  private boolean highestStreakPreviouslyAchieved;
   private LocalDate startDate;
   private DailyRepeatType repeatType;
   private int repeatEvery;
   private List<DailyDaysOfWeek> daysOfWeek;
+  private EnumSet<DayOfWeek> allowedDaysOfWeek = EnumSet.noneOf(DayOfWeek.class);
   private DailyRepeatMonthlyOption monthlyOpt;
   private LocalDateTime lastCompletedAt;
 
@@ -83,6 +87,7 @@ public class Daily extends Task {
       }
     }
 
+    this.allowedDaysOfWeek = buildAllowedDaysOfWeek(this.daysOfWeek);
     this.currentStreak = currentStreak;
     this.highestStreak = Math.max(0, currentStreak);
     this.startDate = startDate;
@@ -139,28 +144,39 @@ public class Daily extends Task {
         }
         return referenceDate; // Fallback
 
-      case MONTHLY:
-        LocalDate nextMonth = referenceDate.plusMonths(jump);
+      case MONTHLY: {
+        if (isFirstTime) {
+          return referenceDate;
+        }
+        LocalDate anchor = this.startDate != null ? this.startDate : referenceDate;
+        YearMonth targetYm = YearMonth.from(referenceDate).plusMonths(jump);
 
         if (this.monthlyOpt == DailyRepeatMonthlyOption.DAY_OF_THE_MONTH) {
-          // Mantém o exato mesmo dia do mês (ex: todo dia 15).
-          return nextMonth;
+          // Ancora no dia original de startDate (ex: dia 31 -> 28 em Fev -> 31 em Mar)
+          return targetYm.atDay(Math.min(anchor.getDayOfMonth(), targetYm.lengthOfMonth()));
         } else {
-          // DAY_OF_THE_WEEK (Ex: Repete toda "2ª Terça-feira" do mês)
-          
-          // 1. Descobrimos qual é a semana do mês da data inicial (ex: 2)
-          int ordinalWeek = (referenceDate.getDayOfMonth() - 1) / 7 + 1;
-          
-          // 2. Descobrimos qual é o dia da semana (ex: TUESDAY)
-          java.time.DayOfWeek dayOfWeek = referenceDate.getDayOfWeek();
-          
-          // 3. Aplicamos o ajuste no próximo mês (ex: busca a 2ª Terça do mês seguinte)
-          return nextMonth.with(java.time.temporal.TemporalAdjusters.dayOfWeekInMonth(ordinalWeek, dayOfWeek));
+          // DAY_OF_THE_WEEK (Ex: Repete toda "5ª Quinta-feira" ou "2ª Terça-feira" do mês)
+          int ordinalWeek = (anchor.getDayOfMonth() - 1) / 7 + 1;
+          DayOfWeek dayOfWeek = anchor.getDayOfWeek();
+          LocalDate candidate = targetYm.atDay(1)
+              .with(TemporalAdjusters.dayOfWeekInMonth(ordinalWeek, dayOfWeek));
+          // Se a 5ª ocorrência não existir no mês alvo (ex: Fevereiro), limita à última ocorrência do mês
+          if (!YearMonth.from(candidate).equals(targetYm)) {
+            candidate = targetYm.atEndOfMonth().with(TemporalAdjusters.previousOrSame(dayOfWeek));
+          }
+          return candidate;
         }
+      }
 
-      case YEARLY:
-        // Ex: Se repeatEvery for 2, pula 2 anos no mesmo dia do startDate
-        return referenceDate.plusYears(jump);
+      case YEARLY: {
+        if (isFirstTime) {
+          return referenceDate;
+        }
+        LocalDate anchor = this.startDate != null ? this.startDate : referenceDate;
+        YearMonth targetYm = YearMonth.of(referenceDate.getYear() + jump, anchor.getMonth());
+        // Ancora no dia original (ex: 29/Fev em ano bissexto -> 28/Fev em anos comuns -> 29/Fev no próximo bissexto)
+        return targetYm.atDay(Math.min(anchor.getDayOfMonth(), targetYm.lengthOfMonth()));
+      }
 
       default:
         return referenceDate;
@@ -216,6 +232,7 @@ public class Daily extends Task {
         this.monthlyOpt = null;
       }
     }
+    this.allowedDaysOfWeek = buildAllowedDaysOfWeek(this.daysOfWeek);
 
     LocalDate today = todayReference != null ? todayReference : LocalDate.now();
     this.refreshStreakForDate(today);
@@ -246,10 +263,20 @@ public class Daily extends Task {
     this.dueDate = calculateNextOccurrence(initialReferenceDate, true);
   }
 
+  private static EnumSet<DayOfWeek> buildAllowedDaysOfWeek(List<DailyDaysOfWeek> days) {
+    EnumSet<DayOfWeek> result = EnumSet.noneOf(DayOfWeek.class);
+    if (days != null) {
+      for (DailyDaysOfWeek day : days) {
+        if (day != null) {
+          result.add(DayOfWeek.valueOf(day.name()));
+        }
+      }
+    }
+    return result;
+  }
+
   private boolean matchesDayOfWeek(LocalDate date) {
-    return this.daysOfWeek != null
-        && this.daysOfWeek.stream()
-            .anyMatch(d -> d.name().equals(date.getDayOfWeek().name()));
+    return this.allowedDaysOfWeek.contains(date.getDayOfWeek());
   }
 
   public void shiftToNextOccurrence(LocalDate referenceDate) {
@@ -310,6 +337,9 @@ public class Daily extends Task {
   public void refreshStreakForDate(LocalDate referenceDate) {
     if (this.currentStreak > 0 && !isStreakStillActive(referenceDate)) {
       this.currentStreak = 0;
+      if (this.highestStreak > 0) {
+        this.highestStreakPreviouslyAchieved = true;
+      }
     }
   }
 
@@ -379,12 +409,19 @@ public class Daily extends Task {
     }
     if (this.currentStreak > this.highestStreak) {
       this.highestStreak = this.currentStreak;
+      this.highestStreakPreviouslyAchieved = false;
+    } else if (this.currentStreak == this.highestStreak && this.highestStreak > 0) {
+      this.highestStreakPreviouslyAchieved = true;
     }
     this.lastCompletedAt = effectiveTime;
   }
 
   public void restoreHighestStreak(int highestStreak) {
-    this.highestStreak = Math.max(Math.max(0, this.currentStreak), Math.max(0, highestStreak));
+    int restored = Math.max(Math.max(0, this.currentStreak), Math.max(0, highestStreak));
+    if (restored > this.currentStreak) {
+      this.highestStreakPreviouslyAchieved = true;
+    }
+    this.highestStreak = restored;
   }
 
   @Override
@@ -400,16 +437,23 @@ public class Daily extends Task {
 
   public void breakStreak() {
     this.currentStreak = 0;
+    if (this.highestStreak > 0) {
+      this.highestStreakPreviouslyAchieved = true;
+    }
   }
 
   /**
    * Reverte a conclusão atual da diária ao desmarcá-la para PENDING.
    * Só restaura {@code lastCompletedAt} para {@code previousCompletedAt} quando o estorno
    * econômico foi integral ({@code unlockRewardForCycle}), evitando ganho duplo no mesmo dia.
+   * Também preserva {@code highestStreak} histórico quando o recorde já havia sido alcançado
+   * antes desta conclusão.
    */
   public void revertCompletion(LocalDateTime previousCompletedAt, boolean unlockRewardForCycle) {
     if (this.currentStreak > 0) {
-      if (this.highestStreak == this.currentStreak) {
+      if (unlockRewardForCycle
+          && this.highestStreak == this.currentStreak
+          && !this.highestStreakPreviouslyAchieved) {
         this.highestStreak = Math.max(0, this.currentStreak - 1);
       }
       this.currentStreak = Math.max(0, this.currentStreak - 1);

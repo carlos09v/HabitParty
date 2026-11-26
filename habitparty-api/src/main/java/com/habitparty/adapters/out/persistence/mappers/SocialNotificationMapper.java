@@ -27,15 +27,15 @@ public class SocialNotificationMapper {
     if (domain == null) {
       return null;
     }
-    SocialNotificationJpaEntity entity = new SocialNotificationJpaEntity();
-    entity.setId(domain.getId());
-    entity.setRecipientId(domain.getRecipientId());
-    entity.setActorId(domain.getActorId());
-    entity.setNotificationType(domain.getType());
-    entity.setReferenceId(domain.getReferenceId());
-    entity.setPayload(domain.getPayload());
-    entity.setSeen(domain.isSeen());
-    entity.setCreatedAt(domain.getCreatedAt());
-    return entity;
+    return SocialNotificationJpaEntity.builder()
+        .id(domain.getId())
+        .recipientId(domain.getRecipientId())
+        .actorId(domain.getActorId())
+        .notificationType(domain.getType())
+        .referenceId(domain.getReferenceId())
+        .payload(domain.getPayload())
+        .seen(domain.isSeen())
+        .createdAt(domain.getCreatedAt())
+        .build();
   }
 }

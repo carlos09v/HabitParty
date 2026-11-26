@@ -72,7 +72,11 @@ export interface CalendarDayCell {
   isoString: string;
 }
 
-function formatGridDateParts(year: number, month: number, day: number): string {
+export function formatDateParts(
+  year: number,
+  month: number,
+  day: number,
+): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${year}-${pad(month + 1)}-${pad(day)}`;
 }
@@ -98,7 +102,7 @@ export function generateCalendarGrid(
     const prevDay = daysInPrevMonth - i;
     const prevMonth = viewMonth === 0 ? 11 : viewMonth - 1;
     const prevYear = viewMonth === 0 ? viewYear - 1 : viewYear;
-    const iso = formatGridDateParts(prevYear, prevMonth, prevDay);
+    const iso = formatDateParts(prevYear, prevMonth, prevDay);
 
     days.push({
       year: prevYear,
@@ -116,7 +120,7 @@ export function generateCalendarGrid(
   }
 
   for (let d = 1; d <= daysInCurrentMonth; d++) {
-    const iso = formatGridDateParts(viewYear, viewMonth, d);
+    const iso = formatDateParts(viewYear, viewMonth, d);
     days.push({
       year: viewYear,
       month: viewMonth,
@@ -139,7 +143,7 @@ export function generateCalendarGrid(
   for (let d = 1; d <= totalNeeded; d++) {
     const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
     const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
-    const iso = formatGridDateParts(nextYear, nextMonth, d);
+    const iso = formatDateParts(nextYear, nextMonth, d);
 
     days.push({
       year: nextYear,

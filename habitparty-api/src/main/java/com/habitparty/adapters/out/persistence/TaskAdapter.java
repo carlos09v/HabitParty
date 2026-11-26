@@ -3,23 +3,24 @@ package com.habitparty.adapters.out.persistence;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.application.ports.projections.DashboardTaskDTO;
-import com.habitparty.application.ports.projections.FocusableTaskDTO;
-import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.TaskJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.ChecklistItemMapper;
@@ -27,6 +28,9 @@ import com.habitparty.adapters.out.persistence.mappers.TaskMapper;
 import com.habitparty.adapters.out.persistence.repository.ChecklistItemJpaRepository;
 import com.habitparty.adapters.out.persistence.repository.TaskJpaRepository;
 import com.habitparty.application.ports.TaskRepository;
+import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.FocusableTaskDTO;
+import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.task.TaskType;
@@ -75,7 +79,6 @@ public class TaskAdapter implements TaskRepository {
         .toList();
   }
 
-  // Para jobs em lote que não utilizam o checklist (rollover/penalidades/lembretes)
   private List<Task> toDomainListWithoutChecklist(List<? extends TaskJpaEntity> entities) {
     return entities.stream()
         .map(e -> taskMapper.toDomain(e, List.of()))
@@ -86,7 +89,12 @@ public class TaskAdapter implements TaskRepository {
 
   @Override
   public Task save(Task task) {
-    TaskJpaEntity entity = taskMapper.toEntity(task);
+    TaskJpaEntity entity = port.findById(task.getId())
+        .map(existing -> {
+          taskMapper.updateEntityFromDomain(existing, task);
+          return existing;
+        })
+        .orElseGet(() -> taskMapper.toEntity(task));
     TaskJpaEntity savedEntity = port.save(entity);
     // O checklist é persistido de forma independente (saveChecklistItem); preserva o estado em memória
     return taskMapper.toDomain(savedEntity, task.getChecklist());
@@ -97,15 +105,24 @@ public class TaskAdapter implements TaskRepository {
     if (tasks == null || tasks.isEmpty()) {
       return;
     }
-    List<TaskJpaEntity> entities = tasks.stream()
-        .map(taskMapper::toEntity)
+    List<UUID> ids = tasks.stream()
+        .map(Task::getId)
+        .filter(Objects::nonNull)
         .toList();
-    port.saveAll(entities);
-  }
+    Map<UUID, TaskJpaEntity> existingById = port.findAllById(ids).stream()
+        .collect(Collectors.toMap(TaskJpaEntity::getId, Function.identity(), (a, b) -> a));
 
-  @Override
-  public List<Task> findRecurringTasksPage(int page, int size) {
-    return toDomainListWithoutChecklist(port.findRecurringTasks(PageRequest.of(page, size)));
+    List<TaskJpaEntity> entities = new ArrayList<>(tasks.size());
+    for (Task task : tasks) {
+      TaskJpaEntity entity = existingById.get(task.getId());
+      if (entity != null) {
+        taskMapper.updateEntityFromDomain(entity, task);
+      } else {
+        entity = taskMapper.toEntity(task);
+      }
+      entities.add(entity);
+    }
+    port.saveAll(entities);
   }
 
   @Override
@@ -114,6 +131,22 @@ public class TaskAdapter implements TaskRepository {
       return List.of();
     }
     return toDomainList(port.findRecurringTasksByUserIds(userIds));
+  }
+
+  @Override
+  public Optional<List<Task>> findRecurringTasksLightweightByUserIds(Collection<UUID> userIds) {
+    if (userIds == null || userIds.isEmpty()) {
+      return Optional.of(List.of());
+    }
+    return Optional.of(toDomainListWithoutChecklist(port.findRecurringTasksByUserIds(userIds)));
+  }
+
+  @Override
+  public Optional<List<Task>> findAllByIds(Collection<UUID> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return Optional.of(List.of());
+    }
+    return Optional.of(toDomainListWithoutChecklist(port.findAllById(ids)));
   }
 
   @Override
@@ -155,8 +188,6 @@ public class TaskAdapter implements TaskRepository {
   @Override
   public Page<DashboardTaskDTO> findDashboardTasks(UUID workspaceId, String filter, LocalDate today,
       Pageable pageable) {
-
-    // Projeção escalar: [id, name, taskType, dueDate, columnName, isHardcore, daysOfWeek]
     Page<Object[]> results = port.findDashboardTasks(workspaceId, filter, today, pageable);
 
     return results.map(row -> new DashboardTaskDTO(
@@ -171,8 +202,7 @@ public class TaskAdapter implements TaskRepository {
 
   @Override
   public List<TaskSearchWorkspaceCountDTO> countMatchingTasksByWorkspace(UUID userId, String query) {
-    // Escapa curingas do LIKE para que '%' e '_' digitados pelo usuário sejam tratados literalmente
-    String escaped = query.toLowerCase()
+    String escaped = query.toLowerCase(Locale.ROOT)
         .replace("\\", "\\\\")
         .replace("%", "\\%")
         .replace("_", "\\_");
@@ -204,7 +234,6 @@ public class TaskAdapter implements TaskRepository {
         .toList();
   }
 
-  // Converte o array/lista de DailyDaysOfWeek (enum do domínio) para java.time.DayOfWeek
   private List<DayOfWeek> toDaysOfWeek(Object raw) {
     if (raw == null) {
       return null;
@@ -218,7 +247,7 @@ public class TaskAdapter implements TaskRepository {
       return null;
     }
     return values.stream()
-        .filter(v -> v != null)
+        .filter(Objects::nonNull)
         .map(v -> DayOfWeek.valueOf(v instanceof Enum<?> e ? e.name() : v.toString()))
         .toList();
   }
@@ -273,6 +302,14 @@ public class TaskAdapter implements TaskRepository {
         boardColumnId,
         minDueDate,
         minCompletedAt));
+  }
+
+  @Override
+  public List<UUID> findIdsByBoardColumnIds(Collection<UUID> boardColumnIds) {
+    if (boardColumnIds == null || boardColumnIds.isEmpty()) {
+      return List.of();
+    }
+    return port.findIdsByBoardColumnIdIn(boardColumnIds);
   }
 
   @Override
@@ -342,13 +379,29 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  @Transactional
   public List<ChecklistItem> saveChecklistItems(List<ChecklistItem> items) {
     if (items == null || items.isEmpty()) {
       return List.of();
     }
-    List<ChecklistItemJpaEntity> entities = items.stream()
-        .map(item -> checklistMapper.toEntity(item, port.getReferenceById(item.getTaskId())))
+    List<UUID> ids = items.stream()
+        .map(ChecklistItem::getId)
+        .filter(Objects::nonNull)
         .toList();
+    Map<UUID, ChecklistItemJpaEntity> existingById = checklistRepository.findAllById(ids).stream()
+        .collect(Collectors.toMap(ChecklistItemJpaEntity::getId, Function.identity(), (a, b) -> a));
+
+    List<ChecklistItemJpaEntity> entities = new ArrayList<>(items.size());
+    for (ChecklistItem item : items) {
+      ChecklistItemJpaEntity entity = existingById.get(item.getId());
+      if (entity != null) {
+        checklistMapper.updateEntityFromDomain(entity, item);
+      } else {
+        entity = checklistMapper.toEntity(item, port.getReferenceById(item.getTaskId()));
+      }
+      entities.add(entity);
+    }
+
     return checklistRepository.saveAll(entities).stream()
         .map(checklistMapper::toDomain)
         .toList();
@@ -368,12 +421,14 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  @Transactional
   public void deleteAllByBoardColumnId(UUID boardColumnId) {
     checklistRepository.deleteAllByBoardColumnId(boardColumnId);
     port.deleteAllByBoardColumnId(boardColumnId);
   }
 
   @Override
+  @Transactional
   public void deleteAllByBoardColumnIds(List<UUID> boardColumnIds) {
     if (boardColumnIds == null || boardColumnIds.isEmpty()) {
       return;
@@ -383,12 +438,14 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  @Transactional
   public void deleteAllByUserId(UUID userId) {
     checklistRepository.deleteAllByUserId(userId);
     port.deleteAllByUserId(userId);
   }
 
   @Override
+  @Transactional
   public void resetMetricsByUserId(UUID userId) {
     port.resetHabitMetricsByUserId(userId);
     port.resetDailyMetricsByUserId(userId);

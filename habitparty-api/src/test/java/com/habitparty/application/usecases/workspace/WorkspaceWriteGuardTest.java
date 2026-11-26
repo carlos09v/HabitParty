@@ -28,6 +28,7 @@ import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.LimitExceededException;
@@ -102,7 +103,7 @@ class WorkspaceWriteGuardTest {
     UUID lockedColId = UUID.randomUUID();
     UUID lockedTaskId = UUID.randomUUID();
     BoardColumn lockedColumn = new BoardColumn(lockedColId, userId, ws3Id, "Bloqueada", 0, "lock", true);
-    Task lockedTask = mock(Task.class);
+    Task lockedTask = mock(Todo.class);
     when(lockedTask.getBoardColumnId()).thenReturn(lockedColId);
 
     when(userPort.findById(userId)).thenReturn(Optional.of(freeUser));

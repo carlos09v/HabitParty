@@ -89,13 +89,6 @@ export function useRoutineBoardLayout({
     [alignment, persistLayout],
   );
 
-  const getColumnWidth = useCallback(
-    (columnId: string): ColumnWidthPreset => {
-      return columnWidths[columnId] || "normal";
-    },
-    [columnWidths],
-  );
-
   const getColumnWidthClass = useCallback(
     (columnId: string): string => {
       const preset = columnWidths[columnId] || "normal";
@@ -109,7 +102,6 @@ export function useRoutineBoardLayout({
     setAlignment,
     columnWidths,
     setColumnWidth,
-    getColumnWidth,
     getColumnWidthClass,
   };
 }

@@ -25,16 +25,83 @@ public interface TransactionHistoryRepository {
     }
   }
 
-  // Busca paginada de todo o histórico do usuário
-  Page<TransactionHistory> findAllByUserId(UUID userId, int page, int size);
+  record TransactionHistoryFilter(
+      List<TransactionType> types,
+      LocalDateTime startDate,
+      LocalDateTime endDate,
+      String search,
+      String direction,
+      String sort) {
+    public TransactionHistoryFilter(List<TransactionType> types, LocalDateTime startDate, String search) {
+      this(types, startDate, null, search, null, null);
+    }
+  }
 
-  // Busca paginada filtrada pelos tipos de transação (Usado para as abas)
-  Page<TransactionHistory> findAllByUserIdAndTypes(UUID userId, List<TransactionType> types, int page, int size);
+  record TransactionHistorySummary(
+      BigDecimal goldEarned,
+      BigDecimal goldSpent,
+      int xpEarned,
+      int xpLost,
+      long totalCount) {
+    public static TransactionHistorySummary empty() {
+      return new TransactionHistorySummary(BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0L);
+    }
+  }
+
+  // Busca paginada de todo o histórico visível do usuário
+  default Page<TransactionHistory> findAllByUserId(UUID userId, int page, int size) {
+    return findFiltered(userId, null, null, null, page, size);
+  }
 
   // Busca paginada filtrada flexível (tipos, período/data inicial, busca textual)
   Page<TransactionHistory> findFiltered(UUID userId, List<TransactionType> types, LocalDateTime startDate, String search, int page, int size);
 
-  // 3. Para deletar um registro específico (Seu botão futuro)
+  default Page<TransactionHistory> findFiltered(UUID userId, TransactionHistoryFilter filter, int page, int size) {
+    TransactionHistoryFilter safe = filter != null ? filter : new TransactionHistoryFilter(null, null, null);
+    return findFiltered(userId, safe.types(), safe.startDate(), safe.search(), page, size);
+  }
+
+  /**
+   * Indica se a implementação suporta busca paginada de conteúdo sem query COUNT(*) redundante,
+   * permitindo reaproveitar o totalCount já calculado por {@link #summarizeFiltered}.
+   */
+  default boolean supportsDirectPageContent() {
+    return false;
+  }
+
+  default List<TransactionHistory> findFilteredPageContent(
+      UUID userId, TransactionHistoryFilter filter, int page, int size) {
+    return findFiltered(userId, filter, page, size).getContent();
+  }
+
+  default List<TransactionHistory> findFilteredSliceAfterCursor(
+      UUID userId,
+      TransactionHistoryFilter filter,
+      LocalDateTime cursorCreatedAt,
+      UUID cursorId,
+      int limit) {
+    return List.of();
+  }
+
+  default TransactionHistorySummary summarizeFiltered(UUID userId, TransactionHistoryFilter filter) {
+    return TransactionHistorySummary.empty();
+  }
+
+  // Ocultamento lógico do extrato (preserva registros operacionais para caps, streak e retrospectiva)
+  default int hideByIdAndUserId(UUID id, UUID userId) {
+    deleteById(id);
+    return 1;
+  }
+
+  default int hideAllByIdsAndUserId(List<UUID> ids, UUID userId) {
+    return deleteAllByIdsAndUserId(ids, userId);
+  }
+
+  default int restoreAllByIdsAndUserId(List<UUID> ids, UUID userId) {
+    return 0;
+  }
+
+  // 3. Para deletar fisicamente um registro específico (uso operacional/interno)
   void deleteById(UUID id);
 
   // 4. Buscar um específico (necessário para validar o Ownership antes de deletar)
@@ -82,6 +149,26 @@ public interface TransactionHistoryRepository {
 
   // Verifica se existem registros no histórico vinculados a uma origem do usuário
   boolean existsByReferenceIdAndUserId(UUID referenceId, UUID userId);
+
+  default Optional<Boolean> existsAnyByReferenceIdsAndUserId(Collection<UUID> referenceIds, UUID userId) {
+    return Optional.empty();
+  }
+
+  record RetrospectiveTxBucket(
+      int year,
+      int month,
+      int day,
+      int hour,
+      int quarterHour,
+      int tasksCompleted,
+      int hardTasksCompleted,
+      int xpEarned,
+      BigDecimal coinsEarned) {}
+
+  default Optional<List<RetrospectiveTxBucket>> aggregateForRetrospective(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endExclusive) {
+    return Optional.empty();
+  }
 
   default List<TransactionHistory> findAllByUserIdAndPeriod(
       UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive) {

@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
 @RequestMapping("/focus-activities")
 @Validated
@@ -64,7 +65,7 @@ public interface FocusActivityApi {
     @Operation(summary = "Reordenar Atividades de Foco", description = "Atualiza a ordem das atividades de foco.")
     @PutMapping("/reorder")
     ResponseEntity<Void> reorder(
-        @RequestBody List<@Valid UpdateFocusActivityOrderDTO> novaOrdemDtos,
+        @RequestBody @Size(max = 500, message = "Máximo de 500 itens por reordenação.") List<@Valid UpdateFocusActivityOrderDTO> novaOrdemDtos,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 }

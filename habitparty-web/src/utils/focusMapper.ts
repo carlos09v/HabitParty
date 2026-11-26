@@ -1,3 +1,4 @@
+import { DEFAULT_POMO_MINUTES } from "@/constants/focusRules";
 import type { AppLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
@@ -5,6 +6,8 @@ import type {
   FocusActivityResponseDTO,
   FocusRecord,
   FocusRecordResponseDTO,
+  FocusSummaryData,
+  FocusSummaryResponseDTO,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { toLocalISOString } from "./date";
@@ -17,13 +20,17 @@ export function mapFocusActivityDtoToActivity(
   locale: AppLocale = "pt-BR",
 ): FocusActivity {
   const t = getUtilityTranslator(locale, "focus");
+  const recordType = dto.recordType || "POMO";
   return {
     id: dto.id || "",
     name: dto.name || t("defaultActivityName"),
     icon: dto.icon || "book",
     orderIndex: dto.orderIndex ?? 0,
-    recordType: dto.recordType || "POMO",
-    targetTimeMinutes: dto.targetTimeMinutes || 35,
+    recordType,
+    targetTimeMinutes:
+      recordType === "STOPWATCH"
+        ? (dto.targetTimeMinutes ?? undefined)
+        : dto.targetTimeMinutes || DEFAULT_POMO_MINUTES,
     createdAt: dto.createdAt,
   };
 }
@@ -47,9 +54,15 @@ export function mapFocusRecordDtoToRecord(
   activity?: FocusActivity,
   timeZone?: string | null,
   inventoryItem?: InventoryItemResponseDTO,
+  fallbackIndex = 0,
 ): FocusRecord {
+  const fallbackTimestamp = toLocalISOString(new Date(), timeZone);
+  const startTime = dto.startTime || fallbackTimestamp;
+  const endTime = dto.endTime || fallbackTimestamp;
+  const deterministicFallbackId = `focus-rec-${dto.focusActivityId ?? dto.inventoryItemId ?? dto.taskId ?? "free"}-${startTime}-${endTime}-${fallbackIndex}`;
+
   return {
-    id: dto.id || crypto.randomUUID(),
+    id: dto.id || deterministicFallbackId,
     userId: dto.userId,
     focusActivityId: dto.focusActivityId,
     activityName: activity?.name,
@@ -60,8 +73,8 @@ export function mapFocusRecordDtoToRecord(
     taskId: dto.taskId,
     taskNameSnapshot: dto.taskNameSnapshot,
     notes: dto.notes,
-    startTime: dto.startTime || toLocalISOString(new Date(), timeZone),
-    endTime: dto.endTime || toLocalISOString(new Date(), timeZone),
+    startTime,
+    endTime,
     recordType: dto.recordType || "POMO",
     completedPomos: dto.completedPomos,
     pomoTargetMinutes: dto.pomoTargetMinutes,
@@ -93,7 +106,7 @@ export function mapFocusRecords(
       .map((item) => [item.inventoryItemId, item]),
   );
 
-  return dtos.map((dto) => {
+  return dtos.map((dto, index) => {
     const matchedActivity = dto.focusActivityId
       ? activityMap.get(dto.focusActivityId)
       : undefined;
@@ -105,6 +118,7 @@ export function mapFocusRecords(
       matchedActivity,
       timeZone,
       matchedItem,
+      index,
     );
   });
 }
@@ -146,5 +160,45 @@ export function normalizeFocusRecordsPage(
     totalPages,
     currentPage,
     hasMore,
+  };
+}
+
+/**
+ * Normaliza o DTO do resumo agregado de foco retornado por `GET /focus-records/summary`.
+ */
+export function normalizeFocusSummary(
+  dto: FocusSummaryResponseDTO | undefined | null,
+): FocusSummaryData | null {
+  if (!dto) return null;
+  const toInt = (val: unknown) =>
+    typeof val === "number" && Number.isFinite(val)
+      ? Math.max(0, Math.round(val))
+      : 0;
+  const toCoins = (val: unknown) => {
+    const num = typeof val === "string" ? Number(val) : Number(val ?? 0);
+    return Number.isFinite(num) ? Math.round(Math.max(0, num) * 100) / 100 : 0;
+  };
+
+  return {
+    todayRecordsCount: toInt(dto.todayRecordsCount),
+    totalRecordsCount: toInt(dto.totalRecordsCount),
+    activeStreakDays: toInt(dto.activeStreakDays),
+    totalActiveDays: toInt(dto.totalActiveDays),
+    todayXp: toInt(dto.todayXp),
+    totalXp: toInt(dto.totalXp),
+    todayGold: toCoins(dto.todayGold),
+    totalGold: toCoins(dto.totalGold),
+    todayFocusMinutes: toInt(dto.todayFocusMinutes),
+    totalFocusMinutes: toInt(dto.totalFocusMinutes),
+    todayPomosCount: toInt(dto.todayPomosCount),
+    totalPomosCount: toInt(dto.totalPomosCount),
+    todayAverageMinutes: toInt(dto.todayAverageMinutes),
+    totalAverageMinutes: toInt(dto.totalAverageMinutes),
+    globalTodayProductiveMinutes: toInt(dto.globalTodayProductiveMinutes),
+    globalTodayRewardableMinutes: toInt(dto.globalTodayRewardableMinutes),
+    todayDurationByActivityId: dto.todayDurationByActivityId
+      ? { ...dto.todayDurationByActivityId }
+      : {},
+    dailyMinutes: dto.dailyMinutes ? { ...dto.dailyMinutes } : {},
   };
 }

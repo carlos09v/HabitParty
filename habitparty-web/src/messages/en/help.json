@@ -48,6 +48,7 @@
   },
   "faq": {
     "searchPlaceholder": "Search by question, term, or rule (e.g., decay, mystery box, hardcore)...",
+    "categoriesAriaLabel": "Filter topics by category",
     "clearSearch": "Clear search",
     "sectionTitle": "Frequently Asked Questions",
     "topicSingular": "topic",
@@ -85,7 +86,7 @@
         "summary": "Customize your workspace across 7 themes, connect with friends using granular privacy controls, and export collectible PNG journey cards.",
         "highlights": [
           "7 Visual Themes: 4 Free (Cosmic Dark, Cosmic Daylight, Dark Knight, and Solar Parchment) + 3 VIP (Cyberpunk Neon, Forest Ranger, and Royal Gold)",
-          "Friend Network (/friends) by @username or unique HP-XXXXXX code, Public Showcases, and social activity bell notifications",
+          "Friend Network (/profile?tab=friends) by @username or unique HP-XXXXXX code, Public Showcases, and social activity bell notifications",
           "Granular Privacy Controls (Public, Friends Only, or Private) for profile visibility, stats, streaks, and request permissions",
           "Seasonal Annual Retrospective (Dec 20 – Jan 31) with 5 behavioral archetypes and downloadable PNG Profile & Retrospective cards",
           "Rich-Text task descriptions, Hierarchical Tags (>), inline Quick Focus on task rows, and unified 'All Workspaces' Dashboard view",

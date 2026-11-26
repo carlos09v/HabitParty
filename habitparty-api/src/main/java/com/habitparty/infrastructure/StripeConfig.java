@@ -13,8 +13,16 @@ public class StripeConfig {
   @Value("${stripe.api.key}")
   private String apiKey;
 
+  @Value("${stripe.api.connect-timeout-ms:5000}")
+  private int connectTimeoutMs;
+
+  @Value("${stripe.api.read-timeout-ms:15000}")
+  private int readTimeoutMs;
+
   @PostConstruct
   public void init() {
+    Stripe.setConnectTimeout(connectTimeoutMs);
+    Stripe.setReadTimeout(readTimeoutMs);
     if (apiKey != null && !apiKey.isBlank()) {
       Stripe.apiKey = apiKey;
     }

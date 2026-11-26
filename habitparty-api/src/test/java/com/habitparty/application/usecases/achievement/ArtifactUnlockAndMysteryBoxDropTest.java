@@ -199,8 +199,8 @@ class ArtifactUnlockAndMysteryBoxDropTest {
     ArtifactRepository artifactRepo = mock(ArtifactRepository.class);
     UserArtifactRepository userArtifactRepo = mock(UserArtifactRepository.class);
 
-    when(inventoryRepo.findById(boxId)).thenReturn(Optional.of(box));
-    when(userRepo.findById(user.getId())).thenReturn(Optional.of(user));
+    when(inventoryRepo.findByIdForUpdate(boxId)).thenReturn(Optional.of(box));
+    when(userRepo.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
     when(artifactRepo.findBySourceTypeOrdered(ArtifactSourceType.MYSTERY_BOX)).thenReturn(List.of());
 
     OpenMysteryBoxUseCase useCase = new OpenMysteryBoxUseCase(inventoryRepo, txRepo);

@@ -102,7 +102,6 @@
   },
   "focus": {
     "defaultActivityName": "Atividade",
-    "atTime": "{day} às {time}",
     "remainingTime": {
       "completed": "Tempo concluído!",
       "remainingValue": "{duration} restantes",
@@ -113,13 +112,14 @@
       "lastWeek": "Sem. passada",
       "offsetWeekNegative": "Sem. {offset}",
       "offsetWeekPositive": "Sem. +{offset}",
-      "dateRange": "{startDay}/{startMonth} a {endDay}/{endMonth}"
+      "dateRangeFormatted": "{start} a {end}"
     },
     "rewards": {
       "loggedTimeLabel": "Tempo Registrado",
       "loggedTimeValue": "{count} {count, plural, one {minuto} other {minutos}}",
       "pomodoroCyclesLabel": "Ciclos Pomodoro",
       "pomodoroCyclesValue": "{cycles} ciclo(s) (méd. {avgMins}m/ciclo)",
+      "coinsUnit": "moedas",
       "creditsUnit": "créditos",
       "itemZeroGamified": "Itens de lazer da mochila não concedem XP ou Moedas.",
       "itemZeroProductivity": "Itens de lazer do inventário não concedem Pontos ou Créditos.",
@@ -131,9 +131,11 @@
       "maxCapTitleProductivity": "Ciclo Ultradiano ({maxMinutes}m)",
       "maxCapGamified": "Excedente acima de {maxMinutes} min por sessão não gera moedas adicionais (anti-AFK).",
       "maxCapProductivity": "Excedente acima de {maxMinutes} min por sessão não gera créditos adicionais. Faça uma pausa entre ciclos.",
+      "antiExploitTitle": "Anti-Exploit",
       "antiExploitMessage": "Média menor que {threshold}m/ciclo reduz os ganhos proporcionalmente.",
       "shortCycleTitle": "Ciclo Curto ({min}m-{max}m)",
       "shortCycleMessage": "Média de {avg}m/ciclo (+{shortCoins}/ciclo). Faixa padrão ({stdMin}m-{stdMax}m) rende +{stdCoins}.",
+      "deepWorkTitle": "Deep Work ({min}m+)",
       "deepWorkMessage": "Sessão estendida ininterrupta qualifica para a bonificação máxima (+{coins}/ciclo)!",
       "dailyHardCapZeroReason": "Limite diário de recompensas ({hours}h) atingido neste dia.",
       "dailyHardCapTitleGamified": "Teto Diário Atingido (8h)",

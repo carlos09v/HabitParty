@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import type { components } from "@/api/schema";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import { Sidebar, type SidebarBadgeCounts } from "./Sidebar";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
@@ -21,6 +22,10 @@ export function MobileHeader({ user, badgeCounts }: MobileHeaderProps) {
   const t = useTranslations("nav");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const dashboardHref = activeWorkspaceId
+    ? `/dashboard?workspaceId=${encodeURIComponent(activeWorkspaceId)}`
+    : "/dashboard";
 
   // Fecha o drawer automaticamente ao navegar para outra página
   useEffect(() => {
@@ -63,7 +68,7 @@ export function MobileHeader({ user, badgeCounts }: MobileHeaderProps) {
             <Menu size={22} />
           </button>
 
-          <Link href="/dashboard" className="flex items-center shrink-0">
+          <Link href={dashboardHref} className="flex items-center shrink-0">
             <BrandLogo
               alt="Logo HabitParty"
               width={118}

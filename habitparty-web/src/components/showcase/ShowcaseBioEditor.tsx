@@ -2,13 +2,20 @@
 
 import { Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import {
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { updateShowcaseProfileAction } from "@/actions/showcaseActions";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { Textarea } from "@/components/ui/Textarea";
 import { useUserStore } from "@/store/userStore";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 const BIO_MAX_LENGTH = 160;
 
@@ -25,11 +32,13 @@ export function ShowcaseBioEditor({
 }: ShowcaseBioEditorProps) {
   const t = useTranslations("showcase.header");
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
+  const bioInputId = useId();
 
   const resolvedBio = currentBio || "";
   const [draftBio, setDraftBio] = useState(resolvedBio);
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isVisitorMode) {
@@ -43,8 +52,30 @@ export function ShowcaseBioEditor({
     }
   }, [resolvedBio, isEditingBio]);
 
+  useEffect(() => {
+    if (isEditingBio) {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      }
+    }
+  }, [isEditingBio]);
+
+  const handleCancelBio = () => {
+    setDraftBio(resolvedBio);
+    setIsEditingBio(false);
+  };
+
   const handleSaveBio = () => {
     const trimmed = draftBio.trim();
+    if (trimmed === resolvedBio.trim()) {
+      setDraftBio(resolvedBio);
+      setIsEditingBio(false);
+      return;
+    }
+
     startTransition(async () => {
       const res = await updateShowcaseProfileAction({ bio: trimmed });
       if (!res.success) {
@@ -58,14 +89,32 @@ export function ShowcaseBioEditor({
     });
   };
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      handleCancelBio();
+    } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (!isPending) {
+        handleSaveBio();
+      }
+    }
+  };
+
   if (isEditingBio && !isVisitorMode) {
     return (
       <div className="flex flex-col gap-2 w-full max-w-xl mt-1">
+        <label htmlFor={bioInputId} className="sr-only">
+          {t("bioLabel")}
+        </label>
         <Textarea
+          id={bioInputId}
+          ref={textareaRef}
           rows={2}
           maxLength={BIO_MAX_LENGTH}
           value={draftBio}
           onChange={(e) => setDraftBio(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={t("bioPlaceholder")}
           compact
         />
@@ -79,10 +128,7 @@ export function ShowcaseBioEditor({
             <button
               type="button"
               disabled={isPending}
-              onClick={() => {
-                setDraftBio(resolvedBio);
-                setIsEditingBio(false);
-              }}
+              onClick={handleCancelBio}
               className="px-3 py-1 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface-hover cursor-pointer"
             >
               {t("cancelBio")}
@@ -91,7 +137,7 @@ export function ShowcaseBioEditor({
               type="button"
               disabled={isPending}
               onClick={handleSaveBio}
-              className="px-3 py-1 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover cursor-pointer"
+              className="px-3 py-1 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover cursor-pointer disabled:opacity-60"
             >
               {t("saveBio")}
             </button>
@@ -126,7 +172,7 @@ export function ShowcaseBioEditor({
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-tiny font-semibold text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-primary/10 transition-colors cursor-pointer shrink-0"
           title={t("editBio")}
         >
-          <Pencil size={12} />
+          <Pencil size={12} aria-hidden="true" />
           <span>{t("editBio")}</span>
         </button>
       )}

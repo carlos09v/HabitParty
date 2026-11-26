@@ -24,7 +24,6 @@ import com.habitparty.application.usecases.social.RespondFriendRequestUseCase;
 import com.habitparty.application.usecases.social.SearchSocialUsersUseCase;
 import com.habitparty.application.usecases.social.SendFriendRequestCommand;
 import com.habitparty.application.usecases.social.SendFriendRequestUseCase;
-import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
 
@@ -41,16 +40,14 @@ public class FriendshipController implements FriendshipApi {
   private final MarkSocialNotificationsSeenUseCase markSocialNotificationsSeenUseCase;
 
   @Override
-  public ResponseEntity<FriendsOverviewResponseDTO> getFriendsOverview(AuthenticatedUser usuarioLogado) {
-    var result = listFriendsOverviewUseCase.execute(usuarioLogado.id());
+  public ResponseEntity<FriendsOverviewResponseDTO> getFriendsOverview(UUID userId) {
+    var result = listFriendsOverviewUseCase.execute(userId);
     return ResponseEntity.ok(FriendsOverviewResponseDTO.fromDomain(result));
   }
 
   @Override
-  public ResponseEntity<List<SearchSocialUserResponseDTO>> searchUsers(
-      AuthenticatedUser usuarioLogado,
-      String query) {
-    var results = searchSocialUsersUseCase.execute(usuarioLogado.id(), query).stream()
+  public ResponseEntity<List<SearchSocialUserResponseDTO>> searchUsers(UUID userId, String query) {
+    var results = searchSocialUsersUseCase.execute(userId, query).stream()
         .map(SearchSocialUserResponseDTO::fromDomain)
         .toList();
     return ResponseEntity.ok(results);
@@ -58,10 +55,10 @@ public class FriendshipController implements FriendshipApi {
 
   @Override
   public ResponseEntity<SendFriendRequestResponseDTO> sendFriendRequest(
-      AuthenticatedUser usuarioLogado,
+      UUID userId,
       SendFriendRequestDTO requestDto) {
     var command = new SendFriendRequestCommand(
-        usuarioLogado.id(),
+        userId,
         requestDto.username(),
         requestDto.friendCode());
     var result = sendFriendRequestUseCase.execute(command);
@@ -71,49 +68,45 @@ public class FriendshipController implements FriendshipApi {
 
   @Override
   public ResponseEntity<RespondFriendRequestResponseDTO> respondFriendRequest(
-      AuthenticatedUser usuarioLogado,
+      UUID userId,
       UUID friendshipId,
       RespondFriendRequestDTO requestDto) {
     var result = respondFriendRequestUseCase.execute(
-        usuarioLogado.id(),
+        userId,
         friendshipId,
         Boolean.TRUE.equals(requestDto.accept()));
     return ResponseEntity.ok(RespondFriendRequestResponseDTO.fromDomain(result));
   }
 
   @Override
-  public ResponseEntity<Void> removeFriendship(
-      AuthenticatedUser usuarioLogado,
-      UUID friendshipId) {
-    removeOrBlockFriendUseCase.removeFriendship(usuarioLogado.id(), friendshipId);
+  public ResponseEntity<Void> removeFriendship(UUID userId, UUID friendshipId) {
+    removeOrBlockFriendUseCase.removeFriendship(userId, friendshipId);
     return ResponseEntity.noContent().build();
   }
 
   @Override
-  public ResponseEntity<Void> blockUser(
-      AuthenticatedUser usuarioLogado,
-      UUID userId) {
-    removeOrBlockFriendUseCase.blockUser(usuarioLogado.id(), userId);
+  public ResponseEntity<Void> blockUser(UUID actorUserId, UUID targetUserId) {
+    removeOrBlockFriendUseCase.blockUser(actorUserId, targetUserId);
     return ResponseEntity.noContent().build();
   }
 
   @Override
   public ResponseEntity<SocialNotificationsFeedResponseDTO> listNotifications(
-      AuthenticatedUser usuarioLogado,
+      UUID userId,
       int limit,
       boolean unseenOnly) {
-    var result = listSocialNotificationsUseCase.execute(usuarioLogado.id(), limit, unseenOnly);
+    var result = listSocialNotificationsUseCase.execute(userId, limit, unseenOnly);
     return ResponseEntity.ok(SocialNotificationsFeedResponseDTO.fromDomain(result));
   }
 
   @Override
   public ResponseEntity<Void> markNotificationsSeen(
-      AuthenticatedUser usuarioLogado,
+      UUID userId,
       MarkNotificationsSeenDTO requestDto) {
     if (requestDto != null && requestDto.notificationId() != null) {
-      markSocialNotificationsSeenUseCase.markOneSeen(usuarioLogado.id(), requestDto.notificationId());
+      markSocialNotificationsSeenUseCase.markOneSeen(userId, requestDto.notificationId());
     } else {
-      markSocialNotificationsSeenUseCase.markAllSeen(usuarioLogado.id());
+      markSocialNotificationsSeenUseCase.markAllSeen(userId);
     }
     return ResponseEntity.noContent().build();
   }

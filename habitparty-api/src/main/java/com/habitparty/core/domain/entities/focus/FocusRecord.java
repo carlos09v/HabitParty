@@ -7,12 +7,13 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.OwnedByUser;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.exceptions.DomainValidationException;
-import com.habitparty.core.exceptions.UnauthorizedException;
 
-public class FocusRecord {
+public class FocusRecord implements OwnedByUser {
   public static final int MAX_POMO_TARGET_MINUTES = 180;
+  public static final int MAX_COMPLETED_POMOS = 200;
 
   private final UUID id;
   private final UUID userId;
@@ -31,6 +32,7 @@ public class FocusRecord {
 
   private final Integer xpEarned;
   private final BigDecimal coinsEarned;
+  private final boolean rewardLocked;
 
   public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
@@ -66,6 +68,15 @@ public class FocusRecord {
       UUID taskId, String taskNameSnapshot, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
       Integer completedPomos, Integer pomoTargetMinutes, Integer xpEarned, BigDecimal coinsEarned) {
+    this(id, userId, focusActivityId, inventoryItemId, taskId, taskNameSnapshot, notes, startTime, endTime,
+        recordType, completedPomos, pomoTargetMinutes, xpEarned, coinsEarned, false);
+  }
+
+  public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId,
+      UUID taskId, String taskNameSnapshot, String notes,
+      LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
+      Integer completedPomos, Integer pomoTargetMinutes, Integer xpEarned, BigDecimal coinsEarned,
+      boolean rewardLocked) {
     // 1. Validações Básicas
     if (userId == null) {
       throw new DomainValidationException("O ID do usuário é obrigatório.");
@@ -91,6 +102,10 @@ public class FocusRecord {
       if (completedPomos == null || completedPomos < 0) {
         throw new DomainValidationException(
             "A quantidade de pomodoros concluídos é obrigatória e não pode ser negativa.");
+      }
+      if (completedPomos > MAX_COMPLETED_POMOS) {
+        throw new DomainValidationException(
+            "A quantidade de pomodoros concluídos não pode exceder " + MAX_COMPLETED_POMOS + " por sessão.");
       }
       if (id == null && pomoTargetMinutes != null
           && (pomoTargetMinutes < 1 || pomoTargetMinutes > MAX_POMO_TARGET_MINUTES)) {
@@ -119,14 +134,10 @@ public class FocusRecord {
 
     this.durationMinutes = (int) Duration.between(startTime, endTime).toMinutes();
     this.xpEarned = xpEarned != null ? Math.max(0, xpEarned) : 0;
-    this.coinsEarned = coinsEarned != null ? coinsEarned.setScale(2, RoundingMode.HALF_UP)
+    this.coinsEarned = coinsEarned != null
+        ? coinsEarned.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
         : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-  }
-
-  public void validateOwnership(UUID userIdLogado) {
-    if (!this.userId.equals(userIdLogado)) {
-      throw new UnauthorizedException("Você não tem permissão!");
-    }
+    this.rewardLocked = rewardLocked;
   }
 
   public void updateNotes(String newNotes) {
@@ -200,5 +211,9 @@ public class FocusRecord {
 
   public Optional<BigDecimal> getCoinsEarned() {
     return Optional.ofNullable(coinsEarned);
+  }
+
+  public boolean isRewardLocked() {
+    return rewardLocked;
   }
 }

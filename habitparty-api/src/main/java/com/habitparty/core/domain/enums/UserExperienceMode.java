@@ -1,5 +1,7 @@
 package com.habitparty.core.domain.enums;
 
+import java.util.Locale;
+
 public enum UserExperienceMode {
   GAMIFIED,
   PRODUCTIVITY;
@@ -8,7 +10,7 @@ public enum UserExperienceMode {
     if (value == null || value.isBlank()) {
       return PRODUCTIVITY;
     }
-    String normalized = value.trim().toUpperCase();
+    String normalized = value.trim().toUpperCase(Locale.ROOT);
     if ("GAMIFIED".equals(normalized)) {
       return GAMIFIED;
     }

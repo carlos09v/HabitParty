@@ -11,23 +11,29 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "artifacts")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class ArtifactJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class ArtifactJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "artifact_id")
   private UUID id;
 
+  @ToString.Include
   @Column(name = "code", nullable = false, unique = true, length = 60)
   private String code;
 
@@ -45,6 +51,7 @@ public class ArtifactJpaEntity {
   @Column(name = "required_achievement_code", length = 60)
   private String requiredAchievementCode;
 
+  @Builder.Default
   @Column(name = "display_order", nullable = false)
   private int displayOrder = 0;
 }

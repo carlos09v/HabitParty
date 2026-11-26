@@ -1,23 +1,17 @@
-"use client";
-
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { cn } from "@/utils";
-import { getDailyFocusYieldInfo } from "@/utils/focusDailyYield";
+import {
+  DAILY_YIELD_TIER_STYLES,
+  getDailyFocusYieldInfo,
+} from "@/utils/focusDailyYield";
 
 interface FocusDailyYieldBadgeProps {
   todayRewardableMinutes?: number;
   size?: "sm" | "md";
   className?: string;
 }
-
-const DAILY_YIELD_TIER_STYLES: Record<0 | 25 | 50 | 100, string> = {
-  100: "",
-  50: "border-amber-500/45 bg-amber-500/15 text-amber-800 dark:text-amber-300",
-  25: "border-orange-500/45 bg-orange-500/15 text-orange-700 dark:text-orange-300",
-  0: "border-rose-500/45 bg-rose-500/15 text-rose-700 dark:text-rose-300",
-};
 
 /**
  * Selo reutilizável de aviso do rendimento diário de foco quando a faixa sai de 100%.

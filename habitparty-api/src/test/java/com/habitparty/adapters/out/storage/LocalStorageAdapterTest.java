@@ -10,16 +10,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.habitparty.core.exceptions.DomainValidationException;
+
 class LocalStorageAdapterTest {
 
   @TempDir
   Path tempDir;
 
   @Test
-  @DisplayName("Deve fazer upload e remover o arquivo local com sucesso")
+  @DisplayName("Deve fazer upload de imagem PNG válida (magic bytes) e remover o arquivo local com sucesso")
   void shouldUploadAndDeleteLocalFile() {
     LocalStorageAdapter adapter = new LocalStorageAdapter(tempDir);
-    byte[] content = new byte[]{1, 2, 3, 4};
+    byte[] content = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D};
 
     String fileUrl = adapter.uploadFile(new ByteArrayInputStream(content), "avatar.png", content.length);
     assertTrue(fileUrl.startsWith("/uploads/"));
@@ -30,6 +32,16 @@ class LocalStorageAdapterTest {
 
     adapter.deleteFile(fileUrl);
     assertFalse(Files.exists(storedFile));
+  }
+
+  @Test
+  @DisplayName("Deve rejeitar payload disfarçado com extensão .png cujos magic bytes não correspondem a PNG")
+  void shouldRejectFakeImagePayloadsWithDisguisedExtension() {
+    LocalStorageAdapter adapter = new LocalStorageAdapter(tempDir);
+    byte[] htmlPayload = "<html><script>alert(1)</script></html>".getBytes();
+
+    assertThrows(DomainValidationException.class, () ->
+        adapter.uploadFile(new ByteArrayInputStream(htmlPayload), "evil.png", htmlPayload.length));
   }
 
   @Test

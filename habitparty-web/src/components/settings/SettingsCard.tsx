@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 interface SettingsCardProps {
   title: ReactNode;
@@ -39,7 +39,7 @@ export function SettingsCard({
       {/* Cabeçalho do Card */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-700 dark:border-white/10 pb-4">
         <div className="flex flex-col gap-1 min-w-0 flex-1">
-          <h3
+          <h2
             className={cn(
               "text-subtitle-s font-bold flex items-center gap-2 flex-wrap",
               isDanger ? "text-red-600 dark:text-red-400" : "text-neutral-50",
@@ -47,7 +47,7 @@ export function SettingsCard({
           >
             {icon && <span className="shrink-0 flex items-center">{icon}</span>}
             <span>{title}</span>
-          </h3>
+          </h2>
           {description && (
             <p className="text-body-s text-neutral-300 leading-relaxed">
               {description}

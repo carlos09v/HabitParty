@@ -11,20 +11,24 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "friendships")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class FriendshipJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class FriendshipJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "friendship_id", nullable = false, updatable = false)
   private UUID id;
 
@@ -34,6 +38,7 @@ public class FriendshipJpaEntity {
   @Column(name = "addressee_id", nullable = false)
   private UUID addresseeId;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private FriendshipStatus status;

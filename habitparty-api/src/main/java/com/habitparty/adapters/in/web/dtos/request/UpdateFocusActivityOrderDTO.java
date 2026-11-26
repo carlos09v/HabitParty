@@ -9,8 +9,8 @@ public record UpdateFocusActivityOrderDTO(
     @NotNull
     UUID id,
 
-    @NotNull
-    @Min(0)
-    int orderIndex) {
+    @NotNull(message = "O índice de ordem é obrigatório")
+    @Min(value = 0, message = "O índice de ordem não pode ser negativo")
+    Integer orderIndex) {
 
 }

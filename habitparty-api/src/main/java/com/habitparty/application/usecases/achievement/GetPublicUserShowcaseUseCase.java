@@ -4,10 +4,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.FriendshipRepository;
+import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.social.SocialAccessSupport;
 import com.habitparty.application.usecases.social.SocialRelationshipStatus;
@@ -16,6 +19,7 @@ import com.habitparty.application.usecases.user.EffectiveStreakResolver;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.social.Friendship;
+import com.habitparty.core.domain.enums.HighlightType;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -25,16 +29,28 @@ public class GetPublicUserShowcaseUseCase {
   private final FriendshipRepository friendshipRepository;
   private final EffectiveStreakResolver effectiveStreakResolver;
   private final GetUserShowcaseUseCase getUserShowcaseUseCase;
+  private final ProfileHighlightRepository profileHighlightRepository;
+
+  @Autowired
+  public GetPublicUserShowcaseUseCase(
+      UserRepository userRepository,
+      FriendshipRepository friendshipRepository,
+      EffectiveStreakResolver effectiveStreakResolver,
+      GetUserShowcaseUseCase getUserShowcaseUseCase,
+      @Nullable ProfileHighlightRepository profileHighlightRepository) {
+    this.userRepository = userRepository;
+    this.friendshipRepository = friendshipRepository;
+    this.effectiveStreakResolver = effectiveStreakResolver;
+    this.getUserShowcaseUseCase = getUserShowcaseUseCase;
+    this.profileHighlightRepository = profileHighlightRepository;
+  }
 
   public GetPublicUserShowcaseUseCase(
       UserRepository userRepository,
       FriendshipRepository friendshipRepository,
       EffectiveStreakResolver effectiveStreakResolver,
       GetUserShowcaseUseCase getUserShowcaseUseCase) {
-    this.userRepository = userRepository;
-    this.friendshipRepository = friendshipRepository;
-    this.effectiveStreakResolver = effectiveStreakResolver;
-    this.getUserShowcaseUseCase = getUserShowcaseUseCase;
+    this(userRepository, friendshipRepository, effectiveStreakResolver, getUserShowcaseUseCase, null);
   }
 
   public record PublicUserShowcaseResult(
@@ -100,9 +116,34 @@ public class GetPublicUserShowcaseUseCase {
           List.of());
     }
 
-    GetUserShowcaseUseCase.UserShowcaseResult fullShowcase = getUserShowcaseUseCase.executeReadOnly(targetUser);
+    // Caminho leve: quando stats e conquistas estão ambos ocultos, evita carregar catálogo completo/artefatos/tarefas
+    if (!canViewStats && !canViewAchievements && profileHighlightRepository != null) {
+      SocialUserSummary summary = SocialUserSummary.fromUserForViewer(targetUser, 0, relationshipStatus);
+      List<ProfileHighlight> accountBadgeHighlights = profileHighlightRepository
+          .findAllByUserIdOrderByDisplayOrder(targetUser.getId())
+          .stream()
+          .filter(h -> h.getHighlightType() == HighlightType.ACCOUNT_BADGE && !isLevelRankBadge(h))
+          .toList();
+      return new PublicUserShowcaseResult(
+          summary,
+          relationshipStatus,
+          relOpt.map(Friendship::getId).orElse(null),
+          true,
+          false,
+          false,
+          null,
+          0,
+          accountBadgeHighlights,
+          List.of(),
+          List.of());
+    }
+
+    GetUserShowcaseUseCase.UserShowcaseResult fullShowcase = canViewStats
+        ? getUserShowcaseUseCase.executeReadOnly(targetUser)
+        : Optional.ofNullable(getUserShowcaseUseCase.executeReadOnly(targetUser, false))
+            .orElseGet(() -> getUserShowcaseUseCase.executeReadOnly(targetUser));
     User evaluatedUser = fullShowcase.user();
-    int streak = canViewStats ? fullShowcase.effectiveStreak() : effectiveStreakResolver.resolve(evaluatedUser);
+    int streak = canViewStats ? fullShowcase.effectiveStreak() : 0;
 
     SocialUserSummary summary = SocialUserSummary.fromUserForViewer(evaluatedUser, streak, relationshipStatus);
 
@@ -110,7 +151,7 @@ public class GetPublicUserShowcaseUseCase {
         .filter(h -> switch (h.getHighlightType()) {
           case ACHIEVEMENT, ARTIFACT -> canViewAchievements;
           case STAT_METRIC, TASK_STREAK -> canViewStats;
-          case ACCOUNT_BADGE -> canViewProfile;
+          case ACCOUNT_BADGE -> canViewProfile && (canViewStats || !isLevelRankBadge(h));
         })
         .toList();
 
@@ -134,5 +175,11 @@ public class GetPublicUserShowcaseUseCase {
         filteredHighlights,
         filteredAchievements,
         filteredArtifacts);
+  }
+
+  private static boolean isLevelRankBadge(ProfileHighlight highlight) {
+    return highlight.getHighlightKey()
+        .map(key -> "LEVEL_RANK".equalsIgnoreCase(key.trim()))
+        .orElse(false);
   }
 }

@@ -4,7 +4,7 @@ import { ADMIN_DEFAULT_PAGE_SIZE } from "@/constants/admin";
 import type { AdminOverviewDTO, AdminUsersPageResponse } from "@/types/admin";
 
 /**
- * Obtém as métricas gerais do sistema (Resend, Usuários, Banco) com cache privado de 30s.
+ * Obtém as métricas gerais do sistema (Resend, Usuários, Banco) com cache privado (`private30`, 3 min com invalidação imediata via `updateTag`).
  */
 export async function getAdminOverview(): Promise<AdminOverviewDTO | null> {
   "use cache: private";
@@ -31,7 +31,7 @@ export interface GetAdminUsersParams {
 }
 
 /**
- * Lista usuários paginados com métricas de e-mail e armazenamento via cache privado de 30s.
+ * Lista usuários paginados com métricas de e-mail e armazenamento via cache privado (`private30`, 3 min com invalidação imediata via `updateTag`).
  */
 export async function getAdminUsers({
   search = "",

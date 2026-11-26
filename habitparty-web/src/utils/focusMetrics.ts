@@ -1,29 +1,67 @@
 import type { ActivityPeriodOption } from "@/constants/dashboard";
 import type { AppLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
+import type { DashboardFocusRecordSummary } from "@/types/dashboard";
 import type {
   FocusMetrics,
   FocusRecord,
+  FocusSummaryData,
   WeeklyFocusDayData,
 } from "@/types/focus";
+import type { DateFormat } from "@/types/ui";
 import {
   formatDateParts,
+  formatNumericCalendarDate,
   getDateKeyInTimeZone,
   getDatePartsInTimeZone,
   getOffsetDateString,
   getShortWeekDays,
+  hasTimeZoneSuffix,
   parseServerDate,
+  resolveEffectiveDateFormat,
 } from "./date";
+import { getRewardableFocusMinutes } from "./focusDailyYield";
 import { calculateRecordReward } from "./focusRewards";
 
-export { calculateRecordReward };
-
-export interface FocusMetricsCalculationResult {
-  metrics: FocusMetrics;
+export interface WeeklyFocusChartResult {
   weeklyDays: WeeklyFocusDayData[];
   totalWeekMinutes: number;
   weekLabel: string;
   weekDateRange: string;
+}
+
+export interface FocusMetricsCalculationResult extends WeeklyFocusChartResult {
+  metrics: FocusMetrics;
+}
+
+export interface FocusSinglePassAggregation {
+  metrics: FocusMetrics;
+  dayMinutesMap: Record<string, number>;
+  globalTodayProductiveMinutes: number;
+  globalTodayRewardableMinutes: number;
+  todayDurationByActivityId: Record<string, number>;
+}
+
+/**
+ * Extrai a fatia `FocusMetrics` de um `FocusSummaryData` retornado pelo backend.
+ */
+export function focusSummaryToMetrics(summary: FocusSummaryData): FocusMetrics {
+  return {
+    todayRecordsCount: summary.todayRecordsCount,
+    totalRecordsCount: summary.totalRecordsCount,
+    activeStreakDays: summary.activeStreakDays,
+    totalActiveDays: summary.totalActiveDays,
+    todayXp: summary.todayXp,
+    totalXp: summary.totalXp,
+    todayGold: summary.todayGold,
+    totalGold: summary.totalGold,
+    todayFocusMinutes: summary.todayFocusMinutes,
+    totalFocusMinutes: summary.totalFocusMinutes,
+    todayPomosCount: summary.todayPomosCount,
+    totalPomosCount: summary.totalPomosCount,
+    todayAverageMinutes: summary.todayAverageMinutes,
+    totalAverageMinutes: summary.totalAverageMinutes,
+  };
 }
 
 /**
@@ -42,8 +80,7 @@ export function toLocalDateKey(
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed;
   }
-  const timePart = trimmed.split("T")[1] ?? trimmed.split(" ")[1] ?? "";
-  const hasExplicitTz = /([zZ]|[+-]\d{2}(?::?\d{2})?)$/.test(timePart.trim());
+  const hasExplicitTz = hasTimeZoneSuffix(trimmed);
   if (!hasExplicitTz) {
     // String naive (sem offset) já representa wall-clock; extrair YYYY-MM-DD direto evita dupla conversão.
     const datePrefix = trimmed.split("T")[0]?.split(" ")[0] ?? "";
@@ -63,7 +100,7 @@ export function toLocalDateKey(
  * respeitando o fuso horário do usuário.
  */
 export function calculateActivityDurationMap(
-  records: FocusRecord[],
+  records: DashboardFocusRecordSummary[],
   period: ActivityPeriodOption,
   selectedDate?: string | null,
   referenceDate: Date = new Date(),
@@ -166,20 +203,26 @@ function calculateConsecutiveStreak(
 }
 
 /**
- * Calcula métricas agregadas e dados do gráfico semanal de foco de forma pura e determinística.
- * Suporta weekOffset para navegar por semanas anteriores (< Esta Semana >).
+ * Agrega métricas, mapa diário, totais produtivos/elegíveis do dia e mapa por atividade
+ * em uma única varredura O(N) sobre os registros (substituindo 4 varreduras separadas).
  */
-export function calculateFocusMetrics(
+export function aggregateFocusRecordsSinglePass(
   records: FocusRecord[],
-  weekOffset = 0,
-  referenceDate: Date = new Date(),
-  locale: AppLocale = "pt-BR",
-  timeZone?: string | null,
-): FocusMetricsCalculationResult {
-  const t = getUtilityTranslator(locale, "focus.metrics");
-  const shortWeekDays = getShortWeekDays(locale);
-  const todayStr = getDateKeyInTimeZone(referenceDate, timeZone);
-  const yesterdayStr = getOffsetDateString(-1, referenceDate, timeZone);
+  options: {
+    referenceDate?: Date;
+    todayStr?: string;
+    yesterdayStr?: string;
+    timeZone?: string | null;
+    activityIdFilter?: string | null;
+  } = {},
+): FocusSinglePassAggregation {
+  const referenceDate = options.referenceDate ?? new Date();
+  const timeZone = options.timeZone;
+  const todayStr =
+    options.todayStr || getDateKeyInTimeZone(referenceDate, timeZone);
+  const yesterdayStr =
+    options.yesterdayStr || getOffsetDateString(-1, referenceDate, timeZone);
+  const activityIdFilter = options.activityIdFilter ?? null;
 
   let todayCount = 0;
   let totalCount = 0;
@@ -192,6 +235,9 @@ export function calculateFocusMetrics(
   let todayGold = 0;
   let totalGold = 0;
 
+  let globalTodayProductiveMinutes = 0;
+  let globalTodayRewardableMinutes = 0;
+  const todayDurationByActivityId: Record<string, number> = {};
   const dayMinutesMap: Record<string, number> = {};
   const uniqueDays = new Set<string>();
 
@@ -203,24 +249,35 @@ export function calculateFocusMetrics(
     if (!recDate) continue;
 
     const mins = rec.durationMinutes || 0;
-    // Trava de integridade: ignora sessões vazias/acidentais sem duração mínima de 1 minuto
     if (mins <= 0) continue;
+
+    const isToday = recDate === todayStr;
+    if (isToday) {
+      globalTodayProductiveMinutes += mins;
+      globalTodayRewardableMinutes += getRewardableFocusMinutes(mins);
+      if (rec.focusActivityId) {
+        todayDurationByActivityId[rec.focusActivityId] =
+          (todayDurationByActivityId[rec.focusActivityId] || 0) + mins;
+      }
+    }
+
+    if (activityIdFilter && rec.focusActivityId !== activityIdFilter) {
+      continue;
+    }
 
     totalCount++;
     uniqueDays.add(recDate);
     totalMinutes += mins;
 
-    // Regra de Pomodoro: somente ciclos completados com sucesso pontuam como pomo
     const pomos =
       rec.completedPomos && rec.completedPomos > 0 ? rec.completedPomos : 0;
     totalPomos += pomos;
 
-    // Regra: Somente atividades geram XP e Moedas. Mochila (rec.inventoryItemId) gera 0.
     const reward = calculateRecordReward(rec);
     totalXp += reward.xp;
     totalGold += reward.coins;
 
-    if (recDate === todayStr) {
+    if (isToday) {
       todayCount++;
       todayMinutes += mins;
       todayPomos += pomos;
@@ -230,6 +287,57 @@ export function calculateFocusMetrics(
 
     dayMinutesMap[recDate] = (dayMinutesMap[recDate] || 0) + mins;
   }
+
+  const todayAverageMinutes =
+    todayCount > 0 ? Math.round(todayMinutes / todayCount) : 0;
+  const totalAverageMinutes =
+    totalCount > 0 ? Math.round(totalMinutes / totalCount) : 0;
+
+  const metrics: FocusMetrics = {
+    todayRecordsCount: todayCount,
+    totalRecordsCount: totalCount,
+    activeStreakDays: calculateConsecutiveStreak(
+      uniqueDays,
+      todayStr,
+      yesterdayStr,
+    ),
+    totalActiveDays: uniqueDays.size,
+    todayXp,
+    totalXp,
+    todayGold: Math.round(todayGold * 100) / 100,
+    totalGold: Math.round(totalGold * 100) / 100,
+    todayFocusMinutes: todayMinutes,
+    totalFocusMinutes: totalMinutes,
+    todayPomosCount: todayPomos,
+    totalPomosCount: totalPomos,
+    todayAverageMinutes,
+    totalAverageMinutes,
+  };
+
+  return {
+    metrics,
+    dayMinutesMap,
+    globalTodayProductiveMinutes,
+    globalTodayRewardableMinutes,
+    todayDurationByActivityId,
+  };
+}
+
+/**
+ * Monta os 7 dias do gráfico semanal em O(7) a partir do mapa `YYYY-MM-DD -> minutos`,
+ * desacoplando a navegação semanal (< Esta Semana >) do cálculo de métricas agregadas.
+ */
+export function buildWeeklyFocusChartData(
+  dayMinutesMap: Record<string, number>,
+  weekOffset = 0,
+  referenceDate: Date = new Date(),
+  locale: AppLocale = "pt-BR",
+  timeZone?: string | null,
+  dateFormat?: DateFormat,
+): WeeklyFocusChartResult {
+  const t = getUtilityTranslator(locale, "focus.metrics");
+  const shortWeekDays = getShortWeekDays(locale);
+  const todayStr = getDateKeyInTimeZone(referenceDate, timeZone);
 
   const refParts = getDatePartsInTimeZone(referenceDate, timeZone);
   const targetUtc = new Date(
@@ -276,12 +384,11 @@ export function calculateFocusMetrics(
     });
   }
 
-  const weeklyDaysWithHeight = calculatedDays.map((item) => ({
+  const weeklyDays = calculatedDays.map((item) => ({
     ...item,
     heightPercent: Math.min(100, Math.round((item.minutes / maxDayMins) * 100)),
   }));
 
-  // Rótulo conciso da semana para caber perfeitamente na sidebar sem quebrar o título
   let weekLabel = t("thisWeek");
   if (weekOffset === -1) {
     weekLabel = t("lastWeek");
@@ -291,7 +398,6 @@ export function calculateFocusMetrics(
     weekLabel = t("offsetWeekPositive", { offset: weekOffset });
   }
 
-  // Range de data (ex: "12/10 a 18/10" ou "10/12 to 10/18")
   const endOfWeekUtc = new Date(
     Date.UTC(
       startOfWeekUtc.getUTCFullYear(),
@@ -299,48 +405,60 @@ export function calculateFocusMetrics(
       startOfWeekUtc.getUTCDate() + 6,
     ),
   );
-  const startDay = String(startOfWeekUtc.getUTCDate()).padStart(2, "0");
-  const startMonth = String(startOfWeekUtc.getUTCMonth() + 1).padStart(2, "0");
-  const endDay = String(endOfWeekUtc.getUTCDate()).padStart(2, "0");
-  const endMonth = String(endOfWeekUtc.getUTCMonth() + 1).padStart(2, "0");
-  const weekDateRange = t("dateRange", {
-    startDay,
-    startMonth,
-    endDay,
-    endMonth,
+  const effectiveFormat = resolveEffectiveDateFormat(dateFormat, locale);
+  const startFormatted = formatNumericCalendarDate(
+    startOfWeekUtc.getUTCFullYear(),
+    startOfWeekUtc.getUTCMonth() + 1,
+    startOfWeekUtc.getUTCDate(),
+    effectiveFormat,
+    { includeYear: false },
+  );
+  const endFormatted = formatNumericCalendarDate(
+    endOfWeekUtc.getUTCFullYear(),
+    endOfWeekUtc.getUTCMonth() + 1,
+    endOfWeekUtc.getUTCDate(),
+    effectiveFormat,
+    { includeYear: false },
+  );
+  const weekDateRange = t("dateRangeFormatted", {
+    start: startFormatted,
+    end: endFormatted,
   });
 
-  const todayAverageMinutes =
-    todayCount > 0 ? Math.round(todayMinutes / todayCount) : 0;
-  const totalAverageMinutes =
-    totalCount > 0 ? Math.round(totalMinutes / totalCount) : 0;
-
-  const metrics: FocusMetrics = {
-    todayRecordsCount: todayCount,
-    totalRecordsCount: totalCount,
-    activeStreakDays: calculateConsecutiveStreak(
-      uniqueDays,
-      todayStr,
-      yesterdayStr,
-    ),
-    totalActiveDays: uniqueDays.size,
-    todayXp,
-    totalXp,
-    todayGold: Math.round(todayGold * 100) / 100,
-    totalGold: Math.round(totalGold * 100) / 100,
-    todayFocusMinutes: todayMinutes,
-    totalFocusMinutes: totalMinutes,
-    todayPomosCount: todayPomos,
-    totalPomosCount: totalPomos,
-    todayAverageMinutes,
-    totalAverageMinutes,
-  };
-
   return {
-    metrics,
-    weeklyDays: weeklyDaysWithHeight,
+    weeklyDays,
     totalWeekMinutes: weekTotal,
     weekLabel,
     weekDateRange,
+  };
+}
+
+/**
+ * Calcula métricas agregadas e dados do gráfico semanal de foco de forma pura e determinística.
+ * Suporta weekOffset para navegar por semanas anteriores (< Esta Semana >).
+ */
+export function calculateFocusMetrics(
+  records: FocusRecord[],
+  weekOffset = 0,
+  referenceDate: Date = new Date(),
+  locale: AppLocale = "pt-BR",
+  timeZone?: string | null,
+  dateFormat?: DateFormat,
+): FocusMetricsCalculationResult {
+  const { metrics, dayMinutesMap } = aggregateFocusRecordsSinglePass(records, {
+    referenceDate,
+    timeZone,
+  });
+  const weekly = buildWeeklyFocusChartData(
+    dayMinutesMap,
+    weekOffset,
+    referenceDate,
+    locale,
+    timeZone,
+    dateFormat,
+  );
+  return {
+    metrics,
+    ...weekly,
   };
 }

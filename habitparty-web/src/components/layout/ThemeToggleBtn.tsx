@@ -58,7 +58,7 @@ export function ThemeToggleBtn({
         type="button"
         onClick={toggleTheme}
         className={cn(
-          "relative inline-flex items-center justify-center h-9 w-9 rounded-xl transition-colors duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group",
+          "relative inline-flex items-center justify-center h-9 w-9 rounded-xl transition-colors duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-focus-ring group",
           "border border-neutral-700 bg-card hover:bg-surface-hover hover:border-primary/40 text-neutral-200 hover:text-neutral-50 shadow-2xs",
           "dark:border-white/12 dark:bg-white/[0.04] dark:hover:bg-white/[0.09] dark:hover:border-gold/40 dark:text-neutral-200 dark:hover:text-white dark:shadow-none",
           className,
@@ -89,7 +89,7 @@ export function ThemeToggleBtn({
       type="button"
       onClick={toggleTheme}
       className={cn(
-        "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-colors text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none",
+        "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-colors text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none",
         className,
       )}
       aria-label={

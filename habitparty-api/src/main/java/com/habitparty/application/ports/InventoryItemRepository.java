@@ -10,6 +10,7 @@ import com.habitparty.core.domain.enums.InventoryItemStatus;
 public interface InventoryItemRepository {
     InventoryItem save(InventoryItem inventoryItem);
     Optional<InventoryItem> findById(UUID id);
+    Optional<InventoryItem> findByIdForUpdate(UUID id);
     List<InventoryItem> saveAll(List<InventoryItem> inventoryItems);
     int countByUserId(UUID userId);
     

@@ -103,12 +103,13 @@ class RedeemRewardUseCaseTest {
         RewardPackageLevel.NONE);
 
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtReward));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
 
     useCase.execute(rewardId, userId);
 
     assertEquals(new BigDecimal("75.00"), user.getCurrentCoins());
     assertEquals(0, user.getStats().getTotalRewardsRedeemed());
+    verify(userRepository).findByIdForUpdate(userId);
     verify(userRepository).save(user);
     verify(inventoryItemRepository, never()).countByUserId(any());
     verify(inventoryItemRepository, never()).getMaxOrderIndex(any());
@@ -157,7 +158,7 @@ class RedeemRewardUseCaseTest {
         RewardPackageLevel.BASIC);
 
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtCoupon));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
     assertThrows(DomainValidationException.class, () -> useCase.execute(rewardId, userId));
 
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtBox));
@@ -186,13 +187,14 @@ class RedeemRewardUseCaseTest {
         null);
 
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(regularReward));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
     when(inventoryItemRepository.countByUserId(userId)).thenReturn(2);
     when(inventoryItemRepository.getMaxOrderIndex(userId)).thenReturn(2);
 
     useCase.execute(rewardId, userId);
 
     assertEquals(new BigDecimal("85.00"), user.getCurrentCoins());
+    verify(userRepository).findByIdForUpdate(userId);
     verify(inventoryItemRepository).save(any());
     ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
     verify(transactionHistoryRepository).save(txCaptor.capture());
@@ -218,61 +220,10 @@ class RedeemRewardUseCaseTest {
         null);
 
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(regularReward));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
     when(inventoryItemRepository.countByUserId(userId)).thenReturn(20);
 
     assertThrows(LimitExceededException.class, () -> useCase.execute(rewardId, userId));
     verify(inventoryItemRepository, never()).save(any());
-  }
-
-  @Test
-  @DisplayName("Multiplicador maior que 1x deve ser rejeitado também para Dívidas (quitação única e descartável)")
-  void shouldRejectMultiplierGreaterThanOneForDebtReward() {
-    Reward debtReward = new Reward(
-        rewardId,
-        userId,
-        "Videogame (30m)",
-        new BigDecimal("8.00"),
-        List.of(),
-        RewardType.SINGLE_USE,
-        0,
-        "gamepad",
-        null,
-        RewardCategory.DEBT,
-        null,
-        RewardPackageLevel.NONE);
-
-    when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtReward));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-    assertThrows(DomainValidationException.class, () -> useCase.execute(rewardId, userId, 2));
-    verify(userRepository, never()).save(any());
-    verify(transactionHistoryRepository, never()).save(any());
-    verify(rewardRepository, never()).deleteById(any());
-  }
-
-  @Test
-  @DisplayName("Multiplicador maior que 1x deve ser rejeitado para recompensas que não são Dívida")
-  void shouldRejectMultiplierGreaterThanOneForNonDebtReward() {
-    Reward regularReward = new Reward(
-        rewardId,
-        userId,
-        "Chocolate",
-        new BigDecimal("15.00"),
-        List.of(),
-        RewardType.SINGLE_USE,
-        0,
-        "pizza",
-        null,
-        RewardCategory.ENTERTAINMENT,
-        null,
-        RewardPackageLevel.BASIC);
-
-    when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(regularReward));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-    assertThrows(DomainValidationException.class, () -> useCase.execute(rewardId, userId, 2));
-    verify(userRepository, never()).save(any());
-    verify(transactionHistoryRepository, never()).save(any());
   }
 }

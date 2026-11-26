@@ -1,49 +1,86 @@
 "use client";
 
-import { DndContext, DragOverlay, defaultDropAnimation } from "@dnd-kit/core";
-import {
-  restrictToVerticalAxis,
-  restrictToWindowEdges,
-} from "@dnd-kit/modifiers";
 import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarCheck, GripVertical, Loader2, Plus } from "lucide-react";
+import { CheckCircle2, GripVertical, MoreVertical, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { RoutineQuickAddForm } from "@/components/tasks/RoutineQuickAddForm";
+import {
+  BoardEmptyState,
+  ColumnCompletedSection,
+  useRoutineColumnTasks,
+} from "@/components/tasks/shared";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { getColumnIcon } from "@/constants/routine";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
+import { useScrollSelectedColumn } from "@/hooks/useScrollSelectedColumn";
 import type { Task } from "@/types/task";
 import type {
   RoutineTaskListProps,
   RoutineTaskListSectionProps,
 } from "@/types/task-ui";
 import { cn } from "@/utils";
+import { STOP_DRAG_PROPAGATION_PROPS } from "@/utils/dom";
+
+const DEFERRED_ROW_START_INDEX = 12;
+
+interface RoutineTaskListSectionInternalProps
+  extends RoutineTaskListSectionProps {
+  activeDraggedTaskId?: string | null;
+}
 
 const RoutineTaskListSection = memo(function RoutineTaskListSection({
   column,
   selectedColumnId,
   selectedTaskId,
   deletingTaskIds,
+  isReadOnly = false,
+  forceExpandCompleted = false,
+  activeDraggedTaskId = null,
   onAddTaskToColumn,
+  onQuickCreateTask,
   onOpenDetails,
   onEditTask,
   onContextMenu,
+  onOpenColumnMenu,
   onToggleComplete,
   onHabitChange,
   onStartFocus,
   onLoadArchivedCompleted,
-}: RoutineTaskListSectionProps) {
+}: RoutineTaskListSectionInternalProps) {
   const t = useTranslations("tasks.taskList");
   const tColumn = useTranslations("tasks.column");
-  const [isLoadingArchivedCompleted, setIsLoadingArchivedCompleted] =
-    useState(false);
-  const archivedTotalCount = column.archivedTotalCount ?? 0;
-  const archivedCompletedCount = column.archivedCompletedCount ?? 0;
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+
+  const {
+    isCompletedExpanded,
+    toggleCompletedExpanded,
+    archivedCompletedCount,
+    activeTasks,
+    completedTodoTasks,
+    draggedCompletedTask,
+    activeTaskIds,
+    completedTaskIds,
+    totalTasks,
+    completedTasks,
+    isAllDone,
+    hasCompletedSection,
+    isCompletelyEmpty,
+  } = useRoutineColumnTasks(column, forceExpandCompleted, activeDraggedTaskId);
+
+  const sortableData = useMemo(
+    () => ({
+      type: "Column" as const,
+      column,
+    }),
+    [column],
+  );
+
   const {
     attributes,
     listeners,
@@ -53,30 +90,20 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
     isDragging,
   } = useSortable({
     id: column.id,
-    data: {
-      type: "Column",
-      column,
-    },
+    data: sortableData,
+    disabled: isReadOnly,
   });
 
   const sectionRef = useRef<HTMLElement | null>(null);
+  const setCombinedRef = useCallback(
+    (node: HTMLElement | null) => {
+      setNodeRef(node);
+      sectionRef.current = node;
+    },
+    [setNodeRef],
+  );
   const isSelected = selectedColumnId === column.id;
-
-  useEffect(() => {
-    if (isSelected && sectionRef.current) {
-      const timer = setTimeout(() => {
-        sectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "nearest",
-        });
-        if (typeof window !== "undefined" && window.scrollX !== 0) {
-          window.scrollTo({ left: 0 });
-        }
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [isSelected]);
+  useScrollSelectedColumn(sectionRef, isSelected, "list");
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -84,7 +111,6 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   };
 
   const ColumnIcon = getColumnIcon(column.icon);
-  const taskIds = useMemo(() => column.tasks.map((t) => t.id), [column.tasks]);
 
   const handleOpenRowDetails = useCallback(
     (task: Task, anchorRect?: DOMRect, colId?: string) => {
@@ -107,12 +133,21 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
     [onEditTask, column.id],
   );
 
+  const handleTriggerAdd = () => {
+    if (isReadOnly) {
+      onAddTaskToColumn(column.id);
+      return;
+    }
+    if (onQuickCreateTask) {
+      setIsQuickAdding(true);
+    } else {
+      onAddTaskToColumn(column.id);
+    }
+  };
+
   return (
     <section
-      ref={(node) => {
-        setNodeRef(node);
-        sectionRef.current = node;
-      }}
+      ref={setCombinedRef}
       style={style}
       data-column-id={column.id}
       className={cn(
@@ -125,64 +160,217 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
       aria-label={t("sectionAria", { title: column.title })}
     >
       {/* Header da Seção da Coluna */}
-      <div className="flex items-center justify-between gap-3 border-b border-neutral-700/60 dark:border-white/8 pb-2">
+      <div className="flex items-center justify-between gap-2 border-b border-neutral-700/60 dark:border-white/8 pb-2">
         <div
-          {...attributes}
-          {...listeners}
+          {...(isReadOnly ? {} : listeners)}
           className={cn(
-            "flex items-center gap-2 cursor-grab active:cursor-grabbing touch-manipulation select-none py-0.5 px-1 rounded-lg hover:bg-white/5 transition-colors group/col-header min-w-0 flex-1",
+            "flex items-center gap-2 touch-manipulation select-none py-0.5 px-1 rounded-lg hover:bg-white/5 transition-colors group/col-header min-w-0 flex-1",
+            isReadOnly
+              ? "cursor-default"
+              : "cursor-grab active:cursor-grabbing",
             isDragging && "touch-none",
           )}
-          title={t("dragListTitle", { title: column.title })}
+          title={
+            isReadOnly
+              ? column.title
+              : t("dragListTitle", { title: column.title })
+          }
         >
-          {/* Grip de Reordenação da Coluna na Lista */}
-          <div className="flex items-center justify-center p-0.5 text-neutral-500 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors shrink-0">
-            <GripVertical size={15} />
-          </div>
+          {!isReadOnly && (
+            <button
+              type="button"
+              {...(() => {
+                const { role: _dndRole, ...rest } = attributes;
+                return rest;
+              })()}
+              {...listeners}
+              aria-label={t("dragListTitle", { title: column.title })}
+              className="flex items-center justify-center p-0.5 rounded text-neutral-500 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold hover:bg-white/10 transition-colors shrink-0 cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
+            >
+              <GripVertical size={15} aria-hidden="true" />
+            </button>
+          )}
 
-          <div className="rounded-lg bg-primary/10 dark:bg-primary-dark/40 border border-primary/25 dark:border-white/10 text-primary dark:text-gold flex items-center justify-center shrink-0 w-7 h-7">
+          <div
+            className={cn(
+              "rounded-lg border flex items-center justify-center shrink-0 w-7 h-7 transition-colors",
+              isAllDone
+                ? "bg-success-500/15 border-success-500/40 text-success-500"
+                : "bg-primary/10 dark:bg-primary-dark/40 border-primary/25 dark:border-white/10 text-primary dark:text-gold",
+            )}
+          >
             <ColumnIcon size={15} />
           </div>
           <h3 className="font-bold text-neutral-100 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors truncate min-w-0 text-sm">
             {column.title}
           </h3>
-          <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/10 border border-neutral-700 dark:border-white/15 text-neutral-300 shrink-0">
-            {column.tasks.length + archivedTotalCount}
+          <span
+            title={
+              totalTasks > 0
+                ? tColumn("completedProgressTitle", {
+                    completed: completedTasks,
+                    total: totalTasks,
+                  })
+                : undefined
+            }
+            className={cn(
+              "text-tiny font-bold px-1.5 py-0.5 rounded-full border shrink-0 transition-colors",
+              isAllDone
+                ? "bg-success-500/15 border-success-500/40 text-success-500"
+                : completedTasks > 0
+                  ? "bg-gold/15 border-gold/35 text-gold"
+                  : "bg-surface dark:bg-white/10 border-neutral-700 dark:border-white/15 text-neutral-300",
+            )}
+          >
+            {completedTasks > 0
+              ? `${completedTasks}/${totalTasks}`
+              : totalTasks}
           </span>
         </div>
 
-        <button
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onClick={() => onAddTaskToColumn(column.id)}
-          title={t("addTaskInColumnTitle", { title: column.title })}
-          className="flex items-center gap-1 text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-white/5 rounded-md transition-colors cursor-pointer shrink-0 px-2.5 py-1 text-xs"
-        >
-          <Plus size={14} />
-          <span className="hidden sm:inline">{t("addTaskButton")}</span>
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {!isReadOnly && (
+            <button
+              type="button"
+              {...STOP_DRAG_PROPAGATION_PROPS}
+              onClick={handleTriggerAdd}
+              title={t("addTaskInColumnTitle", { title: column.title })}
+              className="flex items-center gap-1 text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-white/5 rounded-md transition-colors cursor-pointer shrink-0 px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+            >
+              <Plus size={14} aria-hidden="true" />
+              <span className="hidden sm:inline">{t("addTaskButton")}</span>
+            </button>
+          )}
+
+          {onOpenColumnMenu && (
+            <button
+              type="button"
+              {...STOP_DRAG_PROPAGATION_PROPS}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenColumnMenu(e, column);
+              }}
+              aria-label={tColumn("optionsAria", { title: column.title })}
+              title={tColumn("optionsTitle")}
+              className="p-1.5 rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+            >
+              <MoreVertical size={15} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Lista de Linhas de Tarefa Sortable */}
-      {column.tasks.length === 0 && archivedCompletedCount === 0 ? (
-        <div className="py-6 px-4 text-center rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-500 text-tiny bg-primary-dark/5">
-          {t("emptyColumnState")}
-        </div>
-      ) : (
-        <>
-          {column.tasks.length > 0 && (
-            <SortableContext
-              items={taskIds}
-              strategy={verticalListSortingStrategy}
+      {/* Criação Rápida Inline */}
+      {isQuickAdding && !isReadOnly && (
+        <RoutineQuickAddForm
+          columnId={column.id}
+          onClose={() => setIsQuickAdding(false)}
+          onQuickCreateTask={onQuickCreateTask}
+          onOpenDetailedForm={onAddTaskToColumn}
+        />
+      )}
+
+      {/* Lista de Linhas de Tarefa Sortable (Ativas separadas de Concluídas) */}
+      <SortableContext
+        items={activeTaskIds}
+        strategy={verticalListSortingStrategy}
+      >
+        {isCompletelyEmpty && !isQuickAdding ? (
+          isReadOnly ? (
+            <div className="py-6 px-4 text-center rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-500 text-tiny bg-primary-dark/5">
+              {t("emptyColumnState")}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleTriggerAdd}
+              className="w-full py-5 px-4 text-center rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 hover:border-primary/45 dark:hover:border-gold/50 text-neutral-400 hover:text-primary dark:hover:text-gold text-xs font-medium bg-primary-dark/5 hover:bg-card/50 transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
             >
-              <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none min-h-6">
-                {column.tasks.map((task) => (
+              <Plus size={14} aria-hidden="true" />
+              <span>{t("emptyColumnState")}</span>
+            </button>
+          )
+        ) : activeTasks.length === 0 &&
+          hasCompletedSection &&
+          !isQuickAdding ? (
+          <div className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border border-dashed border-success-500/35 bg-success-500/[0.04] text-xs">
+            <CheckCircle2
+              size={16}
+              className="text-success-500 shrink-0"
+              aria-hidden="true"
+            />
+            <span className="font-semibold text-neutral-200">
+              {tColumn("allDoneEmptyTitle")}
+            </span>
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={handleTriggerAdd}
+                className="text-primary dark:text-gold font-semibold hover:underline cursor-pointer ml-1"
+              >
+                {tColumn("allDoneEmptyCta")}
+              </button>
+            )}
+          </div>
+        ) : activeTasks.length > 0 ? (
+          <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none min-h-6">
+            {activeTasks.map((task, idx) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                className={
+                  idx >= DEFERRED_ROW_START_INDEX
+                    ? "deferred-list-row"
+                    : undefined
+                }
+                isSelected={selectedTaskId === task.id}
+                isReadOnly={isReadOnly}
+                isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
+                columnId={column.id}
+                columnTitle={column.title}
+                isSortable={true}
+                onOpenDetails={handleOpenRowDetails}
+                onEditTask={onEditTask ? handleEditRowTask : undefined}
+                onContextMenu={handleRowContextMenu}
+                onToggleCompleted={onToggleComplete}
+                onHabitChange={onHabitChange}
+                onStartFocus={onStartFocus}
+              />
+            ))}
+          </ul>
+        ) : null}
+      </SortableContext>
+
+      <SortableContext
+        items={completedTaskIds}
+        strategy={verticalListSortingStrategy}
+      >
+        {/* Seção colapsável de ToDos concluídos */}
+        {hasCompletedSection && (
+          <ColumnCompletedSection
+            columnId={column.id}
+            variant="list"
+            isExpanded={isCompletedExpanded}
+            onToggleExpanded={toggleCompletedExpanded}
+            totalCompletedCount={
+              completedTodoTasks.length + archivedCompletedCount
+            }
+            archivedCompletedCount={archivedCompletedCount}
+            onLoadArchivedCompleted={onLoadArchivedCompleted}
+          >
+            {completedTodoTasks.length > 0 && (
+              <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none">
+                {completedTodoTasks.map((task, idx) => (
                   <TaskRow
                     key={task.id}
                     task={task}
+                    className={
+                      idx >= DEFERRED_ROW_START_INDEX
+                        ? "deferred-list-row"
+                        : undefined
+                    }
                     isSelected={selectedTaskId === task.id}
+                    isReadOnly={isReadOnly}
                     isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                     columnId={column.id}
                     columnTitle={column.title}
@@ -196,40 +384,26 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
                   />
                 ))}
               </ul>
-            </SortableContext>
-          )}
+            )}
+          </ColumnCompletedSection>
+        )}
 
-          {archivedCompletedCount > 0 && onLoadArchivedCompleted && (
-            <button
-              type="button"
-              disabled={isLoadingArchivedCompleted}
-              onClick={async () => {
-                if (isLoadingArchivedCompleted) return;
-                setIsLoadingArchivedCompleted(true);
-                try {
-                  await onLoadArchivedCompleted(column.id);
-                } finally {
-                  setIsLoadingArchivedCompleted(false);
-                }
-              }}
-              className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 px-3 py-2 text-xs text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
-            >
-              {isLoadingArchivedCompleted ? (
-                <>
-                  <Loader2 size={13} className="animate-spin shrink-0" />
-                  <span>{tColumn("loadingArchivedCompleted")}</span>
-                </>
-              ) : (
-                <span>
-                  {tColumn("loadArchivedCompleted", {
-                    count: archivedCompletedCount,
-                  })}
-                </span>
-              )}
-            </button>
-          )}
-        </>
-      )}
+        {/* Mantém a linha concluída arrastada montada caso o usuário passe por cima de uma seção recolhida */}
+        {!isCompletedExpanded && draggedCompletedTask && (
+          <ul
+            aria-hidden="true"
+            className="h-0 overflow-hidden pointer-events-none opacity-0 p-0 m-0 list-none"
+          >
+            <TaskRow
+              task={draggedCompletedTask}
+              columnId={column.id}
+              columnTitle={column.title}
+              isReadOnly={isReadOnly}
+              isSortable={true}
+            />
+          </ul>
+        )}
+      </SortableContext>
     </section>
   );
 });
@@ -240,21 +414,37 @@ export function RoutineTaskList({
   selectedColumnId,
   selectedTaskId,
   deletingTaskIds,
+  isReadOnly = false,
+  forceExpandCompleted = false,
+  hasActiveFilters = false,
+  onClearFilters,
+  onManageColumns,
+  onAddColumn,
   onAddTaskToColumn,
+  onQuickCreateTask,
   onOpenDetails,
   onEditTask,
   onContextMenu,
+  onOpenColumnMenu,
   onToggleComplete,
   onHabitChange,
   onStartFocus,
   onLoadArchivedCompleted,
+  activeDraggedTaskId: activeDraggedTaskIdProp = null,
   dndState,
 }: RoutineTaskListProps) {
   const t = useTranslations("tasks.taskList");
+  const resolvedDraggedTaskId =
+    activeDraggedTaskIdProp ?? dndState?.activeTask?.id ?? null;
 
   const visibleColumns = useMemo(
     () => columns.filter((col) => visibleColumnIds.includes(col.id)),
     [columns, visibleColumnIds],
+  );
+
+  const visibleColumnIdsOrdered = useMemo(
+    () => visibleColumns.map((col) => col.id),
+    [visibleColumns],
   );
 
   const totalTasksCount = useMemo(
@@ -288,97 +478,66 @@ export function RoutineTaskList({
         <span className="text-right pr-1 min-w-0">{t("headerActions")}</span>
       </div>
 
-      {visibleColumns.length === 0 ? (
-        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-neutral-700/80 dark:border-white/15 bg-primary-dark/10">
-          <CalendarCheck size={32} className="text-neutral-500 mb-2" />
-          <p className="text-body-m font-bold text-neutral-200">
-            {t("noVisibleColumnsTitle")}
-          </p>
-          <p className="text-body-s text-neutral-400 mt-1">
-            {t("noVisibleColumnsDesc")}
-          </p>
-        </div>
-      ) : totalTasksCount === 0 ? (
-        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-neutral-700/80 dark:border-white/15 bg-primary-dark/10">
-          <CalendarCheck size={32} className="text-gold mb-2" />
-          <p className="text-body-m font-bold text-neutral-200">
-            {t("allClearTitle")}
-          </p>
-          <p className="text-body-s text-neutral-400 mt-1">
-            {t("allClearDesc")}
-          </p>
-        </div>
+      {columns.length === 0 ? (
+        <BoardEmptyState
+          variant="no_columns"
+          isReadOnly={isReadOnly}
+          onAddColumn={onAddColumn}
+        />
+      ) : visibleColumns.length === 0 ? (
+        <BoardEmptyState
+          variant="all_hidden"
+          onManageColumns={onManageColumns}
+        />
+      ) : totalTasksCount === 0 && hasActiveFilters ? (
+        <BoardEmptyState
+          variant="no_filter_matches"
+          onClearFilters={onClearFilters}
+        />
       ) : (
         <SortableContext
-          items={visibleColumns.map((c) => c.id)}
+          items={visibleColumnIdsOrdered}
           strategy={verticalListSortingStrategy}
         >
-          {visibleColumns.map((col) => (
-            <RoutineTaskListSection
-              key={col.id}
-              column={col}
-              selectedColumnId={selectedColumnId}
-              selectedTaskId={selectedTaskId}
-              deletingTaskIds={deletingTaskIds}
-              onAddTaskToColumn={onAddTaskToColumn}
-              onOpenDetails={onOpenDetails}
-              onEditTask={onEditTask}
-              onContextMenu={onContextMenu}
-              onToggleComplete={onToggleComplete}
-              onHabitChange={onHabitChange}
-              onStartFocus={onStartFocus}
-              onLoadArchivedCompleted={onLoadArchivedCompleted}
-            />
-          ))}
+          {visibleColumns.map((col) => {
+            const colHasSelected = Boolean(
+              selectedTaskId &&
+                col.tasks.some((task) => task.id === selectedTaskId),
+            );
+            const colHasDragged = Boolean(
+              resolvedDraggedTaskId &&
+                col.tasks.some((task) => task.id === resolvedDraggedTaskId),
+            );
+
+            return (
+              <RoutineTaskListSection
+                key={col.id}
+                column={col}
+                selectedColumnId={selectedColumnId}
+                selectedTaskId={colHasSelected ? selectedTaskId : undefined}
+                deletingTaskIds={deletingTaskIds}
+                isReadOnly={isReadOnly}
+                forceExpandCompleted={forceExpandCompleted}
+                activeDraggedTaskId={
+                  colHasDragged ? resolvedDraggedTaskId : null
+                }
+                onAddTaskToColumn={onAddTaskToColumn}
+                onQuickCreateTask={onQuickCreateTask}
+                onOpenDetails={onOpenDetails}
+                onEditTask={onEditTask}
+                onContextMenu={onContextMenu}
+                onOpenColumnMenu={onOpenColumnMenu}
+                onToggleComplete={onToggleComplete}
+                onHabitChange={onHabitChange}
+                onStartFocus={onStartFocus}
+                onLoadArchivedCompleted={onLoadArchivedCompleted}
+              />
+            );
+          })}
         </SortableContext>
       )}
     </div>
   );
 
-  if (!dndState) {
-    return listContent;
-  }
-
-  return (
-    <DndContext
-      id="routine-list-dnd"
-      sensors={dndState.sensors}
-      collisionDetection={dndState.collisionDetection}
-      modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
-      {...dndState.handlers}
-    >
-      {listContent}
-
-      <DragOverlay dropAnimation={defaultDropAnimation}>
-        {dndState.activeColumn && (
-          <div className="opacity-95 shadow-2xl p-3 rounded-xl bg-surface border border-gold/70 flex items-center gap-2.5">
-            <GripVertical size={14} className="text-gold" />
-            <span className="font-bold text-neutral-100 text-sm">
-              {dndState.activeColumn.title}
-            </span>
-            <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/10 text-neutral-300">
-              {t("overlayTasksCount", {
-                count: dndState.activeColumn.tasks.length,
-              })}
-            </span>
-          </div>
-        )}
-        {dndState.activeTask && (
-          <div className="opacity-95 shadow-2xl scale-102">
-            <TaskRow
-              task={dndState.activeTask}
-              columnId={dndState.activeTask.columnId || ""}
-              columnTitle={
-                columns.find((c) => c.id === dndState.activeTask?.columnId)
-                  ?.title
-              }
-              onStartFocus={onStartFocus}
-              isSortable
-              isOverlay
-            />
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
-  );
+  return listContent;
 }

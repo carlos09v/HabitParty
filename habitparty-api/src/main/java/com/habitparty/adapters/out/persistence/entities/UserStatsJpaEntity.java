@@ -13,100 +13,134 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Version;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "user_stats")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserStatsJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class UserStatsJpaEntity extends BaseUuidJpaEntity {
 
   @Id
+  @ToString.Include
   @Column(name = "user_id")
-  private UUID userId;
+  private UUID id;
 
   @OneToOne(fetch = FetchType.LAZY)
   @MapsId
   @JoinColumn(name = "user_id")
   private UserJpaEntity user;
 
+  @Builder.Default
   @Column(nullable = false, name = "current_coins", precision = 10, scale = 2)
   private BigDecimal currentCoins = BigDecimal.ZERO;
 
+  @Builder.Default
   @Column(nullable = false, name = "total_gold_earned", precision = 10, scale = 2)
   private BigDecimal totalGoldEarned = BigDecimal.ZERO;
 
+  @Builder.Default
   @Column(name = "total_xp", nullable = false, columnDefinition = "int default 0")
   private int totalXp = 0;
 
+  @Builder.Default
   @Column(name = "current_streak", nullable = false, columnDefinition = "int default 0")
   private int currentStreak = 0;
 
+  @Builder.Default
   @Column(name = "highest_streak", nullable = false, columnDefinition = "int default 0")
   private int highestStreak = 0;
 
   @Column(name = "last_streak_date")
   private LocalDate lastStreakDate;
 
+  @Builder.Default
   @Column(name = "total_tasks_completed", nullable = false, columnDefinition = "int default 0")
   private int totalTasksCompleted = 0;
 
+  @Builder.Default
   @Column(name = "total_hard_tasks_completed", nullable = false, columnDefinition = "int default 0")
   private int totalHardTasksCompleted = 0;
 
+  @Builder.Default
   @Column(name = "total_hardcore_tasks_completed", nullable = false, columnDefinition = "int default 0")
   private int totalHardcoreTasksCompleted = 0;
 
+  @Builder.Default
   @Column(name = "total_focus_minutes", nullable = false, columnDefinition = "int default 0")
   private int totalFocusMinutes = 0;
 
+  @Builder.Default
   @Column(name = "total_focus_sessions", nullable = false, columnDefinition = "int default 0")
   private int totalFocusSessions = 0;
 
+  @Builder.Default
   @Column(name = "longest_focus_session_minutes", nullable = false, columnDefinition = "int default 0")
   private int longestFocusSessionMinutes = 0;
 
+  @Builder.Default
   @Column(name = "total_pomodoros_completed", nullable = false, columnDefinition = "int default 0")
   private int totalPomodorosCompleted = 0;
 
+  @Builder.Default
   @Column(name = "total_rewards_redeemed", nullable = false, columnDefinition = "int default 0")
   private int totalRewardsRedeemed = 0;
 
+  @Builder.Default
   @Column(name = "total_mystery_boxes_opened", nullable = false, columnDefinition = "int default 0")
   private int totalMysteryBoxesOpened = 0;
 
+  @Builder.Default
   @Column(name = "achievement_points", nullable = false, columnDefinition = "int default 0")
   private int achievementPoints = 0;
 
+  @Builder.Default
   @Column(name = "total_night_focus_sessions", nullable = false, columnDefinition = "int default 0")
   private int totalNightFocusSessions = 0;
 
+  @Builder.Default
   @Column(name = "total_early_focus_sessions", nullable = false, columnDefinition = "int default 0")
   private int totalEarlyFocusSessions = 0;
 
+  @Builder.Default
   @Column(name = "total_coupons_depleted", nullable = false, columnDefinition = "int default 0")
   private int totalCouponsDepleted = 0;
 
+  @Builder.Default
   @Column(name = "total_workspaces_created", nullable = false, columnDefinition = "int default 0")
   private int totalWorkspacesCreated = 0;
 
+  @Builder.Default
   @Column(name = "total_checklist_tasks_completed", nullable = false, columnDefinition = "int default 0")
   private int totalChecklistTasksCompleted = 0;
 
+  @Builder.Default
   @Column(name = "total_on_time_todos_completed", nullable = false, columnDefinition = "int default 0")
   private int totalOnTimeTodosCompleted = 0;
 
+  @Builder.Default
   @Column(name = "total_clean_habit_cycles", nullable = false, columnDefinition = "int default 0")
   private int totalCleanHabitCycles = 0;
 
+  @Builder.Default
   @Column(name = "total_activity_goals_met", nullable = false, columnDefinition = "int default 0")
   private int totalActivityGoalsMet = 0;
 
   @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt = LocalDateTime.now();
+  private LocalDateTime updatedAt;
+
+  @Version
+  @Setter(AccessLevel.NONE)
+  @Column(name = "version", nullable = false, columnDefinition = "bigint default 0")
+  private Long version;
 }

@@ -12,7 +12,6 @@ import type {
   DailyRepeatMonthlyOption,
   DailyRepeatTypeOption,
   HabitImportanceOption,
-  HabitTypeOption,
   ReminderTypeOption,
   ResetCounterOption,
   TaskDifficultyOption,
@@ -212,14 +211,6 @@ export const TASK_DIFFICULTY_OPTIONS: readonly {
   { id: "MEDIUM", label: "Médio" },
   { id: "HARD", label: "Difícil" },
 ] as const;
-
-/** Descrições explicativas de cada nível de dificuldade no formulário de criação/edição. */
-export const DIFFICULTY_DESCRIPTIONS: Record<TaskDifficultyOption, string> = {
-  TRIVIAL: "Quase automática (ex: beber água, remédio).",
-  EASY: "Baixa fricção (ex: e-mails, 10 min leitura).",
-  MEDIUM: "Padrão: 30 a 60 min de esforço (ex: treino).",
-  HARD: "Intensa de 1 a 2 horas (ex: estudo pesado, projeto).",
-};
 
 /** Opções de prioridade para Afazeres (ToDo). */
 export const TODO_PRIORITY_OPTIONS: readonly {
@@ -456,15 +447,6 @@ export const HABIT_IMPORTANCE_META: Record<
   },
 };
 
-export const HABIT_DIRECTION_OPTIONS: readonly {
-  id: HabitTypeOption;
-  label: string;
-}[] = [
-  { id: "POSITIVE", label: "Positivo" },
-  { id: "NEGATIVE", label: "Negativo" },
-  { id: "BOTH", label: "+/- Ambos" },
-] as const;
-
 /** Limite máximo de caracteres do título de uma tarefa (espelha o @Size do backend). */
 export const TASK_TITLE_MAX_LENGTH = 50;
 
@@ -510,15 +492,17 @@ export const DIFFICULTY_SORT_WEIGHTS: Readonly<Record<string, number>> = {
   trivial: 1,
 };
 
-/** Pesos numéricos de prioridade para ordenação de tarefas */
+/** Pesos numéricos de prioridade (e importância de hábitos) para ordenação de tarefas */
 export const PRIORITY_SORT_WEIGHTS: Readonly<Record<string, number>> = {
   HIGH: 3,
   MEDIUM: 2,
+  NORMAL: 2,
   LOW: 1,
   Low: 1,
   NONE: 0,
   high: 3,
   medium: 2,
+  normal: 2,
   low: 1,
   none: 0,
 };

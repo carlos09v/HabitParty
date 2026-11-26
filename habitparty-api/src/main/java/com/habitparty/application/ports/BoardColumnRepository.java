@@ -25,6 +25,10 @@ public interface BoardColumnRepository {
   // Essencial para validar se a coluna existe antes de fazer algo com ela:
   Optional<BoardColumn> findById(UUID id);
 
+  default Optional<List<BoardColumn>> findAllByIds(Collection<UUID> ids) {
+    return Optional.empty();
+  }
+
   // Útil para o ReorderColumnsUseCase atualizar várias de uma vez:
   void reorderAll(List<BoardColumn> columns);
 

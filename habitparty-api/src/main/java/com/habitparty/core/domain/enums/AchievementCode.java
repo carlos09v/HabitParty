@@ -1,6 +1,11 @@
 package com.habitparty.core.domain.enums;
 
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.UserStats;
@@ -81,15 +86,14 @@ public enum AchievementCode {
   NIGHT_OWL,
   EARLY_BIRD;
 
+  private static final Map<String, AchievementCode> BY_NAME = Arrays.stream(values())
+      .collect(Collectors.toUnmodifiableMap(Enum::name, Function.identity()));
+
   public static Optional<AchievementCode> fromString(String code) {
     if (code == null || code.isBlank()) {
       return Optional.empty();
     }
-    try {
-      return Optional.of(AchievementCode.valueOf(code.trim().toUpperCase()));
-    } catch (IllegalArgumentException e) {
-      return Optional.empty();
-    }
+    return Optional.ofNullable(BY_NAME.get(code.trim().toUpperCase(Locale.ROOT)));
   }
 
   /**

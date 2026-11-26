@@ -1,15 +1,30 @@
+"use client";
+
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
+import { useSettingsDirtyState } from "@/components/settings/SettingsDirtyContext";
 import { SETTINGS_TABS } from "@/constants/settings";
 import type { SettingsTabId } from "@/types/settings";
-import { cn } from "@/utils";
+import { cn } from "@/utils/cn";
 
 interface SettingsNavTabsProps {
   activeTab: SettingsTabId;
 }
 
-export async function SettingsNavTabs({ activeTab }: SettingsNavTabsProps) {
-  const t = await getTranslations("settings.tabs");
+export function SettingsNavTabs({ activeTab }: SettingsNavTabsProps) {
+  const t = useTranslations("settings.tabs");
+  const tGuard = useTranslations("settings.unsavedGuard");
+  const { hasUnsavedChanges, clearAllDirty, guardLinkClick } =
+    useSettingsDirtyState();
+  const prevActiveTabRef = useRef(activeTab);
+
+  useEffect(() => {
+    if (prevActiveTabRef.current !== activeTab) {
+      prevActiveTabRef.current = activeTab;
+      clearAllDirty();
+    }
+  }, [activeTab, clearAllDirty]);
 
   return (
     <nav
@@ -29,11 +44,17 @@ export async function SettingsNavTabs({ activeTab }: SettingsNavTabsProps) {
             replace
             scroll={false}
             aria-current={isActive ? "page" : undefined}
+            onClick={(e) => {
+              if (tab.id !== activeTab) {
+                guardLinkClick(e, href, "replace");
+              }
+            }}
             className={cn(
-              "flex items-center gap-2 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 select-none px-4 py-2 text-sm",
+              "relative flex items-center gap-2 rounded-lg font-bold transition-colors whitespace-nowrap shrink-0 select-none px-4 py-2 text-sm border-b-2",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
               isActive
-                ? "bg-gold text-on-gold shadow-glow-gold-xs"
-                : "text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-white/5",
+                ? "bg-gold text-on-gold border-on-gold/40 shadow-glow-gold-xs forced-colors:outline-2 forced-colors:outline-offset-[-2px]"
+                : "border-transparent text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-white/5",
             )}
           >
             <Icon
@@ -45,6 +66,16 @@ export async function SettingsNavTabs({ activeTab }: SettingsNavTabsProps) {
               )}
             />
             <span>{t(tab.id)}</span>
+            {isActive && hasUnsavedChanges && (
+              <>
+                <span
+                  aria-hidden="true"
+                  title={tGuard("unsavedDotAria")}
+                  className="w-2 h-2 rounded-full bg-red-600 dark:bg-neutral-950 ring-2 ring-white/70 shrink-0"
+                />
+                <span className="sr-only">{tGuard("unsavedDotAria")}</span>
+              </>
+            )}
           </Link>
         );
       })}

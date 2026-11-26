@@ -12,6 +12,7 @@ public interface RefreshTokenRepository {
   Optional<RefreshToken> findByToken(String token);
   int countActiveByUserId(UUID userId); // Limitar sessões
   void revokeOldestSession(UUID userId); // Revogar a primeira sessão
+  void revokeAllByUserId(UUID userId); // Revogar todas as sessões ativas (reset/troca de senha, rebaixamento)
   void deleteObsoleteTokens(Instant now, LocalDateTime revokedCutoff); // Apagar os campos obsoletos no db
   void deleteAllByUserId(UUID userId);
 }

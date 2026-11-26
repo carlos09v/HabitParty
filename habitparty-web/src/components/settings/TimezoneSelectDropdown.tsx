@@ -2,8 +2,8 @@
 
 import { Check, Compass, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import { cn } from "@/utils";
+import { type KeyboardEvent, useId, useMemo, useRef, useState } from "react";
+import { cn } from "@/utils/cn";
 import {
   formatTimeZoneOffsetLabel,
   getSupportedTimeZones,
@@ -20,16 +20,38 @@ interface TimezoneOptionItem {
 const timezoneItemCache = new Map<string, TimezoneOptionItem>();
 let cachedAllZoneItems: TimezoneOptionItem[] | null = null;
 let cachedSortedZones: string[] | null = null;
+let cachedDayKey: string | null = null;
 
-function getTimezoneOptionItem(tz: string): TimezoneOptionItem {
-  const cached = timezoneItemCache.get(tz);
-  if (cached) return cached;
+function ensureFreshClientCache(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const now = new Date();
+  const dayKey = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+  if (cachedDayKey !== dayKey) {
+    timezoneItemCache.clear();
+    cachedAllZoneItems = null;
+    cachedDayKey = dayKey;
+  }
+  return true;
+}
+
+function buildTimezoneOptionItem(tz: string): TimezoneOptionItem {
   const offset = formatTimeZoneOffsetLabel(tz);
-  const item: TimezoneOptionItem = {
+  return {
     value: tz,
     offset,
     searchText: `${tz} ${tz.replaceAll("_", " ")} ${offset}`.toLowerCase(),
   };
+}
+
+function getTimezoneOptionItem(tz: string): TimezoneOptionItem {
+  if (!ensureFreshClientCache()) {
+    return buildTimezoneOptionItem(tz);
+  }
+  const cached = timezoneItemCache.get(tz);
+  if (cached) return cached;
+  const item = buildTimezoneOptionItem(tz);
   timezoneItemCache.set(tz, item);
   return item;
 }
@@ -42,6 +64,9 @@ function getSortedSupportedZones(): string[] {
 }
 
 function getAllTimezoneOptionItems(): TimezoneOptionItem[] {
+  if (!ensureFreshClientCache()) {
+    return getSortedSupportedZones().map(buildTimezoneOptionItem);
+  }
   if (!cachedAllZoneItems) {
     cachedAllZoneItems = getSortedSupportedZones().map(getTimezoneOptionItem);
   }
@@ -64,7 +89,10 @@ export function TimezoneSelectDropdown({
   onSelectTimezone,
 }: TimezoneSelectDropdownProps) {
   const t = useTranslations("settings.timezoneCard");
+  const listboxId = useId();
+  const listboxRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const isSearchActive = searchQuery.trim().length > 0;
 
@@ -118,10 +146,73 @@ export function TimezoneSelectDropdown({
     return allItems.filter((item) => item.searchText.includes(query));
   }, [browserTimezone, extraZones, searchQuery, selectedTimezone]);
 
+  const safeHighlightedIndex =
+    highlightedIndex >= 0 && highlightedIndex < filteredZones.length
+      ? highlightedIndex
+      : -1;
+  const activeDescendantId =
+    safeHighlightedIndex >= 0
+      ? `${listboxId}-opt-${safeHighlightedIndex}`
+      : undefined;
+
+  const scrollOptionIntoView = (index: number) => {
+    const optionEl = listboxRef.current?.querySelector<HTMLElement>(
+      `#${CSS.escape(`${listboxId}-opt-${index}`)}`,
+    );
+    optionEl?.scrollIntoView({ block: "nearest" });
+  };
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (filteredZones.length === 0) {
+      if (e.key === "Escape" && searchQuery) {
+        e.preventDefault();
+        setSearchQuery("");
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next =
+        safeHighlightedIndex < filteredZones.length - 1
+          ? safeHighlightedIndex + 1
+          : 0;
+      setHighlightedIndex(next);
+      scrollOptionIntoView(next);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev =
+        safeHighlightedIndex > 0
+          ? safeHighlightedIndex - 1
+          : filteredZones.length - 1;
+      setHighlightedIndex(prev);
+      scrollOptionIntoView(prev);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setHighlightedIndex(0);
+      scrollOptionIntoView(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      const last = filteredZones.length - 1;
+      setHighlightedIndex(last);
+      scrollOptionIntoView(last);
+    } else if (e.key === "Enter" && safeHighlightedIndex >= 0 && !disabled) {
+      e.preventDefault();
+      onSelectTimezone(filteredZones[safeHighlightedIndex].value);
+    } else if (e.key === "Escape") {
+      if (searchQuery) {
+        e.preventDefault();
+        setSearchQuery("");
+        setHighlightedIndex(-1);
+      }
+    }
+  };
+
   const handleUseBrowserTimezone = () => {
     if (!browserTimezone) return;
     onSelectTimezone(browserTimezone);
     setSearchQuery("");
+    setHighlightedIndex(-1);
   };
 
   return (
@@ -130,12 +221,27 @@ export function TimezoneSelectDropdown({
         <div className="relative flex-1">
           <Search
             size={15}
+            aria-hidden="true"
             className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
           />
           <input
             type="text"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={activeDescendantId}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={disabled}
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            onChange={(e) => {
+              const nextVal = e.target.value;
+              setSearchQuery(nextVal);
+              setHighlightedIndex(nextVal.trim() ? 0 : -1);
+            }}
+            onKeyDown={handleSearchKeyDown}
             placeholder={t("searchPlaceholder")}
             aria-label={t("searchPlaceholder")}
             className={cn(
@@ -143,16 +249,20 @@ export function TimezoneSelectDropdown({
               "bg-card border border-neutral-600 text-neutral-100 placeholder:text-neutral-400",
               "dark:bg-primary-dark/20 dark:border-primary/30",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 dark:focus-visible:border-primary-light",
+              "disabled:opacity-55 disabled:cursor-not-allowed",
             )}
           />
-          {searchQuery && (
+          {searchQuery && !disabled && (
             <button
               type="button"
-              onClick={() => setSearchQuery("")}
+              onClick={() => {
+                setSearchQuery("");
+                setHighlightedIndex(-1);
+              }}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-100 cursor-pointer p-1.5 rounded-md"
-              aria-label="Clear search"
+              aria-label={t("clearSearchAria")}
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -169,7 +279,11 @@ export function TimezoneSelectDropdown({
               "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
           >
-            <Compass size={14} className="text-gold shrink-0" />
+            <Compass
+              size={14}
+              className="text-gold shrink-0"
+              aria-hidden="true"
+            />
             <span>{t("detectBrowserButton")}</span>
           </button>
         )}
@@ -185,6 +299,8 @@ export function TimezoneSelectDropdown({
       )}
 
       <div
+        id={listboxId}
+        ref={listboxRef}
         role="listbox"
         aria-label={t("selectLabel")}
         className="max-h-56 overflow-y-auto rounded-xl border border-neutral-600/70 dark:border-primary/25 bg-card dark:bg-surface/40 p-1.5 space-y-1"
@@ -194,21 +310,27 @@ export function TimezoneSelectDropdown({
             {t("noResults", { query: searchQuery.trim() })}
           </div>
         ) : (
-          filteredZones.map((zone) => {
+          filteredZones.map((zone, index) => {
             const isSelected = zone.value === selectedTimezone;
+            const isHighlighted = index === safeHighlightedIndex;
             return (
               <button
                 key={zone.value}
+                id={`${listboxId}-opt-${index}`}
                 type="button"
                 role="option"
+                tabIndex={-1}
                 aria-selected={isSelected}
+                onMouseEnter={() => setHighlightedIndex(index)}
                 onClick={() => onSelectTimezone(zone.value)}
                 disabled={disabled}
                 className={cn(
-                  "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-left text-xs sm:text-sm transition-colors cursor-pointer",
+                  "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-left text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                   isSelected
                     ? "bg-amber-500/15 dark:bg-gold/15 text-amber-800 dark:text-gold font-bold border border-amber-500/35 dark:border-gold/35"
-                    : "text-neutral-200 hover:bg-surface-hover/70 border border-transparent",
+                    : isHighlighted
+                      ? "bg-surface-hover text-neutral-50 border border-primary/35"
+                      : "text-neutral-200 hover:bg-surface-hover/70 border border-transparent",
                 )}
               >
                 <span className="flex items-center gap-2 min-w-0 flex-1">
@@ -220,7 +342,9 @@ export function TimezoneSelectDropdown({
                         : "border border-neutral-500/60",
                     )}
                   >
-                    {isSelected && <Check size={11} strokeWidth={3} />}
+                    {isSelected && (
+                      <Check size={11} strokeWidth={3} aria-hidden="true" />
+                    )}
                   </span>
                   <span className="truncate font-mono">
                     {zone.value.replaceAll("_", " ")}

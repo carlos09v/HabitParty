@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import type { components } from "@/api/schema";
-import { AVATAR_FRAMES, type AvatarFrameId } from "@/constants/avatarFrames";
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focusRules";
 import { resolveThemeSessionState } from "@/constants/themes";
-import { useAvatarFrameStore } from "@/store/avatarFrameStore";
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import {
   applyThemeToDocument,
   getThemePreferenceCookies,
@@ -27,6 +28,11 @@ import {
   parseServerDate,
   setClientTimeZoneCookie,
 } from "@/utils/date";
+import {
+  setFocusBrowserTranslations,
+  setFocusTimerTranslators,
+  updateDocumentTitle,
+} from "@/utils/focusTimerBrowser";
 import { getLevelProgress } from "@/utils/levels";
 
 type Workspace = components["schemas"]["WorkspaceResponseDTO"];
@@ -43,9 +49,6 @@ interface StoreInitializerProps {
   lastTaskCompletionAt?: string | null;
   todayFocusMinutes?: number;
 }
-
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function hasTaskCompletionToday(
   lastTaskCompletionAt?: string | null,
@@ -74,16 +77,6 @@ function buildHydratedStoreUser(user: User): User {
   };
 }
 
-function resolveValidAvatarFrame(
-  frame?: string | null,
-  isPremium?: boolean,
-): AvatarFrameId {
-  if (frame && AVATAR_FRAMES.some((f) => f.id === frame)) {
-    return frame as AvatarFrameId;
-  }
-  return isPremium ? "cosmic_gold" : "none";
-}
-
 export function StoreInitializer({
   theme = null,
   dateFormat = "DD/MM/YYYY",
@@ -95,9 +88,33 @@ export function StoreInitializer({
   lastTaskCompletionAt = null,
   todayFocusMinutes = 0,
 }: StoreInitializerProps) {
+  const tFocusStore = useTranslations("focus.store");
+  const tFocusNotifications = useTranslations("focus.notifications");
   const initializedUI = useRef(false);
   const initializedWorkspaces = useRef(false);
+  const prevServerActiveWorkspaceIdRef = useRef<string | null>(null);
   const prevServerFocusMinutesRef = useRef<number | null>(null);
+
+  // Registra os tradutores globais do timer de foco uma única vez no shell `(main)`
+  // e atualiza imediatamente ao trocar de idioma em qualquer página (ex.: /settings).
+  useEffect(() => {
+    setFocusTimerTranslators({
+      store: (key, values) => tFocusStore(key as never, values as never),
+      notifications: (key, values) =>
+        tFocusNotifications(key as never, values as never),
+    });
+    setFocusBrowserTranslations({
+      defaultDocumentTitle: tFocusNotifications("defaultDocumentTitle"),
+      titlePausedPrefix: tFocusNotifications("titlePausedPrefix"),
+      titleBreakPrefix: tFocusNotifications("titleBreakPrefix"),
+      titleFocusPrefix: tFocusNotifications("titleFocusPrefix"),
+      titleOvertimePrefix: tFocusNotifications("titleOvertimePrefix"),
+    });
+    const timerState = useFocusTimerStore.getState();
+    if (timerState.isActive) {
+      updateDocumentTitle(timerState);
+    }
+  }, [tFocusStore, tFocusNotifications]);
 
   const resolvedExperienceMode: ExperienceMode =
     user?.experienceMode === "PRODUCTIVITY" ||
@@ -107,13 +124,30 @@ export function StoreInitializer({
 
   useIsomorphicLayoutEffect(() => {
     const currentState = useWorkspaceStore.getState();
+    const prevServerActiveId = prevServerActiveWorkspaceIdRef.current;
+    prevServerActiveWorkspaceIdRef.current = activeWorkspaceId;
+
     if (workspaces.length > 0) {
+      const serverWorkspaceChanged =
+        prevServerActiveId !== null && prevServerActiveId !== activeWorkspaceId;
+      const currentIsValid = Boolean(
+        currentState.activeWorkspaceId &&
+          workspaces.some((w) => w.id === currentState.activeWorkspaceId),
+      );
+      const serverIsValid = Boolean(
+        activeWorkspaceId && workspaces.some((w) => w.id === activeWorkspaceId),
+      );
       const resolvedActiveId = initializedWorkspaces.current
-        ? activeWorkspaceId ||
-          currentState.activeWorkspaceId ||
+        ? serverWorkspaceChanged && serverIsValid
+          ? activeWorkspaceId
+          : currentIsValid
+            ? currentState.activeWorkspaceId
+            : (serverIsValid ? activeWorkspaceId : null) ||
+              workspaces[0]?.id ||
+              null
+        : (serverIsValid ? activeWorkspaceId : null) ||
           workspaces[0]?.id ||
-          null
-        : activeWorkspaceId || workspaces[0]?.id || null;
+          null;
       useWorkspaceStore.setState({
         workspaces,
         activeWorkspaceId: resolvedActiveId,
@@ -139,6 +173,9 @@ export function StoreInitializer({
     const effectiveCookieTheme = clientCookieTheme ?? theme ?? null;
 
     if (!user) {
+      if (useUserStore.getState().user !== null) {
+        useUserStore.getState().clearUserSession();
+      }
       if (!initializedUI.current) {
         const initialSession = resolveThemeSessionState({
           cookieTheme: effectiveCookieTheme,
@@ -207,6 +244,10 @@ export function StoreInitializer({
       isDifferentUser ||
       currentStoreUser?.profilePhotoUrl !== user.profilePhotoUrl ||
       currentStoreUser?.fullName !== user.fullName ||
+      currentStoreUser?.username !== user.username ||
+      currentStoreUser?.email !== user.email ||
+      currentStoreUser?.role !== user.role ||
+      currentStoreUser?.hasPassword !== user.hasPassword ||
       currentStoreUser?.bio !== user.bio ||
       currentStoreUser?.birthDate !== user.birthDate ||
       currentStoreUser?.gender !== user.gender ||
@@ -230,6 +271,12 @@ export function StoreInitializer({
       currentStoreUser?.achievementPoints !== user.achievementPoints ||
       currentStoreUser?.timezone !== user.timezone ||
       currentStoreUser?.timezoneUpdatedAt !== user.timezoneUpdatedAt ||
+      currentStoreUser?.friendCode !== user.friendCode ||
+      currentStoreUser?.profileVisibility !== user.profileVisibility ||
+      currentStoreUser?.statsVisibility !== user.statsVisibility ||
+      currentStoreUser?.achievementsVisibility !==
+        user.achievementsVisibility ||
+      currentStoreUser?.friendRequestPolicy !== user.friendRequestPolicy ||
       currentStoreUser?.usageMode !== user.usageMode ||
       currentStoreUser?.mainObstacle !== user.mainObstacle ||
       currentStoreUser?.dailyFocusGoalMinutes !== user.dailyFocusGoalMinutes ||
@@ -309,9 +356,6 @@ export function StoreInitializer({
       nextSecuredDate !== currentState.lastStreakSecuredDate;
 
     if (shouldSyncUser) {
-      useAvatarFrameStore.setState({
-        frameId: resolveValidAvatarFrame(user.avatarFrame, isPremium),
-      });
       if (
         user.experienceMode === "GAMIFIED" ||
         user.experienceMode === "PRODUCTIVITY"

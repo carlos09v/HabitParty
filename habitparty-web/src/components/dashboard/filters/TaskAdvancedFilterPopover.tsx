@@ -1,11 +1,10 @@
-"use client";
-
-import { FilterX, SlidersHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { CSSProperties, RefObject } from "react";
-import { createPortal } from "react-dom";
+import {
+  FilterPopoverShell,
+  HierarchicalTagRow,
+} from "@/components/tasks/shared";
 import { Select } from "@/components/ui/Select";
-import { Switch } from "@/components/ui/Switch";
 import type { DashboardAdvancedFilters } from "@/types/dashboard";
 import { cn } from "@/utils";
 
@@ -15,89 +14,63 @@ interface SelectOption {
 }
 
 interface TaskAdvancedFilterPopoverProps {
+  id?: string;
   popoverRef: RefObject<HTMLDivElement | null>;
+  portalContainer: HTMLElement;
   floatingStyle?: CSSProperties;
   placement: "top" | "bottom";
   activeFiltersCount: number;
   advancedFilters: DashboardAdvancedFilters;
-  hasMultipleWorkspaces: boolean;
-  workspaceOptions: SelectOption[];
   columnOptions: SelectOption[];
   hasColumns: boolean;
   taskTypeOptions: SelectOption[];
   difficultyOptions: SelectOption[];
+  priorityOptions: SelectOption[];
+  availableTags: string[];
+  tagCounts: Record<string, number>;
   sortOptions: SelectOption[];
   isGamified: boolean;
-  onWorkspaceChange: (workspaceId: string) => void;
   onAdvancedFiltersChange?: (filters: DashboardAdvancedFilters) => void;
   onReset: () => void;
 }
 
 export function TaskAdvancedFilterPopover({
+  id,
   popoverRef,
+  portalContainer,
   floatingStyle,
   placement,
   activeFiltersCount,
   advancedFilters,
-  hasMultipleWorkspaces,
-  workspaceOptions,
   columnOptions,
   hasColumns,
   taskTypeOptions,
   difficultyOptions,
+  priorityOptions,
+  availableTags,
+  tagCounts,
   sortOptions,
   isGamified,
-  onWorkspaceChange,
   onAdvancedFiltersChange,
   onReset,
 }: TaskAdvancedFilterPopoverProps) {
   const t = useTranslations("dashboard.taskFilters");
 
-  return createPortal(
-    <div
-      ref={popoverRef}
-      role="dialog"
-      aria-modal="false"
-      aria-label={t("advancedTitle")}
-      style={floatingStyle}
-      className={cn(
-        "w-[calc(100vw-1.5rem)] sm:w-[440px] max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-primary/40 p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col gap-3",
-        placement === "top" ? "origin-bottom" : "origin-top",
-      )}
+  return (
+    <FilterPopoverShell
+      id={id}
+      popoverRef={popoverRef}
+      portalContainer={portalContainer}
+      floatingStyle={floatingStyle}
+      placement={placement}
+      title={t("advancedTitle")}
+      clearLabel={t("clearButton")}
+      activeFiltersCount={activeFiltersCount}
+      onReset={onReset}
+      className="w-[calc(100vw-1.5rem)] sm:w-[420px] max-w-[calc(100vw-1.5rem)]"
     >
-      <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/10">
-        <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
-          <SlidersHorizontal
-            size={13}
-            className="text-amber-700 dark:text-gold"
-          />
-          {t("advancedTitle")}
-        </span>
-        {activeFiltersCount > 0 && (
-          <button
-            type="button"
-            onClick={onReset}
-            className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 dark:hover:text-danger-300 font-semibold transition-colors cursor-pointer"
-          >
-            <FilterX size={12} />
-            <span>{t("clearButton")}</span>
-          </button>
-        )}
-      </div>
-
       <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 [&>*]:min-w-0 [&>*:last-child:nth-child(odd)]:sm:col-span-2">
-          {hasMultipleWorkspaces && (
-            <Select
-              id="filter-workspace"
-              label={t("workspaceLabel")}
-              compact
-              value={advancedFilters.workspaceId}
-              onChange={onWorkspaceChange}
-              options={workspaceOptions}
-            />
-          )}
-
           <Select
             id="filter-task-type"
             label={t("taskTypeLabel")}
@@ -143,6 +116,20 @@ export function TaskAdvancedFilterPopover({
           />
 
           <Select
+            id="filter-priority"
+            label={t("priorityLabel")}
+            compact
+            value={advancedFilters.priority}
+            onChange={(val) =>
+              onAdvancedFiltersChange?.({
+                ...advancedFilters,
+                priority: val as DashboardAdvancedFilters["priority"],
+              })
+            }
+            options={priorityOptions}
+          />
+
+          <Select
             id="filter-sort"
             label={t("sortByLabel")}
             compact
@@ -157,28 +144,48 @@ export function TaskAdvancedFilterPopover({
           />
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-neutral-700 dark:border-white/10 group">
-          <label
-            htmlFor="filter-hide-completed"
-            className="text-xs text-neutral-200 group-hover:text-primary dark:group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
-          >
-            {t("hideCompletedLabel")}
-          </label>
-          <Switch
-            id="filter-hide-completed"
-            size="sm"
-            checked={advancedFilters.hideCompleted}
-            onCheckedChange={(checked) =>
-              onAdvancedFiltersChange?.({
-                ...advancedFilters,
-                hideCompleted: checked,
-              })
-            }
-            aria-label={t("hideCompletedLabel")}
-          />
-        </div>
+        {availableTags.length > 0 && (
+          <fieldset className="flex flex-col gap-1.5 border-0 p-0 m-0 pt-2 border-t border-neutral-700/70 dark:border-white/10">
+            <legend className="text-label-g font-semibold text-neutral-400 mb-1.5">
+              {t("tagsLabel")}
+            </legend>
+            <div className="flex flex-col gap-1 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+              <button
+                type="button"
+                aria-pressed={advancedFilters.tag === null}
+                onClick={() =>
+                  onAdvancedFiltersChange?.({
+                    ...advancedFilters,
+                    tag: null,
+                  })
+                }
+                className={cn(
+                  "w-full text-left px-2 py-1 rounded-md text-tiny font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+                  advancedFilters.tag === null
+                    ? "bg-gold text-on-gold font-bold"
+                    : "bg-surface border border-neutral-700/70 text-neutral-200 hover:bg-surface-hover dark:border-transparent dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10",
+                )}
+              >
+                {t("allTagsOption")}
+              </button>
+              {availableTags.map((tag) => (
+                <HierarchicalTagRow
+                  key={tag}
+                  tag={tag}
+                  isSelected={advancedFilters.tag === tag}
+                  count={tagCounts[tag]}
+                  onSelect={(nextTag) =>
+                    onAdvancedFiltersChange?.({
+                      ...advancedFilters,
+                      tag: advancedFilters.tag === nextTag ? null : nextTag,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </fieldset>
+        )}
       </div>
-    </div>,
-    document.body,
+    </FilterPopoverShell>
   );
 }

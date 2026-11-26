@@ -1,10 +1,7 @@
-"use client";
-
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
   Backpack,
   Check,
+  Filter,
   GripVertical,
   Loader2,
   Lock,
@@ -16,7 +13,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type CSSProperties, type HTMLAttributes, memo } from "react";
-import { getFocusIcon } from "@/constants/focus";
+import { getFocusIcon } from "@/constants/focusIcons";
 import { PACKAGE_LEVEL_COLOR } from "@/constants/reward";
 import type { AppLocale } from "@/i18n/config";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
@@ -29,6 +26,7 @@ import {
 } from "@/utils";
 import {
   formatBackpackItemRemainingTime,
+  formatFocusMinutes,
   isBackpackItemTimeDepleted,
 } from "@/utils/focusFormatters";
 import {
@@ -44,6 +42,7 @@ export interface FocusCardBaseProps {
   onLockedClick?: () => void;
   isDragging?: boolean;
   sortableRef?: (node: HTMLElement | null) => void;
+  sortableActivatorRef?: (node: HTMLElement | null) => void;
   sortableStyle?: CSSProperties;
   sortableAttributes?: HTMLAttributes<HTMLElement>;
   sortableListeners?: HTMLAttributes<HTMLElement>;
@@ -52,9 +51,12 @@ export interface FocusCardBaseProps {
 export interface FocusActivityCardVariantProps extends FocusCardBaseProps {
   variant: "activity";
   activity: FocusActivity;
+  todayMinutes?: number;
+  isStagedTarget?: boolean;
   isSelected?: boolean;
   isLocked?: boolean;
   onSelect?: (activity: FocusActivity) => void;
+  onToggleFilter?: (activity: FocusActivity) => void;
   onStartFocus: (activity: FocusActivity) => void;
   onContextMenu: (e: React.MouseEvent, activity: FocusActivity) => void;
 }
@@ -76,7 +78,8 @@ export type FocusCardProps =
 
 /**
  * Card Unificado de Foco para Atividades e Itens da Mochila.
- * Memoizado para evitar re-renders desnecessários durante drag-and-drop ou interações no palco.
+ * Usa o padrão de stretched button (`before:absolute before:inset-0`) + alça de drag dedicada
+ * para eliminar `nested-interactive`, preservando teclado 100% nativo e desacoplando `@dnd-kit`.
  */
 export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const t = useTranslations("focus.card");
@@ -87,6 +90,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     onToggleTimer,
     isDragging = false,
     sortableRef,
+    sortableActivatorRef,
     sortableStyle,
     sortableAttributes,
     sortableListeners,
@@ -94,20 +98,20 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
 
   const isActivity = props.variant === "activity";
   const activity = isActivity ? props.activity : null;
+  const todayMinutes = isActivity ? (props.todayMinutes ?? 0) : 0;
+  const isStagedTarget = isActivity ? Boolean(props.isStagedTarget) : false;
   const isLocked = isActivity ? Boolean(props.isLocked) : false;
   const item = !isActivity ? props.item : null;
   const isConsuming = !isActivity ? Boolean(props.isConsuming) : false;
   const isSelected = Boolean(props.isSelected);
   const isDraggable = isActivity && !isLocked && Boolean(sortableListeners);
 
-  // Resolução do ícone
   const IconComponent = isActivity
     ? getFocusIcon(activity?.icon)
     : item?.rewardIcon
       ? getRewardIcon(item.rewardIcon, item.rewardType)
       : Backpack;
 
-  // Metadados específicos de mochila
   const uiPackageLevel = item?.rewardPackageLevel
     ? BACKEND_TO_UI_PACKAGE[item.rewardPackageLevel]
     : undefined;
@@ -160,6 +164,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
           name: activity.name,
           icon: activity.icon,
           targetMinutes: activity.targetTimeMinutes,
+          recordType: activity.recordType,
         });
       } else if (!isActivity && item) {
         useFocusTimerStore.getState().syncTargetMetadata({
@@ -182,134 +187,192 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     <article
       ref={sortableRef}
       style={sortableStyle}
-      {...sortableAttributes}
-      {...sortableListeners}
       data-focus-card="true"
       data-selected={isSelected}
-      onClick={handleCardClick}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return;
-        sortableListeners?.onKeyDown?.(e);
-        if (!e.defaultPrevented && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault();
-          handleCardClick();
-        }
-      }}
       onContextMenu={handleContextMenu}
       className={cn(
-        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/85 shadow-2xs dark:shadow-none transition-[border-color,background-color,opacity,transform] duration-150 select-none p-3.5 sm:p-4 gap-3",
-        isActivity
-          ? isLocked
-            ? "cursor-pointer"
-            : isDraggable
-              ? "cursor-grab active:cursor-grabbing"
-              : "cursor-pointer"
-          : "cursor-pointer",
+        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/85 shadow-2xs dark:shadow-none transition-[border-color,background-color,opacity,transform] duration-150 select-none p-3.5 sm:p-4 gap-3 focus-within:ring-2 focus-within:ring-gold/40",
         isSelected
           ? "ring-2 ring-gold border-gold/80 bg-gold/15 shadow-glow-gold-xs"
           : isActiveTarget
             ? "border-gold/80 bg-gold/10 shadow-glow-gold-xs"
-            : isLocked
-              ? "border-white/5 bg-surface/30 opacity-75 hover:opacity-100 hover:border-gold/30"
-              : "border-neutral-700 dark:border-primary/30 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-card-hover/90",
+            : isStagedTarget
+              ? "border-primary/55 bg-primary/[0.06] dark:border-gold/45 dark:bg-gold/[0.06]"
+              : isLocked
+                ? "border-white/5 bg-surface/30 opacity-80 hover:opacity-100 hover:border-gold/30"
+                : "border-neutral-700 dark:border-primary/30 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-card-hover/90",
         isDragging &&
           "transition-none! opacity-60 ring-2 ring-gold shadow-glow-gold-md z-50 will-change-transform",
       )}
     >
-      {/* Esquerda: Ícone + Detalhes */}
-      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+      {/* Esquerda: Alça de Drag dedicada + Botão Stretched de Seleção */}
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
         {isDraggable && (
-          <GripVertical
-            size={14}
-            aria-hidden="true"
-            className="text-neutral-500 opacity-45 sm:opacity-0 sm:group-hover:opacity-70 transition-opacity shrink-0 -ml-1"
-          />
+          <button
+            ref={sortableActivatorRef}
+            type="button"
+            {...sortableAttributes}
+            {...sortableListeners}
+            aria-label={t("reorderActivityAria", { title })}
+            className="relative z-10 min-w-6 min-h-8 pointer-coarse:min-w-9 pointer-coarse:min-h-9 -ml-1.5 flex items-center justify-center rounded-md text-neutral-500 hover:text-neutral-200 hover:bg-white/5 cursor-grab active:cursor-grabbing shrink-0 touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors"
+          >
+            <GripVertical size={14} aria-hidden="true" />
+          </button>
         )}
 
-        <div
-          className={cn(
-            "rounded-lg flex items-center justify-center shrink-0 border transition-colors w-10 h-10",
-            isActiveTarget
-              ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/20 dark:border-gold/60 dark:text-gold"
-              : isLocked
-                ? "bg-neutral-800 border-neutral-700 text-neutral-400 group-hover:text-primary dark:bg-white/5 dark:border-white/10 dark:text-neutral-500 dark:group-hover:text-gold"
-                : "bg-primary/10 border-primary/25 text-primary group-hover:text-primary-dark group-hover:border-primary/40 dark:bg-primary-dark/30 dark:border-primary/40 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40",
-          )}
+        <button
+          type="button"
+          onClick={handleCardClick}
+          aria-label={
+            isLocked
+              ? t("lockedActivityAria", { title })
+              : isActivity
+                ? t("selectActivityAria", { title })
+                : t("selectItemAria", { title })
+          }
+          className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 before:content-[''] before:absolute before:inset-0 before:rounded-xl"
         >
-          <IconComponent size={20} />
-        </div>
-
-        <div className="flex flex-col min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-            <h4 className="font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate max-w-full text-body-m">
-              {title}
-            </h4>
-
-            {isLocked && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/15 dark:text-gold dark:border-gold/30 text-tiny font-bold shrink-0">
-                <Lock size={10} />
-                {t("pausedBadge")}
-              </span>
+          <div
+            className={cn(
+              "rounded-lg flex items-center justify-center shrink-0 border transition-colors w-10 h-10",
+              isActiveTarget
+                ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/20 dark:border-gold/60 dark:text-gold"
+                : isLocked
+                  ? "bg-neutral-800 border-neutral-700 text-neutral-400 group-hover:text-primary dark:bg-white/5 dark:border-white/10 dark:text-neutral-500 dark:group-hover:text-gold"
+                  : "bg-primary/10 border-primary/25 text-primary group-hover:text-primary-dark group-hover:border-primary/40 dark:bg-primary-dark/30 dark:border-primary/40 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40",
             )}
+          >
+            <IconComponent size={20} aria-hidden="true" />
+          </div>
 
-            {uiPackageLevel && packageBadgeColor && (
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+              <h3 className="font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate max-w-full text-body-m">
+                {title}
+              </h3>
+
+              {isLocked && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/15 dark:text-gold dark:border-gold/30 text-[11px] font-bold shrink-0">
+                  <Lock size={10} aria-hidden="true" />
+                  {t("pausedBadge")}
+                </span>
+              )}
+
+              {uiPackageLevel && packageBadgeColor && (
+                <span
+                  className={cn(
+                    "px-1.5 py-0.5 rounded text-[11px] font-bold border shrink-0",
+                    packageBadgeColor,
+                  )}
+                >
+                  {item?.rewardPackageLevel
+                    ? t(`packageLevels.${item.rewardPackageLevel}`)
+                    : uiPackageLevel}
+                </span>
+              )}
+
+              {isActiveTarget && (
+                <span
+                  className={cn(
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 dark:bg-gold/20 text-amber-800 dark:text-gold border border-amber-500/40 dark:border-gold/40 text-[11px] font-bold shrink-0",
+                    isTimerRunning && "motion-safe:animate-pulse",
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-gold"
+                  />
+                  {t("inTimerBadge")}
+                </span>
+              )}
+            </div>
+
+            {/* Subtítulo / Detalhe de Tempo */}
+            {isActivity ? (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-tiny text-neutral-400 mt-0.5">
+                <span className="flex items-center gap-1">
+                  <Timer
+                    size={12}
+                    aria-hidden="true"
+                    className="text-neutral-500"
+                  />
+                  {activity?.recordType === "POMO"
+                    ? t("pomodoroDuration", {
+                        minutes: activity?.targetTimeMinutes || 35,
+                      })
+                    : t("freeStopwatch")}
+                </span>
+                {todayMinutes > 0 && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-px rounded bg-emerald-500/12 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold tabular-nums">
+                    {t("todayDurationBadge", {
+                      duration: formatFocusMinutes(todayMinutes),
+                    })}
+                  </span>
+                )}
+              </div>
+            ) : item?.remainingSeconds !== undefined &&
+              item?.remainingSeconds !== null ? (
               <span
                 className={cn(
-                  "px-1.5 py-0.5 rounded text-tiny font-bold border shrink-0",
-                  packageBadgeColor,
+                  "flex items-center gap-1 font-medium text-tiny leading-none mt-0.5",
+                  isTimeDepleted
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-amber-700 dark:text-gold",
                 )}
               >
-                {item?.rewardPackageLevel
-                  ? t(`packageLevels.${item.rewardPackageLevel}`)
-                  : uiPackageLevel}
+                <Timer
+                  size={11}
+                  aria-hidden="true"
+                  className={
+                    isTimeDepleted
+                      ? "text-emerald-700 dark:text-emerald-400"
+                      : "text-amber-700 dark:text-gold"
+                  }
+                />
+                {formatBackpackItemRemainingTime(item.remainingSeconds, locale)}
               </span>
-            )}
-
-            {isActiveTarget && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 text-tiny font-bold animate-pulse shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                {t("inTimerBadge")}
+            ) : (
+              <span className="flex items-center gap-1 text-tiny text-neutral-400 leading-none mt-0.5">
+                <Sparkles size={11} aria-hidden="true" />
+                {t("activeCoupon")}
               </span>
             )}
           </div>
-
-          {/* Subtítulo / Detalhe de Tempo */}
-          {isActivity ? (
-            <div className="flex items-center gap-2 text-tiny text-neutral-400 mt-0.5">
-              <span className="flex items-center gap-1">
-                <Timer size={12} className="text-neutral-500" />
-                {activity?.recordType === "POMO"
-                  ? t("pomodoroDuration", {
-                      minutes: activity?.targetTimeMinutes || 35,
-                    })
-                  : t("freeStopwatch")}
-              </span>
-            </div>
-          ) : item?.remainingSeconds !== undefined &&
-            item?.remainingSeconds !== null ? (
-            <span
-              className={cn(
-                "flex items-center gap-1 font-medium text-tiny leading-none mt-0.5",
-                isTimeDepleted ? "text-emerald-400" : "text-gold",
-              )}
-            >
-              <Timer
-                size={11}
-                className={isTimeDepleted ? "text-emerald-400" : "text-gold"}
-              />
-              {formatBackpackItemRemainingTime(item.remainingSeconds, locale)}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-tiny text-neutral-400 leading-none mt-0.5">
-              <Sparkles size={11} />
-              {t("activeCoupon")}
-            </span>
-          )}
-        </div>
+        </button>
       </div>
 
-      {/* Direita: Ações (Play OU Check para Concluir + Mais Ações) */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      {/* Direita: Ações elevadas acima do stretched button (z-10) */}
+      <div className="relative z-10 flex items-center gap-1.5 shrink-0">
+        {isActivity && activity && props.onToggleFilter && (
+          <button
+            type="button"
+            {...STOP_DRAG_PROPAGATION_PROPS}
+            onClick={(e) => {
+              e.stopPropagation();
+              props.onToggleFilter?.(activity);
+            }}
+            aria-pressed={isSelected}
+            aria-label={
+              isSelected
+                ? t("clearMetricsFilterAria", { title })
+                : t("filterMetricsAria", { title })
+            }
+            title={
+              isSelected
+                ? t("clearMetricsFilterTitle")
+                : t("filterMetricsTitle")
+            }
+            className={cn(
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer min-w-8 min-h-8 pointer-coarse:min-w-9 pointer-coarse:min-h-9",
+              isSelected
+                ? "bg-gold/20 border-gold/60 text-amber-800 dark:text-gold"
+                : "border-transparent text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:bg-surface dark:hover:bg-white/10",
+            )}
+          >
+            <Filter size={14} aria-hidden="true" />
+          </button>
+        )}
+
         {!isActivity && isTimeDepleted ? (
           <button
             type="button"
@@ -325,14 +388,14 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             aria-label={t("completeItemAria", { title })}
             title={t("completeItemTitle")}
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] disabled:opacity-65 disabled:cursor-not-allowed w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
-              !isConsuming && "animate-pulse",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] disabled:opacity-65 disabled:cursor-not-allowed min-w-9 min-h-9 pointer-coarse:min-w-10 pointer-coarse:min-h-10",
+              !isConsuming && "motion-safe:animate-pulse",
             )}
           >
             {isConsuming ? (
-              <Loader2 size={18} className="animate-spin" />
+              <Loader2 size={18} aria-hidden="true" className="animate-spin" />
             ) : (
-              <Check size={18} className="stroke-[3]" />
+              <Check size={18} aria-hidden="true" className="stroke-[3]" />
             )}
           </button>
         ) : isLocked ? (
@@ -345,9 +408,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             }}
             aria-label={t("lockedActivityAria", { title })}
             title={t("lockedActivityTitle")}
-            className="flex items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95 w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10"
+            className="flex items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 cursor-pointer bg-amber-500/10 dark:bg-gold/10 hover:bg-amber-500/20 dark:hover:bg-gold/20 text-amber-800 dark:text-gold border-amber-500/40 dark:border-gold/30 hover:border-amber-600 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95 min-w-9 min-h-9 pointer-coarse:min-w-10 pointer-coarse:min-h-10"
           >
-            <Lock size={16} />
+            <Lock size={16} aria-hidden="true" />
           </button>
         ) : (
           <button
@@ -369,17 +432,18 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                 : t("startFocusTitle")
             }
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer min-w-9 min-h-9 pointer-coarse:min-w-10 pointer-coarse:min-h-10",
               isActiveTarget
                 ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
                 : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
             )}
           >
             {isActiveTarget && isTimerRunning ? (
-              <Pause size={16} className="fill-on-gold" />
+              <Pause size={16} aria-hidden="true" className="fill-on-gold" />
             ) : (
               <Play
                 size={16}
+                aria-hidden="true"
                 className={
                   isActiveTarget ? "fill-on-gold ml-0.5" : "fill-current ml-0.5"
                 }
@@ -394,7 +458,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
           onClick={(e) => openContextMenuFromButton(e, handleContextMenu)}
           aria-label={t("moreActionsAria", { title })}
           title={t("moreActionsAria", { title })}
-          className="flex items-center justify-center rounded-lg border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10"
+          className="flex items-center justify-center rounded-lg border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold min-w-9 min-h-9 pointer-coarse:min-w-10 pointer-coarse:min-h-10"
         >
           <MoreVertical size={16} aria-hidden="true" />
         </button>
@@ -402,49 +466,3 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     </article>
   );
 });
-
-/**
- * Wrapper Sortable exclusivo para atividades destravadas.
- * Atividades travadas (plano Free com > 4 atividades) NÃO passam por useSortable,
- * ficando congeladas nas últimas posições sem custo de medição no @dnd-kit.
- */
-export const SortableFocusActivityCard = memo(
-  function SortableFocusActivityCard(
-    props: Omit<
-      FocusActivityCardVariantProps,
-      | "sortableRef"
-      | "sortableStyle"
-      | "sortableAttributes"
-      | "sortableListeners"
-      | "isDragging"
-    >,
-  ) {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({
-      id: props.activity.id,
-      disabled: Boolean(props.isLocked),
-    });
-
-    const style: CSSProperties = {
-      transform: CSS.Translate.toString(transform),
-      transition: isDragging ? undefined : transition,
-    };
-
-    return (
-      <FocusCard
-        {...props}
-        isDragging={isDragging}
-        sortableRef={setNodeRef}
-        sortableStyle={style}
-        sortableAttributes={attributes}
-        sortableListeners={listeners}
-      />
-    );
-  },
-);

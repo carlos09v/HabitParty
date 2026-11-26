@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, Swords, Zap } from "lucide-react";
+import { CheckSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   ChecklistItemRow,
@@ -10,10 +10,10 @@ import {
   ChecklistRewardCounter,
   ChecklistRewardInfoTooltip,
   getChecklistRewardStats,
+  RewardedStepToggleButton,
   useChecklistRewardRowHelpers,
 } from "@/components/tasks/shared/ChecklistRewardInfoTooltip";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
-import { cn } from "@/utils";
 
 interface TaskChecklistSectionProps {
   form: CreateTaskFormReturn;
@@ -24,6 +24,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
   const {
     checklist,
     canRewardChecklistItems,
+    isTaskCompleted,
     newChecklistText,
     setNewChecklistText,
     isNewChecklistRewarded,
@@ -37,28 +38,41 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
   } = form;
 
   const { rewardedCount, isLimitReached } = getChecklistRewardStats(checklist);
-  const { isGamified, chipLabel, getRowRewardLabels, getNewStepToggleLabels } =
-    useChecklistRewardRowHelpers();
-  const RewardIcon = isGamified ? Swords : Zap;
+  const {
+    chipLabel,
+    rewardLockedWhileCompletedTitle,
+    getRowRewardLabels,
+    getNewStepToggleLabels,
+  } = useChecklistRewardRowHelpers();
   const isNewRewardActive =
-    canRewardChecklistItems && isNewChecklistRewarded && !isLimitReached;
-  const newToggleLabels = getNewStepToggleLabels({ isLimitReached });
+    canRewardChecklistItems &&
+    isNewChecklistRewarded &&
+    !isTaskCompleted &&
+    !isLimitReached;
+  const newToggleLabels = getNewStepToggleLabels({
+    isLimitReached,
+    isTaskCompleted,
+  });
 
   const {
-    editingKey: editingIndex,
+    editingKey: editingItemId,
     editingText,
     setEditingText,
     editInputRef,
     startEdit,
     confirmEdit,
     cancelEdit,
-  } = useChecklistInlineEdit<number>(handleUpdateChecklistItem, isPending);
+  } = useChecklistInlineEdit<string>(handleUpdateChecklistItem, isPending);
 
   return (
     <div className="flex flex-col gap-2 pt-2 border-t border-neutral-700/70 dark:border-white/10">
       <div className="flex items-center justify-between gap-2 shrink-0">
         <span className="text-body-s text-neutral-300 font-medium flex items-center gap-1.5">
-          <CheckSquare size={15} className="text-gold shrink-0" />
+          <CheckSquare
+            size={15}
+            className="text-gold shrink-0"
+            aria-hidden="true"
+          />
           <span>{t("title")}</span>
           {canRewardChecklistItems && (
             <ChecklistRewardInfoTooltip align="left" side="top" />
@@ -88,28 +102,19 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
             }
           }}
           placeholder={t("inputPlaceholder")}
+          aria-label={t("inputPlaceholder")}
           className="flex-1 min-w-0 bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-1.5 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s"
           disabled={isPending}
         />
         {canRewardChecklistItems && (
-          <button
-            type="button"
-            onClick={() => setIsNewChecklistRewarded((prev) => !prev)}
-            disabled={isPending || isLimitReached}
-            aria-pressed={isNewRewardActive}
-            aria-label={newToggleLabels.ariaLabel}
+          <RewardedStepToggleButton
+            size="md"
+            isActive={isNewRewardActive}
+            disabled={isPending || isTaskCompleted || isLimitReached}
+            ariaLabel={newToggleLabels.ariaLabel}
             title={newToggleLabels.title}
-            className={cn(
-              "inline-flex items-center justify-center min-h-8 min-w-8 px-2.5 rounded-lg border transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-gold",
-              isNewRewardActive
-                ? "bg-amber-500/15 border-amber-500/50 text-amber-800 hover:bg-amber-500/25 dark:bg-gold/15 dark:border-gold/55 dark:text-gold dark:hover:bg-gold/25 cursor-pointer"
-                : isLimitReached
-                  ? "border-neutral-700/60 text-neutral-500 opacity-45 cursor-not-allowed"
-                  : "border-dashed border-neutral-600 text-neutral-300 hover:text-amber-700 hover:border-amber-500/50 hover:bg-gold/10 dark:border-primary/35 dark:text-neutral-400 dark:hover:text-gold dark:hover:border-gold/50 cursor-pointer",
-            )}
-          >
-            <RewardIcon size={15} className="shrink-0" aria-hidden="true" />
-          </button>
+            onClick={() => setIsNewChecklistRewarded((prev) => !prev)}
+          />
         )}
         <button
           type="button"
@@ -129,20 +134,24 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
               key={item.id || `item-${idx}-${item.name}`}
               item={item}
               variant="modal"
-              isEditing={editingIndex === idx}
+              isEditing={Boolean(item.id && editingItemId === item.id)}
               editingText={editingText}
               editInputRef={editInputRef}
               disabled={isPending}
               onEditingTextChange={setEditingText}
               onConfirmEdit={confirmEdit}
               onCancelEdit={cancelEdit}
-              onStartEdit={() => startEdit(idx, item.name)}
-              onToggle={() => handleToggleChecklistItem(idx)}
-              onDelete={() => handleRemoveChecklistItem(idx)}
+              onStartEdit={() => {
+                if (item.id) startEdit(item.id, item.name);
+              }}
+              onToggle={() => handleToggleChecklistItem(item.id)}
+              onDelete={() => handleRemoveChecklistItem(item.id)}
               canReward={canRewardChecklistItems}
               isRewardLimitReached={isLimitReached}
+              isRewardToggleDisabled={isTaskCompleted}
+              rewardDisabledTitle={rewardLockedWhileCompletedTitle}
               rewardChipLabel={chipLabel}
-              onToggleReward={() => handleToggleChecklistItemReward(idx)}
+              onToggleReward={() => handleToggleChecklistItemReward(item.id)}
               labels={{
                 toggleAria: item.isCompleted
                   ? t("markPendingAria")

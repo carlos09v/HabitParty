@@ -1,7 +1,10 @@
+import { getCachedNumberFormat } from "@/utils/economy";
+import { capitalizeFirst, formatFocusHours } from "@/utils/showcaseUtils";
 import {
   drawMetricBox,
   drawRoundedRect,
   drawTruncatedText,
+  wrapTextLines,
 } from "./canvasPrimitives";
 import type { ProfileCardRenderInput, ThemePalette } from "./types";
 
@@ -13,6 +16,7 @@ export function renderRetrospectiveBody(
 ): void {
   const retro = input.retrospective;
   const archY = 250;
+  const numFmt = getCachedNumberFormat(input.locale || undefined);
 
   drawRoundedRect(ctx, 54, archY, width - 108, 96, 20);
   ctx.fillStyle = palette.goldSoftBg;
@@ -45,9 +49,7 @@ export function renderRetrospectiveBody(
   const row2Y = 496;
   const gap = 18;
   const colW = (width - 108 - gap * 2) / 3;
-  const focusHours = retro
-    ? Math.round((retro.focusMinutes / 60) * 10) / 10
-    : 0;
+  const focusHours = formatFocusHours(retro?.focusMinutes);
 
   const activeDaysSub =
     input.labels.retroActiveDaysSub || (retro?.year ? `${retro.year}` : null);
@@ -58,8 +60,11 @@ export function renderRetrospectiveBody(
   const rarityLabel =
     input.rarestAchievementRarityLabel || retro?.rarestAchievementRarity;
   const rarestSub = rarityLabel
-    ? `${retro?.achievementsUnlockedCount ?? 0} • ${rarityLabel}`
-    : `${retro?.achievementsUnlockedCount ?? 0}`;
+    ? `${numFmt.format(retro?.achievementsUnlockedCount ?? 0)} • ${rarityLabel}`
+    : numFmt.format(retro?.achievementsUnlockedCount ?? 0);
+  const bestMonthDisplay =
+    capitalizeFirst(input.bestMonthLabel, input.locale) ||
+    input.labels.retroNoBestMonth;
 
   drawMetricBox(
     ctx,
@@ -68,7 +73,7 @@ export function renderRetrospectiveBody(
     colW,
     110,
     input.labels.retroActiveDaysLabel,
-    `${retro?.activeDays ?? 0}`,
+    numFmt.format(retro?.activeDays ?? 0),
     activeDaysSub,
     "#34D399",
     palette,
@@ -80,7 +85,7 @@ export function renderRetrospectiveBody(
     colW,
     110,
     input.labels.retroTasksLabel,
-    `${retro?.tasksCompleted ?? 0}`,
+    numFmt.format(retro?.tasksCompleted ?? 0),
     input.labels.retroHardTasksSub,
     "#38BDF8",
     palette,
@@ -92,7 +97,7 @@ export function renderRetrospectiveBody(
     colW,
     110,
     input.labels.retroFocusLabel,
-    `${focusHours}h`,
+    `${numFmt.format(focusHours)}h`,
     input.labels.retroFocusSessionsSub,
     "#A78BFA",
     palette,
@@ -105,7 +110,7 @@ export function renderRetrospectiveBody(
     colW,
     110,
     input.labels.retroXpLabel,
-    `${(retro?.xpEarned ?? 0).toLocaleString()}`,
+    numFmt.format(retro?.xpEarned ?? 0),
     input.labels.retroCoinsSub,
     palette.gold,
     palette,
@@ -117,21 +122,48 @@ export function renderRetrospectiveBody(
     colW,
     110,
     input.labels.retroBestMonthLabel,
-    input.bestMonthLabel || input.labels.retroNoBestMonth,
+    bestMonthDisplay,
     retro?.bestMonth ? input.labels.retroBestMonthSub : null,
     "#FB923C",
     palette,
   );
-  drawMetricBox(
+  // Card da conquista mais rara usa tipografia 20px com quebra em até 2 linhas para evitar corte precoce
+  const rarestX = 54 + (colW + gap) * 2;
+  const rarestH = 110;
+  ctx.save();
+  drawRoundedRect(ctx, rarestX, row2Y, colW, rarestH, 18);
+  ctx.fillStyle = palette.panelBg;
+  ctx.fill();
+  ctx.strokeStyle = palette.panelBorder;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  drawRoundedRect(ctx, rarestX + 16, row2Y + 18, 4, rarestH - 36, 2);
+  ctx.fillStyle = "#E879F9";
+  ctx.fill();
+
+  ctx.textBaseline = "top";
+  ctx.fillStyle = palette.textMuted;
+  ctx.font = "700 13px system-ui, -apple-system, sans-serif";
+  drawTruncatedText(
     ctx,
-    54 + (colW + gap) * 2,
-    row2Y,
-    colW,
-    110,
-    input.labels.retroRarestLabel,
-    rarestTitle,
-    rarestSub,
-    "#E879F9",
-    palette,
+    input.labels.retroRarestLabel.toUpperCase(),
+    rarestX + 32,
+    row2Y + 16,
+    colW - 48,
   );
+
+  ctx.fillStyle = palette.textPrimary;
+  ctx.font = "800 19px system-ui, -apple-system, sans-serif";
+  const rarestLines = wrapTextLines(ctx, rarestTitle, colW - 48, 2);
+  rarestLines.forEach((line, idx) => {
+    ctx.fillText(line, rarestX + 32, row2Y + 37 + idx * 22);
+  });
+
+  if (rarestSub) {
+    ctx.fillStyle = palette.textSecondary;
+    ctx.font = "600 13px system-ui, -apple-system, sans-serif";
+    drawTruncatedText(ctx, rarestSub, rarestX + 32, row2Y + 84, colW - 48);
+  }
+  ctx.restore();
 }

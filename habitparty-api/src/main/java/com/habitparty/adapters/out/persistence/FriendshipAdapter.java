@@ -103,9 +103,20 @@ public class FriendshipAdapter implements FriendshipRepository {
   }
 
   @Override
+  public long countIncomingPendingByUserId(UUID userId) {
+    return repository.countByAddresseeIdAndStatus(userId, FriendshipStatus.PENDING);
+  }
+
+  @Override
   @Transactional
   public Friendship save(Friendship friendship) {
-    FriendshipJpaEntity saved = repository.save(mapper.toEntity(friendship));
+    FriendshipJpaEntity entity = repository.findById(friendship.getId())
+        .map(existing -> {
+          mapper.updateEntityFromDomain(existing, friendship);
+          return existing;
+        })
+        .orElseGet(() -> mapper.toEntity(friendship));
+    FriendshipJpaEntity saved = repository.save(entity);
     return mapper.toDomain(saved);
   }
 

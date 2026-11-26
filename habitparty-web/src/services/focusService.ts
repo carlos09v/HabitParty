@@ -8,6 +8,7 @@ import type {
   FocusableTaskItem,
   FocusRecord,
   FocusRecordResponseDTO,
+  FocusSummaryData,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import {
@@ -15,20 +16,33 @@ import {
   mapFocusActivities,
   mapFocusRecords,
   normalizeFocusRecordsPage,
+  normalizeFocusSummary,
 } from "@/utils/focusMapper";
 
 export type { FocusRecordsPageResult };
 
-export interface FocusPageData {
+export const INITIAL_FOCUS_RECORDS_PAGE_SIZE = 20;
+
+export interface FocusCriticalPageData {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   allInventoryItems: InventoryItemResponseDTO[];
+  focusableTasks: FocusableTaskItem[];
+}
+
+export interface FocusInitialHistoryBundle {
+  initialSummary: FocusSummaryData | null;
+  initialSummaryActivityId: string | null;
   initialRecords: FocusRecord[];
   totalRecordsCount: number;
   hasMoreRecords: boolean;
   initialLoadedRecordsPage: number;
-  focusableTasks: FocusableTaskItem[];
+  initialRecordsPageSize: number;
 }
+
+export interface FocusPageData
+  extends FocusCriticalPageData,
+    FocusInitialHistoryBundle {}
 
 /**
  * Busca a lista bruta de atividades de foco do usuário.
@@ -74,9 +88,36 @@ export async function getFocusActivitiesAndItems(): Promise<{
   return { activities, backpackItems, allInventoryItems };
 }
 
+/**
+ * Busca o resumo agregado completo de métricas de foco diretamente no backend (`GET /focus-records/summary`),
+ * eliminando o download de centenas de registros só para calcular totais, ofensiva e gráfico semanal.
+ */
+export async function fetchFocusSummary(
+  activityId?: string | null,
+): Promise<FocusSummaryData | null> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("focus-records");
+
+  const normalizedActivityId = activityId?.trim() || undefined;
+  const { data, error } = await serverApi
+    .GET("/focus-records/summary", {
+      params: normalizedActivityId
+        ? { query: { activityId: normalizedActivityId } }
+        : undefined,
+    })
+    .catch(() => ({ data: null, error: true }));
+
+  if (error || !data) {
+    return null;
+  }
+
+  return normalizeFocusSummary(data);
+}
+
 async function fetchFocusRecordsPageUncached(
   page = 0,
-  size = 100,
+  size = INITIAL_FOCUS_RECORDS_PAGE_SIZE,
 ): Promise<FocusRecordsPageResult | null> {
   const safePage = Math.max(page, 0);
   const safeSize = Math.min(Math.max(size, 1), 100);
@@ -93,6 +134,31 @@ async function fetchFocusRecordsPageUncached(
   }
 
   return normalizeFocusRecordsPage(myRecordsPage, safePage);
+}
+
+async function fetchFocusActivityRecordsPageCached(
+  activityId: string,
+  page = 0,
+): Promise<FocusRecordsPageResult | null> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("focus-records");
+
+  const safePage = Math.max(page, 0);
+  const { data, error } = await serverApi
+    .GET("/focus-records/activity/{activityId}", {
+      params: {
+        path: { activityId },
+        query: { page: safePage },
+      },
+    })
+    .catch(() => ({ data: null, error: true }));
+
+  if (error || !data?.content) {
+    return null;
+  }
+
+  return normalizeFocusRecordsPage(data, safePage);
 }
 
 /**
@@ -127,6 +193,7 @@ export async function getFocusInitialRecords(
   activities: FocusActivity[],
   prefetchedRawRecords?: FocusRecordResponseDTO[],
   inventoryItems: InventoryItemResponseDTO[] = [],
+  timeZone?: string | null,
 ): Promise<FocusRecord[]> {
   const rawRecords =
     prefetchedRawRecords !== undefined
@@ -135,7 +202,7 @@ export async function getFocusInitialRecords(
   const initialRecords = mapFocusRecords(
     rawRecords,
     activities,
-    undefined,
+    timeZone,
     inventoryItems,
   );
 
@@ -165,71 +232,102 @@ export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
   }
 }
 
-async function fetchInitialRecordsBundle(): Promise<{
-  combinedRawRecords?: FocusRecordResponseDTO[];
-  lastFetchedPage: FocusRecordsPageResult | null;
-}> {
-  const firstRecordsPage = await fetchUserFocusRecordsPage(0, 100);
-  if (!firstRecordsPage) {
-    return { combinedRawRecords: undefined, lastFetchedPage: null };
-  }
-
-  let combinedRawRecords = firstRecordsPage.records;
-  let lastFetchedPage = firstRecordsPage;
-
-  if (firstRecordsPage.hasMore) {
-    const extraPageNumbers = [1];
-    if (firstRecordsPage.totalPages > 2) {
-      extraPageNumbers.push(2);
-    }
-    const extraPages = (
-      await Promise.all(
-        extraPageNumbers.map((page) => fetchUserFocusRecordsPage(page, 100)),
-      )
-    ).filter((page): page is FocusRecordsPageResult => Boolean(page));
-
-    if (extraPages.length > 0) {
-      combinedRawRecords = [
-        ...firstRecordsPage.records,
-        ...extraPages.flatMap((page) => page.records),
-      ];
-      lastFetchedPage = extraPages[extraPages.length - 1];
-    }
-  }
-
-  return { combinedRawRecords, lastFetchedPage };
-}
-
 /**
- * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
+ * Carrega os dados críticos imediatos para renderizar o Palco de Foco, Atividades e Mochila sem bloquear TTFB.
  */
-export async function getFocusPageData(): Promise<FocusPageData> {
-  const [
-    { activities, backpackItems, allInventoryItems },
-    focusableTasks,
-    { combinedRawRecords, lastFetchedPage },
-  ] = await Promise.all([
-    getFocusActivitiesAndItems(),
-    getFocusableTasks(),
-    fetchInitialRecordsBundle(),
-  ]);
-
-  const initialRecords = await getFocusInitialRecords(
-    activities,
-    combinedRawRecords,
-    allInventoryItems,
-  );
+export async function getFocusCriticalPageData(): Promise<FocusCriticalPageData> {
+  const [{ activities, backpackItems, allInventoryItems }, focusableTasks] =
+    await Promise.all([getFocusActivitiesAndItems(), getFocusableTasks()]);
 
   return {
     activities,
     backpackItems,
     allInventoryItems,
-    initialRecords,
-    totalRecordsCount: lastFetchedPage
-      ? lastFetchedPage.totalElements
-      : initialRecords.length,
-    hasMoreRecords: lastFetchedPage ? lastFetchedPage.hasMore : false,
-    initialLoadedRecordsPage: lastFetchedPage ? lastFetchedPage.currentPage : 0,
     focusableTasks,
+  };
+}
+
+/**
+ * Carrega o resumo agregado exato (`GET /focus-records/summary`) + apenas a 1ª página leve (20 registros)
+ * para alimentar a sidebar direita e os indicadores do dia via streaming `<Suspense>`.
+ */
+export async function getFocusInitialHistoryBundle(
+  activities: FocusActivity[],
+  allInventoryItems: InventoryItemResponseDTO[],
+  options?: {
+    initialActivityId?: string | null;
+    timeZone?: string | null;
+  },
+): Promise<FocusInitialHistoryBundle> {
+  const requestedActivityId = options?.initialActivityId?.trim() || null;
+  const hasValidActivityFilter = Boolean(
+    requestedActivityId &&
+      activities.some((act) => act.id === requestedActivityId),
+  );
+  const effectiveActivityId = hasValidActivityFilter
+    ? requestedActivityId
+    : null;
+
+  const [initialSummary, firstRecordsPage, filteredFirstPage] =
+    await Promise.all([
+      fetchFocusSummary(effectiveActivityId),
+      fetchUserFocusRecordsPage(0, INITIAL_FOCUS_RECORDS_PAGE_SIZE),
+      effectiveActivityId
+        ? fetchFocusActivityRecordsPageCached(effectiveActivityId, 0)
+        : Promise.resolve(null),
+    ]);
+
+  const combinedRawRecords: FocusRecordResponseDTO[] = [];
+  const seenIds = new Set<string>();
+  for (const list of [
+    firstRecordsPage?.records ?? [],
+    filteredFirstPage?.records ?? [],
+  ]) {
+    for (const rec of list) {
+      if (rec.id && seenIds.has(rec.id)) continue;
+      if (rec.id) seenIds.add(rec.id);
+      combinedRawRecords.push(rec);
+    }
+  }
+
+  const initialRecords = await getFocusInitialRecords(
+    activities,
+    combinedRawRecords,
+    allInventoryItems,
+    options?.timeZone,
+  );
+
+  return {
+    initialSummary,
+    initialSummaryActivityId: effectiveActivityId,
+    initialRecords,
+    totalRecordsCount: firstRecordsPage
+      ? firstRecordsPage.totalElements
+      : initialRecords.length,
+    hasMoreRecords: firstRecordsPage ? firstRecordsPage.hasMore : false,
+    initialLoadedRecordsPage: firstRecordsPage
+      ? firstRecordsPage.currentPage
+      : 0,
+    initialRecordsPageSize: INITIAL_FOCUS_RECORDS_PAGE_SIZE,
+  };
+}
+
+/**
+ * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
+ */
+export async function getFocusPageData(options?: {
+  initialActivityId?: string | null;
+  timeZone?: string | null;
+}): Promise<FocusPageData> {
+  const critical = await getFocusCriticalPageData();
+  const historyBundle = await getFocusInitialHistoryBundle(
+    critical.activities,
+    critical.allInventoryItems,
+    options,
+  );
+
+  return {
+    ...critical,
+    ...historyBundle,
   };
 }

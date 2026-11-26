@@ -9,12 +9,32 @@ import com.habitparty.core.domain.entities.focus.FocusRecord;
 
 @Component
 public class FocusRecordMapper {
-  public FocusRecordJpaEntity toEntity(FocusRecord domain) {
-    if (domain == null) return null;
 
-    FocusRecordJpaEntity entity = new FocusRecordJpaEntity();
-    entity.setId(domain.getId());
-    entity.setUserId(domain.getUserId());
+  public FocusRecordJpaEntity toEntity(FocusRecord domain) {
+    if (domain == null) {
+      return null;
+    }
+    return FocusRecordJpaEntity.builder()
+        .id(domain.getId())
+        .userId(domain.getUserId())
+        .focusActivityId(domain.getFocusActivityId().orElse(null))
+        .inventoryItemId(domain.getInventoryItemId().orElse(null))
+        .taskId(domain.getTaskId().orElse(null))
+        .taskNameSnapshot(domain.getTaskNameSnapshot().orElse(null))
+        .notes(domain.getNotes().orElse(null))
+        .startTime(domain.getStartTime())
+        .endTime(domain.getEndTime())
+        .recordType(domain.getRecordType().orElse(null))
+        .completedPomos(domain.getCompletedPomos().orElse(null))
+        .pomoTargetMinutes(domain.getPomoTargetMinutes().orElse(null))
+        .durationMinutes(domain.getDurationMinutes())
+        .xpEarned(domain.getXpEarned().orElse(0))
+        .coinsEarned(domain.getCoinsEarned().orElse(BigDecimal.ZERO))
+        .rewardLocked(domain.isRewardLocked())
+        .build();
+  }
+
+  public void updateEntityFromDomain(FocusRecordJpaEntity entity, FocusRecord domain) {
     entity.setFocusActivityId(domain.getFocusActivityId().orElse(null));
     entity.setInventoryItemId(domain.getInventoryItemId().orElse(null));
     entity.setTaskId(domain.getTaskId().orElse(null));
@@ -28,13 +48,13 @@ public class FocusRecordMapper {
     entity.setDurationMinutes(domain.getDurationMinutes());
     entity.setXpEarned(domain.getXpEarned().orElse(0));
     entity.setCoinsEarned(domain.getCoinsEarned().orElse(BigDecimal.ZERO));
-
-    return entity;
+    entity.setRewardLocked(domain.isRewardLocked());
   }
 
   public FocusRecord toDomain(FocusRecordJpaEntity entity) {
-    if (entity == null) return null;
-
+    if (entity == null) {
+      return null;
+    }
     return new FocusRecord(
         entity.getId(),
         entity.getUserId(),
@@ -49,7 +69,7 @@ public class FocusRecordMapper {
         entity.getCompletedPomos(),
         entity.getPomoTargetMinutes(),
         entity.getXpEarned() != null ? entity.getXpEarned() : 0,
-        entity.getCoinsEarned() != null ? entity.getCoinsEarned() : BigDecimal.ZERO
-    );
+        entity.getCoinsEarned() != null ? entity.getCoinsEarned() : BigDecimal.ZERO,
+        entity.isRewardLocked());
   }
 }

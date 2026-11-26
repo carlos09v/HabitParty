@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Trophy, Volume2 } from "lucide-react";
+import { Sparkles, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { AchievementCard } from "@/components/showcase/AchievementCard";
@@ -14,31 +14,35 @@ import {
   ACHIEVEMENTS_PER_PAGE,
 } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import {
+  type ShowcaseRarityFilter,
+  useShowcaseGalleryFilter,
+} from "@/hooks/useShowcaseGalleryFilter";
 import type {
   AchievementCategory,
   AchievementItemResponseDTO,
-  AchievementRarity,
   ProfileHighlightResponseDTO,
 } from "@/types/showcase";
-import { cn, resolveAchievementCopy } from "@/utils";
-import { soundEffects } from "@/utils/soundEffects";
+import { cn } from "@/utils/cn";
+import { resolveAchievementCopy } from "@/utils/showcaseUtils";
 
 interface AchievementsGalleryProps {
   achievements: AchievementItemResponseDTO[];
   highlights: ProfileHighlightResponseDTO[];
   isVisitorMode: boolean;
   onPinAchievement: (achievement: AchievementItemResponseDTO) => void;
+  onUnpinAchievement?: (achievement: AchievementItemResponseDTO) => void;
 }
 
 type StatusFilter = "ALL" | "UNLOCKED" | "LOCKED";
 type CategoryFilter = "ALL" | AchievementCategory;
-type RarityFilter = "ALL" | AchievementRarity;
 
 export function AchievementsGallery({
   achievements,
   highlights,
   isVisitorMode,
   onPinAchievement,
+  onUnpinAchievement,
 }: AchievementsGalleryProps) {
   const t = useTranslations("showcase.gallery");
   const tCategories = useTranslations("showcase.categories");
@@ -48,20 +52,22 @@ export function AchievementsGallery({
 
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("ALL");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [rarityFilter, setRarityFilter] = useState<RarityFilter>("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const pinnedAchievementIdsOrCodes = useMemo(() => {
-    const set = new Set<string>();
-    for (const h of highlights) {
-      if (h.highlightType === "ACHIEVEMENT") {
-        if (h.referenceId) set.add(h.referenceId);
-        if (h.highlightKey) set.add(h.highlightKey);
-      }
-    }
-    return set;
-  }, [highlights]);
+  const {
+    rarityFilter,
+    setRarityFilter,
+    searchQuery,
+    setSearchQuery,
+    isPinned,
+    rarityOptions,
+  } = useShowcaseGalleryFilter({
+    highlights,
+    highlightType: "ACHIEVEMENT",
+    rarities: ACHIEVEMENT_RARITIES,
+    rarityAllLabel: t("rarityFilterAll"),
+    getRarityLabel: (rarity) => tRarities(rarity),
+  });
 
   const baseCategoryAchievements = useMemo(() => {
     return achievements.filter((ach) => {
@@ -160,17 +166,6 @@ export function AchievementsGallery({
     [t, totalCategoryCount, unlockedCount, lockedCount],
   );
 
-  const rarityOptions = useMemo(
-    () => [
-      { value: "ALL", label: t("rarityFilterAll") },
-      ...ACHIEVEMENT_RARITIES.map((rarity) => ({
-        value: rarity,
-        label: tRarities(rarity),
-      })),
-    ],
-    [t, tRarities],
-  );
-
   const categoryTabs: CategoryFilter[] = ["ALL", ...ACHIEVEMENT_CATEGORIES];
 
   return (
@@ -182,28 +177,21 @@ export function AchievementsGallery({
             <Trophy
               size={18}
               className="text-amber-700 dark:text-gold shrink-0"
+              aria-hidden="true"
             />
             <span>{isGamified ? t("titleGamified") : t("titleEssential")}</span>
           </h2>
           <p className="text-body-s text-neutral-300 mt-0.5">
-            {isGamified ? t("subtitleGamified") : t("subtitleEssential")}
+            {isGamified
+              ? t("subtitleGamified", { total: achievements.length })
+              : t("subtitleEssential", { total: achievements.length })}
           </p>
         </div>
-
-        {!isVisitorMode && (
-          <button
-            type="button"
-            onClick={() => soundEffects.playAchievementUnlockSound("LEGENDARY")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-card hover:bg-surface border border-neutral-700 text-neutral-200 hover:border-gold/45 hover:text-amber-700 dark:bg-surface/70 dark:border-primary/25 dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
-          >
-            <Volume2 size={14} className="text-amber-700 dark:text-gold" />
-            <span>{t("testSoundButton")}</span>
-          </button>
-        )}
       </div>
 
-      {/* CATEGORY TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+      {/* CATEGORY FILTERS */}
+      <fieldset className="border-0 p-0 m-0 flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+        <legend className="sr-only">{t("categoryFilterAria")}</legend>
         {categoryTabs.map((cat) => {
           const isActive = categoryFilter === cat;
           const label = tCategories(
@@ -213,6 +201,7 @@ export function AchievementsGallery({
             <button
               key={cat}
               type="button"
+              aria-pressed={isActive}
               onClick={() => {
                 setCategoryFilter(cat);
                 setCurrentPage(1);
@@ -228,7 +217,7 @@ export function AchievementsGallery({
             </button>
           );
         })}
-      </div>
+      </fieldset>
 
       {/* FILTER BAR: SEARCH + STATUS + RARITY */}
       <FilterBar
@@ -266,7 +255,7 @@ export function AchievementsGallery({
               options={rarityOptions}
               value={rarityFilter}
               onChange={(val) => {
-                setRarityFilter((val || "ALL") as RarityFilter);
+                setRarityFilter((val || "ALL") as ShowcaseRarityFilter);
                 setCurrentPage(1);
               }}
               aria-label={t("rarityFilterAll")}
@@ -287,12 +276,10 @@ export function AchievementsGallery({
               <AchievementCard
                 key={ach.code}
                 achievement={ach}
-                isPinnedInShowcase={
-                  pinnedAchievementIdsOrCodes.has(ach.id) ||
-                  pinnedAchievementIdsOrCodes.has(ach.code)
-                }
+                isPinnedInShowcase={isPinned(ach.id, ach.code)}
                 isVisitorMode={isVisitorMode}
                 onPinToShowcase={onPinAchievement}
+                onUnpinFromShowcase={onUnpinAchievement}
               />
             ))}
           </div>

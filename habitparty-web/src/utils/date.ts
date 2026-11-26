@@ -1,6 +1,12 @@
 import type { AppLocale } from "@/i18n/config";
 import type { DateFormat, TimeFormat } from "@/types/ui";
 import {
+  formatDateParts,
+  getShortWeekDays,
+  SHORT_WEEK_DAYS_BR,
+  SHORT_WEEK_DAYS_EN,
+} from "./calendarGrid";
+import {
   getDateKeyInTimeZone,
   getDatePartsInTimeZone,
   hasTimeZoneSuffix,
@@ -10,6 +16,9 @@ import {
 export * from "./calendarGrid";
 export * from "./taskSchedule";
 export * from "./timezone";
+
+const detectedDateFormatCache = new Map<string, DateFormat>();
+const detectedTimeFormatCache = new Map<string, TimeFormat>();
 
 /**
  * Detecta o formato de data preferido com base no locale do navegador/SO (ou subtag de Accept-Language).
@@ -22,6 +31,8 @@ export function detectBrowserDateFormat(
     localeSubtag?.trim() ||
     (typeof navigator !== "undefined" ? navigator.language : undefined);
   if (tag) {
+    const cached = detectedDateFormatCache.get(tag);
+    if (cached) return cached;
     try {
       const parts = new Intl.DateTimeFormat(tag, {
         year: "numeric",
@@ -31,9 +42,14 @@ export function detectBrowserDateFormat(
       const firstDatePart = parts.find(
         (p) => p.type === "day" || p.type === "month" || p.type === "year",
       );
-      if (firstDatePart?.type === "year") return "YYYY-MM-DD";
-      if (firstDatePart?.type === "month") return "MM/DD/YYYY";
-      if (firstDatePart?.type === "day") return "DD/MM/YYYY";
+      let resolved: DateFormat | null = null;
+      if (firstDatePart?.type === "year") resolved = "YYYY-MM-DD";
+      else if (firstDatePart?.type === "month") resolved = "MM/DD/YYYY";
+      else if (firstDatePart?.type === "day") resolved = "DD/MM/YYYY";
+      if (resolved) {
+        detectedDateFormatCache.set(tag, resolved);
+        return resolved;
+      }
     } catch {
       // Fallback caso o subtag seja inválido
     }
@@ -60,12 +76,16 @@ export function detectBrowserTimeFormat(
     localeSubtag?.trim() ||
     (typeof navigator !== "undefined" ? navigator.language : undefined);
   if (tag) {
+    const cached = detectedTimeFormatCache.get(tag);
+    if (cached) return cached;
     try {
       const resolved = new Intl.DateTimeFormat(tag, {
         hour: "numeric",
       }).resolvedOptions();
       if (resolved.hour12 !== undefined) {
-        return resolved.hour12 ? "12h" : "24h";
+        const format: TimeFormat = resolved.hour12 ? "12h" : "24h";
+        detectedTimeFormatCache.set(tag, format);
+        return format;
       }
     } catch {
       // Fallback caso o subtag seja inválido
@@ -361,35 +381,15 @@ export const SHORT_MONTHS_EN = [
   "Dec",
 ];
 
-export const CAPITALIZED_WEEK_DAYS_BR = [
-  "Dom",
-  "Seg",
-  "Ter",
-  "Qua",
-  "Qui",
-  "Sex",
-  "Sáb",
-];
+export const CAPITALIZED_WEEK_DAYS_BR = SHORT_WEEK_DAYS_BR;
 
-export const CAPITALIZED_WEEK_DAYS_EN = [
-  "Sun",
-  "Mon",
-  "Tue",
-  "Wed",
-  "Thu",
-  "Fri",
-  "Sat",
-];
+export const CAPITALIZED_WEEK_DAYS_EN = SHORT_WEEK_DAYS_EN;
 
 export function getShortMonths(locale: AppLocale = "pt-BR"): readonly string[] {
   return locale === "en" ? SHORT_MONTHS_EN : SHORT_MONTHS_BR;
 }
 
-export function getCapitalizedWeekDays(
-  locale: AppLocale = "pt-BR",
-): readonly string[] {
-  return locale === "en" ? CAPITALIZED_WEEK_DAYS_EN : CAPITALIZED_WEEK_DAYS_BR;
-}
+export const getCapitalizedWeekDays = getShortWeekDays;
 
 export function parseDateParts(
   dateStr?: string | null,
@@ -398,15 +398,6 @@ export function parseDateParts(
   const [y, m, d] = dateStr.split("T")[0].split("-").map(Number);
   if (!y || !m || !d) return null;
   return { year: y, month: m - 1, day: d };
-}
-
-export function formatDateParts(
-  year: number,
-  month: number,
-  day: number,
-): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${year}-${pad(month + 1)}-${pad(day)}`;
 }
 
 /**
@@ -564,23 +555,27 @@ export function minutesToTimeHHMM(totalMinutes: number): string {
 
 /**
  * Calcula a janela de início e fim (HH:mm) a partir de um horário final e duração em minutos.
+ * Quando a duração retrocede antes da meia-noite (ex: fim às 00:10 com 35m), mantém `endTimeStr`
+ * intacto e envolve `startTimeStr` para a noite anterior (`23:35`), evitando empurrar o fim para o futuro.
  */
 export function computeTimeWindowFromDuration(
   endHHMM: string,
   durationMins: number,
-): { startTimeStr: string; endTimeStr: string } {
+): { startTimeStr: string; endTimeStr: string; crossesMidnight: boolean } {
   const safeDuration = Math.max(1, Math.min(1439, durationMins));
   const endMins = parseTimeToMinutes(endHHMM) ?? 18 * 60;
   if (endMins - safeDuration >= 0) {
     return {
       startTimeStr: minutesToTimeHHMM(endMins - safeDuration),
       endTimeStr: minutesToTimeHHMM(endMins),
+      crossesMidnight: false,
     };
   }
-  const shiftedEnd = Math.min(1439, safeDuration);
+  const wrappedStartMins = (endMins - safeDuration + 1440) % 1440;
   return {
-    startTimeStr: "00:00",
-    endTimeStr: minutesToTimeHHMM(shiftedEnd),
+    startTimeStr: minutesToTimeHHMM(wrappedStartMins),
+    endTimeStr: minutesToTimeHHMM(endMins),
+    crossesMidnight: true,
   };
 }
 

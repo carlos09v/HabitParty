@@ -1,5 +1,3 @@
-"use client";
-
 import { CheckCircle2, Crown, Lock } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { CSSProperties } from "react";
@@ -7,12 +5,9 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import type { AvatarFrameId } from "@/constants/avatarFrames";
 import type { FriendConnectionItem } from "@/types/social";
-import {
-  cn,
-  type LevelProgress,
-  type ProgressionTierView,
-  type UserLevelTier,
-} from "@/utils";
+import { cn } from "@/utils/cn";
+import type { LevelProgress } from "@/utils/levels";
+import type { ProgressionTierView, UserLevelTier } from "@/utils/progression";
 import { TierFriendsPopover } from "./TierFriendsPopover";
 import {
   getPyramidRowClass,

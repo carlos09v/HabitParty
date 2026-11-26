@@ -11,6 +11,7 @@ import {
   NAV_SECTION_CONFIGS,
 } from "@/constants/navigation";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import { cn } from "@/utils";
 import { SidebarFocusWidget } from "./SidebarFocusWidget";
 import { SidebarLink } from "./SidebarLink";
@@ -43,6 +44,7 @@ export function Sidebar({
 }: SidebarProps) {
   const t = useTranslations("nav");
   const { isGamified } = useExperienceMode();
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const [isSigningOut, startSignOutTransition] = useTransition();
 
   const handleSignOut = () => {
@@ -132,10 +134,16 @@ export function Sidebar({
                       ? badgeCounts?.tasks
                       : undefined;
 
+                const resolvedHref =
+                  (item.href === "/dashboard" || item.href === "/tasks") &&
+                  activeWorkspaceId
+                    ? `${item.href}?workspaceId=${encodeURIComponent(activeWorkspaceId)}`
+                    : item.href;
+
                 return (
                   <SidebarLink
                     key={item.href}
-                    href={item.href}
+                    href={resolvedHref}
                     label={label}
                     badge={badge}
                     onClick={onClose}
@@ -153,7 +161,7 @@ export function Sidebar({
         {/* ÁREA INFERIOR: UTILIDADES, SISTEMA E SUPORTE */}
         <div className="flex flex-col gap-1.5 pb-3 shrink-0 pt-2 border-t border-neutral-700 dark:border-white/10">
           {/* Widget de Foco Ativo */}
-          <SidebarFocusWidget />
+          <SidebarFocusWidget onNavigate={onClose} isMobile={isMobile} />
 
           {/* Notificações e Troca de Tema na mesma linha */}
           <div className="flex items-center gap-1.5">

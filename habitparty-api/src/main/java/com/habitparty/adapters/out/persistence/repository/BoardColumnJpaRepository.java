@@ -14,82 +14,80 @@ import com.habitparty.adapters.out.persistence.entities.BoardColumnJpaEntity;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 
 public interface BoardColumnJpaRepository extends JpaRepository<BoardColumnJpaEntity, UUID> {
-    int countByWorkspace_Id(UUID workspaceId);
 
-    List<BoardColumnJpaEntity> findByWorkspaceIdAndIsVisibleTrueOrderByOrderIndexAsc(UUID workspaceId);
+  int countByWorkspaceId(UUID workspaceId);
 
-    List<BoardColumnJpaEntity> findByWorkspace_Id(UUID workspaceId);
+  List<BoardColumnJpaEntity> findByWorkspaceIdAndIsVisibleTrueOrderByOrderIndexAsc(UUID workspaceId);
 
-    List<BoardColumnJpaEntity> findByWorkspace_IdInOrderByOrderIndexAsc(Collection<UUID> workspaceIds);
+  List<BoardColumnJpaEntity> findByWorkspaceIdOrderByOrderIndexAsc(UUID workspaceId);
 
-    // 1. Query para o Reordenamento na Deleção (Shift Down)
-    @Transactional
-    @Modifying
-    @Query("UPDATE BoardColumnJpaEntity c SET c.orderIndex = c.orderIndex - 1 WHERE c.workspace.id = :workspaceId AND c.orderIndex > :deletedIndex")
-    void decrementOrderIndexForColumnsAfter(@Param("workspaceId") UUID workspaceId,
-            @Param("deletedIndex") int deletedIndex);
+  List<BoardColumnJpaEntity> findByWorkspaceIdInOrderByOrderIndexAsc(Collection<UUID> workspaceIds);
 
-    // 2. Query para encontrar o maior índice na Criação
-    @Query("SELECT COALESCE(MAX(c.orderIndex), 0) FROM BoardColumnJpaEntity c WHERE c.workspace.id = :workspaceId")
-    Integer findMaxOrderIndexByWorkspaceId(@Param("workspaceId") UUID workspaceId);
+  @Transactional
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("UPDATE BoardColumnJpaEntity c SET c.orderIndex = c.orderIndex - 1 WHERE c.workspaceId = :workspaceId AND c.orderIndex > :deletedIndex")
+  void decrementOrderIndexForColumnsAfter(
+      @Param("workspaceId") UUID workspaceId,
+      @Param("deletedIndex") int deletedIndex);
 
-    // Interface de Projeção (Pode colocar no mesmo arquivo do repository ou em um arquivo separado)
-    public interface BoardColumnSummaryProjection {
-        UUID getId();
+  @Query("SELECT COALESCE(MAX(c.orderIndex), -1) FROM BoardColumnJpaEntity c WHERE c.workspaceId = :workspaceId")
+  Integer findMaxOrderIndexByWorkspaceId(@Param("workspaceId") UUID workspaceId);
 
-        String getName();
+  interface BoardColumnSummaryProjection {
+    UUID getId();
 
-        String getIcon();
+    String getName();
 
-        int getOrderIndex();
+    String getIcon();
 
-        Long getTotalTasks();
+    int getOrderIndex();
 
-        Long getCompletedTasks();
-    }
+    Long getTotalTasks();
 
-    // A Query que faz a contagem no banco de dados sem carregar as tarefas para o Java!
-    @Query("""
-                SELECT
-                    b.id AS id,
-                    b.name AS name,
-                    b.icon AS icon,
-                    b.orderIndex AS orderIndex,
-                    COUNT(t.id) AS totalTasks,
-                    SUM(CASE WHEN t.status = :completedStatus THEN 1 ELSE 0 END) AS completedTasks
-                FROM BoardColumnJpaEntity b
-                LEFT JOIN TaskJpaEntity t ON t.boardColumnId = b.id
-                WHERE b.workspace.id = :workspaceId
-                GROUP BY b.id, b.name, b.icon, b.orderIndex
-                ORDER BY b.orderIndex ASC
-            """)
-    List<BoardColumnSummaryProjection> findSummaryByWorkspaceId(
-            @Param("workspaceId") UUID workspaceId,
-            @Param("completedStatus") TaskStatus completedStatus);
+    Long getCompletedTasks();
+  }
 
-    @Query("""
-                SELECT
-                    b.id AS id,
-                    b.name AS name,
-                    b.icon AS icon,
-                    b.orderIndex AS orderIndex,
-                    COUNT(t.id) AS totalTasks,
-                    SUM(CASE WHEN t.status = :completedStatus THEN 1 ELSE 0 END) AS completedTasks
-                FROM BoardColumnJpaEntity b
-                LEFT JOIN TaskJpaEntity t ON t.boardColumnId = b.id
-                WHERE b.workspace.id IN :workspaceIds
-                GROUP BY b.id, b.name, b.icon, b.orderIndex
-                ORDER BY b.orderIndex ASC
-            """)
-    List<BoardColumnSummaryProjection> findSummaryByWorkspaceIdIn(
-            @Param("workspaceIds") Collection<UUID> workspaceIds,
-            @Param("completedStatus") TaskStatus completedStatus);
+  @Query("""
+      SELECT
+          b.id AS id,
+          b.name AS name,
+          b.icon AS icon,
+          b.orderIndex AS orderIndex,
+          COUNT(t.id) AS totalTasks,
+          SUM(CASE WHEN t.status = :completedStatus THEN 1 ELSE 0 END) AS completedTasks
+      FROM BoardColumnJpaEntity b
+      LEFT JOIN TaskJpaEntity t ON t.boardColumnId = b.id
+      WHERE b.workspaceId = :workspaceId
+      GROUP BY b.id, b.name, b.icon, b.orderIndex
+      ORDER BY b.orderIndex ASC
+      """)
+  List<BoardColumnSummaryProjection> findSummaryByWorkspaceId(
+      @Param("workspaceId") UUID workspaceId,
+      @Param("completedStatus") TaskStatus completedStatus);
 
-    @Modifying
-    @Query("DELETE FROM BoardColumnJpaEntity c WHERE c.workspace.id = :workspaceId")
-    void deleteAllByWorkspaceId(@Param("workspaceId") UUID workspaceId);
+  @Query("""
+      SELECT
+          b.id AS id,
+          b.name AS name,
+          b.icon AS icon,
+          b.orderIndex AS orderIndex,
+          COUNT(t.id) AS totalTasks,
+          SUM(CASE WHEN t.status = :completedStatus THEN 1 ELSE 0 END) AS completedTasks
+      FROM BoardColumnJpaEntity b
+      LEFT JOIN TaskJpaEntity t ON t.boardColumnId = b.id
+      WHERE b.workspaceId IN :workspaceIds
+      GROUP BY b.id, b.name, b.icon, b.orderIndex
+      ORDER BY b.orderIndex ASC
+      """)
+  List<BoardColumnSummaryProjection> findSummaryByWorkspaceIdIn(
+      @Param("workspaceIds") Collection<UUID> workspaceIds,
+      @Param("completedStatus") TaskStatus completedStatus);
 
-    @Modifying
-    @Query("DELETE FROM BoardColumnJpaEntity c WHERE c.user.id = :userId")
-    void deleteAllByUserId(@Param("userId") UUID userId);
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM BoardColumnJpaEntity c WHERE c.workspaceId = :workspaceId")
+  void deleteAllByWorkspaceId(@Param("workspaceId") UUID workspaceId);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM BoardColumnJpaEntity c WHERE c.userId = :userId")
+  void deleteAllByUserId(@Param("userId") UUID userId);
 }

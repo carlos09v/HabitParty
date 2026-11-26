@@ -14,23 +14,23 @@ import com.habitparty.adapters.out.persistence.entities.UserTokenJpaEntity;
 import com.habitparty.core.domain.enums.UserTokenType;
 
 public interface UserTokenJpaRepository extends JpaRepository<UserTokenJpaEntity, UUID> {
+
   Optional<UserTokenJpaEntity> findByTokenAndTokenType(String token, UserTokenType tokenType);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Transactional
-  @Query("UPDATE UserTokenJpaEntity t SET t.used = true, t.usedAt = :now WHERE t.user.id = :userId AND t.tokenType = :tokenType AND t.used = false")
+  @Query("UPDATE UserTokenJpaEntity t SET t.used = true, t.usedAt = :now WHERE t.userId = :userId AND t.tokenType = :tokenType AND t.used = false")
   void invalidateActiveTokensByUserIdAndType(
       @Param("userId") UUID userId,
       @Param("tokenType") UserTokenType tokenType,
-      @Param("now") Instant now
-  );
+      @Param("now") Instant now);
 
-  @Modifying
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Transactional
   @Query("DELETE FROM UserTokenJpaEntity t WHERE t.expirationDate < :threshold OR t.used = true")
   void deleteObsoleteTokens(@Param("threshold") Instant threshold);
 
-  @Modifying
-  @Query("DELETE FROM UserTokenJpaEntity t WHERE t.user.id = :userId")
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM UserTokenJpaEntity t WHERE t.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
 }

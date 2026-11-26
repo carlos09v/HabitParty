@@ -20,9 +20,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 @RequestMapping("/rewards")
 @Validated
@@ -33,7 +32,6 @@ public interface RewardApi {
     @PostMapping("/{rewardId}/redeem")
     ResponseEntity<Void> redeemReward(
         @PathVariable UUID rewardId,
-        @RequestParam(defaultValue = "1") @Min(1) @Max(50) int quantity,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
@@ -77,7 +75,7 @@ public interface RewardApi {
     @Operation(summary = "Reordenar Recompensas", description = "Atualiza a ordem de exibição das recompensas.")
     @PutMapping("/reorder")
     ResponseEntity<Void> updateOrderIndex(
-        @RequestBody List<@Valid UpdateRewardOrderDTO> newOrderList,
+        @RequestBody @Size(max = 500, message = "Máximo de 500 itens por reordenação.") List<@Valid UpdateRewardOrderDTO> newOrderList,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

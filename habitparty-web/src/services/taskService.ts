@@ -1,14 +1,21 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { serverApi } from "@/api/server";
+import { redirect } from "next/navigation";
 import {
-  getWorkspaces,
+  getServerAuthToken,
+  isUnauthorizedApiError,
+  serverApi,
+  UnauthorizedApiError,
+} from "@/api/server";
+import { getCurrentUser } from "@/services/userService";
+import {
+  getWorkspacesStrict,
   resolveActiveWorkspace,
 } from "@/services/workspaceService";
 import type {
   ColumnSummaryDTO,
   DashboardColumnOption,
 } from "@/types/dashboard";
-import type { BoardColumn } from "@/types/task";
+import type { BoardColumn, BoardColumnResponseDTO } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
 import { getUserTimezoneCookie } from "@/utils/cookies";
 import {
@@ -29,93 +36,97 @@ export interface WorkspaceBoardWithSummaries {
   summaries: DashboardColumnOption[];
 }
 
-/**
- * Busca o catálogo/resumo de colunas de um workspace.
- * Cacheado de forma privada no Router Cache do navegador por 5 minutos (`catalog`).
- */
-export async function getWorkspaceColumnsSummary(
+function mapColumnToDashboardSummary(
+  col: BoardColumnResponseDTO,
   workspaceId: string,
-): Promise<ColumnSummaryDTO[]> {
-  "use cache: private";
-  cacheLife("catalog");
-  cacheTag("board_columns", "dashboard-columns");
+  workspaceName?: string,
+): DashboardColumnOption {
+  const loadedTasks = col.tasks || [];
+  const loadedTotal = loadedTasks.length;
+  const loadedCompleted = loadedTasks.filter(
+    (t) => t.status === "COMPLETED",
+  ).length;
+  const totalTasks = col.totalTasks ?? loadedTotal;
+  const completedTasks = col.completedTasks ?? loadedCompleted;
+  const { archivedTotalCount, archivedCompletedCount } =
+    computeArchivedColumnCountsFromTotals(
+      loadedTotal,
+      loadedCompleted,
+      totalTasks,
+      completedTasks,
+    );
 
-  const { data } = await serverApi.GET(
-    "/board_columns/workspace/{workspaceId}",
-    {
-      params: { path: { workspaceId } },
-    },
-  );
-
-  return data || [];
+  return {
+    id: col.id,
+    name: col.name,
+    icon: col.icon,
+    orderIndex: col.orderIndex,
+    isVisible: col.isVisible,
+    totalTasks,
+    completedTasks,
+    archivedTotalCount,
+    archivedCompletedCount,
+    workspaceId,
+    ...(workspaceName !== undefined ? { workspaceName } : {}),
+  };
 }
 
-/**
- * Busca todas as colunas (visíveis no Kanban e ocultas) de um workspace com suas respectivas tarefas,
- * além do resumo de colunas retornado pelo backend.
- * Cacheado de forma privada no cliente (`private30`).
- */
-export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
+async function fetchWorkspaceBoardColumnsCached(workspaceId: string): Promise<{
   columns: BoardColumn[];
   summaries: ColumnSummaryDTO[];
 }> {
   "use cache: private";
   cacheLife("private30");
-  cacheTag("kanban", "tasks", "dashboard-tasks");
+  cacheTag("workspaces", "board_columns", "kanban", "tasks", "dashboard-tasks");
 
-  const [{ data: kanbanBoard }, userTimeZone] = await Promise.all([
-    serverApi.GET("/workspaces/{workspaceId}/kanban", {
-      params: {
-        path: { workspaceId },
-        query: { excludeArchivedCompleted: true, includeHidden: true },
-      },
-    }),
-    getUserTimezoneCookie(),
-  ]);
+  const [{ data: kanbanBoard, error, response }, user, cookieTimeZone] =
+    await Promise.all([
+      serverApi.GET("/workspaces/{workspaceId}/kanban", {
+        params: {
+          path: { workspaceId },
+          query: { excludeArchivedCompleted: true, includeHidden: true },
+        },
+      }),
+      getCurrentUser(),
+      getUserTimezoneCookie(),
+    ]);
 
-  const columns = (
-    kanbanBoard ? mapWorkspaceToBoardColumns(kanbanBoard, userTimeZone) : []
-  ).sort((a, b) => a.order - b.order);
+  if (response?.status === 401) {
+    throw new UnauthorizedApiError("WORKSPACE_BOARD_UNAUTHORIZED");
+  }
 
-  const summaries: DashboardColumnOption[] = (kanbanBoard?.columns || []).map(
-    (col) => {
-      const loadedTasks = col.tasks || [];
-      const loadedCompleted = loadedTasks.filter(
-        (t) => t.status === "COMPLETED",
-      ).length;
-      const totalTasks = col.totalTasks ?? loadedTasks.length;
-      const completedTasks = col.completedTasks ?? loadedCompleted;
-      const { archivedTotalCount, archivedCompletedCount } =
-        computeArchivedColumnCountsFromTotals(
-          loadedTasks.length,
-          loadedCompleted,
-          totalTasks,
-          completedTasks,
-        );
-      return {
-        id: col.id,
-        name: col.name,
-        icon: col.icon,
-        orderIndex: col.orderIndex,
-        isVisible: col.isVisible,
-        totalTasks,
-        completedTasks,
-        archivedTotalCount,
-        archivedCompletedCount,
-        workspaceId,
-      };
-    },
-  );
+  if (error || !kanbanBoard) {
+    throw new Error("WORKSPACE_BOARD_FETCH_FAILED");
+  }
+
+  const userTimeZone = user?.timezone ?? cookieTimeZone;
+  const columns = mapWorkspaceToBoardColumns(kanbanBoard, userTimeZone);
+
+  const summaries: DashboardColumnOption[] = [...(kanbanBoard.columns || [])]
+    .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+    .map((col) => mapColumnToDashboardSummary(col, workspaceId));
 
   return { columns, summaries };
 }
 
 /**
- * Busca todos os workspaces do usuário com suas respectivas colunas (visíveis e ocultas)
- * e tarefas em uma única consulta em lote para o Dashboard multi-ambiente.
- * Cacheado de forma privada (`private30`).
+ * Busca todas as colunas (visíveis no Kanban e ocultas) de um workspace com suas respectivas tarefas,
+ * além do resumo de colunas retornado pelo backend.
+ * Nunca armazena falhas transitórias ou respostas 401 no cache privado.
  */
-export async function fetchAllWorkspacesBoards(): Promise<
+export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
+  columns: BoardColumn[];
+  summaries: ColumnSummaryDTO[];
+}> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    throw new UnauthorizedApiError("WORKSPACE_BOARD_MISSING_TOKEN");
+  }
+
+  return fetchWorkspaceBoardColumnsCached(workspaceId);
+}
+
+async function fetchAllWorkspacesBoardsCached(): Promise<
   WorkspaceBoardWithSummaries[]
 > {
   "use cache: private";
@@ -129,52 +140,38 @@ export async function fetchAllWorkspacesBoards(): Promise<
     "dashboard-tasks",
   );
 
-  const [{ data: workspacesDto }, userTimeZone] = await Promise.all([
-    serverApi.GET("/workspaces/boards", {
-      params: {
-        query: { excludeArchivedCompleted: true },
-      },
-    }),
-    getUserTimezoneCookie(),
-  ]);
+  const [{ data: workspacesDto, error, response }, user, cookieTimeZone] =
+    await Promise.all([
+      serverApi.GET("/workspaces/boards", {
+        params: {
+          query: { excludeArchivedCompleted: true },
+        },
+      }),
+      getCurrentUser(),
+      getUserTimezoneCookie(),
+    ]);
 
-  return (workspacesDto || [])
+  if (response?.status === 401) {
+    throw new UnauthorizedApiError("WORKSPACES_BOARDS_UNAUTHORIZED");
+  }
+
+  if (error || !Array.isArray(workspacesDto)) {
+    throw new Error("WORKSPACES_BOARDS_FETCH_FAILED");
+  }
+
+  const userTimeZone = user?.timezone ?? cookieTimeZone;
+
+  return workspacesDto
     .filter((ws) => Boolean(ws.id))
     .map((ws) => {
       const workspaceId = ws.id || "";
       const workspaceName = ws.name || "";
       const columns = mapWorkspaceToBoardColumns(ws, userTimeZone);
-      const summaries: DashboardColumnOption[] = (ws.columns || []).map(
-        (col) => {
-          const loadedTasks = col.tasks || [];
-          const loadedTotal = loadedTasks.length;
-          const loadedCompleted = loadedTasks.filter(
-            (t) => t.status === "COMPLETED",
-          ).length;
-          const totalTasks = col.totalTasks ?? loadedTotal;
-          const completedTasks = col.completedTasks ?? loadedCompleted;
-          const { archivedTotalCount, archivedCompletedCount } =
-            computeArchivedColumnCountsFromTotals(
-              loadedTotal,
-              loadedCompleted,
-              totalTasks,
-              completedTasks,
-            );
-          return {
-            id: col.id,
-            name: col.name,
-            icon: col.icon,
-            orderIndex: col.orderIndex,
-            isVisible: col.isVisible,
-            totalTasks,
-            completedTasks,
-            archivedTotalCount,
-            archivedCompletedCount,
-            workspaceId,
-            workspaceName,
-          };
-        },
-      );
+      const summaries: DashboardColumnOption[] = [...(ws.columns || [])]
+        .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+        .map((col) =>
+          mapColumnToDashboardSummary(col, workspaceId, workspaceName),
+        );
 
       return {
         workspaceId,
@@ -186,36 +183,71 @@ export async function fetchAllWorkspacesBoards(): Promise<
 }
 
 /**
- * Busca a contagem de tarefas pendentes programadas para hoje no workspace ativo.
- * Cacheada de forma privada (`private30`) para uso nos badges da Sidebar e MobileHeader.
+ * Busca todos os workspaces do usuário com suas respectivas colunas (visíveis e ocultas)
+ * e tarefas em uma única consulta em lote para o Dashboard multi-ambiente.
+ * Nunca armazena erros no cache privado: redireciona em 401 e propaga falhas para o Error Boundary,
+ * evitando falso estado vazio (`DashboardEmptyWorkspace`).
  */
-export async function fetchPendingTasksCount(
+export async function fetchAllWorkspacesBoards(): Promise<
+  WorkspaceBoardWithSummaries[]
+> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    redirect("/signIn?sessionExpired=1");
+  }
+
+  try {
+    return await fetchAllWorkspacesBoardsCached();
+  } catch (err) {
+    if (isUnauthorizedApiError(err)) {
+      redirect("/signIn?sessionExpired=1");
+    }
+    throw err;
+  }
+}
+
+async function fetchPendingTasksCountCached(
   workspaceId: string,
 ): Promise<number> {
   "use cache: private";
   cacheLife("private30");
   cacheTag("tasks", "dashboard-tasks");
 
-  try {
-    const { data: tasksData } = await serverApi.GET(
-      "/tasks/workspace/{workspaceId}/dashboard",
-      {
-        params: {
-          path: { workspaceId },
-          query: { filter: "TODAY", size: 1 },
-        },
+  const { data: tasksData, error } = await serverApi.GET(
+    "/tasks/workspace/{workspaceId}/dashboard",
+    {
+      params: {
+        path: { workspaceId },
+        query: { filter: "TODAY", size: 1 },
       },
-    );
-    if (tasksData?.totalElements !== undefined) {
-      return tasksData.totalElements;
-    }
-    if (tasksData?.content) {
-      return tasksData.content.length;
-    }
-  } catch {
-    // ignore
+    },
+  );
+  if (error || !tasksData) {
+    throw new Error("PENDING_TASKS_COUNT_FETCH_FAILED");
   }
-  return 0;
+  if (tasksData.totalElements !== undefined) {
+    return tasksData.totalElements;
+  }
+  return tasksData.content ? tasksData.content.length : 0;
+}
+
+/**
+ * Busca a contagem de tarefas pendentes programadas para hoje no workspace ativo.
+ * Nunca armazena falhas transitórias como `0` no cache privado.
+ */
+export async function fetchPendingTasksCount(
+  workspaceId: string,
+): Promise<number> {
+  const token = await getServerAuthToken();
+  if (!token) {
+    return 0;
+  }
+
+  try {
+    return await fetchPendingTasksCountCached(workspaceId);
+  } catch {
+    return 0;
+  }
 }
 
 /**
@@ -225,34 +257,46 @@ export async function fetchPendingTasksCount(
 export async function getTasksBoardData(
   requestedWorkspaceId?: string,
 ): Promise<TasksBoardData> {
-  const [workspaces, speculativeBoard] = await Promise.all([
-    getWorkspaces(),
-    requestedWorkspaceId
-      ? fetchWorkspaceBoardColumns(requestedWorkspaceId)
-      : Promise.resolve(null),
-  ]);
+  try {
+    const [workspaces, speculativeBoard] = await Promise.all([
+      getWorkspacesStrict(),
+      requestedWorkspaceId
+        ? fetchWorkspaceBoardColumns(requestedWorkspaceId).catch((err) => {
+            if (isUnauthorizedApiError(err)) {
+              throw err;
+            }
+            return null;
+          })
+        : Promise.resolve(null),
+    ]);
 
-  const { activeWorkspace, activeWorkspaceId } = resolveActiveWorkspace(
-    workspaces,
-    requestedWorkspaceId,
-  );
+    const { activeWorkspace, activeWorkspaceId } = resolveActiveWorkspace(
+      workspaces,
+      requestedWorkspaceId,
+    );
 
-  if (!activeWorkspace || !activeWorkspaceId) {
+    if (!activeWorkspace || !activeWorkspaceId) {
+      return {
+        workspaces,
+        activeWorkspace: null,
+        initialColumns: [],
+      };
+    }
+
+    const { columns: initialColumns } =
+      activeWorkspaceId === requestedWorkspaceId && speculativeBoard
+        ? speculativeBoard
+        : await fetchWorkspaceBoardColumns(activeWorkspaceId);
+
     return {
       workspaces,
-      activeWorkspace: null,
-      initialColumns: [],
+      activeWorkspace,
+      initialColumns,
     };
+  } catch (err) {
+    if (isUnauthorizedApiError(err)) {
+      redirect("/signIn?sessionExpired=1");
+    }
+    throw err;
   }
-
-  const { columns: initialColumns } =
-    activeWorkspaceId === requestedWorkspaceId && speculativeBoard
-      ? speculativeBoard
-      : await fetchWorkspaceBoardColumns(activeWorkspaceId);
-
-  return {
-    workspaces,
-    activeWorkspace,
-    initialColumns,
-  };
 }

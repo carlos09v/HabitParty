@@ -1,12 +1,42 @@
 import { SINGLE_USE_TIER_SUGGESTED_PRICES } from "@/constants/reward";
 import { DIFFICULTY_REWARDS } from "@/constants/task";
-import type { PackageLevel, RewardCategory, RewardType } from "@/types/reward";
+import type {
+  CouponPackageOption,
+  PackageLevel,
+  RewardCategory,
+  RewardType,
+} from "@/types/reward";
 import {
   getMysteryBoxTier,
   toCategoryMessageKey,
   toPackageMessageKey,
   toRewardTypeMessageKey,
 } from "@/utils/rewardMapper";
+
+/**
+ * Converte uma string numérica de preço aceitando vírgula ou ponto decimal.
+ */
+export function parseLocalizedPrice(value: string): number {
+  return Number.parseFloat(value.replace(",", "."));
+}
+
+/**
+ * Calcula o preço sugerido final de uma opção de pacote de Cupom considerando
+ * duração sugerida, preço base e multiplicador de categoria.
+ */
+export function resolveSuggestedPackagePrice(
+  pkg: Pick<CouponPackageOption, "suggestedMinutes" | "suggestedPrice">,
+  category?: RewardCategory | string | null,
+  fallbackPrice = 8,
+): number {
+  if (pkg.suggestedMinutes) {
+    return calculateSuggestedCouponPrice(pkg.suggestedMinutes, category);
+  }
+  if (typeof pkg.suggestedPrice === "number") {
+    return adjustSuggestedPriceForCategory(pkg.suggestedPrice, category);
+  }
+  return adjustSuggestedPriceForCategory(fallbackPrice, category);
+}
 
 /** Ganho médio de referência de um dia produtivo completo (tarefas + ~2h-3h de foco). */
 export const DAILY_PRODUCTIVE_COINS_BENCHMARK = 15;

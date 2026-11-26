@@ -1,3 +1,5 @@
+"use client";
+
 import { useUIStore } from "@/store/uiStore";
 
 export function useTimeFormat() {

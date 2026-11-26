@@ -15,7 +15,7 @@ import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.DomainValidationException;
 
-public class Habit extends Task {
+public non-sealed class Habit extends Task {
   private int currentStreak;
   private int highestStreak;
   private HabitType habitType;
@@ -207,11 +207,11 @@ public class Habit extends Task {
       multiplier = ADAPTATION_RATE; // Adaptação: paga 75%
     }
 
-    // Calcula o valor final arredondando para baixo
+    // Calcula o valor final padronizado em HALF_UP para moedas (alinha com Daily/Todo/Penalidades)
     int finalXp = Math.max(1, BigDecimal.valueOf(baseXp).multiply(multiplier).intValue());
     BigDecimal finalCoins = baseCoins
             .multiply(multiplier)
-            .setScale(2, java.math.RoundingMode.HALF_DOWN);
+            .setScale(2, java.math.RoundingMode.HALF_UP);
 
     // Garante que ganhe no mínimo $ 0,01
     if (finalCoins.compareTo(MIN_COINS) < 0) {
@@ -246,6 +246,9 @@ public class Habit extends Task {
     CycleRelation relation = compareCycles(this.lastCompletedAt.toLocalDate(), completionTime.toLocalDate());
     switch (relation) {
       case SAME_CYCLE -> {
+        if (this.currentStreak <= 0) {
+          this.currentStreak = 1;
+        }
         if (this.currentStreak > this.highestStreak) {
           this.highestStreak = this.currentStreak;
         }

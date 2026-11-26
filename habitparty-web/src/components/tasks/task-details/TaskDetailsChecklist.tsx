@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Swords, X, Zap } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef } from "react";
 import {
@@ -11,6 +11,7 @@ import {
   ChecklistRewardCounter,
   ChecklistRewardInfoTooltip,
   getChecklistRewardStats,
+  RewardedStepToggleButton,
   useChecklistRewardRowHelpers,
 } from "@/components/tasks/shared/ChecklistRewardInfoTooltip";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -19,6 +20,7 @@ import { cn } from "@/utils";
 
 interface TaskDetailsChecklistProps {
   checklist: ChecklistItem[];
+  disabled?: boolean;
   canReward?: boolean;
   isTaskCompleted?: boolean;
   isAddingItem: boolean;
@@ -37,6 +39,7 @@ interface TaskDetailsChecklistProps {
 
 export function TaskDetailsChecklist({
   checklist,
+  disabled = false,
   canReward = false,
   isTaskCompleted = false,
   isAddingItem,
@@ -56,13 +59,11 @@ export function TaskDetailsChecklist({
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const { rewardedCount, isLimitReached } = getChecklistRewardStats(checklist);
   const {
-    isGamified,
     chipLabel,
     rewardLockedWhileCompletedTitle,
     getRowRewardLabels,
     getNewStepToggleLabels,
   } = useChecklistRewardRowHelpers();
-  const RewardIcon = isGamified ? Swords : Zap;
   const isNewRewardActive = Boolean(
     canReward && isNewItemRewarded && !isTaskCompleted && !isLimitReached,
   );
@@ -147,7 +148,8 @@ export function TaskDetailsChecklist({
             key={item.id}
             item={item}
             variant="popover"
-            isEditing={editingItemId === item.id}
+            disabled={disabled}
+            isEditing={!disabled && editingItemId === item.id}
             editingText={editingText}
             editInputRef={editInputRef}
             onEditingTextChange={setEditingText}
@@ -172,43 +174,48 @@ export function TaskDetailsChecklist({
           />
         ))}
 
-        {isAddingItem ? (
+        {disabled ? null : isAddingItem ? (
           <div className="flex items-center gap-1.5 mt-1">
             <input
               ref={newItemInputRef}
               type="text"
+              aria-label={t("newItemPlaceholder")}
               value={newItemText}
               onChange={(e) => onNewItemTextChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") onAddItem();
-                if (e.key === "Escape") onCancelAddItem();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onAddItem();
+                  window.requestAnimationFrame(() => {
+                    newItemInputRef.current?.focus();
+                  });
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onCancelAddItem();
+                }
               }}
               placeholder={t("newItemPlaceholder")}
               className="flex-1 min-w-0 bg-card border border-neutral-600 rounded px-2 py-0.5 text-xs text-neutral-50 placeholder:text-neutral-400 focus:outline-none focus:border-primary dark:bg-background/50 dark:border-primary/40 dark:placeholder:text-neutral-500 dark:focus:border-gold"
             />
             {canReward && onNewItemRewardedChange && (
-              <button
-                type="button"
-                onClick={() => onNewItemRewardedChange(!isNewItemRewarded)}
+              <RewardedStepToggleButton
+                size="sm"
+                isActive={isNewRewardActive}
                 disabled={isTaskCompleted || isLimitReached}
-                aria-pressed={isNewRewardActive}
-                aria-label={newToggleLabels.ariaLabel}
+                ariaLabel={newToggleLabels.ariaLabel}
                 title={newToggleLabels.title}
-                className={cn(
-                  "inline-flex items-center justify-center min-h-6 min-w-6 px-1.5 py-0.5 rounded border transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-gold",
-                  isNewRewardActive
-                    ? "bg-amber-500/15 border-amber-500/50 text-amber-800 hover:bg-amber-500/25 dark:bg-gold/15 dark:border-gold/55 dark:text-gold dark:hover:bg-gold/25 cursor-pointer"
-                    : isTaskCompleted || isLimitReached
-                      ? "border-transparent text-neutral-500 opacity-35 cursor-not-allowed"
-                      : "border-dashed border-neutral-500/40 text-neutral-400 hover:text-amber-700 hover:border-amber-500/50 hover:bg-gold/10 dark:border-neutral-600 dark:text-neutral-400 dark:hover:text-gold dark:hover:border-gold/50 cursor-pointer",
-                )}
-              >
-                <RewardIcon size={12} className="shrink-0" aria-hidden="true" />
-              </button>
+                onClick={() => onNewItemRewardedChange(!isNewItemRewarded)}
+              />
             )}
             <button
               type="button"
-              onClick={onAddItem}
+              onClick={() => {
+                onAddItem();
+                window.requestAnimationFrame(() => {
+                  newItemInputRef.current?.focus();
+                });
+              }}
               className="px-2 py-0.5 rounded bg-gold text-on-gold font-bold text-tiny hover:bg-gold-hover transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-gold"
             >
               {t("okButton")}

@@ -1,13 +1,11 @@
 "use client";
 
 import { Flag } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import {
-  RichTextDescriptionEditor,
-  TaskTagSelector,
-} from "@/components/tasks/shared";
+import { TaskTagSelector } from "@/components/tasks/shared";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { Select } from "@/components/ui/Select";
 import {
@@ -24,6 +22,22 @@ import { mergeTaskTagsWithLimit, replaceTaskTag } from "@/utils/tags";
 import { parseTaskTags } from "@/utils/taskMapper";
 import { HabitImportanceSelector } from "./HabitImportanceSelector";
 import { TaskDifficultySelector } from "./TaskDifficultySelector";
+
+const RichTextDescriptionEditor = dynamic(
+  () =>
+    import("@/components/tasks/shared/RichTextDescriptionEditor").then(
+      (mod) => ({ default: mod.RichTextDescriptionEditor }),
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="min-h-[120px] rounded-lg border border-neutral-600/60 bg-surface/40 animate-pulse"
+        aria-hidden="true"
+      />
+    ),
+  },
+);
 
 interface TaskBasicFieldsProps {
   form: CreateTaskFormReturn;

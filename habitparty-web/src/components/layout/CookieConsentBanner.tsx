@@ -47,23 +47,23 @@ export function CookieConsentBanner() {
         <button
           type="button"
           onClick={handleAccept}
-          className="absolute top-2.5 right-2.5 text-neutral-400 hover:text-neutral-200 transition-colors p-2 rounded-md hover:bg-surface-hover dark:hover:bg-white/5 cursor-pointer"
+          className="absolute top-2.5 right-2.5 text-neutral-400 hover:text-neutral-200 transition-colors p-2 rounded-md hover:bg-surface-hover dark:hover:bg-white/5 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring cursor-pointer"
           aria-label={t("closeAriaLabel")}
         >
-          <X size={16} />
+          <X size={16} aria-hidden="true" />
         </button>
 
         <div className="flex items-start gap-3.5 pr-7">
-          <div className="p-2.5 rounded-xl bg-amber-500/15 dark:bg-gold/15 text-amber-800 dark:text-gold shrink-0 border border-amber-500/30 dark:border-gold/30 shadow-glow-gold-xs">
-            <Cookie size={22} className="text-amber-800 dark:text-gold" />
+          <div className="p-2.5 rounded-xl bg-amber-500/15 dark:bg-gold/15 text-gold-ink dark:text-gold shrink-0 border border-amber-500/30 dark:border-gold/30 shadow-glow-gold-xs">
+            <Cookie size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center flex-wrap gap-1.5">
-              <h4 className="text-body-s font-bold text-neutral-50">
+              <p className="text-body-s font-bold text-neutral-50">
                 {t("title")}
-              </h4>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
-                <ShieldCheck size={11} />
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
+                <ShieldCheck size={11} aria-hidden="true" />
                 {t("badge")}
               </span>
             </div>
@@ -77,7 +77,7 @@ export function CookieConsentBanner() {
           <button
             type="button"
             onClick={handleAccept}
-            className="px-4 py-2 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 shadow-sm cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card shadow-sm cursor-pointer"
           >
             {t("acceptButton")}
           </button>

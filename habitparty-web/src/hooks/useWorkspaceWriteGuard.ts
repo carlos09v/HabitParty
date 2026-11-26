@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { FREE_ACTIVE_WORKSPACE_LIMIT } from "@/constants/routine";
+import { useUIStore } from "@/store/uiStore";
 import type { BoardColumn } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
 
@@ -33,7 +34,7 @@ export function useWorkspaceWriteGuard({
   onColumnMoved,
 }: UseWorkspaceWriteGuardOptions) {
   const t = useTranslations("tasks.container");
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const openUpgradeModal = useUIStore((s) => s.openUpgradeModal);
 
   const activeWorkspaceIndex = useMemo(() => {
     if (!activeWorkspaceId) return 0;
@@ -47,18 +48,18 @@ export function useWorkspaceWriteGuard({
   const ensureWriteAccess = useCallback(
     (errorMessage: string): boolean => {
       if (isWorkspaceReadOnly) {
-        setIsUpgradeModalOpen(true);
+        openUpgradeModal();
         toast.error(errorMessage);
         return false;
       }
       return true;
     },
-    [isWorkspaceReadOnly],
+    [isWorkspaceReadOnly, openUpgradeModal],
   );
 
   const handleMoveLockedWorkspace = useCallback(
     (reason: "source" | "target", workspaceName?: string) => {
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       toast.error(
         reason === "source"
           ? t("readOnlyMoveSourceToast")
@@ -67,7 +68,7 @@ export function useWorkspaceWriteGuard({
             }),
       );
     },
-    [t],
+    [openUpgradeModal, t],
   );
 
   const availableTargetWorkspaces = useMemo(
@@ -121,8 +122,7 @@ export function useWorkspaceWriteGuard({
 
   return {
     isWorkspaceReadOnly,
-    isUpgradeModalOpen,
-    setIsUpgradeModalOpen,
+    openUpgradeModal,
     ensureWriteAccess,
     availableTargetWorkspaces,
     handleMoveLockedWorkspace,

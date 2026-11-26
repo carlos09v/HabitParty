@@ -97,18 +97,14 @@ public class GetFullKanbanBoardUseCase {
       allTasks = taskRepository.findByBoardColumnIdInOrderByOrderIndexAsc(columnIds);
     }
 
-    Map<UUID, List<Task>> tasksByColumn = allTasks.stream()
-        .collect(Collectors.groupingBy(Task::getBoardColumnId));
+    Map<UUID, List<Task>> tasksByColumn = KanbanBoardAssembler.groupTasksByColumn(allTasks);
 
     // 4. Monta as colunas do Kanban com as tarefas já agrupadas e totais reais preservados
-    List<KanbanBoard.KanbanColumn> kanbanColumns = columns.stream()
-        .map(column -> KanbanBoard.KanbanColumn.from(
-            column,
-            tasksByColumn.getOrDefault(column.getId(), List.of()),
-            excludeArchivedCompleted,
-            summariesByColumnId.get(column.getId())))
-        .toList();
-
-    return new KanbanBoard(workspace, kanbanColumns);
+    return KanbanBoardAssembler.assembleBoard(
+        workspace,
+        columns,
+        tasksByColumn,
+        excludeArchivedCompleted,
+        summariesByColumnId);
   }
 }

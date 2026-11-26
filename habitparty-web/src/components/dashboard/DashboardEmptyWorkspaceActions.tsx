@@ -1,37 +1,51 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createWorkspaceAction } from "@/actions/workspaceActions";
 import { CreateWorkspaceModal } from "@/components/layout/CreateWorkspaceModal";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { setActiveWorkspaceCookie } from "@/utils/urlParams";
 
 export function DashboardEmptyWorkspaceActions() {
   const t = useTranslations("dashboard.emptyWorkspace");
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const isSubmittingRef = useRef(false);
 
   const handleCreate = (name: string) => {
-    setIsModalOpen(false);
+    if (isSubmittingRef.current || isPending) return;
+    isSubmittingRef.current = true;
 
     startTransition(async () => {
-      const response = await createWorkspaceAction({ name });
+      try {
+        const response = await createWorkspaceAction({ name });
 
-      if (response.success && response.data?.id) {
-        toast.success(
-          t("createSuccessToast", { name: response.data.name || name }),
-        );
+        if (response.success && response.data?.id) {
+          toast.success(
+            t("createSuccessToast", { name: response.data.name || name }),
+          );
 
-        useWorkspaceStore.setState((state) => ({
-          workspaces: [...state.workspaces, response.data],
-          activeWorkspaceId: response.data.id || null,
-        }));
-        useUserStore.getState().triggerAchievementCheck();
-      } else {
-        toast.error(!response.success ? response.error : t("createErrorToast"));
+          setActiveWorkspaceCookie(response.data.id);
+          useWorkspaceStore.setState((state) => ({
+            workspaces: [...state.workspaces, response.data],
+            activeWorkspaceId: response.data.id || null,
+          }));
+          useUserStore.getState().triggerAchievementCheck();
+          setIsModalOpen(false);
+          router.refresh();
+        } else {
+          toast.error(
+            !response.success ? response.error : t("createErrorToast"),
+          );
+        }
+      } finally {
+        isSubmittingRef.current = false;
       }
     });
   };
@@ -50,7 +64,10 @@ export function DashboardEmptyWorkspaceActions() {
 
       <CreateWorkspaceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isLoading={isPending}
+        onClose={() => {
+          if (!isPending) setIsModalOpen(false);
+        }}
         onSubmit={handleCreate}
         initialName={t("defaultInitialName")}
       />

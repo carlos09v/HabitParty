@@ -1,5 +1,3 @@
-"use client";
-
 import { closestCenter, DndContext } from "@dnd-kit/core";
 import {
   restrictToParentElement,
@@ -13,16 +11,18 @@ import { reorderFocusActivities } from "@/actions/focusActions";
 import {
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_FOCUS_ACTIVITIES_PREMIUM,
-} from "@/constants/focus";
+} from "@/constants/focusRules";
 import { useReorderableList } from "@/hooks/useReorderableList";
 import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
-import { FocusCard, SortableFocusActivityCard } from "./FocusCard";
+import { FocusCard } from "./FocusCard";
+import { SortableFocusActivityCard } from "./SortableFocusActivityCard";
 
 const DND_MODIFIERS = [restrictToParentElement, restrictToWindowEdges];
 
 interface FocusActivitiesSectionProps {
   activities: FocusActivity[];
+  todayDurationByActivityId?: Record<string, number>;
   isPremium?: boolean;
   activeTargetId?: string;
   isTimerActive?: boolean;
@@ -30,6 +30,7 @@ interface FocusActivitiesSectionProps {
   onToggleTimer?: () => void;
   selectedActivityId?: string | null;
   onSelectActivity?: (activityId: string | null) => void;
+  onToggleActivityFilter?: (activityId: string | null) => void;
   onStartFocus: (activity: FocusActivity) => void;
   onOpenCreateModal: () => void;
   onOpenUpgradeModal: () => void;
@@ -38,6 +39,7 @@ interface FocusActivitiesSectionProps {
 
 export function FocusActivitiesSection({
   activities,
+  todayDurationByActivityId,
   isPremium = false,
   activeTargetId,
   isTimerActive = false,
@@ -45,6 +47,7 @@ export function FocusActivitiesSection({
   onToggleTimer,
   selectedActivityId,
   onSelectActivity,
+  onToggleActivityFilter,
   onStartFocus,
   onOpenCreateModal,
   onOpenUpgradeModal,
@@ -75,8 +78,6 @@ export function FocusActivitiesSection({
     maxUnlockedCount: isPremium ? undefined : MAX_FOCUS_ACTIVITIES_FREE,
   });
 
-  // Apenas as atividades ativas (destravadas) entram no SortableContext.
-  // Quando o plano Premium expira e há > 4 atividades, as últimas 2 ficam travadas e imóveis.
   const unlockedActivityIds = useMemo(
     () =>
       (isPremium
@@ -85,6 +86,8 @@ export function FocusActivitiesSection({
       ).map((act) => act.id),
     [orderedActivities, isPremium],
   );
+
+  const canReorder = unlockedActivityIds.length > 1;
 
   const selectedActivity = useMemo(
     () =>
@@ -96,12 +99,85 @@ export function FocusActivitiesSection({
 
   const handleSelectCard = useCallback(
     (act: FocusActivity) => {
-      onSelectActivity?.(selectedActivityId === act.id ? null : act.id);
+      onSelectActivity?.(act.id);
     },
-    [onSelectActivity, selectedActivityId],
+    [onSelectActivity],
+  );
+
+  const handleToggleFilter = useCallback(
+    (act: FocusActivity) => {
+      onToggleActivityFilter?.(act.id);
+    },
+    [onToggleActivityFilter],
   );
 
   const planName = isPremium ? t("planPremium") : t("planFree");
+  const createButtonAria = isLimitReached
+    ? isPremium
+      ? t("maxLimitReachedTitle", { max: maxActivities })
+      : t("goPremiumButton")
+    : t("newActivityButton");
+
+  const renderCards = () => (
+    <div className="relative grid grid-cols-1 md:grid-cols-2 gap-2.5 p-0.5">
+      {orderedActivities.map((act, index) => {
+        const isLocked = !isPremium && index >= maxActivities;
+        const isActTarget = Boolean(isTimerActive && activeTargetId === act.id);
+        const isActStaged = Boolean(
+          !isTimerActive && activeTargetId === act.id,
+        );
+        const isActRunning = Boolean(isActTarget && isTimerRunning);
+        const isActFiltered = selectedActivityId === act.id;
+        const todayMinutes = todayDurationByActivityId?.[act.id] ?? 0;
+
+        if (isLocked || !canReorder) {
+          return (
+            <FocusCard
+              key={act.id}
+              variant="activity"
+              activity={act}
+              todayMinutes={todayMinutes}
+              isLocked={isLocked}
+              onLockedClick={onOpenUpgradeModal}
+              isActiveTarget={isActTarget}
+              isStagedTarget={isActStaged}
+              isTimerRunning={isActRunning}
+              onToggleTimer={onToggleTimer}
+              isSelected={isActFiltered}
+              onSelect={handleSelectCard}
+              onToggleFilter={
+                onToggleActivityFilter ? handleToggleFilter : undefined
+              }
+              onStartFocus={onStartFocus}
+              onContextMenu={onContextMenu}
+            />
+          );
+        }
+
+        return (
+          <SortableFocusActivityCard
+            key={act.id}
+            variant="activity"
+            activity={act}
+            todayMinutes={todayMinutes}
+            isLocked={false}
+            onLockedClick={onOpenUpgradeModal}
+            isActiveTarget={isActTarget}
+            isStagedTarget={isActStaged}
+            isTimerRunning={isActRunning}
+            onToggleTimer={onToggleTimer}
+            isSelected={isActFiltered}
+            onSelect={handleSelectCard}
+            onToggleFilter={
+              onToggleActivityFilter ? handleToggleFilter : undefined
+            }
+            onStartFocus={onStartFocus}
+            onContextMenu={onContextMenu}
+          />
+        );
+      })}
+    </div>
+  );
 
   return (
     <section
@@ -116,10 +192,9 @@ export function FocusActivitiesSection({
             {t("title")}
           </h2>
 
-          {/* Chip de Filtro Ativo (Visível, Discreto e Imediato) */}
           {selectedActivity && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/10 border border-gold/40 text-xs text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
-              <span className="text-label-g text-neutral-400 hidden sm:inline">
+            <div className="flex items-center gap-1.5 pl-2.5 pr-1 py-0.5 rounded-full bg-gold/10 border border-gold/40 text-xs text-amber-800 dark:text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
+              <span className="text-[11px] text-neutral-400 hidden sm:inline">
                 {t("filteringLabel")}
               </span>
               <span className="font-bold truncate max-w-[130px]">
@@ -127,22 +202,20 @@ export function FocusActivitiesSection({
               </span>
               <button
                 type="button"
-                onClick={() => onSelectActivity?.(null)}
-                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-gold/20 text-gold transition-colors cursor-pointer ml-0.5"
+                onClick={() => onToggleActivityFilter?.(null)}
+                className="min-w-6 min-h-6 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-full flex items-center justify-center hover:bg-gold/20 text-amber-800 dark:text-gold transition-colors cursor-pointer"
                 title={t("clearFilterTitle")}
                 aria-label={t("clearFilterAria", {
                   name: selectedActivity.name,
                 })}
               >
-                <X size={11} />
+                <X size={12} aria-hidden="true" />
               </button>
             </div>
           )}
         </div>
 
-        {/* Lado Direito: Limite do Plano + Botão de Adicionar */}
         <div className="flex items-center gap-2">
-          {/* Badge do Limite */}
           <div
             className={cn(
               "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium",
@@ -164,9 +237,13 @@ export function FocusActivitiesSection({
             }
           >
             {isPremium && (
-              <Crown size={12} className="text-gold fill-gold/20" />
+              <Crown
+                size={12}
+                aria-hidden="true"
+                className="text-amber-700 dark:text-gold fill-gold/20"
+              />
             )}
-            <span>
+            <span className="tabular-nums">
               {orderedActivities.length}/{maxActivities}
             </span>
             <span className="text-tiny text-neutral-400 hidden sm:inline">
@@ -174,13 +251,13 @@ export function FocusActivitiesSection({
             </span>
           </div>
 
-          {/* Botão + Adicionar / Upgrade */}
           <button
             type="button"
             onClick={isLimitReached ? onOpenUpgradeModal : onOpenCreateModal}
             disabled={isLimitReached && isPremium}
+            aria-label={createButtonAria}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer",
+              "flex items-center gap-1.5 min-h-8 pointer-coarse:min-h-9 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer",
               isLimitReached
                 ? isPremium
                   ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
@@ -197,12 +274,12 @@ export function FocusActivitiesSection({
           >
             {isLimitReached && !isPremium ? (
               <>
-                <Crown size={14} className="fill-gold/20" />
+                <Crown size={14} aria-hidden="true" className="fill-gold/20" />
                 <span>{t("goPremiumButton")}</span>
               </>
             ) : (
               <>
-                <Plus size={14} />
+                <Plus size={14} aria-hidden="true" />
                 <span className="hidden sm:inline">
                   {t("newActivityButton")}
                 </span>
@@ -212,7 +289,7 @@ export function FocusActivitiesSection({
         </div>
       </div>
 
-      {/* Lista de Atividades com Reordenação Otimizada */}
+      {/* Lista de Atividades (pula DndContext quando há ≤ 1 atividade destravada) */}
       {orderedActivities.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-700 dark:border-primary/30 bg-card/60 dark:bg-surface/30 p-6 flex flex-col items-center justify-center text-center gap-2">
           <p className="text-body-s text-neutral-400">{t("emptyState")}</p>
@@ -226,7 +303,7 @@ export function FocusActivitiesSection({
             </button>
           )}
         </div>
-      ) : (
+      ) : canReorder ? (
         <DndContext
           id="focus-activities-dnd-context"
           sensors={sensors}
@@ -239,54 +316,11 @@ export function FocusActivitiesSection({
             items={unlockedActivityIds}
             strategy={rectSortingStrategy}
           >
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-2.5 overflow-hidden p-0.5">
-              {orderedActivities.map((act, index) => {
-                const isLocked = !isPremium && index >= maxActivities;
-                const isActTarget = Boolean(
-                  isTimerActive && activeTargetId === act.id,
-                );
-                const isActRunning = Boolean(isActTarget && isTimerRunning);
-                const isActSelected = selectedActivityId === act.id;
-
-                if (isLocked) {
-                  return (
-                    <FocusCard
-                      key={act.id}
-                      variant="activity"
-                      activity={act}
-                      isLocked
-                      onLockedClick={onOpenUpgradeModal}
-                      isActiveTarget={isActTarget}
-                      isTimerRunning={isActRunning}
-                      onToggleTimer={onToggleTimer}
-                      isSelected={isActSelected}
-                      onSelect={handleSelectCard}
-                      onStartFocus={onStartFocus}
-                      onContextMenu={onContextMenu}
-                    />
-                  );
-                }
-
-                return (
-                  <SortableFocusActivityCard
-                    key={act.id}
-                    variant="activity"
-                    activity={act}
-                    isLocked={false}
-                    onLockedClick={onOpenUpgradeModal}
-                    isActiveTarget={isActTarget}
-                    isTimerRunning={isActRunning}
-                    onToggleTimer={onToggleTimer}
-                    isSelected={isActSelected}
-                    onSelect={handleSelectCard}
-                    onStartFocus={onStartFocus}
-                    onContextMenu={onContextMenu}
-                  />
-                );
-              })}
-            </div>
+            {renderCards()}
           </SortableContext>
         </DndContext>
+      ) : (
+        renderCards()
       )}
     </section>
   );

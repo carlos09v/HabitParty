@@ -1,6 +1,7 @@
 package com.habitparty.core.domain.entities.achievement;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 public class UserArtifact {
@@ -19,7 +20,7 @@ public class UserArtifact {
     this.userId = userId;
     this.artifactId = artifactId;
     this.obtainedSource = (obtainedSource != null && !obtainedSource.isBlank())
-        ? obtainedSource.trim().toUpperCase()
+        ? obtainedSource.trim().toUpperCase(Locale.ROOT)
         : "ACHIEVEMENT";
     this.unlockedAt = unlockedAt != null ? unlockedAt : LocalDateTime.now();
     this.seen = seen;

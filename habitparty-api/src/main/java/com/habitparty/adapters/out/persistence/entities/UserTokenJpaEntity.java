@@ -12,31 +12,33 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "user_tokens")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserTokenJpaEntity {
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString(onlyExplicitlyIncluded = true)
+public class UserTokenJpaEntity extends BaseUuidJpaEntity {
+
   @Id
+  @ToString.Include
   @Column(name = "token_id")
   private UUID id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserJpaEntity user;
+  @Column(name = "user_id", nullable = false)
+  private UUID userId;
 
+  @ToString.Include
   @Enumerated(EnumType.STRING)
   @Column(name = "token_type", nullable = false, length = 40)
   private UserTokenType tokenType;
@@ -47,6 +49,7 @@ public class UserTokenJpaEntity {
   @Column(name = "expiration_date", nullable = false)
   private Instant expirationDate;
 
+  @ToString.Include
   @Column(name = "used", nullable = false)
   private boolean used;
 

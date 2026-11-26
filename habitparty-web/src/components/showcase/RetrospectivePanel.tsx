@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   Award,
   CalendarDays,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   Flame,
   Hourglass,
   Lock,
+  RotateCw,
   Sparkles,
   Swords,
   Trophy,
@@ -21,12 +23,17 @@ import {
   getMyRetrospectiveAction,
   getPublicUserRetrospectiveAction,
 } from "@/actions/socialActions";
+import { ShowcaseTabPanelFallback } from "@/components/showcase/ShowcaseTabs";
 import type { AppLocale } from "@/i18n/config";
 import type { UserRetrospectiveData } from "@/types/social";
-import { cn, resolveRetrospectiveViewMeta } from "@/utils";
+import { cn } from "@/utils/cn";
+import { resolveRetrospectiveViewMeta } from "@/utils/showcaseUtils";
 
 interface RetrospectivePanelProps {
   initialRetrospective: UserRetrospectiveData | null;
+  isLoading?: boolean;
+  loadError?: boolean;
+  onRetry?: () => void;
   isGamified: boolean;
   isOwnProfile?: boolean;
   targetUsername?: string;
@@ -36,6 +43,9 @@ interface RetrospectivePanelProps {
 
 export function RetrospectivePanel({
   initialRetrospective,
+  isLoading = false,
+  loadError = false,
+  onRetry,
   isGamified,
   isOwnProfile = true,
   targetUsername,
@@ -45,6 +55,7 @@ export function RetrospectivePanel({
   const locale = useLocale() as AppLocale;
   const format = useFormatter();
   const t = useTranslations("showcase.retrospective");
+  const tError = useTranslations("showcase.errorState");
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
 
@@ -64,10 +75,14 @@ export function RetrospectivePanel({
         ? await getMyRetrospectiveAction(year)
         : targetUsername
           ? await getPublicUserRetrospectiveAction(targetUsername, year)
-          : { success: false, error: t("loadError") };
+          : { success: false as const, error: t("loadError") };
 
-      if (!res.success || !res.data) {
+      if (!res.success) {
         toast.error(res.error || t("loadError"));
+        return;
+      }
+      if (!res.data) {
+        toast.error(t("loadError"));
         return;
       }
       setRetro(res.data);
@@ -75,7 +90,39 @@ export function RetrospectivePanel({
     });
   };
 
+  if (isLoading) {
+    return <ShowcaseTabPanelFallback />;
+  }
+
   if (!retro) {
+    if (isOwnProfile || loadError) {
+      return (
+        <section
+          role="alert"
+          className="rounded-2xl border border-red-500/35 bg-card dark:bg-surface/50 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-body-s text-neutral-300"
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle
+              size={18}
+              className="text-red-700 dark:text-red-400 shrink-0"
+              aria-hidden="true"
+            />
+            <span>{t("loadError")}</span>
+          </div>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 transition-colors cursor-pointer self-start sm:self-auto"
+            >
+              <RotateCw size={13} aria-hidden="true" />
+              <span>{tError("retry")}</span>
+            </button>
+          )}
+        </section>
+      );
+    }
+
     return (
       <section className="rounded-2xl border border-neutral-700 dark:border-primary/25 bg-card dark:bg-surface/50 p-6 flex items-center gap-3 text-body-s text-neutral-300">
         <Lock
@@ -130,14 +177,13 @@ export function RetrospectivePanel({
 
           <div className="flex flex-wrap items-center gap-2">
             {availableYears.length > 1 && (
-              <fieldset
-                aria-label={t("yearLabel")}
-                className="inline-flex items-center gap-1 p-1 rounded-xl border border-neutral-700 dark:border-primary/25 bg-surface/70 m-0"
-              >
+              <fieldset className="inline-flex items-center gap-1 p-1 rounded-xl border border-neutral-700 dark:border-primary/25 bg-surface/70 m-0">
+                <legend className="sr-only">{t("yearLabel")}</legend>
                 {availableYears.map((yr) => (
                   <button
                     key={yr}
                     type="button"
+                    aria-pressed={yr === retro.year}
                     disabled={isPending}
                     onClick={() => handleSelectYear(yr)}
                     className={cn(
@@ -187,22 +233,22 @@ export function RetrospectivePanel({
                 {
                   met: retro.activeDays >= retro.minActiveDaysRequired,
                   label: t("gateDays", {
-                    current: retro.activeDays,
-                    required: retro.minActiveDaysRequired,
+                    current: format.number(retro.activeDays),
+                    required: format.number(retro.minActiveDaysRequired),
                   }),
                 },
                 {
                   met: retro.tasksCompleted >= retro.minTasksRequired,
                   label: t("gateTasks", {
-                    current: retro.tasksCompleted,
-                    required: retro.minTasksRequired,
+                    current: format.number(retro.tasksCompleted),
+                    required: format.number(retro.minTasksRequired),
                   }),
                 },
                 {
                   met: retro.focusMinutes >= retro.minFocusMinutesRequired,
                   label: t("gateFocus", {
-                    current: retro.focusMinutes,
-                    required: retro.minFocusMinutesRequired,
+                    current: format.number(retro.focusMinutes),
+                    required: format.number(retro.minFocusMinutesRequired),
                   }),
                 },
               ].map((gate) => (
@@ -268,7 +314,7 @@ export function RetrospectivePanel({
                     {t("metrics.activeDays")}
                   </span>
                   <p className="text-xl font-black text-neutral-50 tabular-nums">
-                    {retro.activeDays}
+                    {format.number(retro.activeDays)}
                   </p>
                   <p className="text-[11px] text-neutral-400">
                     {t("metrics.activeDaysSub")}
@@ -285,11 +331,11 @@ export function RetrospectivePanel({
                     {t("metrics.tasksCompleted")}
                   </span>
                   <p className="text-xl font-black text-neutral-50 tabular-nums">
-                    {retro.tasksCompleted}
+                    {format.number(retro.tasksCompleted)}
                   </p>
                   <p className="text-[11px] text-neutral-400">
                     {t("metrics.hardTasks", {
-                      count: retro.hardTasksCompleted,
+                      count: format.number(retro.hardTasksCompleted),
                     })}
                   </p>
                 </div>
@@ -304,12 +350,12 @@ export function RetrospectivePanel({
                     {t("metrics.focusHours")}
                   </span>
                   <p className="text-xl font-black text-neutral-50 tabular-nums">
-                    {focusHours}h
+                    {format.number(focusHours)}h
                   </p>
                   <p className="text-[11px] text-neutral-400">
                     {t("metrics.focusSessions", {
-                      sessions: retro.focusSessionsCount,
-                      pomodoros: retro.pomodorosCompleted,
+                      sessions: format.number(retro.focusSessionsCount),
+                      pomodoros: format.number(retro.pomodorosCompleted),
                     })}
                   </p>
                 </div>
@@ -330,9 +376,11 @@ export function RetrospectivePanel({
                   </p>
                   <p className="text-[11px] text-neutral-400">
                     {isGamified
-                      ? t("metrics.coinsEarned", { coins: retro.coinsEarned })
+                      ? t("metrics.coinsEarned", {
+                          coins: format.number(retro.coinsEarned),
+                        })
                       : t("metrics.creditsEarned", {
-                          credits: retro.coinsEarned,
+                          credits: format.number(retro.coinsEarned),
                         })}
                   </p>
                 </div>
@@ -352,7 +400,7 @@ export function RetrospectivePanel({
                   {bestMonthName && (
                     <p className="text-[11px] text-neutral-400">
                       {t("metrics.bestMonthSub", {
-                        count: retro.bestMonthTasksCount,
+                        count: format.number(retro.bestMonthTasksCount),
                       })}
                     </p>
                   )}
@@ -375,7 +423,7 @@ export function RetrospectivePanel({
                     {rarestTitle || t("noRarestYet", { year: retro.year })}
                   </p>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
-                    {retro.achievementsUnlockedCount}{" "}
+                    {format.number(retro.achievementsUnlockedCount)}{" "}
                     {t("metrics.achievementsSub")}
                     {rarestRarityLabel ? ` • ${rarestRarityLabel}` : ""}
                   </p>

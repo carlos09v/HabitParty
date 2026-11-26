@@ -3,56 +3,52 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import {
-  createFocusRecord,
-  deleteFocusActivity,
-  deleteFocusRecord,
-} from "@/actions/focusActions";
+import { createFocusRecord, deleteFocusActivity } from "@/actions/focusActions";
 import {
   consumeInventoryItem,
   returnItemToBackpack,
 } from "@/actions/inventoryActions";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useInFlightSet } from "@/hooks/useInFlightSet";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActiveTarget,
   FocusActivity,
   FocusActivityDeletionSummaryResponseDTO,
-  FocusRecord,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { toLocalISOString } from "@/utils/date";
-import { getBrowserDocumentLocale } from "@/utils/focusTimerBrowser";
+import { getTodayDateString, toLocalISOString } from "@/utils/date";
 import { deductUserPenalty } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface UseFocusMutationsParams {
   activities: FocusActivity[];
+  todayDurationByActivityId?: Record<string, number>;
   selectedActivityId?: string | null;
   activeTarget?: FocusActiveTarget | null;
   onSelectActivity?: (activityId: string | null) => void;
   onResetTarget: () => void;
   onSelectActivityTarget: (activity: FocusActivity | null) => void;
   onActivityDeleted?: (activityId: string, deleteHistory: boolean) => void;
-  onRefreshData?: () => void;
 }
 
 /**
- * Hook dedicado às mutações de atividades, itens de mochila em foco e registros.
+ * Hook dedicado às mutações de atividades e itens de mochila em foco.
  * Extrai a lógica imperativa de exclusão, devolução e consumo de dentro do FocusMain.
  */
 export function useFocusMutations({
   activities,
+  todayDurationByActivityId,
   selectedActivityId,
   activeTarget,
   onSelectActivity,
   onResetTarget,
   onSelectActivityTarget,
   onActivityDeleted,
-  onRefreshData,
 }: UseFocusMutationsParams) {
   const t = useTranslations("focus.main.toasts");
+  const { isGamified } = useExperienceMode();
   const [returnModalItem, setReturnModalItem] =
     useState<InventoryItemResponseDTO | null>(null);
   const [isReturningToBackpack, setIsReturningToBackpack] = useState(false);
@@ -61,7 +57,6 @@ export function useFocusMutations({
     has: isItemConsuming,
     setPending: setItemConsuming,
   } = useInFlightSet();
-  const isConsumingItem = consumingItemIds.size > 0;
 
   const [deleteModalActivity, setDeleteModalActivity] =
     useState<FocusActivity | null>(null);
@@ -77,6 +72,22 @@ export function useFocusMutations({
     [],
   );
 
+  const resetAndFallbackTarget = useCallback(
+    (excludedActivityId?: string) => {
+      onResetTarget();
+      const remainingActivities = excludedActivityId
+        ? activities.filter((a) => a.id !== excludedActivityId)
+        : activities;
+      if (remainingActivities.length > 0) {
+        onSelectActivityTarget(remainingActivities[0]);
+        onSelectActivity?.(remainingActivities[0].id);
+      } else {
+        onSelectActivity?.(null);
+      }
+    },
+    [activities, onResetTarget, onSelectActivityTarget, onSelectActivity],
+  );
+
   const handleConfirmDeleteActivity = useCallback(
     async (summary?: FocusActivityDeletionSummaryResponseDTO | null) => {
       if (!deleteModalActivity) return;
@@ -89,32 +100,37 @@ export function useFocusMutations({
           shouldDeleteHistory,
         );
         if (res.success) {
-          if (
-            shouldDeleteHistory &&
-            summary &&
-            (summary.totalXpEarned > 0 || summary.totalCoinsEarned > 0)
-          ) {
-            deductUserPenalty(summary.totalXpEarned, summary.totalCoinsEarned);
+          if (shouldDeleteHistory) {
+            if (
+              summary &&
+              (summary.totalXpEarned > 0 || summary.totalCoinsEarned > 0)
+            ) {
+              deductUserPenalty(
+                summary.totalXpEarned,
+                summary.totalCoinsEarned,
+              );
+            }
+            const deletedTodayMinutes =
+              todayDurationByActivityId?.[deletingActivity.id] ?? 0;
+            if (deletedTodayMinutes > 0) {
+              const userTimeZone = useUserStore.getState().user?.timezone;
+              useUserStore
+                .getState()
+                .adjustFocusMinutesToday(
+                  -deletedTodayMinutes,
+                  getTodayDateString(new Date(), userTimeZone),
+                );
+            }
           }
           if (selectedActivityId === deletingActivity.id) {
             onSelectActivity?.(null);
           }
           if (activeTarget?.id === deletingActivity.id) {
-            onResetTarget();
-            const remainingActivities = activities.filter(
-              (a) => a.id !== deletingActivity.id,
-            );
-            if (remainingActivities.length > 0) {
-              onSelectActivityTarget(remainingActivities[0]);
-              onSelectActivity?.(remainingActivities[0].id);
-            } else {
-              onSelectActivity?.(null);
-            }
+            resetAndFallbackTarget(deletingActivity.id);
           }
           onActivityDeleted?.(deletingActivity.id, shouldDeleteHistory);
           toast.success(t("deleteActivitySuccess"));
           setDeleteModalActivity(null);
-          onRefreshData?.();
         } else {
           toast.error(res.error || t("deleteActivityError"));
         }
@@ -127,14 +143,12 @@ export function useFocusMutations({
     [
       deleteModalActivity,
       deleteActivityHistory,
+      todayDurationByActivityId,
       selectedActivityId,
       activeTarget?.id,
-      activities,
       onSelectActivity,
-      onResetTarget,
-      onSelectActivityTarget,
+      resetAndFallbackTarget,
       onActivityDeleted,
-      onRefreshData,
       t,
     ],
   );
@@ -142,37 +156,36 @@ export function useFocusMutations({
   const handleConfirmReturnToBackpack = useCallback(async () => {
     if (!returnModalItem?.inventoryItemId) return;
     setIsReturningToBackpack(true);
+    const errorFallback = t(
+      isGamified ? "returnItemErrorGamified" : "returnItemErrorProductivity",
+    );
     try {
       const res = await returnItemToBackpack(returnModalItem.inventoryItemId);
       if (res.success) {
         if (activeTarget?.id === returnModalItem.inventoryItemId) {
-          onResetTarget();
-          if (activities.length > 0) {
-            onSelectActivityTarget(activities[0]);
-            onSelectActivity?.(activities[0].id);
-          } else {
-            onSelectActivity?.(null);
-          }
+          resetAndFallbackTarget();
         }
-        toast.success(t("returnItemSuccess"));
+        toast.success(
+          t(
+            isGamified
+              ? "returnItemSuccessGamified"
+              : "returnItemSuccessProductivity",
+          ),
+        );
         setReturnModalItem(null);
-        onRefreshData?.();
       } else {
-        toast.error(res.error || t("returnItemError"));
+        toast.error(res.error || errorFallback);
       }
     } catch {
-      toast.error(t("returnItemError"));
+      toast.error(errorFallback);
     } finally {
       setIsReturningToBackpack(false);
     }
   }, [
     returnModalItem,
     activeTarget?.id,
-    activities,
-    onResetTarget,
-    onSelectActivityTarget,
-    onSelectActivity,
-    onRefreshData,
+    resetAndFallbackTarget,
+    isGamified,
     t,
   ]);
 
@@ -199,9 +212,11 @@ export function useFocusMutations({
             startTime,
             endTime,
           });
-          if (focusRes.success) {
-            useUserStore.getState().triggerAchievementCheck();
+          if (!focusRes.success) {
+            toast.error(focusRes.error || t("consumeItemError"));
+            return;
           }
+          useUserStore.getState().triggerAchievementCheck();
         }
 
         const res = await consumeInventoryItem(itemId);
@@ -215,16 +230,8 @@ export function useFocusMutations({
           );
 
           if (activeTarget?.id === itemId) {
-            onResetTarget();
-            if (activities.length > 0) {
-              onSelectActivityTarget(activities[0]);
-              onSelectActivity?.(activities[0].id);
-            } else {
-              onSelectActivity?.(null);
-            }
+            resetAndFallbackTarget();
           }
-
-          onRefreshData?.();
         } else {
           toast.error(res.error || t("consumeItemError"));
         }
@@ -236,12 +243,8 @@ export function useFocusMutations({
     },
     [
       activeTarget?.id,
-      activities,
       isItemConsuming,
-      onResetTarget,
-      onSelectActivityTarget,
-      onSelectActivity,
-      onRefreshData,
+      resetAndFallbackTarget,
       setItemConsuming,
       t,
     ],
@@ -251,7 +254,6 @@ export function useFocusMutations({
     returnModalItem,
     setReturnModalItem,
     isReturningToBackpack,
-    isConsumingItem,
     consumingItemIds,
     handleConfirmReturnToBackpack,
     deleteModalActivity,
@@ -262,52 +264,4 @@ export function useFocusMutations({
     handleConfirmDeleteActivity,
     handleConsumeItem,
   };
-}
-
-/**
- * Helper para exclusão de registro de foco com feedback visual.
- */
-export async function executeDeleteFocusRecord(
-  recordId: string,
-  messages?: {
-    success?: string;
-    error?: string;
-  },
-  onSuccess?: () => void,
-  deleteHistory = false,
-  deletedRecord?: Pick<
-    FocusRecord,
-    "inventoryItemId" | "xpEarned" | "coinsEarned"
-  >,
-) {
-  const isEn = getBrowserDocumentLocale() === "en";
-  const res = await deleteFocusRecord(recordId, deleteHistory);
-  if (res.success) {
-    if (
-      deletedRecord &&
-      !deletedRecord.inventoryItemId &&
-      ((deletedRecord.xpEarned ?? 0) > 0 ||
-        (deletedRecord.coinsEarned ?? 0) > 0)
-    ) {
-      deductUserPenalty(
-        deletedRecord.xpEarned ?? 0,
-        deletedRecord.coinsEarned ?? 0,
-      );
-    }
-    toast.success(
-      messages?.success ??
-        (isEn
-          ? "Focus record removed successfully!"
-          : "Registro de foco removido com sucesso!"),
-    );
-    onSuccess?.();
-  } else {
-    toast.error(
-      res.error ||
-        messages?.error ||
-        (isEn
-          ? "Error deleting focus record."
-          : "Erro ao excluir registro de foco."),
-    );
-  }
 }

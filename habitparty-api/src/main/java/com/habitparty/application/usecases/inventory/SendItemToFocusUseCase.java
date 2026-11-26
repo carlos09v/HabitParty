@@ -19,7 +19,7 @@ public class SendItemToFocusUseCase {
 
     @Transactional
     public void execute(UUID itemId, UUID userIdLogado) {
-        InventoryItem item = port.findById(itemId)
+        InventoryItem item = port.findByIdForUpdate(itemId)
             .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado"));
             
         item.validateOwnership(userIdLogado);

@@ -21,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.AchievementRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
+import com.habitparty.application.ports.FocusRecordRepository.RetrospectiveFocusBucket;
 import com.habitparty.application.ports.FriendshipRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.ports.TransactionHistoryRepository.RetrospectiveTxBucket;
 import com.habitparty.application.ports.UserAchievementRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.social.SocialAccessSupport;
@@ -95,6 +97,40 @@ public class GetUserRetrospectiveUseCase {
   }
 
   /**
+   * Verifica de forma leve se o usuário tem banner sazonal de retrospectiva disponível agora.
+   * Fora da janela sazonal (20/dez–31/jan), retorna vazio sem executar nenhuma consulta ao banco.
+   */
+  @Transactional(readOnly = true)
+  public Optional<Integer> resolveSeasonalBannerYear(User target) {
+    if (target == null || target.getId() == null) {
+      return Optional.empty();
+    }
+    ZoneId userZone = timeResolver.resolveZone(target);
+    LocalDate userToday = timeResolver.resolveDate(target);
+    int defaultYear = UserRetrospective.resolveDefaultTargetYear(userToday);
+    if (!UserRetrospective.isInSeasonalWindow(userToday, defaultYear)) {
+      return Optional.empty();
+    }
+    ZoneId storageZone = timeResolver.clock().getZone();
+    ZonedDateTime startUser = LocalDate.of(defaultYear, 1, 1).atStartOfDay(userZone);
+    ZonedDateTime endUserExclusive = LocalDate.of(defaultYear + 1, 1, 1).atStartOfDay(userZone);
+    LocalDateTime startStorage = startUser.withZoneSameInstant(storageZone).toLocalDateTime();
+    LocalDateTime endStorageExclusive = endUserExclusive.withZoneSameInstant(storageZone).toLocalDateTime();
+
+    Map<Integer, List<RetrospectiveTxBucket>> txBucketsByYear = loadTxBucketsByYear(
+        target.getId(), startStorage, endStorageExclusive, userZone);
+    Map<Integer, List<RetrospectiveFocusBucket>> focusBucketsByYear = loadFocusBucketsByYear(
+        target.getId(), startStorage, endStorageExclusive, userZone);
+    YearSnapshot snapshot = computeYearSnapshotFromBuckets(
+        userZone,
+        txBucketsByYear.getOrDefault(defaultYear, List.of()),
+        focusBucketsByYear.getOrDefault(defaultYear, List.of()),
+        List.of(),
+        Map.of());
+    return snapshot.eligible() ? Optional.of(defaultYear) : Optional.empty();
+  }
+
+  /**
    * Retorna os arquétipos de retrospectiva elegíveis já conquistados pelo usuário em anos concluídos
    * ou na janela sazonal atual (usado para validar títulos equipáveis de retrospectiva).
    */
@@ -118,24 +154,23 @@ public class GetUserRetrospectiveUseCase {
       return Set.of();
     }
 
+    ZoneId storageZone = timeResolver.clock().getZone();
     ZonedDateTime startUser = LocalDate.of(earliestYear, 1, 1).atStartOfDay(userZone);
-    ZonedDateTime endUser = LocalDate.of(maxEligibleYear, 12, 31).atTime(23, 59, 59, 999_999_999).atZone(userZone);
-    LocalDateTime startStorage = startUser.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
-    LocalDateTime endStorage = endUser.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+    ZonedDateTime endUserExclusive = LocalDate.of(maxEligibleYear + 1, 1, 1).atStartOfDay(userZone);
+    LocalDateTime startStorage = startUser.withZoneSameInstant(storageZone).toLocalDateTime();
+    LocalDateTime endStorageExclusive = endUserExclusive.withZoneSameInstant(storageZone).toLocalDateTime();
 
-    Map<Integer, List<TransactionHistory>> txByYear = partitionTransactionsByYear(
-        transactionHistoryRepository.findAllByUserIdAndPeriod(target.getId(), startStorage, endStorage),
-        userZone);
-    Map<Integer, List<FocusRecord>> focusByYear = partitionFocusByYear(
-        focusRecordRepository.findAllByUserIdAndPeriod(target.getId(), startStorage, endStorage),
-        userZone);
+    Map<Integer, List<RetrospectiveTxBucket>> txBucketsByYear = loadTxBucketsByYear(
+        target.getId(), startStorage, endStorageExclusive, userZone);
+    Map<Integer, List<RetrospectiveFocusBucket>> focusBucketsByYear = loadFocusBucketsByYear(
+        target.getId(), startStorage, endStorageExclusive, userZone);
 
     Set<RetrospectiveArchetype> archetypes = EnumSet.noneOf(RetrospectiveArchetype.class);
     for (int year = earliestYear; year <= maxEligibleYear; year++) {
-      YearSnapshot snapshot = computeYearSnapshot(
+      YearSnapshot snapshot = computeYearSnapshotFromBuckets(
           userZone,
-          txByYear.getOrDefault(year, List.of()),
-          focusByYear.getOrDefault(year, List.of()),
+          txBucketsByYear.getOrDefault(year, List.of()),
+          focusBucketsByYear.getOrDefault(year, List.of()),
           List.of(),
           Map.of());
       if (snapshot.eligible()) {
@@ -167,7 +202,7 @@ public class GetUserRetrospectiveUseCase {
         ? SocialRelationshipStatus.SELF
         : SocialAccessSupport.resolveRelationshipStatus(viewerId, relOpt.orElse(null));
 
-    if (status == SocialRelationshipStatus.BLOCKED) {
+    if (status == SocialRelationshipStatus.BLOCKED || status == SocialRelationshipStatus.BLOCKED_BY_VIEWER) {
       throw new ResourceNotFoundException("Usuário @" + cleanUsername + " não encontrado.");
     }
 
@@ -220,18 +255,16 @@ public class GetUserRetrospectiveUseCase {
       }
     }
 
-    // Única leitura de período por tabela em vez de 2 queries por ano no loop
+    // Agregação SQL direta por balde temporal (evita carregar anos inteiros de entidades na heap)
     ZonedDateTime startUser = LocalDate.of(minScanYear, 1, 1).atStartOfDay(userZone);
-    ZonedDateTime endUser = LocalDate.of(maxScanYear, 12, 31).atTime(23, 59, 59, 999_999_999).atZone(userZone);
+    ZonedDateTime endUserExclusive = LocalDate.of(maxScanYear + 1, 1, 1).atStartOfDay(userZone);
     LocalDateTime startStorage = startUser.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
-    LocalDateTime endStorage = endUser.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+    LocalDateTime endStorageExclusive = endUserExclusive.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 
-    Map<Integer, List<TransactionHistory>> txByYear = partitionTransactionsByYear(
-        transactionHistoryRepository.findAllByUserIdAndPeriod(target.getId(), startStorage, endStorage),
-        userZone);
-    Map<Integer, List<FocusRecord>> focusByYear = partitionFocusByYear(
-        focusRecordRepository.findAllByUserIdAndPeriod(target.getId(), startStorage, endStorage),
-        userZone);
+    Map<Integer, List<RetrospectiveTxBucket>> txByYear = loadTxBucketsByYear(
+        target.getId(), startStorage, endStorageExclusive, userZone);
+    Map<Integer, List<RetrospectiveFocusBucket>> focusByYear = loadFocusBucketsByYear(
+        target.getId(), startStorage, endStorageExclusive, userZone);
 
     List<Integer> availableYears = new ArrayList<>();
     YearSnapshot targetSnapshot = null;
@@ -242,7 +275,7 @@ public class GetUserRetrospectiveUseCase {
       if (year != targetYear && !completedOrSeasonal) {
         continue;
       }
-      YearSnapshot snapshot = computeYearSnapshot(
+      YearSnapshot snapshot = computeYearSnapshotFromBuckets(
           userZone,
           txByYear.getOrDefault(year, List.of()),
           focusByYear.getOrDefault(year, List.of()),
@@ -257,7 +290,7 @@ public class GetUserRetrospectiveUseCase {
     }
 
     if (targetSnapshot == null) {
-      targetSnapshot = computeYearSnapshot(
+      targetSnapshot = computeYearSnapshotFromBuckets(
           userZone,
           txByYear.getOrDefault(targetYear, List.of()),
           focusByYear.getOrDefault(targetYear, List.of()),
@@ -306,32 +339,99 @@ public class GetUserRetrospectiveUseCase {
         availableYears);
   }
 
-  private Map<Integer, List<TransactionHistory>> partitionTransactionsByYear(
-      List<TransactionHistory> transactions,
+  private Map<Integer, List<RetrospectiveTxBucket>> loadTxBucketsByYear(
+      UUID userId,
+      LocalDateTime startStorage,
+      LocalDateTime endStorageExclusive,
       ZoneId userZone) {
-    Map<Integer, List<TransactionHistory>> byYear = new HashMap<>();
-    for (TransactionHistory tx : transactions) {
-      if (tx.getCreatedAt() == null) {
-        continue;
-      }
-      int year = toUserDate(tx.getCreatedAt(), userZone).getYear();
-      byYear.computeIfAbsent(year, k -> new ArrayList<>()).add(tx);
+    List<RetrospectiveTxBucket> buckets = transactionHistoryRepository
+        .aggregateForRetrospective(userId, startStorage, endStorageExclusive)
+        .orElseGet(() -> toTxBuckets(transactionHistoryRepository.findAllByUserIdAndPeriod(
+            userId, startStorage, endStorageExclusive.minusNanos(1))));
+
+    Map<Integer, List<RetrospectiveTxBucket>> byYear = new HashMap<>();
+    for (RetrospectiveTxBucket bucket : buckets) {
+      int year = bucketToUserDate(bucket.year(), bucket.month(), bucket.day(), bucket.hour(), bucket.quarterHour(), userZone)
+          .getYear();
+      byYear.computeIfAbsent(year, k -> new ArrayList<>()).add(bucket);
     }
     return byYear;
   }
 
-  private Map<Integer, List<FocusRecord>> partitionFocusByYear(
-      List<FocusRecord> records,
+  private Map<Integer, List<RetrospectiveFocusBucket>> loadFocusBucketsByYear(
+      UUID userId,
+      LocalDateTime startStorage,
+      LocalDateTime endStorageExclusive,
       ZoneId userZone) {
-    Map<Integer, List<FocusRecord>> byYear = new HashMap<>();
+    List<RetrospectiveFocusBucket> buckets = focusRecordRepository
+        .aggregateForRetrospective(userId, startStorage, endStorageExclusive, MIN_FOCUS_MINUTES_FOR_ACTIVE_DAY)
+        .orElseGet(() -> toFocusBuckets(focusRecordRepository.findAllByUserIdAndPeriod(
+            userId, startStorage, endStorageExclusive.minusNanos(1))));
+
+    Map<Integer, List<RetrospectiveFocusBucket>> byYear = new HashMap<>();
+    for (RetrospectiveFocusBucket bucket : buckets) {
+      int year = bucketToUserDate(bucket.year(), bucket.month(), bucket.day(), bucket.hour(), bucket.quarterHour(), userZone)
+          .getYear();
+      byYear.computeIfAbsent(year, k -> new ArrayList<>()).add(bucket);
+    }
+    return byYear;
+  }
+
+  private List<RetrospectiveTxBucket> toTxBuckets(List<TransactionHistory> transactions) {
+    if (transactions == null || transactions.isEmpty()) {
+      return List.of();
+    }
+    List<RetrospectiveTxBucket> buckets = new ArrayList<>(transactions.size());
+    for (TransactionHistory tx : transactions) {
+      if (tx.getCreatedAt() == null) {
+        continue;
+      }
+      TransactionType type = tx.getTransactionType();
+      if (!POSITIVE_REWARD_TYPES.contains(type)) {
+        continue;
+      }
+      int tasks = 0;
+      int hardTasks = 0;
+      if (COMPLETED_TASK_TYPES.contains(type)) {
+        int effortUnits = Math.max(1, tx.getEffortUnitsSnapshot().orElse(1));
+        tasks = effortUnits;
+        if (tx.getDifficultySnapshot().orElse(null) == TaskDifficulty.HARD) {
+          hardTasks = effortUnits;
+        }
+      }
+      int xp = Math.max(0, tx.getXpAmount());
+      BigDecimal gold = tx.getGoldAmount().orElse(BigDecimal.ZERO);
+      BigDecimal positiveGold = gold.compareTo(BigDecimal.ZERO) > 0 ? gold : BigDecimal.ZERO;
+      LocalDateTime ts = tx.getCreatedAt();
+      buckets.add(new RetrospectiveTxBucket(
+          ts.getYear(), ts.getMonthValue(), ts.getDayOfMonth(), ts.getHour(), ts.getMinute() / 15,
+          tasks, hardTasks, xp, positiveGold));
+    }
+    return buckets;
+  }
+
+  private List<RetrospectiveFocusBucket> toFocusBuckets(List<FocusRecord> records) {
+    if (records == null || records.isEmpty()) {
+      return List.of();
+    }
+    List<RetrospectiveFocusBucket> buckets = new ArrayList<>(records.size());
     for (FocusRecord rec : records) {
       if (rec.getInventoryItemId().isPresent() || rec.getEndTime() == null) {
         continue;
       }
-      int year = toUserDate(rec.getEndTime(), userZone).getYear();
-      byYear.computeIfAbsent(year, k -> new ArrayList<>()).add(rec);
+      int minutes = Math.max(0, rec.getDurationMinutes());
+      int pomos = Math.max(0, rec.getCompletedPomos().orElse(0));
+      LocalDateTime ts = rec.getEndTime();
+      buckets.add(new RetrospectiveFocusBucket(
+          ts.getYear(), ts.getMonthValue(), ts.getDayOfMonth(), ts.getHour(), ts.getMinute() / 15,
+          minutes, 1, pomos, minutes >= MIN_FOCUS_MINUTES_FOR_ACTIVE_DAY));
     }
-    return byYear;
+    return buckets;
+  }
+
+  private LocalDate bucketToUserDate(int year, int month, int day, int hour, int quarterHour, ZoneId userZone) {
+    LocalDateTime bucketStart = LocalDateTime.of(year, month, day, hour, Math.max(0, Math.min(3, quarterHour)) * 15);
+    return toUserDate(bucketStart, userZone);
   }
 
   private int resolveEarliestActivityYear(User user, ZoneId userZone, int currentYear) {
@@ -350,10 +450,10 @@ public class GetUserRetrospectiveUseCase {
     return Math.max(MIN_SUPPORTED_YEAR, Math.min(earliest, currentYear));
   }
 
-  private YearSnapshot computeYearSnapshot(
+  private YearSnapshot computeYearSnapshotFromBuckets(
       ZoneId userZone,
-      List<TransactionHistory> transactions,
-      List<FocusRecord> focusRecords,
+      List<RetrospectiveTxBucket> txBuckets,
+      List<RetrospectiveFocusBucket> focusBuckets,
       List<UserAchievement> yearUnlocks,
       Map<UUID, Achievement> achievementsById) {
     Set<LocalDate> activeDates = new HashSet<>();
@@ -364,26 +464,20 @@ public class GetUserRetrospectiveUseCase {
     int[] monthTasks = new int[13];
     int[] monthFocusMinutes = new int[13];
 
-    for (TransactionHistory tx : transactions) {
-      LocalDate txDate = toUserDate(tx.getCreatedAt(), userZone);
-      TransactionType type = tx.getTransactionType();
-      if (COMPLETED_TASK_TYPES.contains(type)) {
-        int effortUnits = Math.max(1, tx.getEffortUnitsSnapshot().orElse(1));
-        tasksCompleted += effortUnits;
+    for (RetrospectiveTxBucket bucket : txBuckets) {
+      LocalDate txDate = bucketToUserDate(
+          bucket.year(), bucket.month(), bucket.day(), bucket.hour(), bucket.quarterHour(), userZone);
+      if (bucket.tasksCompleted() > 0) {
+        tasksCompleted += bucket.tasksCompleted();
+        hardTasksCompleted += bucket.hardTasksCompleted();
         activeDates.add(txDate);
-        monthTasks[txDate.getMonthValue()] += effortUnits;
-        if (tx.getDifficultySnapshot().orElse(null) == TaskDifficulty.HARD) {
-          hardTasksCompleted += effortUnits;
-        }
+        monthTasks[txDate.getMonthValue()] += bucket.tasksCompleted();
       }
-      if (POSITIVE_REWARD_TYPES.contains(type)) {
-        if (tx.getXpAmount() > 0) {
-          xpEarned += tx.getXpAmount();
-        }
-        BigDecimal gold = tx.getGoldAmount().orElse(BigDecimal.ZERO);
-        if (gold.compareTo(BigDecimal.ZERO) > 0) {
-          coinsEarned = coinsEarned.add(gold);
-        }
+      if (bucket.xpEarned() > 0) {
+        xpEarned += bucket.xpEarned();
+      }
+      if (bucket.coinsEarned() != null && bucket.coinsEarned().compareTo(BigDecimal.ZERO) > 0) {
+        coinsEarned = coinsEarned.add(bucket.coinsEarned());
       }
     }
 
@@ -391,14 +485,14 @@ public class GetUserRetrospectiveUseCase {
     int focusSessionsCount = 0;
     int pomodorosCompleted = 0;
 
-    for (FocusRecord rec : focusRecords) {
-      LocalDate focusDate = toUserDate(rec.getEndTime(), userZone);
-      int minutes = Math.max(0, rec.getDurationMinutes());
-      focusMinutes += minutes;
-      focusSessionsCount++;
-      pomodorosCompleted += rec.getCompletedPomos().orElse(0);
-      monthFocusMinutes[focusDate.getMonthValue()] += minutes;
-      if (minutes >= MIN_FOCUS_MINUTES_FOR_ACTIVE_DAY) {
+    for (RetrospectiveFocusBucket bucket : focusBuckets) {
+      LocalDate focusDate = bucketToUserDate(
+          bucket.year(), bucket.month(), bucket.day(), bucket.hour(), bucket.quarterHour(), userZone);
+      focusMinutes += Math.max(0, bucket.totalMinutes());
+      focusSessionsCount += Math.max(0, bucket.sessionsCount());
+      pomodorosCompleted += Math.max(0, bucket.pomodorosCompleted());
+      monthFocusMinutes[focusDate.getMonthValue()] += Math.max(0, bucket.totalMinutes());
+      if (bucket.hasActiveDaySession()) {
         activeDates.add(focusDate);
       }
     }

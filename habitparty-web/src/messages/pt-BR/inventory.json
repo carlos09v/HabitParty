@@ -15,10 +15,20 @@
     "openBox": "Abrir Caixa",
     "sendToFocus": "Enviar ao Foco",
     "use": "Usar",
-    "openBoxProductivity": "Sortear Pausa"
+    "openBoxProductivity": "Sortear Pausa",
+    "completeCoupon": "Concluir",
+    "runningNow": "Rodando agora",
+    "pausedInFocus": "Pausado no Foco",
+    "stagedInFocus": "No palco"
   },
   "container": {
     "listAriaLabel": "Itens do inventário",
+    "capacityTitle": "Capacidade ocupada: {current} de {max} itens",
+    "quickLinks": {
+      "history": "Histórico",
+      "storeGamified": "Loja",
+      "storeProductivity": "Vitrine"
+    },
     "filters": {
       "statusLabel": "Status",
       "statusAll": "Todos os Status",
@@ -30,6 +40,7 @@
       "typeSingleUse": "Uso Único",
       "typeTimeBased": "Cupom de Tempo",
       "typeMysteryBox": "Caixa Misteriosa",
+      "packageLabel": "Pacote",
       "sortLabel": "Ordenar",
       "sortDefault": "Ordem Padrão",
       "sortQuantityDesc": "Maior Quantidade",
@@ -43,13 +54,14 @@
       "noResultsTitle": "Nenhum item encontrado",
       "emptyDescription": "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!",
       "emptyDescriptionGamified": "Você ainda não possui itens ou cupons na sua mochila. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!",
-      "emptyDescriptionProductivity": "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas e resgate recompensas na Loja!",
+      "emptyDescriptionProductivity": "Você ainda não possui itens ou cupons no seu inventário. Acumule créditos completando suas tarefas e resgate recompensas na Vitrine!",
       "noResultsDescription": "Não encontramos nenhum item que corresponda aos filtros aplicados.",
       "exploreStore": "Explorar a Loja",
       "clearFilters": "Limpar Filtros"
     },
     "contextMenu": {
       "openInFocus": "Abrir no Foco",
+      "completeCoupon": "Concluir cupom esgotado",
       "returnToBackpack": "Devolver para a mochila",
       "returnToBackpackGamified": "Devolver para a mochila",
       "returnToBackpackProductivity": "Devolver ao inventário",
@@ -67,13 +79,23 @@
       "description": "Tem certeza que deseja descartar 1x <strong>\"{title}\"</strong>? Esta ação não reembolsa as moedas gastas.",
       "confirmText": "Sim, descartar",
       "cancelText": "Cancelar",
-      "descriptionProductivity": "Tem certeza que deseja descartar 1x <strong>\"{title}\"</strong>? Esta ação não reembolsa os créditos gastos."
+      "descriptionProductivity": "Tem certeza que deseja descartar 1x <strong>\"{title}\"</strong>? Esta ação não reembolsa os créditos gastos.",
+      "remainingUnitsHint": "Restarão {remaining} {remaining, plural, one {unidade} other {unidades}} na pilha após descartar."
+    },
+    "returnActiveModal": {
+      "titleGamified": "Devolver cupom com timer ativo?",
+      "titleProductivity": "Devolver cupom com timer ativo?",
+      "descriptionGamified": "O item <strong>\"{title}\"</strong> está em andamento no timer de Foco agora. Devolver para a mochila vai interromper e limpar a sessão atual (o saldo não registrado permanece salvo).",
+      "descriptionProductivity": "O item <strong>\"{title}\"</strong> está em andamento no timer de Foco agora. Devolver ao inventário vai interromper e limpar a sessão atual (o saldo não registrado permanece salvo).",
+      "confirmText": "Sim, interromper e devolver",
+      "cancelText": "Manter no Foco"
     },
     "toasts": {
       "useError": "Erro ao usar item.",
       "useSuccess": "Você usou \"{title}\"!",
       "sendToFocusError": "Erro ao adicionar item ao Foco.",
       "sendToFocusSuccess": "\"{title}\" adicionado ao Foco com sucesso!",
+      "goToFocusAction": "Ir para o Foco",
       "returnToBackpackError": "Erro ao devolver item para a mochila.",
       "returnToBackpackErrorGamified": "Erro ao devolver item para a mochila.",
       "returnToBackpackErrorProductivity": "Erro ao devolver item ao inventário.",
@@ -165,7 +187,10 @@
     "wonSingleUseItemProductivity": "Recompensa de Uso Único salva no Inventário",
     "spinButtonProductivity": "Executar Sorteio",
     "spinningStatusProductivity": "Sorteando opção...",
-    "storeInBackpackButtonProductivity": "Salvar no Inventário"
+    "storeInBackpackButtonProductivity": "Salvar no Inventário",
+    "sendWonToFocusButton": "Enviar ao Foco",
+    "useWonNowButton": "Usar agora",
+    "openNextBoxButton": "Abrir próxima ({count} {count, plural, one {restante} other {restantes}})"
   },
   "actions": {
     "communicationError": "Erro interno de comunicação com o servidor.",

@@ -79,6 +79,7 @@ export async function loadLocaleMessages(
     help,
     admin,
     showcase,
+    showcaseCatalog,
   ] = await Promise.all([
     import(`../messages/${locale}/common.json`),
     import(`../messages/${locale}/layout.json`),
@@ -95,6 +96,7 @@ export async function loadLocaleMessages(
     import(`../messages/${locale}/help.json`),
     import(`../messages/${locale}/admin.json`),
     import(`../messages/${locale}/showcase.json`),
+    import(`../messages/${locale}/showcaseCatalog.json`),
   ]);
 
   const messages: AbstractIntlMessages = Object.freeze({
@@ -112,7 +114,14 @@ export async function loadLocaleMessages(
     history: history.default,
     help: help.default,
     admin: admin.default,
-    showcase: showcase.default,
+    showcase: {
+      ...showcase.default,
+      catalog: showcaseCatalog.default.catalog,
+      artifacts: {
+        ...showcase.default.artifacts,
+        items: showcaseCatalog.default.artifactItems,
+      },
+    },
   });
 
   if (isProd) {
