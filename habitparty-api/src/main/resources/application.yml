@@ -55,6 +55,10 @@ logging:
 
 server:
   port: 8080
+  shutdown: graceful
+  tomcat:
+    keep-alive-timeout: 65s
+    max-keep-alive-requests: -1
 
 api:
   security:

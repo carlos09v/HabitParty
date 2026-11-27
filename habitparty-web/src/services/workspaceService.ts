@@ -13,11 +13,16 @@ async function fetchWorkspacesCached(): Promise<WorkspaceResponseDTO[]> {
 
   const { data, error, response } = await serverApi.GET("/workspaces");
 
-  if (response?.status === 401) {
+  const httpStatus = response?.status;
+  if (httpStatus === 401) {
     throw new UnauthorizedApiError("WORKSPACES_UNAUTHORIZED");
   }
 
   if (error || !Array.isArray(data)) {
+    console.error(
+      `[WorkspaceService:fetchWorkspaces] Falha HTTP ${httpStatus ?? "unknown"}`,
+      error,
+    );
     throw new Error("WORKSPACES_FETCH_FAILED");
   }
 

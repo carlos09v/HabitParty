@@ -1,7 +1,7 @@
 "use client";
 
 import { arrayMove } from "@dnd-kit/sortable";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -65,6 +65,7 @@ export function TasksBoardContainer({
   const tFilters = useTranslations("tasks.filters");
   const tMutations = useTranslations("dashboard.taskShared.mutations");
   const locale = useLocale() as AppLocale;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlWorkspaceId = searchParams.get("workspaceId") || undefined;
   const effectiveTargetColumnId =
@@ -95,9 +96,21 @@ export function TasksBoardContainer({
     }
   }, [workspaceIdProp, urlWorkspaceId]);
 
+  // Se houve reordenação via `/api/tasks/move` neste workspace antes de sair e retornar
+  // dentro da janela de 3 min do Router Cache, solicita 1 refresh único ao remontar.
+  useEffect(() => {
+    if (!workspaceIdProp) return;
+    if (
+      useWorkspaceStore.getState().consumeWorkspaceBoardStale(workspaceIdProp)
+    ) {
+      router.refresh();
+    }
+  }, [workspaceIdProp, router]);
+
   const [viewMode, setViewMode] = useViewMode("tasks", "card");
   const [isColumnsDrawerOpen, setIsColumnsDrawerOpen] = useState(false);
 
+  const hasPendingTaskMovesRef = useRef(false);
   const syncSelectedTaskDetailsRef = useRef<
     ((taskId: string, updater: (task: Task) => Task) => void) | null
   >(null);
@@ -126,6 +139,7 @@ export function TasksBoardContainer({
     initialVisibleColumnIds,
     effectiveTargetColumnId,
     (taskId, updater) => syncSelectedTaskDetailsRef.current?.(taskId, updater),
+    hasPendingTaskMovesRef,
   );
 
   const columnsRef = useRef(columns);
@@ -304,6 +318,7 @@ export function TasksBoardContainer({
     setColumns,
     workspaceId: activeWorkspaceId,
     workspaces,
+    hasPendingTaskMovesRef,
     onTaskUpdatedInDetails: handleTaskUpdatedInDetails,
     onTempTaskReconciled: handleTempTaskReconciled,
     onTaskDeleted: unregisterLoadedArchivedTask,

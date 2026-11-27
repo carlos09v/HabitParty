@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Dispatch, SetStateAction } from "react";
-import { startTransition, useCallback, useRef } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { createTask, deleteTask, moveTasks } from "@/actions/taskActions";
+import { createTask, deleteTask } from "@/actions/taskActions";
 import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 import {
   applyOptimisticHabitChange,
@@ -38,12 +38,47 @@ interface UseBoardTaskActionsOptions {
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   workspaceId?: string | null;
   workspaces?: WorkspaceResponseDTO[];
+  hasPendingTaskMovesRef?: RefObject<boolean>;
   onTaskUpdatedInDetails?: (task: Task) => void;
   onTempTaskReconciled?: (tempId: string, realTask: Task) => void;
   onTaskDeleted?: (taskId: string) => void;
 }
 
+const MOVE_COALESCE_DELAY_MS = 250;
+
 let quickCreateTempSeq = 0;
+
+async function persistTaskMoveUpdates(
+  updates: UpdateTaskOrderDTO[],
+  options?: { keepalive?: boolean },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch("/api/tasks/move", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+      keepalive: Boolean(options?.keepalive),
+    });
+
+    if (response.ok) {
+      return { success: true };
+    }
+
+    let errorMessage: string | undefined;
+    try {
+      const body = (await response.json()) as { error?: unknown };
+      if (typeof body?.error === "string" && body.error.trim().length > 0) {
+        errorMessage = body.error;
+      }
+    } catch {
+      // Resposta de erro sem JSON válido
+    }
+
+    return { success: false, error: errorMessage };
+  } catch {
+    return { success: false };
+  }
+}
 
 /**
  * Hook dedicado às ações e mutações assíncronas de tarefas do quadro Kanban.
@@ -54,6 +89,7 @@ export function useBoardTaskActions({
   setColumns,
   workspaceId,
   workspaces,
+  hasPendingTaskMovesRef,
   onTaskUpdatedInDetails,
   onTempTaskReconciled,
   onTaskDeleted,
@@ -63,6 +99,125 @@ export function useBoardTaskActions({
   const deletedTempTaskIdsRef = useRef<Set<string>>(new Set());
   const moveChainRef = useRef<Promise<void>>(Promise.resolve());
   const moveSeqRef = useRef(0);
+  const pendingMoveColumnIdsRef = useRef<Set<string>>(new Set());
+  const pendingMoveTasksByColumnRef = useRef<Map<string, Task[]>>(new Map());
+  const pendingMoveSnapshotRef = useRef<BoardColumn[] | null>(null);
+  const moveFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightMovesCountRef = useRef(0);
+  const isUnmountedRef = useRef(false);
+
+  const syncPendingMoveFlag = useCallback(() => {
+    if (hasPendingTaskMovesRef) {
+      hasPendingTaskMovesRef.current =
+        pendingMoveColumnIdsRef.current.size > 0 ||
+        inFlightMovesCountRef.current > 0;
+    }
+  }, [hasPendingTaskMovesRef]);
+
+  const enqueueMoveBatch = useCallback(
+    (
+      updates: UpdateTaskOrderDTO[],
+      rollbackSnapshot: BoardColumn[] | null,
+      flushSeq: number,
+      options?: { keepalive?: boolean },
+    ) => {
+      if (updates.length === 0) return;
+
+      const effectiveWorkspaceId =
+        workspaceId ?? useWorkspaceStore.getState().activeWorkspaceId;
+      useWorkspaceStore.getState().markBoardOrderDirty(effectiveWorkspaceId);
+
+      inFlightMovesCountRef.current += 1;
+      syncPendingMoveFlag();
+
+      moveChainRef.current = moveChainRef.current
+        .then(async () => {
+          const res = await persistTaskMoveUpdates(updates, options);
+          if (!res.success && !isUnmountedRef.current) {
+            // Só reverte o snapshot anterior se nenhum arrasto mais recente o substituiu
+            if (rollbackSnapshot && flushSeq === moveSeqRef.current) {
+              startTransition(() => {
+                columnsRef.current = rollbackSnapshot;
+                setColumns(rollbackSnapshot);
+              });
+            }
+            toast.error(res.error || t("movePositionError"));
+          }
+        })
+        .catch(() => {
+          if (!isUnmountedRef.current) {
+            toast.error(t("movePositionError"));
+          }
+        })
+        .finally(() => {
+          inFlightMovesCountRef.current = Math.max(
+            0,
+            inFlightMovesCountRef.current - 1,
+          );
+          syncPendingMoveFlag();
+        });
+    },
+    [setColumns, syncPendingMoveFlag, t, workspaceId],
+  );
+
+  const flushPendingMoves = useCallback(
+    (options?: { keepalive?: boolean }) => {
+      if (moveFlushTimerRef.current !== null) {
+        clearTimeout(moveFlushTimerRef.current);
+        moveFlushTimerRef.current = null;
+      }
+
+      if (pendingMoveColumnIdsRef.current.size === 0) {
+        syncPendingMoveFlag();
+        return;
+      }
+
+      const touchedColumnIds = Array.from(pendingMoveColumnIdsRef.current);
+      const bufferedTasksByCol = new Map(pendingMoveTasksByColumnRef.current);
+      const rollbackSnapshot = pendingMoveSnapshotRef.current;
+      const flushSeq = moveSeqRef.current;
+
+      pendingMoveColumnIdsRef.current.clear();
+      pendingMoveTasksByColumnRef.current.clear();
+      pendingMoveSnapshotRef.current = null;
+
+      const dedupedUpdates = new Map<string, UpdateTaskOrderDTO>();
+      for (const colId of touchedColumnIds) {
+        const liveCol = columnsRef.current.find((c) => c.id === colId);
+        const colTasks = liveCol?.tasks ?? bufferedTasksByCol.get(colId) ?? [];
+        colTasks.forEach((taskItem, idx) => {
+          if (!taskItem.id || taskItem.id.startsWith("temp-")) return;
+          dedupedUpdates.set(taskItem.id, {
+            taskId: taskItem.id,
+            boardColumnId: colId,
+            newOrderIndex: idx,
+          });
+        });
+      }
+
+      const updates = Array.from(dedupedUpdates.values());
+      if (updates.length === 0) {
+        syncPendingMoveFlag();
+        return;
+      }
+
+      enqueueMoveBatch(updates, rollbackSnapshot, flushSeq, options);
+    },
+    [enqueueMoveBatch, syncPendingMoveFlag],
+  );
+
+  useEffect(() => {
+    isUnmountedRef.current = false;
+    const handlePageHide = () => {
+      flushPendingMoves({ keepalive: true });
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      flushPendingMoves({ keepalive: true });
+      isUnmountedRef.current = true;
+    };
+  }, [flushPendingMoves]);
 
   useIsomorphicLayoutEffect(() => {
     columnsRef.current = columns;
@@ -211,7 +366,7 @@ export function useBoardTaskActions({
 
         // Se o card foi arrastado para outra coluna durante o POST, persiste a movimentação agora com o UUID real
         if (movedColumnUpdates && movedColumnUpdates.length > 0) {
-          void moveTasks(movedColumnUpdates);
+          enqueueMoveBatch(movedColumnUpdates, null, ++moveSeqRef.current);
         }
 
         if (typeof window !== "undefined") {
@@ -227,52 +382,56 @@ export function useBoardTaskActions({
       toast.error(errMsg || t("quickCreateError"));
       return false;
     },
-    [setColumns, t, workspaceId, workspaces, onTempTaskReconciled],
+    [
+      enqueueMoveBatch,
+      onTempTaskReconciled,
+      setColumns,
+      t,
+      workspaceId,
+      workspaces,
+    ],
   );
 
   const handleTaskMove = useCallback(
     (
-      _taskId: string,
+      taskId: string,
       targetColumnId: string,
       _newIndex: number,
       allTargetTasks?: Task[],
       previousColumns?: BoardColumn[],
     ) => {
-      const tasksToUpdate =
-        allTargetTasks ||
-        columnsRef.current.find((c) => c.id === targetColumnId)?.tasks ||
-        [];
-
-      const updates: UpdateTaskOrderDTO[] = tasksToUpdate
-        .filter((taskItem) => taskItem.id && !taskItem.id.startsWith("temp-"))
-        .map((taskItem, idx) => ({
-          taskId: taskItem.id,
-          boardColumnId: targetColumnId,
-          newOrderIndex: idx,
-        }));
-
-      if (updates.length > 0) {
-        const moveSeq = ++moveSeqRef.current;
-        moveChainRef.current = moveChainRef.current
-          .then(async () => {
-            const res = await moveTasks(updates);
-            if (!res.success) {
-              // Só reverte o snapshot anterior se nenhum arrasto mais recente o substituiu
-              if (previousColumns && moveSeq === moveSeqRef.current) {
-                startTransition(() => {
-                  columnsRef.current = previousColumns;
-                  setColumns(previousColumns);
-                });
-              }
-              toast.error(res.error || t("movePositionError"));
-            }
-          })
-          .catch(() => {
-            toast.error(t("movePositionError"));
-          });
+      if (pendingMoveSnapshotRef.current === null && previousColumns) {
+        pendingMoveSnapshotRef.current = previousColumns;
       }
+
+      if (allTargetTasks) {
+        for (const [colId, buffered] of pendingMoveTasksByColumnRef.current) {
+          if (colId !== targetColumnId) {
+            pendingMoveTasksByColumnRef.current.set(
+              colId,
+              buffered.filter((item) => item.id !== taskId),
+            );
+          }
+        }
+        pendingMoveTasksByColumnRef.current.set(targetColumnId, allTargetTasks);
+      }
+
+      pendingMoveColumnIdsRef.current.add(targetColumnId);
+      moveSeqRef.current += 1;
+      syncPendingMoveFlag();
+
+      const effectiveWorkspaceId =
+        workspaceId ?? useWorkspaceStore.getState().activeWorkspaceId;
+      useWorkspaceStore.getState().markBoardOrderDirty(effectiveWorkspaceId);
+
+      if (moveFlushTimerRef.current !== null) {
+        clearTimeout(moveFlushTimerRef.current);
+      }
+      moveFlushTimerRef.current = setTimeout(() => {
+        flushPendingMoves();
+      }, MOVE_COALESCE_DELAY_MS);
     },
-    [setColumns, t],
+    [flushPendingMoves, syncPendingMoveFlag, workspaceId],
   );
 
   const handleTaskDetailsUpdate = useCallback(

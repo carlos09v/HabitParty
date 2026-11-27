@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardDailyBriefing } from "@/components/dashboard/DashboardDailyBriefing";
@@ -65,7 +65,16 @@ export function DashboardMain({
   const [allColumnsState, setAllColumnsState] =
     useState<DashboardColumnOption[]>(initialAllColumns);
 
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Caso tenha ocorrido reordenação via `/api/tasks/move` na tela de Tasks dentro da janela
+  // de cache do cliente, sincroniza o Dashboard uma única vez ao retornar para ele.
+  useEffect(() => {
+    if (useWorkspaceStore.getState().consumeDashboardBoardStale()) {
+      router.refresh();
+    }
+  }, [router]);
   const urlWorkspaceId = searchParams.get("workspaceId") || undefined;
   const storeActiveWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const [syncedUrlWorkspaceId, setSyncedUrlWorkspaceId] = useState<

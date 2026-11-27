@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import {
+  type RefObject,
   startTransition,
   useCallback,
   useEffect,
@@ -47,6 +48,7 @@ export function useRoutineColumns(
   initialVisibleColumnIds?: string[],
   targetColumnId?: string,
   onFocusTaskSynced?: (taskId: string, updater: (task: Task) => Task) => void,
+  hasPendingTaskMovesRef?: RefObject<boolean>,
 ) {
   const t = useTranslations("tasks.hooks");
   const [columns, setColumns] = useState<BoardColumn[]>(initialColumns);
@@ -166,8 +168,13 @@ export function useRoutineColumns(
     });
   }, [targetColumnId, initialColumnIdsKey, maxAllowed, persistVisibleColumns]);
 
-  // Sincroniza colunas mantendo tarefas otimistas e arquivadas carregadas sob demanda
+  // Sincroniza colunas mantendo tarefas otimistas e arquivadas carregadas sob demanda.
+  // Ignora payloads RSC defasados enquanto houver reordenação de cards pendente/em voo.
   useEffect(() => {
+    if (hasPendingTaskMovesRef?.current) {
+      return;
+    }
+
     const serverTaskIds = new Set(
       initialColumns.flatMap((col) => col.tasks.map((t) => t.id)),
     );
@@ -226,7 +233,7 @@ export function useRoutineColumns(
         };
       });
     });
-  }, [initialColumns]);
+  }, [initialColumns, hasPendingTaskMovesRef]);
 
   // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
   useFocusTaskSync({

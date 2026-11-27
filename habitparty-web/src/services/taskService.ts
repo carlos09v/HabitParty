@@ -91,11 +91,16 @@ async function fetchWorkspaceBoardColumnsCached(workspaceId: string): Promise<{
       getUserTimezoneCookie(),
     ]);
 
-  if (response?.status === 401) {
+  const httpStatus = response?.status;
+  if (httpStatus === 401) {
     throw new UnauthorizedApiError("WORKSPACE_BOARD_UNAUTHORIZED");
   }
 
   if (error || !kanbanBoard) {
+    console.error(
+      `[TaskService:fetchWorkspaceBoardColumns] Falha HTTP ${httpStatus ?? "unknown"} para workspace ${workspaceId}`,
+      error,
+    );
     throw new Error("WORKSPACE_BOARD_FETCH_FAILED");
   }
 
@@ -151,11 +156,16 @@ async function fetchAllWorkspacesBoardsCached(): Promise<
       getUserTimezoneCookie(),
     ]);
 
-  if (response?.status === 401) {
+  const httpStatus = response?.status;
+  if (httpStatus === 401) {
     throw new UnauthorizedApiError("WORKSPACES_BOARDS_UNAUTHORIZED");
   }
 
   if (error || !Array.isArray(workspacesDto)) {
+    console.error(
+      `[TaskService:fetchAllWorkspacesBoards] Falha HTTP ${httpStatus ?? "unknown"}`,
+      error,
+    );
     throw new Error("WORKSPACES_BOARDS_FETCH_FAILED");
   }
 

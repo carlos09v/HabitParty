@@ -550,6 +550,88 @@ export type ExtendedApiPaths = Omit<paths, "/users/password"> & {
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const RETRYABLE_SAFE_STATUSES = new Set([502, 503, 504]);
+const SAFE_FETCH_RETRY_DELAYS_MS = [200, 500];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getSafeRequestPathname(input: RequestInfo | URL): string {
+  try {
+    const rawUrl =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+    return new URL(rawUrl).pathname;
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * Wrapper de `fetch` com retry curto exclusivamente para métodos seguros/idempotentes (`GET`/`HEAD`)
+ * diante de falhas transitórias de gateway (`502`/`503`/`504`) ou queda de socket (`ECONNRESET`),
+ * registrando o status/erro real nos logs do servidor antes de propagar.
+ */
+const resilientServerFetch: typeof fetch = async (input, init) => {
+  const method = (
+    init?.method ?? (input instanceof Request ? input.method : "GET")
+  ).toUpperCase();
+  const isSafeIdempotent = method === "GET" || method === "HEAD";
+
+  if (!isSafeIdempotent) {
+    return globalThis.fetch(input, init);
+  }
+
+  const totalAttempts = SAFE_FETCH_RETRY_DELAYS_MS.length + 1;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < totalAttempts; attempt++) {
+    const attemptInput = input instanceof Request ? input.clone() : input;
+    try {
+      const response = await globalThis.fetch(attemptInput, init);
+      if (
+        !RETRYABLE_SAFE_STATUSES.has(response.status) ||
+        attempt === totalAttempts - 1
+      ) {
+        if (response.status >= 500) {
+          console.error(
+            `[serverApi] ${method} ${getSafeRequestPathname(input)} -> HTTP ${response.status}`,
+          );
+        }
+        return response;
+      }
+
+      console.warn(
+        `[serverApi:retry] ${method} ${getSafeRequestPathname(input)} -> HTTP ${response.status} (tentativa ${attempt + 1}/${totalAttempts})`,
+      );
+      await response.body?.cancel().catch(() => {});
+    } catch (err) {
+      lastError = err;
+      const isAborted =
+        (input instanceof Request && input.signal?.aborted) ||
+        Boolean(init?.signal?.aborted);
+      if (isAborted || attempt === totalAttempts - 1) {
+        console.error(
+          `[serverApi] ${method} ${getSafeRequestPathname(input)} erro de rede:`,
+          err instanceof Error ? err.message : String(err),
+        );
+        throw err;
+      }
+      console.warn(
+        `[serverApi:retry] ${method} ${getSafeRequestPathname(input)} erro de rede (tentativa ${attempt + 1}/${totalAttempts}):`,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+
+    await sleep(SAFE_FETCH_RETRY_DELAYS_MS[attempt] ?? 300);
+  }
+
+  throw lastError;
+};
 
 /**
  * Erro tipado para respostas HTTP 401 (sessão expirada/revogada) provenientes da API.
@@ -706,6 +788,7 @@ export { API_BASE_URL };
  */
 export const serverApi = createClient<ExtendedApiPaths>({
   baseUrl: API_BASE_URL,
+  fetch: resilientServerFetch,
 });
 
 serverApi.use(serverAuthMiddleware);
@@ -716,6 +799,7 @@ serverApi.use(serverAuthMiddleware);
  */
 export const publicServerApi = createClient<ExtendedApiPaths>({
   baseUrl: API_BASE_URL,
+  fetch: resilientServerFetch,
 });
 
 export default serverApi;

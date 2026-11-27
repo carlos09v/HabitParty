@@ -27,15 +27,17 @@ COPY mvnw pom.xml ./
 COPY src/ ./src/
 RUN ./mvnw clean package -DskipTests -B
 
-# Stage 4: Production runner (minimal, non-root, hardened)
-FROM eclipse-temurin:25-jre-alpine AS production
+# Stage 4: Production runner (minimal, non-root, hardened, glibc para controle previsível de RSS na JVM)
+FROM eclipse-temurin:25-jre-noble AS production
 WORKDIR /app
 
-RUN apk update && \
-    apk upgrade --no-cache && \
-    apk add --no-cache su-exec && \
-    addgroup -g 1001 -S appgroup && \
-    adduser -S appuser -u 1001 -G appgroup && \
+ENV MALLOC_ARENA_MAX=2
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gosu curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --system --gid 1001 appgroup && \
+    useradd --system --uid 1001 --gid appgroup --no-create-home --shell /usr/sbin/nologin appuser && \
     mkdir -p /app/uploads && \
     chown -R appuser:appgroup /app
 
@@ -46,6 +48,6 @@ RUN chmod +x /app/entrypoint.sh
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD curl -fsS http://localhost:8080/health > /dev/null || exit 1
 
 ENTRYPOINT ["/app/entrypoint.sh"]
