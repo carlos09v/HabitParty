@@ -80,6 +80,18 @@ public interface TransactionHistoryJpaRepository
   @Query("DELETE FROM TransactionHistoryJpaEntity t WHERE t.referenceId IN :referenceIds AND t.userId = :userId")
   int deleteAllByReferenceIdInAndUserId(@Param("referenceIds") List<UUID> referenceIds, @Param("userId") UUID userId);
 
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("""
+      DELETE FROM TransactionHistoryJpaEntity t
+      WHERE t.referenceId = :referenceId
+        AND t.userId = :userId
+        AND t.transactionType = :transactionType
+      """)
+  int deleteAllByReferenceIdAndUserIdAndTransactionType(
+      @Param("referenceId") UUID referenceId,
+      @Param("userId") UUID userId,
+      @Param("transactionType") TransactionType transactionType);
+
   boolean existsByReferenceIdAndUserId(UUID referenceId, UUID userId);
 
   boolean existsByReferenceIdInAndUserId(Collection<UUID> referenceIds, UUID userId);

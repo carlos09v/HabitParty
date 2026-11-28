@@ -184,7 +184,7 @@
       "phasePaused": "Paused",
       "phaseOvertime": "Overtime",
       "phaseBreak": "Break",
-      "sessionCapBadge": "🪙 1h30m cap",
+      "sessionCapBadge": "🪙 2h cap",
       "start": "Start",
       "pause": "Pause",
       "resume": "Resume",
@@ -197,7 +197,7 @@
       "selectActivityPrompt": "Select an activity in HabitParty",
       "close": "Close",
       "unsupported": "Floating Picture-in-Picture window is not supported in this browser.",
-      "sessionCapBadgeProductivity": "⏱️ 1h30m cap",
+      "sessionCapBadgeProductivity": "⏱️ 2h cap",
       "actionFailed": "Could not save. Please try again.",
       "minDurationHint": "At least 1 minute required to save."
     },

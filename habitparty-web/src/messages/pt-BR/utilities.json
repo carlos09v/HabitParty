@@ -128,7 +128,7 @@
       "minTimeGamified": "Sessões com menos de {minMinutes} min não acumulam XP ou Moedas.",
       "minTimeProductivity": "Sessões com menos de {minMinutes} min não acumulam Pontos ou Créditos.",
       "maxCapTitleGamified": "Teto de {maxMinutes} min",
-      "maxCapTitleProductivity": "Ciclo Ultradiano ({maxMinutes}m)",
+      "maxCapTitleProductivity": "Teto por Sessão ({maxMinutes}m)",
       "maxCapGamified": "Excedente acima de {maxMinutes} min por sessão não gera moedas adicionais (anti-AFK).",
       "maxCapProductivity": "Excedente acima de {maxMinutes} min por sessão não gera créditos adicionais. Faça uma pausa entre ciclos.",
       "antiExploitTitle": "Anti-Exploit",

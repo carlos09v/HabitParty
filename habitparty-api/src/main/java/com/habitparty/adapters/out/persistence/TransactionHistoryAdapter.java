@@ -213,6 +213,15 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  public int deleteAllByReferenceIdAndUserIdAndType(
+      UUID referenceId, UUID userId, TransactionType transactionType) {
+    if (referenceId == null || userId == null || transactionType == null) {
+      return 0;
+    }
+    return repository.deleteAllByReferenceIdAndUserIdAndTransactionType(referenceId, userId, transactionType);
+  }
+
+  @Override
   public void deleteAllByReferenceIdsAndUserId(List<UUID> referenceIds, UUID userId) {
     if (referenceIds == null || referenceIds.isEmpty()) {
       return;

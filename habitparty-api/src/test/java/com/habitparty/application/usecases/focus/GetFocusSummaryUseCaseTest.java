@@ -43,8 +43,8 @@ class GetFocusSummaryUseCaseTest {
     GetFocusSummaryUseCase useCase = new GetFocusSummaryUseCase(focusPort, timeResolver);
 
     when(focusPort.findProductiveAnalyticsEntriesByUserId(USER_ID)).thenReturn(List.of(
-        // Hoje (2026-11-26 09:00 SP = 12:00 UTC): 110m -> rewardable cap 90m
-        new FocusAnalyticsEntry(ACT_A, LocalDateTime.of(2026, 11, 26, 12, 0), 110, 2, 22, new BigDecimal("1.25")),
+        // Hoje (2026-11-26 09:00 SP = 12:00 UTC): 140m -> rewardable cap 120m
+        new FocusAnalyticsEntry(ACT_A, LocalDateTime.of(2026, 11, 26, 12, 0), 140, 2, 28, new BigDecimal("1.80")),
         // Hoje (2026-11-26 11:00 SP = 14:00 UTC): 8m -> rewardable 0m (< 10m), mas produtivo 8m
         new FocusAnalyticsEntry(ACT_B, LocalDateTime.of(2026, 11, 26, 14, 0), 8, 0, 0, BigDecimal.ZERO),
         // Ontem em SP (2026-11-25 22:30 SP = 2026-11-26 01:30 UTC!): deve contar em 2026-11-25, não hoje!
@@ -62,24 +62,24 @@ class GetFocusSummaryUseCaseTest {
     assertEquals(5, result.totalRecordsCount());
     assertEquals(3, result.activeStreakDays());
     assertEquals(4, result.totalActiveDays());
-    assertEquals(22, result.todayXp());
-    assertEquals(46, result.totalXp());
-    assertEquals(new BigDecimal("1.25"), result.todayGold());
-    assertEquals(new BigDecimal("2.75"), result.totalGold());
-    assertEquals(118, result.todayFocusMinutes());
-    assertEquals(218, result.totalFocusMinutes());
+    assertEquals(28, result.todayXp());
+    assertEquals(52, result.totalXp());
+    assertEquals(new BigDecimal("1.80"), result.todayGold());
+    assertEquals(new BigDecimal("3.30"), result.totalGold());
+    assertEquals(148, result.todayFocusMinutes());
+    assertEquals(248, result.totalFocusMinutes());
     assertEquals(2, result.todayPomosCount());
     assertEquals(5, result.totalPomosCount());
-    assertEquals(59, result.todayAverageMinutes());
-    assertEquals(44, result.totalAverageMinutes());
-    assertEquals(118, result.globalTodayProductiveMinutes());
-    assertEquals(90, result.globalTodayRewardableMinutes());
-    assertEquals(Map.of(ACT_A, 110, ACT_B, 8), result.todayDurationByActivityId());
+    assertEquals(74, result.todayAverageMinutes());
+    assertEquals(50, result.totalAverageMinutes());
+    assertEquals(148, result.globalTodayProductiveMinutes());
+    assertEquals(120, result.globalTodayRewardableMinutes());
+    assertEquals(Map.of(ACT_A, 140, ACT_B, 8), result.todayDurationByActivityId());
     assertEquals(Map.of(
         "2026-11-16", 40,
         "2026-11-24", 25,
         "2026-11-25", 35,
-        "2026-11-26", 118), result.dailyMinutes());
+        "2026-11-26", 148), result.dailyMinutes());
   }
 
   @Test

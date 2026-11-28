@@ -65,13 +65,13 @@ class FocusRewardRecalculationPlannerTest {
     assertTrue(plan.hasChanges());
     assertEquals(2, plan.adjustments().size());
 
-    // Cronologicamente: primeiro 16/11 (study92 -> 21 XP, 1.35 coins), depois 17/11 (stopwatch45 -> 11 XP, 0.68 coins)
+    // Cronologicamente: primeiro 16/11 (study92 -> 21 XP, 1.38 coins), depois 17/11 (stopwatch45 -> 11 XP, 0.68 coins)
     var adj1 = plan.adjustments().get(0);
     assertEquals(study92.getId(), adj1.recordId());
     assertEquals(21, adj1.newXp());
-    assertEquals(new BigDecimal("1.35"), adj1.newCoins());
+    assertEquals(new BigDecimal("1.38"), adj1.newCoins());
     assertEquals(10, adj1.xpDelta());
-    assertEquals(new BigDecimal("0.67"), adj1.coinsDelta());
+    assertEquals(new BigDecimal("0.70"), adj1.coinsDelta());
 
     var adj2 = plan.adjustments().get(1);
     assertEquals(stopwatch45.getId(), adj2.recordId());
@@ -81,7 +81,7 @@ class FocusRewardRecalculationPlannerTest {
     assertEquals(new BigDecimal("0.08"), adj2.coinsDelta());
 
     assertEquals(10, plan.totalXpDelta());
-    assertEquals(new BigDecimal("0.75"), plan.totalCoinsDelta());
+    assertEquals(new BigDecimal("0.78"), plan.totalCoinsDelta());
   }
 
   @Test
@@ -156,7 +156,7 @@ class FocusRewardRecalculationPlannerTest {
         14,
         new BigDecimal("0.90"));
 
-    // 92m depois de já ter 4h recompensáveis no dia 16/11: deve permanecer na faixa 50% (11 XP, 0.68 coins)
+    // 90m depois de já ter 4h recompensáveis no dia 16/11: deve permanecer na faixa 50% (11 XP, 0.68 coins)
     FocusRecord afterFourHours = new FocusRecord(
         UUID.randomUUID(),
         userId,
@@ -166,7 +166,7 @@ class FocusRewardRecalculationPlannerTest {
         null,
         null,
         LocalDateTime.of(2026, 11, 16, 14, 50),
-        LocalDateTime.of(2026, 11, 16, 16, 22),
+        LocalDateTime.of(2026, 11, 16, 16, 20),
         FocusRecordType.STOPWATCH,
         null,
         null,
@@ -182,7 +182,7 @@ class FocusRewardRecalculationPlannerTest {
   }
 
   @Test
-  @DisplayName("Excedente > 90 min e sessões < 10 min não devem queimar a cota diária de 100% nas sessões seguintes")
+  @DisplayName("Excedente > 120 min e sessões < 10 min não devem queimar a cota diária de 100% nas sessões seguintes")
   void shouldAccumulateOnlyRewardableMinutesTowardDailyYieldCap() {
     UUID userId = UUID.randomUUID();
     UUID activityId = UUID.randomUUID();
@@ -194,19 +194,19 @@ class FocusRewardRecalculationPlannerTest {
         LocalDateTime.of(2026, 11, 20, 7, 9),
         FocusRecordType.STOPWATCH, null, null, 0, BigDecimal.ZERO);
 
-    // Sessão 2: 120 min (paga por 90m -> apenas 90m na cota, não 120m)
-    FocusRecord session120A = new FocusRecord(
+    // Sessão 2: 180 min (paga por 120m -> apenas 120m na cota, não 180m)
+    FocusRecord session180 = new FocusRecord(
         UUID.randomUUID(), userId, activityId, null, null, null, null,
         LocalDateTime.of(2026, 11, 20, 8, 0),
-        LocalDateTime.of(2026, 11, 20, 10, 0),
-        FocusRecordType.STOPWATCH, null, null, 21, new BigDecimal("1.35"));
+        LocalDateTime.of(2026, 11, 20, 11, 0),
+        FocusRecordType.STOPWATCH, null, null, 28, new BigDecimal("1.80"));
 
-    // Sessão 3: 120 min (acumulado elegível até aqui: 90m, embora bruto fosse 129m -> 90m na cota)
-    FocusRecord session120B = new FocusRecord(
+    // Sessão 3: 60 min (acumulado elegível até aqui: 120m, embora bruto fosse 189m -> 60m na cota)
+    FocusRecord session60 = new FocusRecord(
         UUID.randomUUID(), userId, activityId, null, null, null, null,
-        LocalDateTime.of(2026, 11, 20, 10, 30),
+        LocalDateTime.of(2026, 11, 20, 11, 30),
         LocalDateTime.of(2026, 11, 20, 12, 30),
-        FocusRecordType.STOPWATCH, null, null, 21, new BigDecimal("1.35"));
+        FocusRecordType.STOPWATCH, null, null, 14, new BigDecimal("0.90"));
 
     // Sessão 4: 60 min (acumulado elegível: 180m < 240m, embora bruto fosse 249m > 240m -> deve pagar 100%: 14 XP, 0.90)
     // Simula caso em que o bug antigo havia pago apenas 50% (7 XP, 0.45)
@@ -217,7 +217,7 @@ class FocusRewardRecalculationPlannerTest {
         FocusRecordType.STOPWATCH, null, null, 7, new BigDecimal("0.45"));
 
     var plan = FocusRewardRecalculationPlanner.planForUser(
-        List.of(short9, session120A, session120B, session60After), SAO_PAULO, SAO_PAULO);
+        List.of(short9, session180, session60, session60After), SAO_PAULO, SAO_PAULO);
 
     assertTrue(plan.hasChanges());
     assertEquals(1, plan.adjustments().size());
@@ -225,5 +225,63 @@ class FocusRewardRecalculationPlannerTest {
     assertEquals(session60After.getId(), adj.recordId());
     assertEquals(14, adj.newXp());
     assertEquals(new BigDecimal("0.90"), adj.newCoins());
+  }
+
+  @Test
+  @DisplayName("Deve elevar sessão histórica de 2h (antes travada em 90m) para 28 XP e 1.80 moedas")
+  void shouldUpgradeLegacyTwoHourSessionCappedAtNinetyMinutes() {
+    UUID userId = UUID.randomUUID();
+    UUID activityId = UUID.randomUUID();
+
+    FocusRecord legacyTwoHour = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 21, 9, 0),
+        LocalDateTime.of(2026, 11, 21, 11, 0),
+        FocusRecordType.STOPWATCH, null, null, 21, new BigDecimal("1.35"));
+
+    var plan = FocusRewardRecalculationPlanner.planForUser(
+        List.of(legacyTwoHour), SAO_PAULO, SAO_PAULO);
+
+    assertTrue(plan.hasChanges());
+    assertEquals(1, plan.adjustments().size());
+    var adj = plan.adjustments().get(0);
+    assertEquals(28, adj.newXp());
+    assertEquals(new BigDecimal("1.80"), adj.newCoins());
+    assertEquals(7, plan.totalXpDelta());
+    assertEquals(new BigDecimal("0.45"), plan.totalCoinsDelta());
+  }
+
+  @Test
+  @DisplayName("Não deve elevar recompensas de registros com rewardLocked=true, mas mantém seus minutos na cota diária")
+  void shouldSkipRewardLockedRecordsWhileCountingTheirDailyQuota() {
+    UUID userId = UUID.randomUUID();
+    UUID activityId = UUID.randomUUID();
+
+    // 120m bloqueado com recompensa reduzida (14 XP, 0.90) — não pode receber upgrade
+    FocusRecord lockedSession1 = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 22, 8, 0),
+        LocalDateTime.of(2026, 11, 22, 10, 0),
+        FocusRecordType.STOPWATCH, null, null, 14, new BigDecimal("0.90"), true);
+
+    FocusRecord lockedSession2 = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 22, 10, 30),
+        LocalDateTime.of(2026, 11, 22, 12, 30),
+        FocusRecordType.STOPWATCH, null, null, 14, new BigDecimal("0.90"), true);
+
+    // Após 240m bloqueados, sessão de 60m entra na faixa de 50% (7 XP, 0.45) — já correta, sem upgrade
+    FocusRecord afterLockedQuota = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 22, 14, 0),
+        LocalDateTime.of(2026, 11, 22, 15, 0),
+        FocusRecordType.STOPWATCH, null, null, 7, new BigDecimal("0.45"), false);
+
+    var plan = FocusRewardRecalculationPlanner.planForUser(
+        List.of(lockedSession1, lockedSession2, afterLockedQuota), SAO_PAULO, SAO_PAULO);
+
+    assertFalse(plan.hasChanges());
+    assertEquals(0, plan.totalXpDelta());
+    assertEquals(new BigDecimal("0.00"), plan.totalCoinsDelta());
   }
 }

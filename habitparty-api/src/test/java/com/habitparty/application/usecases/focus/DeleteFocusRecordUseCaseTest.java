@@ -31,6 +31,7 @@ import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardType;
+import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.UserRole;
@@ -249,6 +250,7 @@ class DeleteFocusRecordUseCaseTest {
     assertEquals(Optional.of(1545), coupon.getRemainingSeconds());
     assertEquals(InventoryItemStatus.AVAILABLE, coupon.getStatus());
     verify(inventoryItemPort).save(coupon);
+    verify(transactionPort).deleteAllByReferenceIdAndUserIdAndType(itemId, userId, TransactionType.ITEM_CONSUMED);
     verify(userPort, never()).findById(any());
   }
 }

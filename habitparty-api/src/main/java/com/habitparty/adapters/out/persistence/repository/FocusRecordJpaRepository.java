@@ -49,13 +49,13 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
 
   Page<FocusRecordJpaEntity> findAllByUserIdOrderByStartTimeDesc(UUID userId, Pageable pageable);
 
-  // Soma apenas minutos elegíveis à recompensa no dia (>= 10 min e teto de 90 min por sessão)
+  // Soma apenas minutos elegíveis à recompensa no dia (>= 10 min e teto de 120 min por sessão)
   // usando intervalo semi-aberto [startOfDay, nextDayStart) para evitar arredondamento de microssegundos no Postgres.
   @Query("""
       SELECT COALESCE(SUM(
         CASE
           WHEN f.durationMinutes < 10 THEN 0
-          WHEN f.durationMinutes > 90 THEN 90
+          WHEN f.durationMinutes > 120 THEN 120
           ELSE f.durationMinutes
         END
       ), 0)
@@ -74,7 +74,7 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
       SELECT COALESCE(SUM(
         CASE
           WHEN f.durationMinutes < 10 THEN 0
-          WHEN f.durationMinutes > 90 THEN 90
+          WHEN f.durationMinutes > 120 THEN 120
           ELSE f.durationMinutes
         END
       ), 0)

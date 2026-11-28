@@ -33,7 +33,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     question:
       "What is the difference between Essential Mode (Focus & Productivity) and Adventure Mode (RPG Immersion)?",
     answer:
-      "HabitParty offers two modes with 100% functional parity — both run on the exact same mathematical engine, yield projections, 3:1–4:1 economy rules, Kanban boards, Focus timers (including the 90m ultradian cap and 8h daily sustainability ramp), and Store draws — only the visual theme, terminology, and default audio calibrate to your style:",
+      "HabitParty offers two modes with 100% functional parity — both run on the exact same mathematical engine, yield projections, 3:1–4:1 economy rules, Kanban boards, Focus timers (including the 2h per-session cap and 8h daily sustainability ramp), and Store draws — only the visual theme, terminology, and default audio calibrate to your style:",
     bullets: [
       "Essential Mode (Clean Focus & Productivity): Sober, executive aesthetic without fantasy clutter. Uses Credits with a built-in leisure-time equivalence (4 min/Credit • 15 Credits = 1h free leisure) and Points (pts), displays professional ranks (Beginner to High Performance), clean Effort indicators (no swords), 'Strict Deadline' / 'Daily Commitment', Inventory, Break Draw (roulette for breaks/treats in the Store), and calm Zen audio cues.",
       "Adventure Mode (RPG Immersion): Full themed RPG experience with playful reward feedback. Turns deliverables into Gold Coins (🪙) and XP, displays adventurer ranks (Novice to Legend), sword icons for difficulty, Hardcore Mode, Mystery Boxes (luck draws by rarity) in the Store, a Backpack, and celebratory Arcade sound effects.",
@@ -205,8 +205,8 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "HabitParty comes with a built-in stopwatch and pomodoro. You can start focus sessions dedicated to study or work activities, logging completed minutes directly in your history and earning calibrated rewards in XP/Points (pts) and Coins/Credits.",
     bullets: [
       "Pomodoro: Predefined focus cycles (15 to 50 min) interleaved with breaks. When you complete a cycle, you earn the full block bonus.",
-      "Free Stopwatch: For those who work in continuous flow. Rewards proportionally to focused time, up to a 90-minute ultradian cap per session.",
-      "Backpack / Inventory in Focus: You can activate time items bought in the Store (e.g., breaks or gaming). The timer deducts your leisure balance without generating new earnings.",
+      "Free Stopwatch: For those who work in continuous flow. Rewards proportionally to focused time, up to a 120-minute (2h) cap per session.",
+      "Backpack / Inventory in Focus: You can activate time items bought in the Store (e.g., breaks or gaming). The timer deducts your leisure balance, automatically consumes the item when the timer ends, and generates no new earnings.",
     ],
     tags: ["focus", "pomodoro", "stopwatch", "study", "timer"],
     highlightBadge: "Focus",
@@ -220,11 +220,11 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "To keep productivity fair, sustainable, and protected against a forgotten running timer or idle farming (in both modes):",
     bullets: [
       "Minimum Time: Sessions under 10 minutes are discarded and earn 0 points and 0 coins/credits.",
-      "Anti-AFK / Ultradian Cycle Cap (90m): If the timer is left running for hours, payout is limited to a maximum of 90 continuous minutes.",
+      "Anti-AFK Session Cap (2h): If the timer is left running for hours, payout is limited to a maximum of 120 continuous minutes (2h) per session.",
       "Daily Cap & Anti-Burnout Sustainability (8h Soft Cap): The first 4 daily hours of focus pay 100%. Between 4h and 6h pay 50%, and between 6h and 8h pay 25% (natural fatigue). Above 8h of daily focus, new sessions earn no coins/credits or XP/pts to prevent burnout and inflation (time is still logged in your metrics).",
       "Leisure Earns Nothing: Sessions with Backpack / Inventory items have a fixed yield of 0.",
     ],
-    tags: ["focus", "economy", "anti-afk", "daily cap", "ultradian", "rewards"],
+    tags: ["focus", "economy", "anti-afk", "daily cap", "2h cap", "rewards"],
   },
   {
     id: "workspaces-concept",

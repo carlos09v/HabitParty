@@ -27,7 +27,7 @@ import {
 import { soundEffects } from "@/utils/soundEffects";
 
 /**
- * Limite máximo de salto contínuo entre ticks (90 min).
+ * Limite máximo de salto contínuo entre ticks (120 min).
  * Acima disso o dispositivo entrou em hibernação/suspensão do SO e não deve somar horas fantasmas
  * no cronômetro nem drenar cupons da mochila silenciosamente.
  */

@@ -2,6 +2,7 @@ package com.habitparty.application.usecases.admin;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ public class RecalculateFocusRewardsUseCase {
   private final FocusRecordRepository focusRecordRepository;
   private final TransactionHistoryRepository transactionHistoryRepository;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private Clock clock = Clock.systemDefaultZone();
 
   @Autowired
   public RecalculateFocusRewardsUseCase(
@@ -61,6 +63,13 @@ public class RecalculateFocusRewardsUseCase {
   public void setEvaluateUserAchievementsUseCase(
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+  }
+
+  @Autowired(required = false)
+  public void setClock(Clock clock) {
+    if (clock != null) {
+      this.clock = clock;
+    }
   }
 
   @Transactional
@@ -81,7 +90,7 @@ public class RecalculateFocusRewardsUseCase {
           dryRun, timestampsSynced, 0L, 0L, 0, totalCoinsAdded);
     }
 
-    ZoneId storageZone = ZoneId.systemDefault();
+    ZoneId storageZone = clock.getZone();
 
     for (int start = 0; start < productiveUserIds.size(); start += USER_BATCH_SIZE) {
       List<UUID> idSlice = productiveUserIds.subList(

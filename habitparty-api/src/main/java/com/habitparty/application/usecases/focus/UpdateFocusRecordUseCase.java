@@ -35,6 +35,7 @@ import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
+import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -204,10 +205,15 @@ public class UpdateFocusRecordUseCase {
       targetItem = inventoryItemPort.findById(oldItemId)
           .orElseThrow(() -> new ResourceNotFoundException("Item de inventário não encontrado."));
       targetItem.validateOwnership(userIdLogado);
+      boolean wasConsumed = targetItem.getStatus() == InventoryItemStatus.CONSUMED;
       targetSecondsBefore = targetItem.getRemainingSeconds().orElse(0);
       targetItem.adjustFocusSeconds(oldSeconds, newSeconds);
       targetSecondsAfter = targetItem.getRemainingSeconds().orElse(0);
       inventoryItemPort.save(targetItem);
+      if (wasConsumed && targetItem.getStatus() != InventoryItemStatus.CONSUMED && transactionHistoryPort != null) {
+        transactionHistoryPort.deleteAllByReferenceIdAndUserIdAndType(
+            oldItemId, userIdLogado, TransactionType.ITEM_CONSUMED);
+      }
     } else {
       InventoryItem oldItem = inventoryItemPort.findById(oldItemId)
           .orElseThrow(() -> new ResourceNotFoundException("Item de inventário anterior não encontrado."));
@@ -225,8 +231,13 @@ public class UpdateFocusRecordUseCase {
             "A duração da sessão excede o tempo disponível do item (" + (targetSecondsBefore / 60) + "m).");
       }
 
+      boolean oldWasConsumed = oldItem.getStatus() == InventoryItemStatus.CONSUMED;
       oldItem.refundSeconds(oldSeconds);
       inventoryItemPort.save(oldItem);
+      if (oldWasConsumed && oldItem.getStatus() != InventoryItemStatus.CONSUMED && transactionHistoryPort != null) {
+        transactionHistoryPort.deleteAllByReferenceIdAndUserIdAndType(
+            oldItemId, userIdLogado, TransactionType.ITEM_CONSUMED);
+      }
 
       newItem.deductSeconds(newSeconds);
       targetSecondsAfter = newItem.getRemainingSeconds().orElse(0);

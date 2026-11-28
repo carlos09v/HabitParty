@@ -1,8 +1,11 @@
 package com.habitparty.application.usecases.focus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -240,7 +243,7 @@ class CreateFocusRecordUseCaseTest {
         1800, // 30 min disponíveis
         LocalDateTime.now());
 
-    when(inventoryItemPort.findById(inventoryItemId)).thenReturn(Optional.of(item));
+    when(inventoryItemPort.findByIdForUpdate(inventoryItemId)).thenReturn(Optional.of(item));
     when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     FocusRecord result = useCase.execute(userId, command);
@@ -248,14 +251,160 @@ class CreateFocusRecordUseCaseTest {
     assertNotNull(result);
     assertEquals(0, result.getXpEarned().orElse(0));
     assertEquals(new BigDecimal("0.00"), result.getCoinsEarned().orElse(BigDecimal.ZERO));
+    assertFalse(result.isInventoryItemConsumed());
 
     // Item deve ter perdido 1200 segundos (1800 - 1200 = 600 segundos)
     assertEquals(600, item.getRemainingSeconds().orElse(0));
+    assertEquals(InventoryItemStatus.IN_FOCUS, item.getStatus());
     verify(inventoryItemPort).save(item);
 
     // Usuário NUNCA deve ser alterado
     verify(userPort, never()).save(any());
     // Transação FOCUS_COMPLETED não é gerada para itens de inventário
+    verify(transactionHistoryPort, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("Timer ao vivo (autoConsumeOnDepletion=true) deve consumir automaticamente o cupom ao zerar e registrar ITEM_CONSUMED")
+  void shouldAutoConsumeInventoryCouponWhenDepletedWithFlagEnabled() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 30); // 30 min = 1800 seg
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        null,
+        inventoryItemId,
+        null,
+        "Sessão completa de lazer",
+        start,
+        end,
+        FocusRecordType.STOPWATCH,
+        null,
+        null,
+        true);
+
+    InventoryItem item = new InventoryItem(
+        inventoryItemId,
+        userId,
+        UUID.randomUUID(),
+        "Jogar Videogame",
+        new BigDecimal("10.00"),
+        RewardType.TIME_BASED,
+        InventoryItemStatus.IN_FOCUS,
+        0,
+        "gamepad",
+        null,
+        1800,
+        LocalDateTime.now());
+
+    when(inventoryItemPort.findByIdForUpdate(inventoryItemId)).thenReturn(Optional.of(item));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    FocusRecord result = useCase.execute(userId, command);
+
+    assertTrue(result.isInventoryItemConsumed());
+    assertEquals(InventoryItemStatus.CONSUMED, item.getStatus());
+    assertEquals(0, item.getRemainingSeconds().orElse(-1));
+    assertEquals(1, user.getStats().getTotalCouponsDepleted());
+
+    FocusRecordResponseDTO dto = FocusRecordResponseDTO.fromDomain(result);
+    assertEquals(Boolean.TRUE, dto.inventoryItemConsumed());
+
+    ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
+    verify(transactionHistoryPort).save(txCaptor.capture());
+    TransactionHistory consumedTx = txCaptor.getValue();
+    assertEquals(TransactionType.ITEM_CONSUMED, consumedTx.getTransactionType());
+    assertEquals(Optional.of(inventoryItemId), consumedTx.getReferenceId());
+    assertEquals("Jogar Videogame", consumedTx.getNameSnapshot());
+    assertEquals(Optional.of(new BigDecimal("10.00")), consumedTx.getPriceSnapshot());
+    assertEquals(0, consumedTx.getXpAmount());
+    assertEquals(0, BigDecimal.ZERO.compareTo(consumedTx.getGoldAmount().orElse(BigDecimal.ONE)));
+  }
+
+  @Test
+  @DisplayName("Timer ao vivo com saldo restante > 1s não deve consumir o cupom antecipadamente")
+  void shouldNotAutoConsumeInventoryCouponWhenRemainingTimeIsPositive() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 20); // 20 min de 30 min
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        null,
+        inventoryItemId,
+        null,
+        "Parada parcial",
+        start,
+        end,
+        FocusRecordType.STOPWATCH,
+        null,
+        null,
+        true);
+
+    InventoryItem item = new InventoryItem(
+        inventoryItemId,
+        userId,
+        UUID.randomUUID(),
+        "Jogar Videogame",
+        new BigDecimal("10.00"),
+        RewardType.TIME_BASED,
+        InventoryItemStatus.IN_FOCUS,
+        0,
+        "gamepad",
+        null,
+        1800,
+        LocalDateTime.now());
+
+    when(inventoryItemPort.findByIdForUpdate(inventoryItemId)).thenReturn(Optional.of(item));
+    when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    FocusRecord result = useCase.execute(userId, command);
+
+    assertFalse(result.isInventoryItemConsumed());
+    assertEquals(InventoryItemStatus.IN_FOCUS, item.getStatus());
+    assertEquals(600, item.getRemainingSeconds().orElse(-1));
+    verify(transactionHistoryPort, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("Registro manual (autoConsumeOnDepletion=false) que zera o cupom deve manter o fluxo manual do botão Check")
+  void shouldKeepManualCheckFlowWhenAutoConsumeFlagIsFalse() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 30); // 30 min = zera o saldo
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        null,
+        inventoryItemId,
+        null,
+        "Registro manual",
+        start,
+        end,
+        FocusRecordType.STOPWATCH,
+        null,
+        null,
+        false);
+
+    InventoryItem item = new InventoryItem(
+        inventoryItemId,
+        userId,
+        UUID.randomUUID(),
+        "Jogar Videogame",
+        new BigDecimal("10.00"),
+        RewardType.TIME_BASED,
+        InventoryItemStatus.IN_FOCUS,
+        0,
+        "gamepad",
+        null,
+        1800,
+        LocalDateTime.now());
+
+    when(inventoryItemPort.findByIdForUpdate(inventoryItemId)).thenReturn(Optional.of(item));
+    when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    FocusRecord result = useCase.execute(userId, command);
+
+    assertFalse(result.isInventoryItemConsumed());
+    assertNull(FocusRecordResponseDTO.fromDomain(result).inventoryItemConsumed());
+    assertEquals(InventoryItemStatus.IN_FOCUS, item.getStatus());
+    assertEquals(0, item.getRemainingSeconds().orElse(-1));
     verify(transactionHistoryPort, never()).save(any());
   }
 

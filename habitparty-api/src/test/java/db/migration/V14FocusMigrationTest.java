@@ -152,18 +152,18 @@ class V14FocusMigrationTest {
       assertFocusRow(conn, stopwatch45Id, 11, new BigDecimal("0.68"));
       assertTxRow(conn, stopwatch45Id, 11, new BigDecimal("0.68"));
 
-      assertFocusRow(conn, study92Id, 21, new BigDecimal("1.35"));
-      assertTxRow(conn, study92Id, 21, new BigDecimal("1.35"));
+      assertFocusRow(conn, study92Id, 21, new BigDecimal("1.38"));
+      assertTxRow(conn, study92Id, 21, new BigDecimal("1.38"));
 
       // Pomodoro legado 45m preservado sem redução
       assertFocusRow(conn, legacyPomo45Id, 15, new BigDecimal("1.00"));
 
-      // Saldo do usuário incrementado em +10 XP e +0.75 moedas (0.08 + 0.67)
-      assertUserStats(conn, userId, 47, new BigDecimal("3.03"), new BigDecimal("5.75"));
+      // Saldo do usuário incrementado em +10 XP e +0.78 moedas (0.08 + 0.70)
+      assertUserStats(conn, userId, 47, new BigDecimal("3.06"), new BigDecimal("5.78"));
 
       // Execução 2 (idempotência: não duplica acréscimo)
       migration.migrate(ctx);
-      assertUserStats(conn, userId, 47, new BigDecimal("3.03"), new BigDecimal("5.75"));
+      assertUserStats(conn, userId, 47, new BigDecimal("3.06"), new BigDecimal("5.78"));
     }
   }
 

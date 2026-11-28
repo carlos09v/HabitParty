@@ -158,18 +158,18 @@ class FocusRewardCalculatorTest {
   }
 
   @Test
-  @DisplayName("Anti-AFK: Sessão esquecida ligada por 5 horas é limitada ao teto de 90 min")
-  void shouldCapSingleSessionToNinetyMinutes() {
+  @DisplayName("Anti-AFK: Sessão esquecida ligada por 5 horas é limitada ao teto de 120 min")
+  void shouldCapSingleSessionToOneHundredTwentyMinutes() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 15, 0); // 300 min (5 horas)
     FocusRecord record = new FocusRecord(
         null, userId, activityId, null, null,
         start, end, FocusRecordType.STOPWATCH, null);
 
-    // 90 min = (90/30) * 7 = 21 XP; (90/30) * 0.45 = 1.35 moedas
+    // 120 min = (120/30) * 7 = 28 XP; (120/30) * 0.45 = 1.80 moedas
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
-    assertEquals(21, reward.xp());
-    assertEquals(new BigDecimal("1.35"), reward.coins());
+    assertEquals(28, reward.xp());
+    assertEquals(new BigDecimal("1.80"), reward.coins());
   }
 
   @Test
@@ -232,29 +232,45 @@ class FocusRewardCalculatorTest {
   }
 
   @Test
-  @DisplayName("Pomodoro continuativo de 2h respeita teto de 90 min somando 1 pomo + excedente até 90m")
-  void shouldCapOvertimePomodoroAtNinetyMinutesTotal() {
+  @DisplayName("Pomodoro continuativo de 2h30 respeita teto de 120 min somando 1 pomo + excedente até 120m")
+  void shouldCapOvertimePomodoroAtOneHundredTwentyMinutesTotal() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
-    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 12, 0); // 120 min -> cap 90m (25m pomo + 65m excedente)
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 12, 30); // 150 min -> cap 120m (25m pomo + 95m excedente)
     FocusRecord record = new FocusRecord(
         null, userId, activityId, null, null, null, null,
         start, end, FocusRecordType.POMO, 1, 25, 0, BigDecimal.ZERO);
 
-    // 25m pomo = 8 XP, 0.50 | 65m stopwatch = 15.1667 XP, 0.975 | total = 23 XP, 1.48
+    // 25m pomo = 8 XP, 0.50 | 95m stopwatch = 22.1667 XP, 1.425 | total = 30 XP, 1.93
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
-    assertEquals(23, reward.xp());
-    assertEquals(new BigDecimal("1.48"), reward.coins());
+    assertEquals(30, reward.xp());
+    assertEquals(new BigDecimal("1.93"), reward.coins());
   }
 
   @Test
-  @DisplayName("calculateRewardableMinutes deve ignorar sessões < 10 min e limitar sessões > 90 min a 90 min")
+  @DisplayName("Dois pomodoros Deep Work de 60m na mesma sessão de 2h pagam integralmente 30 XP e 2.00 moedas")
+  void shouldRewardTwoSixtyMinuteDeepWorkPomosWithinTwoHourCap() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 12, 0); // 120 min = 2 x 60m
+    FocusRecord record = new FocusRecord(
+        null, userId, activityId, null, null, null, null,
+        start, end, FocusRecordType.POMO, 2, 60, 0, BigDecimal.ZERO);
+
+    FocusReward reward = FocusRewardCalculator.calculate(record, 0);
+    assertEquals(30, reward.xp());
+    assertEquals(new BigDecimal("2.00"), reward.coins());
+  }
+
+  @Test
+  @DisplayName("calculateRewardableMinutes deve ignorar sessões < 10 min e limitar sessões > 120 min a 120 min")
   void shouldComputeRewardableMinutesWithoutCountingUnrewardedTime() {
     assertEquals(0, FocusRewardCalculator.calculateRewardableMinutes(0));
     assertEquals(0, FocusRewardCalculator.calculateRewardableMinutes(9));
     assertEquals(10, FocusRewardCalculator.calculateRewardableMinutes(10));
     assertEquals(45, FocusRewardCalculator.calculateRewardableMinutes(45));
     assertEquals(90, FocusRewardCalculator.calculateRewardableMinutes(90));
-    assertEquals(90, FocusRewardCalculator.calculateRewardableMinutes(99));
-    assertEquals(90, FocusRewardCalculator.calculateRewardableMinutes(300));
+    assertEquals(99, FocusRewardCalculator.calculateRewardableMinutes(99));
+    assertEquals(120, FocusRewardCalculator.calculateRewardableMinutes(120));
+    assertEquals(120, FocusRewardCalculator.calculateRewardableMinutes(121));
+    assertEquals(120, FocusRewardCalculator.calculateRewardableMinutes(300));
   }
 }

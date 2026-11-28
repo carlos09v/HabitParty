@@ -33,7 +33,7 @@ class FocusRecordJpaRepositoryYieldTest {
   private UserRepository userRepository;
 
   @Test
-  @DisplayName("Deve somar apenas minutos elegíveis à recompensa (>= 10 min e teto de 90 min) na cota diária")
+  @DisplayName("Deve somar apenas minutos elegíveis à recompensa (>= 10 min e teto de 120 min) na cota diária")
   void shouldSumOnlyRewardableMinutesForDailyYieldCap() {
     User user = createAndSaveUser("yieldtest");
     UUID userId = user.getId();
@@ -67,7 +67,7 @@ class FocusRecordJpaRepositoryYieldTest {
         .coinsEarned(new BigDecimal("0.68"))
         .build());
 
-    // 3. Sessão acima de 1h30 (99 min): apenas 90 min elegíveis
+    // 3. Sessão entre 1h30 e 2h (99 min): todos os 99 min elegíveis
     focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
         .id(UUID.randomUUID())
         .userId(userId)
@@ -76,11 +76,24 @@ class FocusRecordJpaRepositoryYieldTest {
         .endTime(LocalDateTime.of(2026, 11, 20, 11, 39))
         .recordType(FocusRecordType.STOPWATCH)
         .durationMinutes(99)
-        .xpEarned(21)
-        .coinsEarned(new BigDecimal("1.35"))
+        .xpEarned(23)
+        .coinsEarned(new BigDecimal("1.49"))
         .build());
 
-    // 4. Sessão de mochila/lazer (60 min): 0 min elegível
+    // 4. Sessão acima de 2h (135 min): apenas 120 min elegíveis
+    focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
+        .id(UUID.randomUUID())
+        .userId(userId)
+        .focusActivityId(activityId)
+        .startTime(LocalDateTime.of(2026, 11, 20, 14, 0))
+        .endTime(LocalDateTime.of(2026, 11, 20, 16, 15))
+        .recordType(FocusRecordType.STOPWATCH)
+        .durationMinutes(135)
+        .xpEarned(28)
+        .coinsEarned(new BigDecimal("1.80"))
+        .build());
+
+    // 5. Sessão de mochila/lazer (60 min): 0 min elegível
     focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
         .id(UUID.randomUUID())
         .userId(userId)
@@ -93,7 +106,7 @@ class FocusRecordJpaRepositoryYieldTest {
         .coinsEarned(BigDecimal.ZERO)
         .build());
 
-    // 5. Sessão encerrada exatamente à meia-noite de D+1: deve ficar FORA do intervalo [dayStart, nextDayStart)
+    // 6. Sessão encerrada exatamente à meia-noite de D+1: deve ficar FORA do intervalo [dayStart, nextDayStart)
     focusRecordJpaRepository.save(FocusRecordJpaEntity.builder()
         .id(UUID.randomUUID())
         .userId(userId)
@@ -109,28 +122,28 @@ class FocusRecordJpaRepositoryYieldTest {
     focusRecordJpaRepository.flush();
 
     int sum = focusRecordJpaRepository.sumTodayFocusMinutesByUserId(userId, dayStart, nextDayStart);
-    assertEquals(135, sum);
+    assertEquals(264, sum);
 
-    UUID session99Id = focusRecordJpaRepository.findAllByUserIdOrderByStartTimeDesc(userId)
+    UUID session135Id = focusRecordJpaRepository.findAllByUserIdOrderByStartTimeDesc(userId)
         .stream()
-        .filter(r -> r.getDurationMinutes() == 99)
+        .filter(r -> r.getDurationMinutes() == 135)
         .findFirst()
         .orElseThrow()
         .getId();
 
-    int sumExcluding99 = focusRecordJpaRepository.sumTodayFocusMinutesByUserIdExcludingRecord(
-        userId, dayStart, nextDayStart, session99Id);
-    assertEquals(45, sumExcluding99);
+    int sumExcluding135 = focusRecordJpaRepository.sumTodayFocusMinutesByUserIdExcludingRecord(
+        userId, dayStart, nextDayStart, session135Id);
+    assertEquals(144, sumExcluding135);
 
-    int productiveExcluding99 = focusRecordJpaRepository.sumProductiveFocusMinutesByUserIdExcludingRecord(
-        userId, dayStart, nextDayStart, session99Id);
-    assertEquals(54, productiveExcluding99);
+    int productiveExcluding135 = focusRecordJpaRepository.sumProductiveFocusMinutesByUserIdExcludingRecord(
+        userId, dayStart, nextDayStart, session135Id);
+    assertEquals(153, productiveExcluding135);
 
     var analyticsRows = focusRecordJpaRepository.findProductiveAnalyticsByUserId(userId);
-    // Deve retornar apenas as 4 sessões produtivas (ignorando a sessão de inventário/lazer de 60 min)
-    assertEquals(4, analyticsRows.size());
+    // Deve retornar apenas as 5 sessões produtivas (ignorando a sessão de inventário/lazer de 60 min)
+    assertEquals(5, analyticsRows.size());
     int totalProductiveMins = analyticsRows.stream().mapToInt(r -> r.getDurationMinutes()).sum();
-    assertEquals(9 + 45 + 99 + 30, totalProductiveMins);
+    assertEquals(9 + 45 + 99 + 135 + 30, totalProductiveMins);
   }
 
   private User createAndSaveUser(String prefix) {

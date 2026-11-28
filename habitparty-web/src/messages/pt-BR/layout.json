@@ -184,7 +184,7 @@
       "phasePaused": "Pausado",
       "phaseOvertime": "Excedente",
       "phaseBreak": "Pausa",
-      "sessionCapBadge": "🪙 Teto 1h30",
+      "sessionCapBadge": "🪙 Teto 2h",
       "start": "Começar",
       "pause": "Pausar",
       "resume": "Retomar",
@@ -197,7 +197,7 @@
       "selectActivityPrompt": "Selecionar atividade no HabitParty",
       "close": "Fechar",
       "unsupported": "Janela flutuante (Picture-in-Picture) indisponível neste navegador.",
-      "sessionCapBadgeProductivity": "⏱️ Teto 1h30",
+      "sessionCapBadgeProductivity": "⏱️ Teto 2h",
       "actionFailed": "Não foi possível salvar. Tente novamente.",
       "minDurationHint": "Mínimo de 1 minuto para salvar."
     },

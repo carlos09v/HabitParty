@@ -1852,6 +1852,7 @@ export interface components {
       /** Format: int32 */
       xpEarned?: number;
       coinsEarned?: number;
+      inventoryItemConsumed?: boolean;
     };
     UpdateFocusActivityDTO: {
       name?: string;
@@ -2048,6 +2049,7 @@ export interface components {
       completedPomos?: number;
       /** Format: int32 */
       pomoTargetMinutes?: number;
+      autoConsumeOnDepletion?: boolean;
     };
     CreateFocusActivityDTO: {
       name: string;

@@ -28,7 +28,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     question:
       "Qual a diferença entre o Modo Essencial (Foco & Produtividade) e o Modo Aventura (Imersão RPG)?",
     answer:
-      "O HabitParty oferece dois modos com 100% de paridade funcional — ambos rodam sobre exatamente o mesmo motor matemático, projeções de rendimento, regra 3:1–4:1, quadros Kanban, Pomodoro/Foco (com teto ultradiano de 90m e sustentabilidade diária de 8h) e sorteios na Loja — adaptando apenas a estética, a nomenclatura e a calibração sonora:",
+      "O HabitParty oferece dois modos com 100% de paridade funcional — ambos rodam sobre exatamente o mesmo motor matemático, projeções de rendimento, regra 3:1–4:1, quadros Kanban, Pomodoro/Foco (com teto de 2h por sessão e sustentabilidade diária de 8h) e sorteios na Loja — adaptando apenas a estética, a nomenclatura e a calibração sonora:",
     bullets: [
       "Modo Essencial (Foco & Produtividade Limpa): Estética executiva, sóbria e direta ao ponto. Usa Créditos com equivalência prática em tempo livre (4 min/Crédito • 15 Créditos = 1h de lazer) e Pontos (pts), exibe patentes profissionais (Iniciante a Alta Performance), indicadores discretos de Esforço (sem espadas), 'Prazo Rígido' / 'Compromisso Diário', Inventário, Sorteio de Pausa (roleta de intervalos/pausas na Loja) e alarme sonoro Zen suave.",
       "Modo Aventura (Imersão RPG): Experiência temática de jogo com feedback visual de recompensa e fantasia. Converte suas entregas em Moedas de Ouro (🪙) e XP, exibe patentes de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore, Caixas Misteriosas (sorteios RNG por raridade) na Loja, Mochila e efeitos sonoros Arcade comemorativos.",
@@ -209,8 +209,8 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "O HabitParty traz um cronômetro e pomodoro nativos integrados. Você pode iniciar sessões de foco dedicadas a atividades de estudo ou trabalho, registrando os minutos concluídos diretamente no seu histórico e recebendo recompensas calibradas em XP/Pontos (pts) e Moedas/Créditos.",
     bullets: [
       "Pomodoro: Ciclos pré-definidos de foco (15 a 50 min) intercalados por pausas. Ao concluir o ciclo, você ganha a bonificação completa do bloco.",
-      "Cronômetro Livre (Stopwatch): Para quem trabalha em fluxo contínuo. Bonifica proporcionalmente ao tempo focado até o teto ultradiano de 90 minutos por sessão.",
-      "Mochila / Inventário no Foco: Você pode ativar cupons de tempo comprados na Loja (ex: descanso ou lazer). O timer deduz seu saldo de pausa, mas não gera novos rendimentos.",
+      "Cronômetro Livre (Stopwatch): Para quem trabalha em fluxo contínuo. Bonifica proporcionalmente ao tempo focado até o teto de 120 minutos (2h) por sessão.",
+      "Mochila / Inventário no Foco: Você pode ativar cupons de tempo comprados na Loja (ex: descanso ou lazer). O timer deduz seu saldo de pausa, consome o item automaticamente ao zerar o cronômetro e não gera novos rendimentos.",
     ],
     tags: ["foco", "pomodoro", "cronômetro", "estudo", "timer"],
     highlightBadge: "Foco",
@@ -224,7 +224,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "Para manter a produtividade justa, sustentável e protegida contra esquecimento do timer ligado ou mineração ociosa (em ambos os modos):",
     bullets: [
       "Tempo Mínimo: Sessões com menos de 10 minutos são descartadas e geram 0 pontos e 0 moedas/créditos.",
-      "Teto Anti-AFK / Ciclo Ultradiano (90m): Se o timer ficar rodando por horas, a remuneração é limitada ao máximo de 90 minutos contínuos (um ciclo ultradiano saudável).",
+      "Teto Anti-AFK por Sessão (2h): Se o timer ficar rodando por horas, a remuneração é limitada ao máximo de 120 minutos (2h) contínuos por sessão.",
       "Teto Diário & Sustentabilidade Anti-Burnout (Soft Cap de 8h): As primeiras 4 horas diárias de foco pagam 100%. Entre 4h e 6h pagam 50%, e entre 6h e 8h pagam 25% (fadiga natural). Acima de 8h de foco diário, novas sessões não geram moedas/créditos nem XP/pts para evitar burnout e hiperinflação (o tempo continua registrado nas métricas).",
       "Lazer Não Gera Renda: Sessões de itens da Mochila / Inventário têm rendimento fixo de 0.",
     ],
@@ -233,7 +233,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "economia",
       "anti-afk",
       "teto diário",
-      "ciclo ultradiano",
+      "teto 2h",
       "recompensas",
     ],
   },

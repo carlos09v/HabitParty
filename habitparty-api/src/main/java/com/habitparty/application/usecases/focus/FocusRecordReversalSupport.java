@@ -20,6 +20,8 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.UserStats;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
+import com.habitparty.core.domain.enums.InventoryItemStatus;
+import com.habitparty.core.domain.enums.TransactionType;
 
 /**
  * Helper compartilhado para estornar impactos econômicos, estatísticos e de metas
@@ -54,14 +56,16 @@ public final class FocusRecordReversalSupport {
       return;
     }
 
-    revertInventoryCoupons(recordsToDelete, inventoryItemPort);
+    revertInventoryCoupons(userId, recordsToDelete, inventoryItemPort, transactionPort);
     revertProductiveUserStats(userId, recordsToDelete, focusRecordPort, userPort, transactionPort, clock);
     revertTaskFocusMetrics(recordsToDelete, taskPort);
   }
 
   private static void revertInventoryCoupons(
+      UUID userId,
       List<FocusRecord> records,
-      InventoryItemRepository inventoryItemPort) {
+      InventoryItemRepository inventoryItemPort,
+      TransactionHistoryRepository transactionPort) {
     if (inventoryItemPort == null) {
       return;
     }
@@ -79,8 +83,12 @@ public final class FocusRecordReversalSupport {
 
     secondsByItemId.forEach((itemId, totalSeconds) ->
         inventoryItemPort.findById(itemId).ifPresent(item -> {
+          boolean wasConsumed = item.getStatus() == InventoryItemStatus.CONSUMED;
           item.refundSeconds(totalSeconds);
           inventoryItemPort.save(item);
+          if (wasConsumed && item.getStatus() != InventoryItemStatus.CONSUMED && transactionPort != null) {
+            transactionPort.deleteAllByReferenceIdAndUserIdAndType(itemId, userId, TransactionType.ITEM_CONSUMED);
+          }
         }));
   }
 

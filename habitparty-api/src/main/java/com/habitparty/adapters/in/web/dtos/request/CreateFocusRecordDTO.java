@@ -27,7 +27,29 @@ public record CreateFocusRecordDTO(
     Integer completedPomos,
     @Min(value = 1, message = "A duração alvo do Pomodoro deve ser de pelo menos 1 minuto.")
     @Max(value = 180, message = "A duração alvo do Pomodoro não pode exceder 180 minutos.")
-    Integer pomoTargetMinutes
+    Integer pomoTargetMinutes,
+    Boolean autoConsumeOnDepletion
 ) {
-
+  public CreateFocusRecordDTO(
+      UUID focusActivityId,
+      UUID inventoryItemId,
+      UUID taskId,
+      String notes,
+      LocalDateTime startTime,
+      LocalDateTime endTime,
+      FocusRecordType recordType,
+      Integer completedPomos,
+      Integer pomoTargetMinutes) {
+    this(
+        focusActivityId,
+        inventoryItemId,
+        taskId,
+        notes,
+        startTime,
+        endTime,
+        recordType,
+        completedPomos,
+        pomoTargetMinutes,
+        null);
+  }
 }

@@ -4,7 +4,7 @@ import { toLocalDateKey } from "./focusMetrics";
 
 /**
  * Minutos efetivamente elegíveis a recompensa em uma única sessão produtiva:
- * desconsidera sessões abaixo do mínimo (10m) e aplica o teto único (90m),
+ * desconsidera sessões abaixo do mínimo (10m) e aplica o teto único (120m),
  * evitando que tempo excedente não recompensado consuma a cota diária.
  */
 export function getRewardableFocusMinutes(durationMinutes: number): number {
@@ -47,7 +47,7 @@ export function calculateProductiveMinutesForDate(
 }
 
 /**
- * Soma estritamente os minutos elegíveis à recompensa (>= 10 min, teto de 90 min por sessão)
+ * Soma estritamente os minutos elegíveis à recompensa (>= 10 min, teto de 120 min por sessão)
  * agrupados por endTime no fuso do usuário, espelhando a query do backend para o cap diário.
  */
 export function calculateRewardableMinutesForDate(

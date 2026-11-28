@@ -24,7 +24,7 @@ Um sistema open-core de gamificação e produtividade com uma economia matemáti
 * **Loja de Recompensas da Vida Real:** Cadastre momentos de lazer e descanso categorizados em pacotes (Uso Único, Por Tempo ou Caixas da Sorte) com custos calibrados para o esforço do seu dia.
 * **🎁 Caixas Misteriosas (RNG Opcional):** Sorteios probabilísticos com custos calculados matematicamente (Básica, Premium, Épica e Lendária) para trazer dopamina à sua rotina sem quebrar a economia.
 * **🎒 Mochila de Inventário:** Todos os itens comprados ficam guardados na sua mochila para serem consumidos no momento ideal ou vinculados a uma sessão de descanso cronometrada.
-* **⏱️ Palco de Foco (Pomodoro & Cronômetro):** Ferramenta nativa de imersão com **Foco Rápido em 1 clique** direto nas linhas de tarefa do Dashboard, rendimento decrescente diário (*daily soft cap* de até 6h), salvaguardas anti-AFK (teto de 90 min) e trava de lazer (itens de mochila não geram moeda).
+* **⏱️ Palco de Foco (Pomodoro & Cronômetro):** Ferramenta nativa de imersão com **Foco Rápido em 1 clique** direto nas linhas de tarefa do Dashboard, rendimento decrescente diário (*daily soft cap* de até 8h), salvaguardas anti-AFK (teto de 120 min / 2h) e trava de lazer (itens de mochila não geram moeda).
 * **🤝 Rede de Amizades, Códigos de Amigo & Privacidade Granular:** Conecte-se com até 100 amigos por `@username` ou código único `HP-XXXXXX`, receba notificações sociais para convites e marcos de amigos e configure visibilidade independente (`Público`, `Apenas Amigos`, `Privado`) para Perfil, Estatísticas e Conquistas.
 * **🏅 Vitrine Pública, Retrospectiva Anual & Cards PNG:** Compartilhe perfis públicos (`/profile/[username]`), desbloqueie Retrospectivas Anuais sazonais com 5 arquétipos comportamentais e baixe cards PNG em alta resolução do Perfil ou da Retrospectiva.
 * **👑 Personalização VIP, Eventos & Sons Ambientes:** Agendamento de Afazeres como Eventos (início/término ou dia inteiro), molduras animadas cósmicas para avatar, 3 temas atmosféricos VIP (*Cyberpunk Neon*, *Forest Ranger*, *Royal Gold*), sons ambientes relaxantes sintetizados nativamente no navegador via Web Audio API (Chuva Suave, Cafeteria, Lofi Zen e Fogueira) e pacote exclusivo de ícones VIP.
@@ -127,11 +127,11 @@ Enquanto as tarefas recompensam a entrega de resultados (*output*), a tela de fo
 | **Pomodoro Curto** | 15 a 24 min | **4 XP • 0,25 🪙** | Quebra rápida de inércia (1/3 de 1 Tarefa Fácil). Requer ciclo completado. |
 | **Pomodoro Padrão** | 25 a 40 min | **8 XP • 0,50 🪙** | O padrão clássico. Equivale a ~30%–40% de uma entrega de tarefa. |
 | **Pomodoro Deep Work** | Mais de 40 min | **15 XP • 1,00 🪙** | Sessão de imersão profunda. Equivale a 40% das moedas e 100% do XP de 1 Tarefa Média. |
-| **Cronômetro Livre** | Por bloco de 30 min | **~7 XP • 0,40 🪙** | Bonificação contínua proporcional (teto de 90 min/sessão). |
+| **Cronômetro Livre** | Por bloco de 30 min | **~7 XP • 0,45 🪙** | Bonificação contínua proporcional (teto de 120 min / 2h por sessão). |
 
 #### 🛡️ Travas de Segurança & Regras Anti-Abuso
 1. **Tempo Mínimo para Pontuar:** Sessões com menos de **10 minutos** geram 0 XP e 0 moedas, prevenindo cliques acidentais ou farm artificial.
-2. **Teto Máximo por Sessão (Anti-AFK):** Qualquer sessão contínua tem sua recompensa limitada a **no máximo 90 minutos** de cálculo (mesmo se o cronômetro for esquecido ligado).
+2. **Teto Máximo por Sessão (Anti-AFK):** Qualquer sessão contínua tem sua recompensa limitada a **no máximo 120 minutos (2h)** de cálculo (mesmo se o cronômetro for esquecido ligado).
 3. **Teto Diário & Rendimentos Decrescentes (*Daily Soft Cap*):**
    * **0h a 4h diárias (até 240 min):** 100% da recompensa.
    * **4h a 6h diárias (240 a 360 min):** 50% da recompensa (zona de fadiga natural).

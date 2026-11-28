@@ -189,19 +189,25 @@ export function RewardPriceGuidance({
   };
 
   const categoryHintBadge =
-    analysis.categoryProfile === "discounted" ? (
+    analysis.categoryProfile === "discounted" &&
+    analysis.categoryAdjustmentPercent < 0 ? (
       <span
         title={t("categoryDiscountHint")}
         className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/12 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-[10px] font-semibold leading-none shrink-0"
       >
-        {t("categoryDiscountBadge")}
+        {t("categoryDiscountBadge", {
+          percent: Math.abs(analysis.categoryAdjustmentPercent),
+        })}
       </span>
-    ) : analysis.categoryProfile === "premium" ? (
+    ) : analysis.categoryProfile === "premium" &&
+      analysis.categoryAdjustmentPercent > 0 ? (
       <span
         title={t("categoryPremiumHint")}
         className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/12 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10px] font-semibold leading-none shrink-0"
       >
-        {t("categoryPremiumBadge")}
+        {t("categoryPremiumBadge", {
+          percent: analysis.categoryAdjustmentPercent,
+        })}
       </span>
     ) : null;
 

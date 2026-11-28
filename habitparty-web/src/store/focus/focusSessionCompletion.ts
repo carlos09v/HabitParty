@@ -48,11 +48,20 @@ interface CompleteSessionOptions {
 function notifyInventoryCompletion(
   state: FocusTimerStoreState,
   exactSeconds: number,
+  resData: unknown,
 ) {
   soundEffects.playFocusSessionCompleteSound();
+  const recordData = resData as { inventoryItemConsumed?: boolean } | undefined;
+  const wasAutoConsumed = Boolean(recordData?.inventoryItemConsumed);
   const isFinished =
-    state.secondsRemaining <= 1 || exactSeconds >= state.totalDurationSeconds;
-  if (isFinished) {
+    wasAutoConsumed ||
+    state.secondsRemaining <= 1 ||
+    exactSeconds >= state.totalDurationSeconds;
+  if (wasAutoConsumed) {
+    triggerCelebrationConfetti();
+    toast.success(tStoreMsg("couponAutoConsumedToast"));
+    useUserStore.getState().triggerAchievementCheck();
+  } else if (isFinished) {
     triggerCelebrationConfetti();
     toast.success(tStoreMsg("couponTimeDepletedToast"));
     useUserStore.getState().triggerAchievementCheck();
@@ -222,6 +231,7 @@ export async function executeCompleteSession(
       recordType,
       completedPomos: isCompletedPomo ? 1 : 0,
       pomoTargetMinutes,
+      autoConsumeOnDepletion: isInventory ? true : undefined,
       startTime,
       endTime,
       notes:
@@ -238,7 +248,7 @@ export async function executeCompleteSession(
       }
 
       if (isInventory) {
-        notifyInventoryCompletion(state, exactSeconds);
+        notifyInventoryCompletion(state, exactSeconds, res.data);
       } else {
         const recordedDurationMinutes = Math.max(
           0,

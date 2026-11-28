@@ -8,7 +8,7 @@ import com.habitparty.core.domain.enums.FocusRecordType;
 public final class FocusRewardCalculator {
 
   public static final int MIN_SESSION_MINUTES = 10;
-  public static final int MAX_SESSION_MINUTES = 90;
+  public static final int MAX_SESSION_MINUTES = 120;
   public static final int MIN_DAILY_STREAK_FOCUS_MINUTES = 30;
   public static final int DAILY_TIER1_MINUTES = 240; // Primeiras 4 horas: 100% de rendimento
   public static final int DAILY_TIER2_MINUTES = 360; // 4h a 6h: 50% de rendimento
@@ -22,7 +22,7 @@ public final class FocusRewardCalculator {
   /**
    * Retorna os minutos efetivamente elegíveis a recompensa em uma sessão única:
    * sessões abaixo de {@link #MIN_SESSION_MINUTES} (10m) não pontuam e o máximo por sessão
-   * é travado em {@link #MAX_SESSION_MINUTES} (90m), evitando dupla penalização na cota diária.
+   * é travado em {@link #MAX_SESSION_MINUTES} (120m), evitando dupla penalização na cota diária.
    */
   public static int calculateRewardableMinutes(int durationMinutes) {
     if (durationMinutes < MIN_SESSION_MINUTES) {
@@ -91,7 +91,7 @@ public final class FocusRewardCalculator {
 
     int durationMinutes = record.getDurationMinutes();
 
-    // Travas 2 e 3: Tempo mínimo de 10 minutos e teto único de 90 minutos (AFK)
+    // Travas 2 e 3: Tempo mínimo de 10 minutos e teto único de 120 minutos (AFK)
     int effectiveMinutes = calculateRewardableMinutes(durationMinutes);
     if (effectiveMinutes <= 0) {
       return FocusReward.ZERO;

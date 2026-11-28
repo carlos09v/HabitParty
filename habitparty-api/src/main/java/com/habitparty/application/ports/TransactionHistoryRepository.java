@@ -144,6 +144,12 @@ public interface TransactionHistoryRepository {
   // Remove todos os registros vinculados a uma origem (Task, Reward, FocusRecord) do usuário
   void deleteAllByReferenceIdAndUserId(UUID referenceId, UUID userId);
 
+  // Remove registros de um tipo específico vinculados a uma origem (ex.: estorno de ITEM_CONSUMED)
+  default int deleteAllByReferenceIdAndUserIdAndType(
+      UUID referenceId, UUID userId, TransactionType transactionType) {
+    return 0;
+  }
+
   // Remove todos os registros vinculados a várias origens do usuário
   void deleteAllByReferenceIdsAndUserId(List<UUID> referenceIds, UUID userId);
 

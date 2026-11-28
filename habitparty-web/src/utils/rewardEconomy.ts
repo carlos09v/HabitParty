@@ -92,40 +92,54 @@ export function formatCreditsLeisureEquivalence(credits: number): string {
 export type RewardCategoryPriceProfile = "discounted" | "standard" | "premium";
 
 /**
- * Classifica a categoria na calibragem de preço:
- * - Hobbies / Desenvolvimento / Bem-estar exercitam habilidades ou descanso ativo (-35%).
- * - Entretenimento puro tem dopamina rápida e custo elevado (+30%).
- * - Demais categorias mantêm o benchmark base (1.0x).
+ * Classifica a categoria na calibragem de preço considerando o tipo da recompensa:
+ * - Hobbies / Desenvolvimento / Bem-estar exercitam habilidades ou descanso ativo
+ *   (-35% em Cupons de Tempo e -20% em Uso Único).
+ * - Entretenimento puro tem dopamina rápida e custo elevado em Cupons de Tempo (+20%),
+ *   mantendo a escala padrão em Uso Único para preservar horizontes limpos e evitar
+ *   conflito com a tabela de Dívida.
+ * - Caixas Misteriosas e demais categorias mantêm o benchmark base (1.0x).
  */
 export function getCategoryPriceProfile(
   category?: RewardCategory | string | null,
+  rewardType?: RewardType | string | null,
 ): RewardCategoryPriceProfile {
+  const typeKey = rewardType ? toRewardTypeMessageKey(rewardType) : "TimeBased";
+  if (typeKey === "MysteryBox") {
+    return "standard";
+  }
   const key = toCategoryMessageKey(category);
   if (key === "HOBBIES" || key === "DEVELOPMENT" || key === "WELLNESS") {
     return "discounted";
   }
   if (key === "ENTERTAINMENT") {
-    return "premium";
+    return typeKey === "SingleUse" ? "standard" : "premium";
   }
   return "standard";
 }
 
 export function getCategoryPriceMultiplier(
   category?: RewardCategory | string | null,
+  rewardType?: RewardType | string | null,
 ): number {
-  const profile = getCategoryPriceProfile(category);
+  const typeKey = rewardType ? toRewardTypeMessageKey(rewardType) : "TimeBased";
+  const profile = getCategoryPriceProfile(category, typeKey);
+  if (typeKey === "SingleUse") {
+    return profile === "discounted" ? 0.8 : 1;
+  }
   if (profile === "discounted") return 0.65;
-  if (profile === "premium") return 1.3;
+  if (profile === "premium") return 1.2;
   return 1;
 }
 
 export function adjustSuggestedPriceForCategory(
   basePrice: number,
   category?: RewardCategory | string | null,
+  rewardType: RewardType | string = "TimeBased",
 ): number {
   return Math.max(
     1,
-    Math.round(basePrice * getCategoryPriceMultiplier(category)),
+    Math.round(basePrice * getCategoryPriceMultiplier(category, rewardType)),
   );
 }
 
@@ -158,7 +172,7 @@ export function calculateSuggestedCouponPrice(
     basePrice = Math.round(safeMin * 0.2);
   }
 
-  return adjustSuggestedPriceForCategory(basePrice, category);
+  return adjustSuggestedPriceForCategory(basePrice, category, "TimeBased");
 }
 
 export function calculateSuggestedSingleUsePrice(
@@ -170,7 +184,7 @@ export function calculateSuggestedSingleUsePrice(
   if (typeof basePrice !== "number") {
     return null;
   }
-  return adjustSuggestedPriceForCategory(basePrice, category);
+  return adjustSuggestedPriceForCategory(basePrice, category, "SingleUse");
 }
 
 export type RewardEffortDescriptor =
@@ -193,6 +207,7 @@ export interface RewardPriceAnalysis {
   effort: RewardEffortDescriptor;
   status: "ok" | "too_low" | "too_high";
   categoryProfile: RewardCategoryPriceProfile;
+  categoryAdjustmentPercent: number;
   warning?: RewardPriceWarningDescriptor;
 }
 
@@ -268,8 +283,13 @@ export function analyzeRewardPrice({
   const effort = describeEffortEquivalence(safePrice);
 
   const typeKey = toRewardTypeMessageKey(type);
-  const categoryProfile: RewardCategoryPriceProfile =
-    typeKey === "MysteryBox" ? "standard" : getCategoryPriceProfile(category);
+  const categoryProfile: RewardCategoryPriceProfile = getCategoryPriceProfile(
+    category,
+    typeKey,
+  );
+  const categoryAdjustmentPercent = Math.round(
+    (getCategoryPriceMultiplier(category, typeKey) - 1) * 100,
+  );
 
   let suggestedPrice: number | null = null;
   if (typeKey === "TimeBased") {
@@ -286,6 +306,7 @@ export function analyzeRewardPrice({
       effort,
       status: "ok",
       categoryProfile,
+      categoryAdjustmentPercent,
     };
   }
 
@@ -296,6 +317,7 @@ export function analyzeRewardPrice({
         effort,
         status: "too_low",
         categoryProfile,
+        categoryAdjustmentPercent,
         warning: {
           key: "belowCalibrated",
           suggestedPrice,
@@ -309,6 +331,7 @@ export function analyzeRewardPrice({
         effort,
         status: "too_high",
         categoryProfile,
+        categoryAdjustmentPercent,
         warning: {
           key: "aboveCalibrated",
           suggestedPrice,
@@ -321,6 +344,7 @@ export function analyzeRewardPrice({
       effort,
       status: "ok",
       categoryProfile,
+      categoryAdjustmentPercent,
     };
   }
 
@@ -331,6 +355,7 @@ export function analyzeRewardPrice({
       effort,
       status: "too_low",
       categoryProfile,
+      categoryAdjustmentPercent,
       warning: { key: "singleUseTooLow" },
     };
   }
@@ -341,6 +366,7 @@ export function analyzeRewardPrice({
       effort,
       status: "too_high",
       categoryProfile,
+      categoryAdjustmentPercent,
       warning: { key: "singleUseTooHigh" },
     };
   }
@@ -350,5 +376,6 @@ export function analyzeRewardPrice({
     effort,
     status: "ok",
     categoryProfile,
+    categoryAdjustmentPercent,
   };
 }

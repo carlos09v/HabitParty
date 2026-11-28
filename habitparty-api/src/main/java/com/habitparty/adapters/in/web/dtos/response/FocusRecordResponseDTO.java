@@ -26,7 +26,8 @@ public record FocusRecordResponseDTO(
     Integer pomoTargetMinutes,
     int durationMinutes,
     Integer xpEarned,
-    BigDecimal coinsEarned) {
+    BigDecimal coinsEarned,
+    Boolean inventoryItemConsumed) {
   public static FocusRecordResponseDTO fromDomain(FocusRecord record) {
     return fromDomain(record, ZoneId.systemDefault());
   }
@@ -48,6 +49,7 @@ public record FocusRecordResponseDTO(
         record.getPomoTargetMinutes().orElse(null),
         record.getDurationMinutes(),
         record.getXpEarned().orElse(0),
-        record.getCoinsEarned().orElse(BigDecimal.ZERO));
+        record.getCoinsEarned().orElse(BigDecimal.ZERO),
+        record.isInventoryItemConsumed() ? Boolean.TRUE : null);
   }
 }

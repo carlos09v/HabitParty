@@ -611,7 +611,7 @@ export function renderVideoPipFrame(frame: VideoPipFrameData) {
       : "800 68px ui-monospace, SFMono-Regular, monospace";
   ctx.fillText(frame.timeText, w / 2, 160, w - 40);
 
-  // Linked task, 1h30 cap, or localized fallback footer
+  // Linked task, 2h cap, or localized fallback footer
   const footerText =
     frame.capLabel ||
     (frame.taskName ? `✓ ${frame.taskName}` : "") ||

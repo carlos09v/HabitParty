@@ -24,7 +24,7 @@ An open-core productivity and gamification system featuring a strict mathematica
 * **Real-Life Reward Store:** Build your own catalog of leisure and recovery rewards categorized into packages (Single Use, Time-Based Coupons, or Mystery Boxes) balanced with your daily effort.
 * **🎁 Mystery Boxes (Optional RNG):** Weighted probability loot boxes calibrated mathematically across 4 tiers (Basic, Premium, Epic, Legendary) to bring excitement without breaking your personal economy.
 * **🎒 Inventory Backpack:** Purchased rewards are stored in your backpack to be consumed whenever you take your break or linked directly to a timed leisure focus session.
-* **⏱️ Focus Hero Stage (Pomodoro & Free Stopwatch):** Native immersion timer featuring 1-click Quick Focus from Dashboard task rows, daily diminishing returns (*daily soft cap* up to 6h), anti-AFK safeguards (90 min cap per session), and leisure safeguards (backpack leisure sessions yield zero coins).
+* **⏱️ Focus Hero Stage (Pomodoro & Free Stopwatch):** Native immersion timer featuring 1-click Quick Focus from Dashboard task rows, daily diminishing returns (*daily soft cap* up to 8h), anti-AFK safeguards (120 min / 2h cap per session), and leisure safeguards (backpack leisure sessions yield zero coins).
 * **🤝 Friendship Network, Friend Codes & Granular Privacy:** Connect with up to 100 friends via `@username` or `HP-XXXXXX` friend codes, receive real-time social notifications for invites and milestones, and control independent visibility (`Public`, `Friends Only`, `Private`) for Profile, Stats, and Achievements.
 * **🏅 Public Showcase, Annual Retrospective & PNG Cards:** Share public `/profile/[username]` showcases, unlock seasonal Annual Retrospectives with 5 behavioral archetypes, and export high-resolution PNG Profile/Retrospective cards.
 * **👑 VIP Personalization, Events & Ambient Sound:** Schedule To-Dos as timed or all-day Events, unlock animated cosmic avatar frames, 3 VIP atmospheric themes (*Cyberpunk Neon*, *Forest Ranger*, *Royal Gold*), procedural ambient noise synthesized natively in the browser via Web Audio API (Gentle Rain, Cozy Cafe, Lofi Zen, Fireplace), and an exclusive VIP icon package.
@@ -127,11 +127,11 @@ While tasks reward the completion of outputs, focus tools reward time immersion 
 | **Short Pomodoro** | 15 to 24 min | **4 XP • 0.25 🪙** | Fast inertia breaker (1/3 of 1 Easy Task). Requires completed cycle. |
 | **Standard Pomodoro** | 25 to 40 min | **8 XP • 0.50 🪙** | The classic standard. Worth ~30%–40% of a task deliverable. |
 | **Deep Work Pomodoro** | > 40 min | **15 XP • 1.00 🪙** | Deep immersion block. Worth 40% of coins and 100% of XP of 1 Medium Task. |
-| **Free Stopwatch** | Per 30 min block | **~7 XP • 0.40 🪙** | Continuous proportional reward (capped at 90 min/session). |
+| **Free Stopwatch** | Per 30 min block | **~7 XP • 0.45 🪙** | Continuous proportional reward (capped at 120 min / 2h per session). |
 
 #### 🛡️ Anti-Abuse Safeguards
 1. **Minimum Session Duration:** Sessions under **10 minutes** grant 0 XP and 0 coins to prevent accidental triggers or artificial farm transactions.
-2. **Session Maximum Cap (Anti-AFK):** Any continuous session is capped at **90 minutes** of reward calculation (even if left running for hours).
+2. **Session Maximum Cap (Anti-AFK):** Any continuous session is capped at **120 minutes (2h)** of reward calculation (even if left running for hours).
 3. **Daily Diminishing Returns (*Daily Soft Cap*):**
    * **0h to 4h daily (up to 240 min):** 100% of rewards.
    * **4h to 6h daily (240 to 360 min):** 50% of rewards (natural cognitive fatigue zone).

@@ -128,7 +128,7 @@
       "minTimeGamified": "Sessions under {minMinutes} min do not earn XP or Coins.",
       "minTimeProductivity": "Sessions under {minMinutes} min do not earn Points or Credits.",
       "maxCapTitleGamified": "{maxMinutes} min Cap",
-      "maxCapTitleProductivity": "{maxMinutes}m Ultradian Cap",
+      "maxCapTitleProductivity": "Session Cap ({maxMinutes}m)",
       "maxCapGamified": "Time beyond {maxMinutes} min per session does not grant extra coins (anti-AFK).",
       "maxCapProductivity": "Time beyond {maxMinutes} min per session does not grant extra credits. Pause briefly before the next cycle.",
       "antiExploitTitle": "Anti-Exploit",

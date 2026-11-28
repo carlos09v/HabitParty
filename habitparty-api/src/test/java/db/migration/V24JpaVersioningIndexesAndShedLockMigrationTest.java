@@ -1,6 +1,5 @@
 package db.migration;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -19,8 +18,8 @@ class V24JpaVersioningIndexesAndShedLockMigrationTest {
       "src/main/resources/db/migration/V24__jpa_versioning_focus_reward_lock_indexes_and_shedlock.sql");
 
   @Test
-  @DisplayName("Flyway deve descobrir V24 consolidada após V23 sem sobra de V25")
-  void flywayShouldDiscoverConsolidatedV24MigrationWithoutV25() {
+  @DisplayName("Flyway deve descobrir V24 consolidada após V23")
+  void flywayShouldDiscoverConsolidatedV24Migration() {
     String url = "jdbc:h2:mem:v24_discovery_" + UUID.randomUUID().toString().replace("-", "")
         + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
 
@@ -32,11 +31,8 @@ class V24JpaVersioningIndexesAndShedLockMigrationTest {
     var allMigrations = flyway.info().all();
     boolean hasV24 = Arrays.stream(allMigrations)
         .anyMatch(info -> info.getVersion() != null && "24".equals(info.getVersion().getVersion()));
-    boolean hasV25 = Arrays.stream(allMigrations)
-        .anyMatch(info -> info.getVersion() != null && "25".equals(info.getVersion().getVersion()));
 
     assertTrue(hasV24);
-    assertFalse(hasV25);
   }
 
   @Test

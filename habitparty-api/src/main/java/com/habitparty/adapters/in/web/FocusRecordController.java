@@ -97,7 +97,8 @@ public class FocusRecordController implements FocusRecordApi {
         request.endTime(),
         request.recordType(),
         request.completedPomos(),
-        request.pomoTargetMinutes()
+        request.pomoTargetMinutes(),
+        Boolean.TRUE.equals(request.autoConsumeOnDepletion())
     );
     var record = createUseCase.execute(usuarioLogado.id(), command);
     ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());

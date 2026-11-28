@@ -45,6 +45,7 @@ import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardType;
+import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.UserRole;
@@ -505,6 +506,8 @@ class UpdateFocusRecordUseCaseTest {
     assertEquals(Optional.of(600), coupon.getRemainingSeconds());
     assertEquals(InventoryItemStatus.AVAILABLE, coupon.getStatus());
     verify(inventoryItemPort).save(coupon);
+    verify(transactionHistoryPort).deleteAllByReferenceIdAndUserIdAndType(
+        itemId, userId, TransactionType.ITEM_CONSUMED);
     verify(transactionHistoryPort, never()).updateFocusCompletedSnapshot(
         any(), any(), any(), any(), any(), any(Integer.class), any(), any(), any());
 

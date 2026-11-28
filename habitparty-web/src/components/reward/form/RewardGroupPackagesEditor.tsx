@@ -244,6 +244,7 @@ export function RewardGroupPackagesEditor({
                                 adjustSuggestedPriceForCategory(
                                   singlePreset.suggestedPrice,
                                   category,
+                                  "SingleUse",
                                 ),
                               ),
                             });

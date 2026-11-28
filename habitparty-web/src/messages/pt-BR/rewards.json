@@ -185,11 +185,11 @@
     "categoryTooltipTitle": "Como classificar a Categoria e ajuste de preço",
     "categoryTooltipAria": "Saiba como cada categoria funciona e impacta o preço sugerido",
     "categoryTooltipIntro": "A categoria calibra o preço sugerido para incentivar lazeres construtivos e equilibrar dopamina passiva:",
-    "categoryTooltipConstructiveTitle": "Hobbies, Desenvolvimento e Bem-estar (−35%):",
+    "categoryTooltipConstructiveTitle": "Hobbies, Desenvolvimento e Bem-estar (−35% tempo / −20% uso único):",
     "categoryTooltipConstructiveDesc": "Hobbies são lazeres ativos/criativos pelo prazer de curtir (ex.: tocar violão livremente, desenhar, cozinhar). Desenvolvimento é aprender ou ampliar repertório (ex.: tirar técnica/música nova, documentário, livro). Bem-estar é recuperação física/mental (ex.: cochilo, autocuidado).",
-    "categoryTooltipHybridTip": "Dica (ex.: violão): Hobbies e Desenvolvimento têm o mesmo desconto (−35%). Use Hobbies para curtir sem compromisso, Desenvolvimento para explorar novidades/técnica, e Tarefas/Foco se for treino obrigatório do dia.",
-    "categoryTooltipEntertainmentTitle": "Entretenimento (+30%):",
-    "categoryTooltipEntertainmentDesc": "Consumo passivo e dopamina rápida (YouTube, Twitch, séries, filmes, redes sociais, jogos).",
+    "categoryTooltipHybridTip": "Dica (ex.: violão): Hobbies e Desenvolvimento têm o mesmo desconto (−35% em cupons de tempo e −20% em uso único). Use Hobbies para curtir sem compromisso, Desenvolvimento para explorar novidades/técnica, e Tarefas/Foco se for treino obrigatório do dia.",
+    "categoryTooltipEntertainmentTitle": "Entretenimento (+20% em tempo):",
+    "categoryTooltipEntertainmentDesc": "Consumo passivo e dopamina rápida (YouTube, Twitch, séries, filmes, redes sociais, jogos). Em Uso Único mantém o preço padrão.",
     "categoryTooltipStandardTitle": "Compras, Sorte e Nenhum (100% padrão):",
     "categoryTooltipStandardDesc": "Mimos materiais, delivery ou itens avulsos sem ajuste na tarifa base.",
     "debtToggleLabel": "Registrar como Dívida",
@@ -235,9 +235,23 @@
       "removedNotice": "{count, plural, one {1 pacote será removido ao salvar} other {# pacotes serão removidos ao salvar}} (compras anteriores continuam preservadas no Histórico)."
     },
     "debtUnitPricingLabel": "Atalhos rápidos de referência",
-    "debtUnitPricingHint": "(8 moedas / 30 min)",
+    "debtUnitPricingHint": "(12 moedas / 30 min • +20%)",
+    "debtReferenceProfileLegend": "Tipo de referência para calcular a dívida",
+    "debtReferenceProfiles": {
+      "ENTERTAINMENT": "Entretenimento",
+      "CONSTRUCTIVE": "Hobbies / Dev",
+      "SINGLE_USE": "Uso Único"
+    },
+    "debtReferenceHints": {
+      "ENTERTAINMENT": "(12 moedas / 30 min • +20%)",
+      "ENTERTAINMENT_PRODUCTIVITY": "(12 créditos / 30 min • +20%)",
+      "CONSTRUCTIVE": "(8 moedas / 30 min • tarifa cheia)",
+      "CONSTRUCTIVE_PRODUCTIVITY": "(8 créditos / 30 min • tarifa cheia)",
+      "SINGLE_USE": "(+20% sobre Uso Único)"
+    },
     "debtUnitPricingTooltipTitle": "Como definir o valor da Dívida?",
-    "debtUnitPricingTooltipBody": "Dívidas são descartáveis e usam a tarifa base cheia (8 moedas / 30m, sem desconto de pacote ou de −35% de Hobbies), funcionando como 'juros' pelo lazer fora do planejado — assim comprar o cupom antes na Loja sai sempre mais barato. Você também pode ajustar o valor manualmente.",
+    "debtUnitPricingTooltipBody": "Dívidas funcionam como 'juros' (+20%) pelo consumo fora do planejado, garantindo que comprar o cupom ou recompensa antes na Loja saia sempre mais barato: Entretenimento usa 12 moedas/30m (vs. 10 do cupom), Hobbies/Dev/Bem-estar usa a tarifa base cheia (8 moedas/30m, sem o desconto de −35%) e Uso Único aplica +20% sobre os níveis padrão (5 / 18 / 60 / 180). Você também pode digitar qualquer valor manualmente.",
+    "debtUnitPricingTooltipBodyProductivity": "Dívidas funcionam como acréscimo (+20%) pelo consumo fora do planejado, garantindo que planejar o cupom ou pausa antes na Loja saia sempre mais barato: Entretenimento usa 12 créditos/30m (vs. 10 do cupom), Hobbies/Dev/Bem-estar usa a tarifa base cheia (8 créditos/30m, sem o desconto de −35%) e Uso Único aplica +20% sobre os níveis padrão (5 / 18 / 60 / 180). Você também pode digitar qualquer valor manualmente.",
     "debtUnitPriceFieldLabel": "Valor da Dívida",
     "debtUnitPriceFieldHint": "(descartável ao quitar)",
     "priceLabel": "Custo em Moedas",
@@ -283,10 +297,10 @@
         "aboveCalibratedProductivity": "Mais que o dobro do calibrado ({price} créditos) — cuidado para não gerar fadiga antes da recompensa."
       },
       "leisureEquivalenceHint": "{duration} de lazer livre",
-      "categoryDiscountBadge": "Construtivo (-35%)",
+      "categoryDiscountBadge": "Construtivo (-{percent}%)",
       "categoryDiscountHint": "Hobbies, Desenvolvimento e Bem-estar sugerem custo menor por exercitarem habilidades ou descanso ativo.",
-      "categoryPremiumBadge": "Puro lazer (+30%)",
-      "categoryPremiumHint": "Entretenimento passivo sugere custo mais alto para equilibrar dopamina fácil."
+      "categoryPremiumBadge": "Puro lazer (+{percent}%)",
+      "categoryPremiumHint": "Entretenimento passivo em cupons de tempo sugere custo mais alto para equilibrar dopamina fácil."
     },
     "mysteryBoxAdventureHint": "A Caixa Misteriosa está disponível no Modo Aventura. Ative o modo em Configurações > Preferências para desbloqueá-la!",
     "cancel": "Cancelar",

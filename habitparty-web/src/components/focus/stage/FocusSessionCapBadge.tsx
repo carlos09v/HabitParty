@@ -12,7 +12,7 @@ export interface FocusSessionCapBadgeViewProps {
 }
 
 /**
- * Componente puramente apresentacional do selo de teto de recompensa por sessão (90 min).
+ * Componente puramente apresentacional do selo de teto de recompensa por sessão (120 min).
  * Usado diretamente no Document PiP (`FocusPipWidget`) para evitar dependência de `focus.hero`.
  */
 export function FocusSessionCapBadgeView({
@@ -53,7 +53,7 @@ interface FocusSessionCapBadgeProps {
 }
 
 /**
- * Selo unificado de teto de recompensa por sessão (90 min) reutilizado
+ * Selo unificado de teto de recompensa por sessão (120 min) reutilizado
  * no Palco principal (`FocusHeroStage`) e no Modo Zen (`FocusZenModeModal`).
  */
 export function FocusSessionCapBadge({

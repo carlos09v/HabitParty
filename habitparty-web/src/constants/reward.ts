@@ -288,26 +288,79 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   },
 ] as const;
 
+export type DebtReferenceProfile =
+  | "ENTERTAINMENT"
+  | "CONSTRUCTIVE"
+  | "SINGLE_USE";
+
 export interface DebtUnitPricePreset {
   id: "15m" | "30m" | "45m" | "60m";
   minutes: number;
   price: number;
 }
 
-/**
- * Tabela linear de atalhos rápidos de preço para criação/edição de Dívidas
- * (taxa base: 8 moedas / 30 min = 0.2667/min).
- * Dívidas são descartáveis e quitadas pelo valor unitário direto ao clicar em "Pagar Dívida".
- */
-export const DEBT_UNIT_PRICE_PRESETS: readonly DebtUnitPricePreset[] = [
-  { id: "15m", minutes: 15, price: 4 },
-  { id: "30m", minutes: 30, price: 8 },
-  { id: "45m", minutes: 45, price: 12 },
-  { id: "60m", minutes: 60, price: 16 },
+export interface DebtSingleUsePricePreset {
+  id: Exclude<PackageMessageKey, "NONE">;
+  price: number;
+}
+
+export const DEBT_REFERENCE_PROFILES: readonly DebtReferenceProfile[] = [
+  "ENTERTAINMENT",
+  "CONSTRUCTIVE",
+  "SINGLE_USE",
 ] as const;
 
-export const DEBT_DEFAULT_UNIT_PRICE = 8;
+/**
+ * Atalhos rápidos de referência para criação/edição de Dívidas por contexto:
+ * - ENTERTAINMENT: +20% sobre Cupom de Entretenimento (10/30m -> 12/30m), evitando arbitragem.
+ * - CONSTRUCTIVE: tarifa base cheia (8/30m) sem o desconto de -35% de Hobbies/Desenvolvimento/Bem-estar.
+ * - SINGLE_USE: +20% sobre os níveis calibrados de Uso Único (4/15/50/150 -> 5/18/60/180).
+ * Dívidas são descartáveis e quitadas pelo valor unitário direto ao clicar em "Pagar Dívida".
+ */
+export const DEBT_TIME_PRICE_PRESETS: Record<
+  Exclude<DebtReferenceProfile, "SINGLE_USE">,
+  readonly DebtUnitPricePreset[]
+> = {
+  ENTERTAINMENT: [
+    { id: "15m", minutes: 15, price: 6 },
+    { id: "30m", minutes: 30, price: 12 },
+    { id: "45m", minutes: 45, price: 18 },
+    { id: "60m", minutes: 60, price: 24 },
+  ],
+  CONSTRUCTIVE: [
+    { id: "15m", minutes: 15, price: 4 },
+    { id: "30m", minutes: 30, price: 8 },
+    { id: "45m", minutes: 45, price: 12 },
+    { id: "60m", minutes: 60, price: 16 },
+  ],
+} as const;
+
+export const DEBT_SINGLE_USE_PRICE_PRESETS: readonly DebtSingleUsePricePreset[] =
+  [
+    { id: "BASIC", price: 5 },
+    { id: "PREMIUM", price: 18 },
+    { id: "EPIC", price: 60 },
+    { id: "LEGENDARY", price: 180 },
+  ] as const;
+
+export const DEBT_UNIT_PRICE_PRESETS: readonly DebtUnitPricePreset[] =
+  DEBT_TIME_PRICE_PRESETS.ENTERTAINMENT;
+
+export const DEBT_DEFAULT_UNIT_PRICE = 12;
 export const MAX_ACTIVE_DEBT_CARDS = 15;
+
+export function inferDebtReferenceProfile(price: number): DebtReferenceProfile {
+  if (DEBT_TIME_PRICE_PRESETS.ENTERTAINMENT.some((p) => p.price === price)) {
+    return "ENTERTAINMENT";
+  }
+  if (DEBT_TIME_PRICE_PRESETS.CONSTRUCTIVE.some((p) => p.price === price)) {
+    return "CONSTRUCTIVE";
+  }
+  if (DEBT_SINGLE_USE_PRICE_PRESETS.some((p) => p.price === price)) {
+    return "SINGLE_USE";
+  }
+  return "ENTERTAINMENT";
+}
 
 export const SINGLE_USE_NONE_OPTION = {
   id: "NONE" as const,

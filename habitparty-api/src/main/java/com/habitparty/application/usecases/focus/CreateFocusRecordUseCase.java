@@ -31,6 +31,7 @@ import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.focus.FocusReward;
 import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -144,7 +145,7 @@ public class CreateFocusRecordUseCase {
     if (record.getInventoryItemId().isPresent()) {
       UUID itemId = record.getInventoryItemId().get();
 
-      InventoryItem item = inventoryItemPort.findById(itemId)
+      InventoryItem item = inventoryItemPort.findByIdForUpdate(itemId)
           .orElseThrow(() -> new ResourceNotFoundException("Item de inventário não encontrado."));
       item.validateOwnership(userIdLogado);
 
@@ -164,6 +165,16 @@ public class CreateFocusRecordUseCase {
       }
       int secondsAfter = item.getRemainingSeconds().orElse(0);
 
+      boolean isTimeBasedCoupon = item.getRemainingSeconds().isPresent();
+      boolean autoConsumed = command.autoConsumeOnDepletion()
+          && isTimeBasedCoupon
+          && secondsAfter <= 1
+          && item.getStatus() == InventoryItemStatus.IN_FOCUS;
+      if (autoConsumed) {
+        item.consume();
+        secondsAfter = 0;
+      }
+
       inventoryItemPort.save(item);
       FocusRecord serverInventoryRecord = new FocusRecord(
           record.getId(),
@@ -181,6 +192,24 @@ public class CreateFocusRecordUseCase {
           BigDecimal.ZERO);
       FocusRecord savedInventoryRecord = port.save(serverInventoryRecord);
 
+      if (autoConsumed && transactionHistoryPort != null) {
+        TransactionHistory consumedTransaction = new TransactionHistory(
+            null,
+            userIdLogado,
+            item.getId(),
+            BigDecimal.ZERO,
+            0,
+            item.getPriceSnapshot(),
+            TransactionType.ITEM_CONSUMED,
+            item.getNameSnapshot(),
+            item.getIconSnapshot().orElse(null),
+            item.getPackageLevelSnapshot().orElse(null),
+            null,
+            null,
+            serverEndTime);
+        transactionHistoryPort.save(consumedTransaction);
+      }
+
       // Cupom de tempo esgotado nesta sessão (saldo cruzou para <= 1s): conta para a conquista "Alquimista do Tempo"
       FocusRecordSupport.evaluateCouponDepletionAchievement(
           userIdLogado,
@@ -191,7 +220,7 @@ public class CreateFocusRecordUseCase {
           userPort,
           evaluateUserAchievementsUseCase);
 
-      return savedInventoryRecord;
+      return autoConsumed ? savedInventoryRecord.withInventoryItemConsumed(true) : savedInventoryRecord;
     }
 
     // 3. Atividade produtiva ou foco livre: calcula recompensas matemáticas calibradas

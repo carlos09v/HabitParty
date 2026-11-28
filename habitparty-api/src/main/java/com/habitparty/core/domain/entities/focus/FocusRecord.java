@@ -33,6 +33,7 @@ public class FocusRecord implements OwnedByUser {
   private final Integer xpEarned;
   private final BigDecimal coinsEarned;
   private final boolean rewardLocked;
+  private final boolean inventoryItemConsumed;
 
   public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
@@ -77,6 +78,15 @@ public class FocusRecord implements OwnedByUser {
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
       Integer completedPomos, Integer pomoTargetMinutes, Integer xpEarned, BigDecimal coinsEarned,
       boolean rewardLocked) {
+    this(id, userId, focusActivityId, inventoryItemId, taskId, taskNameSnapshot, notes, startTime, endTime,
+        recordType, completedPomos, pomoTargetMinutes, xpEarned, coinsEarned, rewardLocked, false);
+  }
+
+  private FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId,
+      UUID taskId, String taskNameSnapshot, String notes,
+      LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
+      Integer completedPomos, Integer pomoTargetMinutes, Integer xpEarned, BigDecimal coinsEarned,
+      boolean rewardLocked, boolean inventoryItemConsumed) {
     // 1. Validações Básicas
     if (userId == null) {
       throw new DomainValidationException("O ID do usuário é obrigatório.");
@@ -138,6 +148,27 @@ public class FocusRecord implements OwnedByUser {
         ? coinsEarned.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
         : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     this.rewardLocked = rewardLocked;
+    this.inventoryItemConsumed = inventoryItemConsumed;
+  }
+
+  public FocusRecord withInventoryItemConsumed(boolean consumed) {
+    return new FocusRecord(
+        id,
+        userId,
+        focusActivityId,
+        inventoryItemId,
+        taskId,
+        taskNameSnapshot,
+        notes,
+        startTime,
+        endTime,
+        recordType,
+        completedPomos,
+        pomoTargetMinutes,
+        xpEarned,
+        coinsEarned,
+        rewardLocked,
+        consumed);
   }
 
   public void updateNotes(String newNotes) {
@@ -215,5 +246,9 @@ public class FocusRecord implements OwnedByUser {
 
   public boolean isRewardLocked() {
     return rewardLocked;
+  }
+
+  public boolean isInventoryItemConsumed() {
+    return inventoryItemConsumed;
   }
 }

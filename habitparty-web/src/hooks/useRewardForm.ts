@@ -1138,6 +1138,7 @@ export function useRewardForm({
           adjustSuggestedPriceForCategory(
             candidateSingle.suggestedPrice,
             category,
+            "SingleUse",
           ),
         ),
         originalSuffix: "",

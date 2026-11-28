@@ -294,7 +294,7 @@ export function RewardPreview({
             </div>
           )}
 
-          {/* Avisos e Alertas (ex: Anti-exploit, Teto de 90m, Modo Hardcore) */}
+          {/* Avisos e Alertas (ex: Anti-exploit, Teto de 120m, Modo Hardcore) */}
           {estimate.notices && estimate.notices.length > 0 && (
             <div className="flex flex-col gap-1.5 pt-1">
               {estimate.notices.map((notice) => (

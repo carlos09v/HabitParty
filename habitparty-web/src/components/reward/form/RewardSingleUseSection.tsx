@@ -1,10 +1,15 @@
 import { Info } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useId, useRef, useState } from "react";
 import { RewardPriceField } from "@/components/reward/form/RewardPriceField";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Switch } from "@/components/ui/Switch";
 import {
-  DEBT_UNIT_PRICE_PRESETS,
+  DEBT_REFERENCE_PROFILES,
+  DEBT_SINGLE_USE_PRICE_PRESETS,
+  DEBT_TIME_PRICE_PRESETS,
+  type DebtReferenceProfile,
+  inferDebtReferenceProfile,
   SINGLE_USE_NONE_OPTION,
   SINGLE_USE_TIER_OPTIONS,
 } from "@/constants/reward";
@@ -63,14 +68,42 @@ export function RewardSingleUseSection({
 }: RewardSingleUseSectionProps) {
   const t = useTranslations("rewards.formModal");
   const tOptions = useTranslations("rewards.options");
+  const debtReferenceGroupName = useId();
   const parsedPrice = parseLocalizedPrice(price) || 0;
+  const [debtReferenceProfile, setDebtReferenceProfile] =
+    useState<DebtReferenceProfile>(() =>
+      inferDebtReferenceProfile(parsedPrice),
+    );
+  const prevIsDebtRef = useRef(isDebtCategory);
+
+  useEffect(() => {
+    if (isDebtCategory && !prevIsDebtRef.current) {
+      setDebtReferenceProfile(inferDebtReferenceProfile(parsedPrice));
+    }
+    prevIsDebtRef.current = isDebtCategory;
+  }, [isDebtCategory, parsedPrice]);
+
+  const debtReferenceHint =
+    debtReferenceProfile === "ENTERTAINMENT"
+      ? t(
+          isGamified
+            ? "debtReferenceHints.ENTERTAINMENT"
+            : "debtReferenceHints.ENTERTAINMENT_PRODUCTIVITY",
+        )
+      : debtReferenceProfile === "CONSTRUCTIVE"
+        ? t(
+            isGamified
+              ? "debtReferenceHints.CONSTRUCTIVE"
+              : "debtReferenceHints.CONSTRUCTIVE_PRODUCTIVITY",
+          )
+        : t("debtReferenceHints.SINGLE_USE");
 
   return (
     <>
       <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
         {isDebtCategory ? (
-          /* Tabela linear de preço unitário para Dívida (sem pacotes ou descontos) */
-          <div className="flex flex-col gap-1.5">
+          /* Calculadora rápida de referência para Dívida por contexto (sem persistir subcategoria) */
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <span className="text-body-s text-neutral-100 font-medium">
@@ -90,39 +123,108 @@ export function RewardSingleUseSection({
                   ariaLabel={t("debtUnitPricingTooltipTitle")}
                 >
                   <p className="text-label-g text-neutral-300 leading-relaxed">
-                    {t("debtUnitPricingTooltipBody")}
+                    {isGamified
+                      ? t("debtUnitPricingTooltipBody")
+                      : t("debtUnitPricingTooltipBodyProductivity")}
                   </p>
                 </InfoTooltip>
               </div>
               <span className="text-label-m text-rose-700 dark:text-rose-300">
-                {t("debtUnitPricingHint")}
+                {debtReferenceHint}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {DEBT_UNIT_PRICE_PRESETS.map((preset) => {
-                const isSelected = parsedPrice === preset.price;
 
+            <fieldset
+              disabled={isPending}
+              className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-surface/60 border border-neutral-700/80 dark:bg-white/[0.04] dark:border-white/10"
+            >
+              <legend className="sr-only">
+                {t("debtReferenceProfileLegend")}
+              </legend>
+              {DEBT_REFERENCE_PROFILES.map((profile) => {
+                const isSelected = debtReferenceProfile === profile;
                 return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    disabled={isPending}
-                    onClick={() => onApplySuggestedPrice(preset.price)}
+                  <label
+                    key={profile}
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95 tabular-nums",
+                      "relative flex items-center justify-center min-h-[34px] pointer-coarse:min-h-[44px] px-2 py-1 rounded-md border text-center text-label-m transition-[color,background-color,border-color,box-shadow] select-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-rose-500",
+                      isPending
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer",
                       isSelected
-                        ? "bg-rose-500/15 border-rose-500 text-rose-700 dark:text-rose-200 ring-2 ring-rose-500/25"
-                        : "bg-surface/70 border-neutral-600 text-neutral-300 hover:text-neutral-100 hover:border-rose-500/40 dark:bg-white/5 dark:border-white/10",
-                      isPending && "opacity-50 cursor-not-allowed",
+                        ? "bg-rose-500/15 border-rose-500/60 text-rose-700 dark:text-rose-200 font-bold shadow-2xs"
+                        : "border-transparent text-neutral-400 font-medium hover:text-neutral-200 hover:bg-white/5",
                     )}
                   >
-                    <span>{formatFocusMinutes(preset.minutes)}</span>
-                    <span className="opacity-60">•</span>
-                    <span>{preset.price}</span>
-                  </button>
+                    <input
+                      type="radio"
+                      name={debtReferenceGroupName}
+                      value={profile}
+                      checked={isSelected}
+                      disabled={isPending}
+                      onChange={() => setDebtReferenceProfile(profile)}
+                      className="sr-only"
+                    />
+                    <span className="truncate">
+                      {t(`debtReferenceProfiles.${profile}`)}
+                    </span>
+                  </label>
                 );
               })}
+            </fieldset>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {debtReferenceProfile === "SINGLE_USE"
+                ? DEBT_SINGLE_USE_PRICE_PRESETS.map((preset) => {
+                    const isSelected = parsedPrice === preset.price;
+
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        disabled={isPending}
+                        onClick={() => onApplySuggestedPrice(preset.price)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 min-h-[32px] pointer-coarse:min-h-[42px] px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500",
+                          isSelected
+                            ? "bg-rose-500/15 border-rose-500 text-rose-700 dark:text-rose-200 ring-2 ring-rose-500/25"
+                            : "bg-surface/70 border-neutral-600 text-neutral-300 hover:text-neutral-100 hover:border-rose-500/40 dark:bg-white/5 dark:border-white/10",
+                          isPending && "opacity-50 cursor-not-allowed",
+                        )}
+                      >
+                        <span>{tOptions(`singleUseTiers.${preset.id}`)}</span>
+                        <span className="opacity-60">•</span>
+                        <span>{preset.price}</span>
+                      </button>
+                    );
+                  })
+                : DEBT_TIME_PRICE_PRESETS[debtReferenceProfile].map(
+                    (preset) => {
+                      const isSelected = parsedPrice === preset.price;
+
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          disabled={isPending}
+                          onClick={() => onApplySuggestedPrice(preset.price)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 min-h-[32px] pointer-coarse:min-h-[42px] px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500",
+                            isSelected
+                              ? "bg-rose-500/15 border-rose-500 text-rose-700 dark:text-rose-200 ring-2 ring-rose-500/25"
+                              : "bg-surface/70 border-neutral-600 text-neutral-300 hover:text-neutral-100 hover:border-rose-500/40 dark:bg-white/5 dark:border-white/10",
+                            isPending && "opacity-50 cursor-not-allowed",
+                          )}
+                        >
+                          <span>{formatFocusMinutes(preset.minutes)}</span>
+                          <span className="opacity-60">•</span>
+                          <span>{preset.price}</span>
+                        </button>
+                      );
+                    },
+                  )}
             </div>
           </div>
         ) : (
@@ -190,6 +292,7 @@ export function RewardSingleUseSection({
                         adjustSuggestedPriceForCategory(
                           tier.suggestedPrice,
                           category,
+                          "SingleUse",
                         ),
                       );
                     }}

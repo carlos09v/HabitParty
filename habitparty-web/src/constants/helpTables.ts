@@ -488,7 +488,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       stopwatch: [
         "⏱️ Cronômetro Livre",
         "A cada 30 min",
-        "Cálculo contínuo proporcional. Limitado ao teto de 90 min por sessão.",
+        "Cálculo contínuo proporcional. Limitado ao teto de 120 min (2h) por sessão.",
       ],
       safetyLocks: [
         "🛡️ Travas de Segurança",
@@ -799,7 +799,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       stopwatch: [
         "⏱️ Free Stopwatch",
         "Every 30 min",
-        "Continuous proportional calculation. Capped at 90 min per session.",
+        "Continuous proportional calculation. Capped at 120 min (2h) per session.",
       ],
       safetyLocks: [
         "🛡️ Safety Locks",

@@ -74,6 +74,10 @@ public final class FocusRewardRecalculationPlanner {
           sessionDate,
           priorMinutes + FocusRewardCalculator.calculateRewardableMinutes(record.getDurationMinutes()));
 
+      if (record.isRewardLocked()) {
+        continue;
+      }
+
       FocusReward recalculated = FocusRewardCalculator.calculate(record, priorMinutes);
 
       int oldXp = Math.max(0, record.getXpEarned().orElse(0));
